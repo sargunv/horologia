@@ -6,5 +6,6 @@
   },
   "[typespec]": {
     "editor.defaultFormatter": "typespec.typespec-vscode"
-  }
+  },
+  "typespec.tsp-server.path": "api/node_modules/@typespec/compiler"
 }

@@ -11,7 +11,6 @@ enum StatusCategory {
 }
 
 model TaskStatus {
-  id: int32;
   name: string;
   category: StatusCategory;
 }
@@ -21,7 +20,6 @@ model Task {
   title: string;
   description: string;
   status: TaskStatus;
-  assignees: int32[];
   dueDate: plainDate | null;
   createdAt: utcDateTime;
   updatedAt: utcDateTime;
@@ -30,23 +28,19 @@ model Task {
 model TaskCreate {
   title: string;
   description?: string;
-  statusId?: int32;
-  assignees?: int32[];
+  statusName?: string;
   dueDate?: plainDate | null;
 }
 
 model TaskUpdate {
   title?: string;
   description?: string;
-  statusId?: int32;
-  assignees?: int32[];
+  statusName?: string;
   dueDate?: plainDate | null;
 }
 
 model TaskListParams {
   ...PageParams;
-  @query statusId?: int32;
-  @query assignee?: int32;
 }
 
 model TaskPage is Page<Task>;

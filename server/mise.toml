@@ -5,3 +5,7 @@ run = "go build -o tend-server ."
 [tasks.run]
 description = "Run the server"
 run = "go run ."
+
+[tasks.generate]
+description = "Run sqlc code generation"
+run = "go run github.com/sqlc-dev/sqlc/cmd/sqlc generate"

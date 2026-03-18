@@ -8,8 +8,11 @@ local allSteps = new Mapping<String, Step> {
     glob = List("**/*.json", "**/*.jsonc")
     check = "jvl check {{files}}"
   }
-  ["golangci-lint"] = (Builtins.golangci_lint) {
+  ["golangci-lint"] {
+    glob = List("**/*.go")
     workspace_indicator = "go.mod"
+    check = "cd {{workspace}} && golangci-lint run ./..."
+    fix = "cd {{workspace}} && golangci-lint run --fix ./..."
   }
   ["vp-check"] {
     glob = List("**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx")
