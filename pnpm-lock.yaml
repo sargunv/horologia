@@ -22,9 +22,6 @@ importers:
       '@typespec/openapi3':
         specifier: latest
         version: 1.10.0(@typespec/compiler@1.10.0)(@typespec/http@1.10.0(@typespec/compiler@1.10.0))(@typespec/openapi@1.10.0(@typespec/compiler@1.10.0)(@typespec/http@1.10.0(@typespec/compiler@1.10.0)))
-      '@typespec/rest':
-        specifier: latest
-        version: 0.80.0(@typespec/compiler@1.10.0)(@typespec/http@1.10.0(@typespec/compiler@1.10.0))
 
   web:
     devDependencies:
@@ -676,13 +673,6 @@ packages:
 
   '@typespec/openapi@1.10.0':
     resolution: {integrity: sha512-tukmyp+c9CFlA2FdF61XfT9eTe5WXWz6J8pOrJ9+IYg0BcBwhJkvDj6BYpDD6SjxbRr1wO5ZL2Whe6MequsyVw==}
-    engines: {node: '>=20.0.0'}
-    peerDependencies:
-      '@typespec/compiler': ^1.10.0
-      '@typespec/http': ^1.10.0
-
-  '@typespec/rest@0.80.0':
-    resolution: {integrity: sha512-xczXLoB2akSIDner41gQYTS9CG6TdCN0QHYvXBT6ZrYEnBh+pMvdymW//5CSOTamZLOGo9AOJVJaFfwbFA4vQQ==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
       '@typespec/compiler': ^1.10.0
@@ -1790,11 +1780,6 @@ snapshots:
       yaml: 2.8.2
 
   '@typespec/openapi@1.10.0(@typespec/compiler@1.10.0)(@typespec/http@1.10.0(@typespec/compiler@1.10.0))':
-    dependencies:
-      '@typespec/compiler': 1.10.0
-      '@typespec/http': 1.10.0(@typespec/compiler@1.10.0)
-
-  '@typespec/rest@0.80.0(@typespec/compiler@1.10.0)(@typespec/http@1.10.0(@typespec/compiler@1.10.0))':
     dependencies:
       '@typespec/compiler': 1.10.0
       '@typespec/http': 1.10.0(@typespec/compiler@1.10.0)
