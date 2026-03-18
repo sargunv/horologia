@@ -1,0 +1,10 @@
+# Go
+/server/tend-server
+/cli/tend
+
+# Web
+/web/node_modules/
+/web/dist/
+
+# dprint
+.dprint/
