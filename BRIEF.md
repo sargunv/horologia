@@ -32,67 +32,73 @@ Each space has:
 - **Members** with roles: admin, writer, reader
 - **Custom statuses** — the space defines its own status workflow (see below)
 - **Tags** — scoped to the space
+- **New task defaults** — space-level defaults for new tasks (e.g., `show_staleness: true`, default recurrence, default assignees). Per-task values override these.
+- **Task templates (future)** — named presets with pre-filled field values (e.g., "Weekly chore": recurrence=completion-based 7d, show_staleness=true, rotation_pool=[everyone]). Not in v0.1 — space defaults are sufficient to start.
 - Everything in a space is visible to all members of that space
-
-### Projects
-
-A **project** is an optional grouping of tasks within a space. Tasks always belong to a space. They optionally belong to a project within that space.
-
-Examples:
-- Space "Household" → Project "Kitchen" (recurring kitchen chores)
-- Space "Household" → standalone task "Call landlord" (no project)
-- Space "Side Project X" → Project "Backend" → tasks
-
-A task's `space_id` is required. Its `project_id` is nullable but must reference a project within the same space (enforced by composite constraint).
 
 ### Tasks
 
-There is one universal task model. Any task can use any combination of features — there are no "task types." A chore is just a task with recurrence. A project task is just a task with comments and links.
+Every task belongs to a space. There are no "projects" as a separate concept — a project is just a top-level task with children. Hierarchy is freeform via parent/child relations, as deep as needed.
+
+There is one universal task model. Any task can use any combination of features — there are no "task types." A chore is just a task with recurrence. A project task is just a task with links and child tasks.
+
+**IDs:**
+- Global auto-incrementing numeric ID, prefixed by type: `T42` (task), `I13` (inventory item, future).
+- The number is a global DB auto-increment, not scoped per space or type. The prefix is display-only based on the object type.
+- IDs are stable, short, and unambiguous across types — usable in CLI (`tend show T42`), conversation, and MCP.
 
 **Core fields:**
 - Title
 - Description (Markdown — rendered with WYSIWYG and raw editors in GUIs)
 - Status (from the space's defined statuses)
-- Assignee (one user, or unassigned)
+- Assignees (list of users — empty = unassigned, one = sole assignee, multiple = any of them can do it)
 - Due date (hard date, nullable)
 - Tags (from the space's tag set)
-- Manual ordering via fractional indexing
+- Manual ordering via fractional indexing (future — v0.1 sorts by due date/staleness)
 
-**Recurrence:**
-- **Fixed schedule** — "every Saturday", "1st of every month" (calendar/cron-based)
-- **Completion-based** — "7 days after last completed" (interval from actual completion, not from due date)
-- When a recurring task is completed, it immediately resets to the space's initial status with a new due date
-- If a completion-based task is overdue and then completed, the next due date is calculated from the completion date, not the original due date
+**Recurrence (five types):**
+
+1. **One-off** — no recurrence. Completed = done permanently.
+2. **Completion-based** — recur N days after last completion. On completion, due date = `completed_at + interval`. Stays overdue until completed (no schedule to advance to).
+3. **Fixed, accumulating** — cron schedule (e.g., "1st of every month"). Each scheduled occurrence spawns a new task. Missed occurrences pile up as separate tasks. A server-side cron job creates tasks on schedule.
+4. **Fixed, non-accumulating** — cron schedule (e.g., "every Saturday"). One task, due date advances to next occurrence on completion. Auto-advance on missed: configurable `auto_advance_after` — `null` = stays overdue forever, `0` = advances to next occurrence immediately when past due, `> 0` = advances after the grace duration.
+5. **On-dependency** — recurs when a specific other task is completed. Enables chains (e.g., "load dishwasher" completion triggers "unload dishwasher", and vice versa).
 
 **Staleness:**
-- Calculated as `(now - last_completed_at) / interval`
+- A derived value, never stored. Calculated as `(now - last_completed_at) / interval`.
 - At 100% the task is due. Above 100% it's overdue.
-- Displayed as an urgency gradient (green → yellow → red), inspired by Tody
+- Applies to all recurring task types. The visualization scales naturally — a week late on a weekly task (200%) is more urgent than a week late on an annual task (107%).
+- Displayed as an urgency gradient (green → yellow → red), inspired by Tody.
+- Computed by the server for sorting/filtering (e.g., today view ordered by staleness) and by the client for display.
+- **Per-task toggle**: `show_staleness: boolean` — controls whether the urgency gradient appears on the task card. Inherited from space defaults, overridable per task.
 
-**Completion history:**
-- Each task has a list of completion records: `{completed_by, completed_at}`
-- The current task state is the latest record
-- This provides a history of when chores were done and by whom
+**Activity log:**
+- All actions on a task are logged: creation, status changes, assignment changes, completions, relation changes, etc.
+- Each entry records: `{user_id, token_id (nullable), action, timestamp, details}`
+- Completion history is a subset of this — filtered view of completion events.
+- Entries attributed as "Sargun" (direct) or "Sargun (via Claude)" (via named API token).
+
+**Assignee visibility:**
+- Unassigned tasks (`assignees: []`) appear only in their space view, not on anyone's home page
+- Assigned tasks appear on the home page of each assignee
 
 **Rotation:**
 - A task can have a `rotation_pool` — a list of users
-- On each completion, the assignee advances to the next person in the pool
+- When rotation is active, completing the task sets `assignees` to `[next_person]` from the pool
 - If someone outside the pool completes the task, they go to the end of the rotation queue
 
-**Relations (space-defined):**
-- blocks / blocked-by
-- parent / child
-- related-to
-- duplicates
+**Relations (hardcoded, system-defined):**
+- **Parent / child** — hierarchy. A task can have one parent, many children. Used for views and grouping.
+- **Blocks / blocked-by** — dependency. Blocked tasks are not actionable until the blocker is completed.
+- **Relates to** — informational link, no system semantics.
+- **Duplicates / duplicated-by** — marks duplicate tasks.
 
-Spaces can define which relation types are available. The above are good defaults.
-
-**Comments:**
+**Comments (future, not v0.1):**
 - Flat comment list on any task
 
 **Custom fields (future):**
 - Spaces will eventually define a schema for custom fields (e.g., URLs, links to external systems, structured data)
-- Not in v0.1 — tasks have description + comments for freeform context
+- Not in v0.1 — tasks have description for freeform context
 
 ### Statuses
 
@@ -120,8 +126,8 @@ A non-recurring task moved to a completion status with "done" semantics means it
   4. Upcoming within window, by due date (including staleness indicators for recurring tasks approaching their interval)
 - Links to recently updated or favorited spaces
 
-**Space/project views:**
-- Task list within a space or project
+**Space views:**
+- Task list within a space (optionally filtered to a subtree via parent task)
 - Sortable by staleness, due date, status, assignee, manual order
 
 ---
@@ -131,33 +137,55 @@ A non-recurring task moved to a completion status with "done" semantics means it
 ### Architecture
 
 ```
-┌──────────────────────────────────┐
-│          Go binary (tend)        │
-│                                  │
-│  ┌────────────────────────────┐  │
-│  │      Service layer         │  │
-│  │   (all business logic)     │  │
-│  │         SQLite             │  │
-│  └────┬──────────┬────────────┘  │
-│       │          │               │
-│  ┌────┴───┐ ┌────┴─────────┐    │
-│  │  CLI   │ │ HTTP server  │    │
-│  │(direct)│ │ REST API +   │    │
-│  │        │ │ static SPA   │    │
-│  └────────┘ └──────────────┘    │
-└──────────────────────────────────┘
+tend/
+  api/          # OpenAPI spec (source of truth)
+  server/       # tend-server binary
+  cli/          # tend binary (client CLI only)
+  web/          # SPA source (built → embedded in server)
 ```
 
-- **Single Go binary** — CLI and server are the same binary.
-  - `tend serve` — runs the HTTP server (REST API + serves the web SPA as static files)
-  - `tend add`, `tend list`, etc. — CLI commands that either call the service layer directly (local mode) or call the remote API (remote mode)
-  - **Local mode** — CLI opens the SQLite file directly, no server needed. Good for personal use, scripting, MCP. Database location set by `TEND_DB` (default: `~/.local/share/tend/tend.db`).
-  - **Remote mode** — CLI calls a Tend server over HTTP. Activated by setting `TEND_SERVER=https://tend.local`.
-- **REST API with OpenAPI spec** — typed clients generated from the spec for TS, Kotlin, Swift.
-- **Web frontend** — SPA built with TanStack Router + Skeleton.dev. Compiled to static files and embedded in the Go binary. No Node.js in production.
+```
+┌───────────────────────────────┐
+│    tend-server (Go binary)    │
+│                               │
+│  ┌─────────────────────────┐  │
+│  │     Service layer       │  │
+│  │  (all business logic)   │  │
+│  │       SQLite            │  │
+│  └────┬────────────────┬───┘  │
+│       │                │      │
+│  ┌────┴─────────┐ ┌───┴───┐  │
+│  │ HTTP server  │ │ Admin │  │
+│  │ REST API +   │ │  CLI  │  │
+│  │ embedded SPA │ │       │  │
+│  └──────────────┘ └───────┘  │
+└───────────────────────────────┘
+        ▲              ▲
+        │              │
+   ┌────┴───┐    ┌─────┴────┐
+   │  tend  │    │  Tauri   │
+   │  CLI   │    │  (SPA)   │
+   └────────┘    └──────────┘
+```
+
+**Two Go binaries in a monorepo. Shared OpenAPI spec and generated types.**
+
+- **`tend-server`** — the server. Owns the service layer, SQLite, REST API, MCP endpoint, and embedded web SPA.
+  - `tend-server serve` — runs the HTTP server (REST API + MCP endpoint + SPA). SQLite location set by `TEND_DB` (default: `~/.local/share/tend/tend.db`)
+  - `tend-server migrate` — run database migrations
+  - `tend-server create-user` — bootstrap first user, etc.
+- **`tend`** — the CLI client. Go + Charm. Always talks to `tend-server` over HTTP (no local/embedded mode).
+  - `tend add`, `tend list`, etc. — CLI commands
+  - `tend login` — obtains an API token (via browser-based OIDC flow or username/password prompt) and stores it in the OS keychain
+  - Configured via `TEND_SERVER=https://tend.local`
+- **REST API** — OpenAPI spec as source of truth. Typed clients generated for TS, Kotlin, Swift, Go.
+- **MCP endpoint** — Streamable HTTP on `tend-server` (e.g., `https://tend.local/mcp`). Auth via OAuth 2.1, delegating to the configured OIDC provider. No binary installation needed for MCP clients.
+- **Web SPA** — TanStack Router + Skeleton.dev. Compiled to static files, embedded in `tend-server`. Calls the API on the same origin. No Node.js in production.
+- **Tauri app** — bundles the same SPA static files. User configures the server URL on first launch. Separate build artifact.
 - **Database** — SQLite. Single file, easy backup, self-hosted friendly. Designed so Postgres could be added later if needed.
-- **Auth** — OIDC support (for use behind Authelia, Authentik, etc.) + username/password.
-- **Deployment** — single Docker container. Volume-mount for the SQLite file.
+- **Auth** — OIDC support (for use behind Authelia, Authentik, etc.) + username/password. CLI auth via API tokens stored in OS keychain. MCP auth via OAuth 2.1.
+- **API tokens** — users can create named personal API tokens (like GitHub PATs). Actions taken via a token are attributed to the user but tagged with the token name (e.g., "Sargun (via Claude)"). Every action records `user_id` + nullable `token_id`. No separate bot accounts — tokens inherit the user's permissions. OIDC users can create tokens; admins can create username/password users.
+- **Deployment** — single Docker container running `tend-server`. Volume-mount for the SQLite file.
 
 ### Future platforms (post v0.1)
 
@@ -165,21 +193,20 @@ A non-recurring task moved to a completion status with "done" semantics means it
   - SwiftUI for iOS, optionally macOS (shared codebase)
   - Jetpack Compose for Android, optionally Linux and Windows (Compose for Desktop, shared codebase)
   - Tauri (SPA in webview) for any remaining platforms
-- **MCP server** — for AI assistant integration
+- **Inventory** — a second object type (`I13`). Track owned items: home appliances, consumables, collections (e.g., retro handhelds). Items have quantity, condition, maintenance schedules. Links to tasks (e.g., "replace air filter" triggered when inventory count is low, or recurring maintenance tasks tied to an item).
 - **Offline support** — local SQLite + sync protocol. v0.1 is online-only but the API is designed with idempotent operations and timestamps to support offline later.
 - **Notifications** — email, webhooks, push via relay service. Not in v0.1.
 
 ### v0.1 Scope
 
 **In scope:**
-- Single Go binary: API server + CLI (Charm stack) + embedded web SPA
-- CLI works locally (direct SQLite) or against a remote server
+- `tend-server`: Go, REST API + MCP endpoint + embedded web SPA + admin CLI (migrations, user bootstrap)
+- `tend`: Go CLI (Charm stack), talks to `tend-server` over HTTP
 - Web SPA (TanStack Router + Skeleton.dev)
 - Spaces with members and roles (admin/writer/reader)
-- Projects (optional grouping within spaces)
-- Tasks with: title, description, status, assignee, due date, tags
+- Tasks with: title, description, status, assignees, due date, tags, parent/child hierarchy
 - Space-defined statuses (initial/intermediate/completion)
-- Recurrence (fixed schedule + completion-based)
+- Recurrence (all five types: one-off, completion-based, fixed accumulating, fixed non-accumulating, on-dependency)
 - Staleness tracking and visualization
 - Rotating assignees
 - Completion history
@@ -190,13 +217,30 @@ A non-recurring task moved to a completion status with "done" semantics means it
 - Single container Docker deployment
 
 **Out of scope for v0.1:**
+- Comments
+- Task templates
 - Custom fields / space-defined schemas
 - Native mobile and desktop apps
-- MCP server
 - Offline support and sync
 - Notifications (email, push, webhooks)
 - Fractional indexing for manual ordering (sort by due date/staleness for now)
 - Structured integrations (GitHub, etc.)
+
+### Time zones
+
+- Recurrence schedules are stored timezone-aware (e.g., "every Monday in America/Los_Angeles") and resolved server-side to UTC (next occurrence = specific unix timestamp).
+- UI uses the client's detected time zone for display, and makes the detected zone visible so the user can correct it if wrong.
+
+### Search
+
+- Global search across all spaces the user has access to.
+- Filterable by space, assignee, status, tags, etc.
+- Full-text search on task title and description.
+
+### License
+
+- **AGPL-3.0** for the server (`tend-server`) — protects against third-party hosting without contributing back.
+- **MIT** for client code (CLI, web SPA, mobile apps) — keeps the App Store distribution path clear for iOS/Android. The SPA source is MIT even though it's embedded in the AGPL `tend-server` binary; the AGPL applies to the combined work but the SPA source remains reusable under MIT.
 
 ### Distribution
 
