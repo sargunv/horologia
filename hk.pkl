@@ -16,6 +16,11 @@ local allSteps = new Mapping<String, Step> {
     check = "cd web && pnpm vp check --no-fmt"
     fix = "cd web && pnpm vp check --no-fmt --fix"
   }
+  ["tsp-format"] {
+    glob = List("api/**/*.tsp")
+    check = "cd api && pnpm tsp format . --check"
+    fix = "cd api && pnpm tsp format ."
+  }
 }
 
 hooks {

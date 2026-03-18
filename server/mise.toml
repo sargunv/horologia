@@ -1,0 +1,7 @@
+[tasks.build]
+description = "Build server binary"
+run = "go build -o tend-server ."
+
+[tasks.run]
+description = "Run the server"
+run = "go run ."

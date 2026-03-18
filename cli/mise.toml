@@ -1,0 +1,7 @@
+[tasks.build]
+description = "Build CLI binary"
+run = "go build -o tend ."
+
+[tasks.run]
+description = "Run the CLI"
+run = "go run ."

@@ -1,0 +1,3 @@
+[tasks.compile]
+description = "Compile TypeSpec"
+run = "pnpm tsp compile ."

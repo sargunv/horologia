@@ -1,0 +1,7 @@
+[tasks.dev]
+description = "Start dev server"
+run = "echo TODO"
+
+[tasks.build]
+description = "Build for production"
+run = "echo TODO"

@@ -3,8 +3,11 @@
 /cli/tend
 
 # Web
-/web/node_modules/
-/web/dist/
+node_modules/
+dist/
 
 # dprint
 .dprint/
+
+# typespec
+tsp-output/

@@ -1,3 +1,13 @@
+experimental_monorepo_root = true
+
+[monorepo]
+config_roots = [
+  "api",
+  "cli",
+  "server",
+  "web", # Single-level glob pattern
+]
+
 [settings]
 experimental = true
 pin = true
@@ -17,7 +27,7 @@ pkl = "0.31.0"
 [hooks]
 postinstall = [
   "hk install --mise",
-  "cd web && pnpm install",
+  "pnpm install",
   "go mod download",
 ]
 
