@@ -1,3 +1,6 @@
+[env]
+TEND_DB = "{{config_root}}/tend.db"
+
 [tasks.build]
 description = "Build server binary"
 run = "go build -o tend-server ."
@@ -7,5 +10,8 @@ description = "Run the server"
 run = "go run ."
 
 [tasks.generate]
-description = "Run sqlc code generation"
-run = "go run github.com/sqlc-dev/sqlc/cmd/sqlc generate"
+description = "Run all code generation"
+run = [
+  "go run github.com/sqlc-dev/sqlc/cmd/sqlc generate",
+  "go run github.com/ogen-go/ogen/cmd/ogen --target internal/api/gen --package gen --clean ../api/tsp-output/schema/openapi.yaml",
+]

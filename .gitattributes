@@ -1,1 +1,2 @@
+server/internal/api/gen/** linguist-generated=true
 server/internal/database/gen/** linguist-generated=true

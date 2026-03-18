@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/spf13/cobra"
 )
@@ -21,6 +20,11 @@ var migrateUpCmd = &cobra.Command{
 			return err
 		}
 
+		log, err := newLogger(cfg)
+		if err != nil {
+			return err
+		}
+
 		db, migrator, err := openDB(cfg)
 		if err != nil {
 			return err
@@ -33,12 +37,12 @@ var migrateUpCmd = &cobra.Command{
 		}
 
 		if len(results) == 0 {
-			fmt.Println("no pending migrations")
+			log.Info("no pending migrations")
 			return nil
 		}
 
 		for _, r := range results {
-			fmt.Printf("applied: %s (%s)\n", r.Source.Path, r.Duration)
+			log.Info("applied migration", "path", r.Source.Path, "duration", r.Duration)
 		}
 		return nil
 	},
@@ -49,6 +53,11 @@ var migrateStatusCmd = &cobra.Command{
 	Short: "Print migration status",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
+		log, err := newLogger(cfg)
 		if err != nil {
 			return err
 		}
@@ -69,7 +78,7 @@ var migrateStatusCmd = &cobra.Command{
 			if s.Source != nil {
 				path = s.Source.Path
 			}
-			fmt.Printf("%-10s %s\n", s.State, path)
+			log.Info("migration", "state", s.State, "path", path)
 		}
 		return nil
 	},
