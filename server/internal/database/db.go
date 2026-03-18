@@ -17,8 +17,8 @@ import (
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
 
-// Open opens a SQLite database at the given path, configures pragmas
-// (foreign keys, WAL mode, busy timeout), and runs pending migrations.
+// Open opens a SQLite database at the given path and configures pragmas
+// (foreign keys, WAL mode, busy timeout). It does not run migrations.
 func Open(path string) (*sql.DB, error) {
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
@@ -36,10 +36,17 @@ func Open(path string) (*sql.DB, error) {
 	}
 	for _, p := range pragmas {
 		if _, err := db.ExecContext(context.Background(), p); err != nil {
+			_ = db.Close()
 			return nil, fmt.Errorf("pragma %q: %w", p, err)
 		}
 	}
 
+	return db, nil
+}
+
+// NewMigrator returns a goose provider for the given database.
+// The caller controls when migrations are applied via provider.Up(), etc.
+func NewMigrator(db *sql.DB) (*goose.Provider, error) {
 	migrations, err := fs.Sub(migrationsFS, "migrations")
 	if err != nil {
 		return nil, fmt.Errorf("migrations fs: %w", err)
@@ -49,11 +56,8 @@ func Open(path string) (*sql.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("goose provider: %w", err)
 	}
-	if _, err := provider.Up(context.Background()); err != nil {
-		return nil, fmt.Errorf("goose up: %w", err)
-	}
 
-	return db, nil
+	return provider, nil
 }
 
 var defaultStatuses = []gen.CreateTaskStatusParams{

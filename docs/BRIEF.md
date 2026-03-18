@@ -222,9 +222,10 @@ tend/
 - **`tend-server`** — the server. Owns the service layer, SQLite, REST API, MCP endpoint, and
   embedded web SPA.
   - `tend-server serve` — runs the HTTP server (REST API + MCP endpoint + SPA). SQLite location set
-    by `TEND_DB` (default: `~/.local/share/tend/tend.db`)
-  - `tend-server migrate` — run database migrations
-  - `tend-server create-user` — bootstrap first user, etc.
+    by `TEND_DB` (required, no default).
+  - `tend-server migrate up` — apply pending database migrations
+  - `tend-server migrate status` — show migration status
+  - `tend-server create-admin` — bootstrap first admin user
 - **`tend`** — the CLI client. Go + Charm. Always talks to `tend-server` over HTTP (no
   local/embedded mode).
   - `tend add`, `tend list`, etc. — CLI commands

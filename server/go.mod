@@ -3,7 +3,9 @@ module github.com/sargunv/tend/server
 go 1.26.1
 
 require (
+	github.com/caarlos0/env/v11 v11.4.0
 	github.com/pressly/goose/v3 v3.27.0
+	github.com/spf13/cobra v1.9.1
 	github.com/sqlc-dev/sqlc v1.30.0
 	modernc.org/sqlite v1.47.0
 )
@@ -36,7 +38,6 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/riza-io/grpc-go v0.2.0 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
-	github.com/spf13/cobra v1.9.1 // indirect
 	github.com/spf13/pflag v1.0.7 // indirect
 	github.com/stoewer/go-strcase v1.2.0 // indirect
 	github.com/tetratelabs/wazero v1.9.0 // indirect
