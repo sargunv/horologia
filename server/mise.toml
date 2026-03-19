@@ -1,17 +1,35 @@
 [env]
 TEND_DB = "{{config_root}}/tend.db"
 
-[tasks.build]
-description = "Build server binary"
-run = "go build -o tend-server ."
-
-[tasks.run]
-description = "Run the server"
-run = "go run ."
-
 [tasks.generate]
 description = "Run all code generation"
+depends = ["//api:compile"]
+sources = [
+  "../api/tsp-output/schema/openapi.yaml",
+  "internal/database/migrations/*.sql",
+  "internal/database/queries/*.sql",
+  "sqlc.yaml",
+]
+outputs = ["internal/api/gen/*.go", "internal/database/gen/*.go"]
 run = [
   "go run github.com/sqlc-dev/sqlc/cmd/sqlc generate",
   "go run github.com/ogen-go/ogen/cmd/ogen --target internal/api/gen --package gen --clean ../api/tsp-output/schema/openapi.yaml",
 ]
+
+[tasks.build]
+description = "Build server binary"
+depends = ["generate"]
+sources = ["**/*.go", "go.mod", "go.sum"]
+outputs = ["tend-server"]
+run = "go build -o tend-server ."
+
+[tasks.test]
+description = "Run tests"
+depends = ["generate"]
+sources = ["**/*.go", "go.mod", "go.sum"]
+run = "go test ./..."
+
+[tasks.run]
+description = "Run the server"
+depends = ["build"]
+run = "./tend-server serve"

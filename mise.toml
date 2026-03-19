@@ -31,6 +31,10 @@ postinstall = [
   "go mod download",
 ]
 
+[tasks.test]
+description = "Run all tests"
+depends = ["//*:test"]
+
 [tasks.check]
 description = "Run all checks"
 run = "hk check --all"
