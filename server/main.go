@@ -98,7 +98,7 @@ var serveCmd = &cobra.Command{
 			return fmt.Errorf("auto-migrate: %w", err)
 		}
 
-		handler := &api.Handler{Log: log}
+		handler := &api.Handler{DB: db, Log: log}
 		h, err := api.NewServer(handler, log)
 		if err != nil {
 			return fmt.Errorf("create server: %w", err)

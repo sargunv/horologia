@@ -7,6 +7,7 @@ package gen
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createSpace = `-- name: CreateSpace :one
@@ -42,13 +43,12 @@ func (q *Queries) CreateSpace(ctx context.Context, arg CreateSpaceParams) (Space
 	return i, err
 }
 
-const deleteSpace = `-- name: DeleteSpace :exec
+const deleteSpace = `-- name: DeleteSpace :execresult
 DELETE FROM spaces WHERE slug = ?
 `
 
-func (q *Queries) DeleteSpace(ctx context.Context, slug string) error {
-	_, err := q.db.ExecContext(ctx, deleteSpace, slug)
-	return err
+func (q *Queries) DeleteSpace(ctx context.Context, slug string) (sql.Result, error) {
+	return q.db.ExecContext(ctx, deleteSpace, slug)
 }
 
 const getSpace = `-- name: GetSpace :one

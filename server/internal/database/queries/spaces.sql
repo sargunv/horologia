@@ -18,5 +18,5 @@ SET name = ?, description = ?, updated_at = ?
 WHERE slug = ?
 RETURNING *;
 
--- name: DeleteSpace :exec
+-- name: DeleteSpace :execresult
 DELETE FROM spaces WHERE slug = ?;

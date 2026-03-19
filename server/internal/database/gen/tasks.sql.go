@@ -7,6 +7,7 @@ package gen
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createTask = `-- name: CreateTask :one
@@ -49,13 +50,12 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 	return i, err
 }
 
-const deleteTask = `-- name: DeleteTask :exec
+const deleteTask = `-- name: DeleteTask :execresult
 DELETE FROM tasks WHERE id = ?
 `
 
-func (q *Queries) DeleteTask(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deleteTask, id)
-	return err
+func (q *Queries) DeleteTask(ctx context.Context, id int64) (sql.Result, error) {
+	return q.db.ExecContext(ctx, deleteTask, id)
 }
 
 const getTaskWithStatus = `-- name: GetTaskWithStatus :one

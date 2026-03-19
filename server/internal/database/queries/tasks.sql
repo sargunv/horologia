@@ -41,5 +41,5 @@ SET title = ?, description = ?, status_name = ?, due_date = ?, updated_at = ?
 WHERE id = ?
 RETURNING *;
 
--- name: DeleteTask :exec
+-- name: DeleteTask :execresult
 DELETE FROM tasks WHERE id = ?;
