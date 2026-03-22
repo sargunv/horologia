@@ -25,6 +25,12 @@ type config struct {
 	Addr      string `env:"TEND_ADDR" envDefault:":8080"`
 	LogFormat string `env:"TEND_LOG_FORMAT" envDefault:"text"`
 	LogLevel  string `env:"TEND_LOG_LEVEL" envDefault:"info"`
+
+	// OIDC config — all optional. If OIDCIssuer is empty, OIDC is disabled.
+	OIDCIssuer       string `env:"TEND_OIDC_ISSUER"`
+	OIDCClientID     string `env:"TEND_OIDC_CLIENT_ID"`
+	OIDCClientSecret string `env:"TEND_OIDC_CLIENT_SECRET"`
+	OIDCRedirectURL  string `env:"TEND_OIDC_REDIRECT_URL"`
 }
 
 func loadConfig() (config, error) {
@@ -104,12 +110,27 @@ var serveCmd = &cobra.Command{
 			return fmt.Errorf("create server: %w", err)
 		}
 
+		// Mount OIDC routes if configured.
+		finalHandler := h
+		if cfg.OIDCIssuer != "" {
+			oidcHandler, err := api.NewOIDCHandler(context.Background(), api.OIDCConfig{
+				Issuer:       cfg.OIDCIssuer,
+				ClientID:     cfg.OIDCClientID,
+				ClientSecret: cfg.OIDCClientSecret,
+				RedirectURL:  cfg.OIDCRedirectURL,
+			}, handler)
+			if err != nil {
+				return fmt.Errorf("setup oidc: %w", err)
+			}
+			finalHandler = api.MountOIDC(h, oidcHandler, log)
+		}
+
 		ln, err := net.Listen("tcp", cfg.Addr)
 		if err != nil {
 			return fmt.Errorf("listen: %w", err)
 		}
 
-		srv := &http.Server{Handler: h}
+		srv := &http.Server{Handler: finalHandler}
 
 		errCh := make(chan error, 1)
 		go func() { errCh <- srv.Serve(ln) }()

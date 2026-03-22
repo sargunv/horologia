@@ -33,3 +33,8 @@ run = "go test ./..."
 description = "Run the server"
 depends = ["build"]
 run = "./tend-server serve"
+
+[tasks.create-admin]
+description = "Create a global owner user"
+depends = ["build"]
+run = "./tend-server create-admin --email {{arg(name=\"email\")}} --name {{arg(name=\"name\")}} --password {{arg(name=\"password\")}}"
