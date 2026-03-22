@@ -31,12 +31,16 @@ type OIDCConfig struct {
 //
 // Returns nil if OIDC is not configured.
 func NewOIDCHandler(ctx context.Context, cfg OIDCConfig, handler *Handler) (http.Handler, error) {
-	// Generate a random encryption key for OIDC state cookies.
-	key := make([]byte, 32)
-	if _, err := rand.Read(key); err != nil {
-		return nil, fmt.Errorf("generate oidc key: %w", err)
+	// Generate separate keys for HMAC authentication and AES encryption of OIDC state cookies.
+	hashKey := make([]byte, 32)
+	if _, err := rand.Read(hashKey); err != nil {
+		return nil, fmt.Errorf("generate oidc hash key: %w", err)
 	}
-	cookieHandler := zhttp.NewCookieHandler(key, key)
+	encKey := make([]byte, 32)
+	if _, err := rand.Read(encKey); err != nil {
+		return nil, fmt.Errorf("generate oidc encryption key: %w", err)
+	}
+	cookieHandler := zhttp.NewCookieHandler(hashKey, encKey)
 
 	options := []rp.Option{
 		rp.WithCookieHandler(cookieHandler),
@@ -59,7 +63,9 @@ func NewOIDCHandler(ctx context.Context, cfg OIDCConfig, handler *Handler) (http
 	// GET /auth/oidc → redirect to IdP.
 	mux.Handle("GET /auth/oidc", rp.AuthURLHandler(func() string {
 		b := make([]byte, 16)
-		rand.Read(b)
+		if _, err := rand.Read(b); err != nil {
+			panic("generate oidc state: " + err.Error())
+		}
 		return hex.EncodeToString(b)
 	}, provider))
 
@@ -127,7 +133,11 @@ func handleOIDCCallback(w http.ResponseWriter, r *http.Request, tokens *oidc.Tok
 		return
 	}
 
-	// Return the token as JSON. The frontend or CLI can extract it.
+	// TODO: This returns the session token as raw JSON with no redirect.
+	// Once a web frontend exists, this should redirect to the frontend with the
+	// token (e.g. as a URL fragment or via a secure cookie). For CLI auth, consider
+	// supporting a localhost callback URL so `tend login` can open the browser,
+	// catch the OIDC callback on a local port, and extract the token automatically.
 	w.Header().Set("Content-Type", "application/json")
 	_, _ = fmt.Fprintf(w, `{"token":%q}`, raw)
 }

@@ -1,7 +1,7 @@
 package main
 
-import "fmt"
+import "github.com/sargunv/tend/cli/internal/cmd"
 
 func main() {
-	fmt.Println("tend")
+	cmd.Execute()
 }

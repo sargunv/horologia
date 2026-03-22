@@ -12,7 +12,7 @@ import (
 
 	"github.com/ogen-go/ogen/ogenerrors"
 
-	apigen "github.com/sargunv/tend/server/internal/api/gen"
+	apigen "github.com/sargunv/tend/server/api/gen"
 	"github.com/sargunv/tend/server/internal/database"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 )
