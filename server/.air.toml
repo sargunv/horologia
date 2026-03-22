@@ -1,0 +1,13 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "go build -o tmp/tend-server ."
+bin = "tmp/tend-server"
+args_bin = ["serve"]
+include_ext = ["go"]
+exclude_dir = ["tmp", "internal/api/gen", "internal/database/gen"]
+delay = 500
+
+[log]
+main_only = true

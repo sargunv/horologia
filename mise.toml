@@ -23,6 +23,8 @@ hk = "1.38.0"
 golangci-lint = "2.11.3"
 pkl = "0.31.0"
 "github:sargunv/jvl" = "2026.03.01"
+process-compose = "1.100.0"
+air = "1.64.5"
 
 [hooks]
 postinstall = [
@@ -42,3 +44,7 @@ run = "hk check --all"
 [tasks.fix]
 description = "Fix all auto-fixable issues"
 run = "hk fix --all"
+
+[tasks.dev]
+description = "Start local dev environment"
+run = "process-compose up"

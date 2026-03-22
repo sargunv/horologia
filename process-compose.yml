@@ -1,0 +1,33 @@
+version: "0.5"
+
+environment:
+  - "TEND_DB=server/tend.db"
+  - "TEND_LOG_FORMAT=text"
+  - "TEND_LOG_LEVEL=debug"
+
+processes:
+  server:
+    command: air
+    working_dir: ./server
+    readiness_probe:
+      exec:
+        command: "nc -z localhost 8080"
+      initial_delay_seconds: 2
+      period_seconds: 5
+      failure_threshold: 10
+
+  # web:
+  #   command: pnpm dev
+  #   working_dir: ./web
+  #   depends_on:
+  #     server:
+  #       condition: process_healthy
+
+  # dex:
+  #   command: dex serve dev/dex.yaml
+  #   readiness_probe:
+  #     http_get:
+  #       host: localhost
+  #       port: 5556
+  #       path: /dex/.well-known/openid-configuration
+  #     initial_delay_seconds: 2
