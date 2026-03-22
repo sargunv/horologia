@@ -20,6 +20,7 @@ model Task {
   title: string;
   description: string;
   status: TaskStatus;
+  assigneeIds: string[];
   dueDate: plainDate | null;
   createdAt: utcDateTime;
   updatedAt: utcDateTime;
@@ -29,6 +30,7 @@ model TaskCreate {
   title: string;
   description?: string;
   statusName?: string;
+  @maxItems(100) assigneeIds?: string[];
   dueDate?: plainDate | null;
 }
 
@@ -36,6 +38,7 @@ model TaskUpdate {
   title?: string;
   description?: string;
   statusName?: string;
+  @maxItems(100) assigneeIds?: string[];
   dueDate?: plainDate | null;
 }
 

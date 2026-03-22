@@ -930,6 +930,7 @@ type Task struct {
 	Title       string     `json:"title"`
 	Description string     `json:"description"`
 	Status      TaskStatus `json:"status"`
+	AssigneeIds []string   `json:"assigneeIds"`
 	DueDate     NilDate    `json:"dueDate"`
 	CreatedAt   time.Time  `json:"createdAt"`
 	UpdatedAt   time.Time  `json:"updatedAt"`
@@ -953,6 +954,11 @@ func (s *Task) GetDescription() string {
 // GetStatus returns the value of Status.
 func (s *Task) GetStatus() TaskStatus {
 	return s.Status
+}
+
+// GetAssigneeIds returns the value of AssigneeIds.
+func (s *Task) GetAssigneeIds() []string {
+	return s.AssigneeIds
 }
 
 // GetDueDate returns the value of DueDate.
@@ -990,6 +996,11 @@ func (s *Task) SetStatus(val TaskStatus) {
 	s.Status = val
 }
 
+// SetAssigneeIds sets the value of AssigneeIds.
+func (s *Task) SetAssigneeIds(val []string) {
+	s.AssigneeIds = val
+}
+
 // SetDueDate sets the value of DueDate.
 func (s *Task) SetDueDate(val NilDate) {
 	s.DueDate = val
@@ -1010,6 +1021,7 @@ type TaskCreate struct {
 	Title       string     `json:"title"`
 	Description OptString  `json:"description"`
 	StatusName  OptString  `json:"statusName"`
+	AssigneeIds []string   `json:"assigneeIds"`
 	DueDate     OptNilDate `json:"dueDate"`
 }
 
@@ -1026,6 +1038,11 @@ func (s *TaskCreate) GetDescription() OptString {
 // GetStatusName returns the value of StatusName.
 func (s *TaskCreate) GetStatusName() OptString {
 	return s.StatusName
+}
+
+// GetAssigneeIds returns the value of AssigneeIds.
+func (s *TaskCreate) GetAssigneeIds() []string {
+	return s.AssigneeIds
 }
 
 // GetDueDate returns the value of DueDate.
@@ -1046,6 +1063,11 @@ func (s *TaskCreate) SetDescription(val OptString) {
 // SetStatusName sets the value of StatusName.
 func (s *TaskCreate) SetStatusName(val OptString) {
 	s.StatusName = val
+}
+
+// SetAssigneeIds sets the value of AssigneeIds.
+func (s *TaskCreate) SetAssigneeIds(val []string) {
+	s.AssigneeIds = val
 }
 
 // SetDueDate sets the value of DueDate.
@@ -1110,6 +1132,7 @@ type TaskUpdate struct {
 	Title       OptString  `json:"title"`
 	Description OptString  `json:"description"`
 	StatusName  OptString  `json:"statusName"`
+	AssigneeIds []string   `json:"assigneeIds"`
 	DueDate     OptNilDate `json:"dueDate"`
 }
 
@@ -1126,6 +1149,11 @@ func (s *TaskUpdate) GetDescription() OptString {
 // GetStatusName returns the value of StatusName.
 func (s *TaskUpdate) GetStatusName() OptString {
 	return s.StatusName
+}
+
+// GetAssigneeIds returns the value of AssigneeIds.
+func (s *TaskUpdate) GetAssigneeIds() []string {
+	return s.AssigneeIds
 }
 
 // GetDueDate returns the value of DueDate.
@@ -1146,6 +1174,11 @@ func (s *TaskUpdate) SetDescription(val OptString) {
 // SetStatusName sets the value of StatusName.
 func (s *TaskUpdate) SetStatusName(val OptString) {
 	s.StatusName = val
+}
+
+// SetAssigneeIds sets the value of AssigneeIds.
+func (s *TaskUpdate) SetAssigneeIds(val []string) {
+	s.AssigneeIds = val
 }
 
 // SetDueDate sets the value of DueDate.

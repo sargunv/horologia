@@ -40,6 +40,12 @@ type Task struct {
 	UpdatedAt   string
 }
 
+type TaskAssignee struct {
+	TaskID    int64
+	UserID    int64
+	CreatedAt string
+}
+
 type TaskStatus struct {
 	SpaceSlug string
 	Name      string

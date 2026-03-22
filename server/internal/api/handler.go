@@ -254,6 +254,13 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 		return nil, err
 	}
 
+	// Set assignees if provided.
+	if req.AssigneeIds != nil {
+		if err := h.setTaskAssignees(ctx, q, task.ID, params.SpaceSlug, req.AssigneeIds); err != nil {
+			return nil, err
+		}
+	}
+
 	// Re-fetch with status category join.
 	row, err := q.GetTaskWithStatus(ctx, task.ID)
 	if err != nil {
@@ -353,6 +360,13 @@ func (h *Handler) TasksUpdate(ctx context.Context, req *apigen.TaskUpdate, param
 		return nil, err
 	}
 
+	// Replace assignees if provided (nil = no change, empty = clear all).
+	if req.AssigneeIds != nil {
+		if err := h.setTaskAssignees(ctx, q, id, existing.SpaceSlug, req.AssigneeIds); err != nil {
+			return nil, err
+		}
+	}
+
 	// Re-fetch with status category join after update.
 	row, err := q.GetTaskWithStatus(ctx, id)
 	if err != nil {
@@ -420,6 +434,60 @@ func (h *Handler) requireSpaceWrite(ctx context.Context, spaceSlug string) error
 // requireSpaceRead checks that the user has any role in the space.
 func (h *Handler) requireSpaceRead(ctx context.Context, spaceSlug string) error {
 	return h.requireSpaceRole(ctx, spaceSlug, "viewer", "member", "admin")
+}
+
+// setTaskAssignees replaces all assignees for a task. It validates that each
+// user is a member of the task's space.
+// The caller must pass a transactional *dbgen.Queries to ensure atomicity.
+// Max array length is enforced by ogen's @maxItems(100) validation.
+func (h *Handler) setTaskAssignees(ctx context.Context, q *dbgen.Queries, taskID int64, spaceSlug string, assigneeIDs []string) error {
+	// Parse and deduplicate user IDs.
+	seen := make(map[int64]struct{}, len(assigneeIDs))
+	userIDs := make([]int64, 0, len(assigneeIDs))
+	for _, raw := range assigneeIDs {
+		uid, err := parseUserID(raw)
+		if err != nil {
+			return badRequest(err.Error())
+		}
+		if _, ok := seen[uid]; ok {
+			continue
+		}
+		seen[uid] = struct{}{}
+		userIDs = append(userIDs, uid)
+	}
+
+	// Batch-fetch space member IDs to validate membership without N+1 queries.
+	memberIDs, err := q.ListSpaceMemberUserIDs(ctx, spaceSlug)
+	if err != nil {
+		return err
+	}
+	memberSet := make(map[int64]struct{}, len(memberIDs))
+	for _, mid := range memberIDs {
+		memberSet[mid] = struct{}{}
+	}
+
+	// Verify each user is a member of the space.
+	for _, uid := range userIDs {
+		if _, ok := memberSet[uid]; !ok {
+			return badRequest(fmt.Sprintf("user %s is not a member of this space", formatUserID(uid)))
+		}
+	}
+
+	// Delete existing assignees and insert new ones.
+	if err := q.DeleteTaskAssignees(ctx, taskID); err != nil {
+		return err
+	}
+	ts := now()
+	for _, uid := range userIDs {
+		if err := q.InsertTaskAssignee(ctx, dbgen.InsertTaskAssigneeParams{
+			TaskID:    taskID,
+			UserID:    uid,
+			CreatedAt: ts,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // NewServer creates an HTTP handler from the API spec.

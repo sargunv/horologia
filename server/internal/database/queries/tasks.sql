@@ -13,7 +13,11 @@ SELECT
     t.created_at,
     t.updated_at,
     ts.name     AS status_name,
-    ts.category AS status_category
+    ts.category AS status_category,
+    COALESCE(
+        (SELECT GROUP_CONCAT(ta.user_id) FROM task_assignees ta WHERE ta.task_id = t.id),
+        ''
+    ) AS assignee_ids
 FROM tasks t
 JOIN task_statuses ts ON ts.space_slug = t.space_slug AND ts.name = t.status_name
 WHERE t.id = ?;
@@ -28,7 +32,11 @@ SELECT
     t.created_at,
     t.updated_at,
     ts.name     AS status_name,
-    ts.category AS status_category
+    ts.category AS status_category,
+    COALESCE(
+        (SELECT GROUP_CONCAT(ta.user_id) FROM task_assignees ta WHERE ta.task_id = t.id),
+        ''
+    ) AS assignee_ids
 FROM tasks t
 JOIN task_statuses ts ON ts.space_slug = t.space_slug AND ts.name = t.status_name
 WHERE t.space_slug = ? AND t.id > ?

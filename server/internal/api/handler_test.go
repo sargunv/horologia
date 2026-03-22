@@ -1060,6 +1060,369 @@ func TestSpaceMembersLastAdminGuard(t *testing.T) {
 	assertStatusClose(t, doRequest(t, env, "DELETE", "/spaces/home/members/"+ownerID, ""), http.StatusBadRequest)
 }
 
+// --- Task Assignee Tests ---
+
+func TestTaskAssigneesOnCreate(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	createSpace(t, env, "home", "Home")
+
+	// Get owner's user ID.
+	resp := doRequest(t, env, "GET", "/users/me", "")
+	assertStatus(t, resp, http.StatusOK)
+	var me map[string]any
+	readJSON(t, resp, &me)
+	ownerID := me["id"].(string)
+
+	// Create task with assignees.
+	task := createTask(t, env, "home", `{"title":"With assignees","assigneeIds":["`+ownerID+`"]}`)
+	assigneeIds := task["assigneeIds"].([]any)
+	if len(assigneeIds) != 1 {
+		t.Fatalf("got %d assignees, want 1", len(assigneeIds))
+	}
+	if assigneeIds[0].(string) != ownerID {
+		t.Errorf("assigneeIds[0] = %v, want %v", assigneeIds[0], ownerID)
+	}
+}
+
+func TestTaskAssigneesEmptyByDefault(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	createSpace(t, env, "home", "Home")
+	task := createTask(t, env, "home", `{"title":"No assignees"}`)
+	assigneeIds := task["assigneeIds"].([]any)
+	if len(assigneeIds) != 0 {
+		t.Fatalf("got %d assignees, want 0", len(assigneeIds))
+	}
+}
+
+func TestTaskAssigneesUpdate(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	createSpace(t, env, "home", "Home")
+
+	// Get owner's user ID.
+	resp := doRequest(t, env, "GET", "/users/me", "")
+	assertStatus(t, resp, http.StatusOK)
+	var me map[string]any
+	readJSON(t, resp, &me)
+	ownerID := me["id"].(string)
+
+	// Create a second user and add as member.
+	userToken := createTestUser(t, env, "bob@example.com", "Bob", "pass123")
+	resp2 := doRequestAs(t, env, userToken, "GET", "/users/me", "")
+	assertStatus(t, resp2, http.StatusOK)
+	var me2 map[string]any
+	readJSON(t, resp2, &me2)
+	bobID := me2["id"].(string)
+	doRequest(t, env, "POST", "/spaces/home/members", `{"userId":"`+bobID+`","role":"member"}`)
+
+	// Create task without assignees.
+	task := createTask(t, env, "home", `{"title":"Test"}`)
+	taskID := task["id"].(string)
+
+	// Update: set assignees.
+	resp3 := doRequest(t, env, "PATCH", "/tasks/"+taskID, `{"assigneeIds":["`+ownerID+`","`+bobID+`"]}`)
+	assertStatus(t, resp3, http.StatusOK)
+	var updated map[string]any
+	readJSON(t, resp3, &updated)
+	assigneeIds := updated["assigneeIds"].([]any)
+	if len(assigneeIds) != 2 {
+		t.Fatalf("got %d assignees, want 2", len(assigneeIds))
+	}
+	// Verify actual IDs are present (order is by user_id).
+	ids := make(map[string]bool)
+	for _, id := range assigneeIds {
+		ids[id.(string)] = true
+	}
+	if !ids[ownerID] || !ids[bobID] {
+		t.Errorf("assigneeIds = %v, want both %s and %s", assigneeIds, ownerID, bobID)
+	}
+
+	// Update: clear assignees.
+	resp4 := doRequest(t, env, "PATCH", "/tasks/"+taskID, `{"assigneeIds":[]}`)
+	assertStatus(t, resp4, http.StatusOK)
+	var cleared map[string]any
+	readJSON(t, resp4, &cleared)
+	if len(cleared["assigneeIds"].([]any)) != 0 {
+		t.Error("expected empty assignees after clearing")
+	}
+}
+
+func TestTaskAssigneesPreservedOnUnrelatedUpdate(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	createSpace(t, env, "home", "Home")
+
+	resp := doRequest(t, env, "GET", "/users/me", "")
+	assertStatus(t, resp, http.StatusOK)
+	var me map[string]any
+	readJSON(t, resp, &me)
+	ownerID := me["id"].(string)
+
+	// Create task with assignee.
+	task := createTask(t, env, "home", `{"title":"Test","assigneeIds":["`+ownerID+`"]}`)
+	taskID := task["id"].(string)
+
+	// Update title only — assignees should be preserved.
+	resp2 := doRequest(t, env, "PATCH", "/tasks/"+taskID, `{"title":"Updated"}`)
+	assertStatus(t, resp2, http.StatusOK)
+	var updated map[string]any
+	readJSON(t, resp2, &updated)
+	if updated["title"] != "Updated" {
+		t.Errorf("title = %v, want Updated", updated["title"])
+	}
+	assigneeIds := updated["assigneeIds"].([]any)
+	if len(assigneeIds) != 1 {
+		t.Fatalf("got %d assignees, want 1 (preserved)", len(assigneeIds))
+	}
+	if assigneeIds[0].(string) != ownerID {
+		t.Errorf("assigneeIds[0] = %v, want %v", assigneeIds[0], ownerID)
+	}
+}
+
+func TestTaskAssigneesNonMemberRejected(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	createSpace(t, env, "home", "Home")
+
+	// Create a user but don't add them as a member.
+	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass123")
+	resp := doRequestAs(t, env, outsiderToken, "GET", "/users/me", "")
+	assertStatus(t, resp, http.StatusOK)
+	var me map[string]any
+	readJSON(t, resp, &me)
+	outsiderID := me["id"].(string)
+
+	// Try to assign the non-member.
+	task := createTask(t, env, "home", `{"title":"Test"}`)
+	taskID := task["id"].(string)
+	resp2 := doRequest(t, env, "PATCH", "/tasks/"+taskID, `{"assigneeIds":["`+outsiderID+`"]}`)
+	assertStatusClose(t, resp2, http.StatusBadRequest)
+}
+
+func TestTaskAssigneesCrossSpaceRejected(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	createSpace(t, env, "alpha", "Alpha")
+	createSpace(t, env, "beta", "Beta")
+
+	// Create user and add to beta only.
+	userToken := createTestUser(t, env, "bob@example.com", "Bob", "pass123")
+	resp := doRequestAs(t, env, userToken, "GET", "/users/me", "")
+	assertStatus(t, resp, http.StatusOK)
+	var me map[string]any
+	readJSON(t, resp, &me)
+	bobID := me["id"].(string)
+	doRequest(t, env, "POST", "/spaces/beta/members", `{"userId":"`+bobID+`","role":"member"}`)
+
+	// Try to assign bob to a task in alpha (where he's not a member).
+	task := createTask(t, env, "alpha", `{"title":"Test"}`)
+	taskID := task["id"].(string)
+	resp2 := doRequest(t, env, "PATCH", "/tasks/"+taskID, `{"assigneeIds":["`+bobID+`"]}`)
+	assertStatusClose(t, resp2, http.StatusBadRequest)
+}
+
+func TestTaskAssigneesDeduplicated(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	createSpace(t, env, "home", "Home")
+
+	resp := doRequest(t, env, "GET", "/users/me", "")
+	assertStatus(t, resp, http.StatusOK)
+	var me map[string]any
+	readJSON(t, resp, &me)
+	ownerID := me["id"].(string)
+
+	// Create task with duplicate assignee IDs.
+	task := createTask(t, env, "home", `{"title":"Dedup","assigneeIds":["`+ownerID+`","`+ownerID+`"]}`)
+	assigneeIds := task["assigneeIds"].([]any)
+	if len(assigneeIds) != 1 {
+		t.Fatalf("got %d assignees, want 1 (deduplicated)", len(assigneeIds))
+	}
+}
+
+func TestTaskDeleteCascadesAssignees(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	createSpace(t, env, "home", "Home")
+
+	resp := doRequest(t, env, "GET", "/users/me", "")
+	assertStatus(t, resp, http.StatusOK)
+	var me map[string]any
+	readJSON(t, resp, &me)
+	ownerID := me["id"].(string)
+
+	task := createTask(t, env, "home", `{"title":"Delete me","assigneeIds":["`+ownerID+`"]}`)
+	taskID := task["id"].(string)
+
+	// Delete the task.
+	assertStatusClose(t, doRequest(t, env, "DELETE", "/tasks/"+taskID, ""), http.StatusNoContent)
+
+	// Task is gone.
+	assertStatusClose(t, doRequest(t, env, "GET", "/tasks/"+taskID, ""), http.StatusNotFound)
+}
+
+func TestTaskAssigneesInListResponse(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	createSpace(t, env, "home", "Home")
+
+	resp := doRequest(t, env, "GET", "/users/me", "")
+	assertStatus(t, resp, http.StatusOK)
+	var me map[string]any
+	readJSON(t, resp, &me)
+	ownerID := me["id"].(string)
+
+	// Create two tasks: one with assignees, one without.
+	createTask(t, env, "home", `{"title":"Assigned","assigneeIds":["`+ownerID+`"]}`)
+	createTask(t, env, "home", `{"title":"Unassigned"}`)
+
+	// List tasks and check assigneeIds are present in both items.
+	resp2 := doRequest(t, env, "GET", "/spaces/home/tasks", "")
+	assertStatus(t, resp2, http.StatusOK)
+	var page map[string]any
+	readJSON(t, resp2, &page)
+	items := page["items"].([]any)
+	if len(items) != 2 {
+		t.Fatalf("got %d items, want 2", len(items))
+	}
+
+	for _, item := range items {
+		task := item.(map[string]any)
+		title := task["title"].(string)
+		assignees := task["assigneeIds"].([]any)
+		if title == "Assigned" {
+			if len(assignees) != 1 || assignees[0].(string) != ownerID {
+				t.Errorf("Assigned task: assigneeIds = %v, want [%s]", assignees, ownerID)
+			}
+		} else {
+			if len(assignees) != 0 {
+				t.Errorf("Unassigned task: assigneeIds = %v, want []", assignees)
+			}
+		}
+	}
+}
+
+func TestMemberRemovalClearsAssignments(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	createSpace(t, env, "home", "Home")
+
+	// Create a user and add as member.
+	userToken := createTestUser(t, env, "bob@example.com", "Bob", "pass123")
+	resp := doRequestAs(t, env, userToken, "GET", "/users/me", "")
+	assertStatus(t, resp, http.StatusOK)
+	var me map[string]any
+	readJSON(t, resp, &me)
+	bobID := me["id"].(string)
+	doRequest(t, env, "POST", "/spaces/home/members", `{"userId":"`+bobID+`","role":"member"}`)
+
+	// Assign bob to a task.
+	task := createTask(t, env, "home", `{"title":"Bob's task","assigneeIds":["`+bobID+`"]}`)
+	taskID := task["id"].(string)
+
+	// Verify bob is assigned.
+	resp2 := doRequest(t, env, "GET", "/tasks/"+taskID, "")
+	assertStatus(t, resp2, http.StatusOK)
+	var before map[string]any
+	readJSON(t, resp2, &before)
+	if len(before["assigneeIds"].([]any)) != 1 {
+		t.Fatalf("expected 1 assignee before removal")
+	}
+
+	// Remove bob from the space.
+	assertStatusClose(t, doRequest(t, env, "DELETE", "/spaces/home/members/"+bobID, ""), http.StatusNoContent)
+
+	// Bob's assignment should be cleared.
+	resp3 := doRequest(t, env, "GET", "/tasks/"+taskID, "")
+	assertStatus(t, resp3, http.StatusOK)
+	var after map[string]any
+	readJSON(t, resp3, &after)
+	if len(after["assigneeIds"].([]any)) != 0 {
+		t.Fatalf("expected 0 assignees after member removal, got %d", len(after["assigneeIds"].([]any)))
+	}
+}
+
+func TestTaskAssigneesInvalidIDFormat(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	createSpace(t, env, "home", "Home")
+	task := createTask(t, env, "home", `{"title":"Test"}`)
+	taskID := task["id"].(string)
+
+	// Invalid format (no U prefix).
+	resp := doRequest(t, env, "PATCH", "/tasks/"+taskID, `{"assigneeIds":["invalid"]}`)
+	assertStatusClose(t, resp, http.StatusBadRequest)
+}
+
+func TestTaskAssigneesNonExistentUser(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	createSpace(t, env, "home", "Home")
+	task := createTask(t, env, "home", `{"title":"Test"}`)
+	taskID := task["id"].(string)
+
+	// Valid format but user doesn't exist.
+	resp := doRequest(t, env, "PATCH", "/tasks/"+taskID, `{"assigneeIds":["U99999"]}`)
+	assertStatusClose(t, resp, http.StatusBadRequest)
+}
+
+func TestMemberRemovalIsolation(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	createSpace(t, env, "alpha", "Alpha")
+	createSpace(t, env, "beta", "Beta")
+
+	// Create bob and add to both spaces.
+	userToken := createTestUser(t, env, "bob@example.com", "Bob", "pass123")
+	resp := doRequestAs(t, env, userToken, "GET", "/users/me", "")
+	assertStatus(t, resp, http.StatusOK)
+	var me map[string]any
+	readJSON(t, resp, &me)
+	bobID := me["id"].(string)
+	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/alpha/members", `{"userId":"`+bobID+`","role":"member"}`), http.StatusCreated)
+	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/beta/members", `{"userId":"`+bobID+`","role":"member"}`), http.StatusCreated)
+
+	// Assign bob to a task in each space.
+	taskAlpha := createTask(t, env, "alpha", `{"title":"Alpha task","assigneeIds":["`+bobID+`"]}`)
+	taskBeta := createTask(t, env, "beta", `{"title":"Beta task","assigneeIds":["`+bobID+`"]}`)
+
+	// Remove bob from alpha only.
+	assertStatusClose(t, doRequest(t, env, "DELETE", "/spaces/alpha/members/"+bobID, ""), http.StatusNoContent)
+
+	// Alpha task should have no assignees.
+	resp2 := doRequest(t, env, "GET", "/tasks/"+taskAlpha["id"].(string), "")
+	assertStatus(t, resp2, http.StatusOK)
+	var alpha map[string]any
+	readJSON(t, resp2, &alpha)
+	if len(alpha["assigneeIds"].([]any)) != 0 {
+		t.Fatalf("alpha task: expected 0 assignees, got %d", len(alpha["assigneeIds"].([]any)))
+	}
+
+	// Beta task should still have bob assigned.
+	resp3 := doRequest(t, env, "GET", "/tasks/"+taskBeta["id"].(string), "")
+	assertStatus(t, resp3, http.StatusOK)
+	var beta map[string]any
+	readJSON(t, resp3, &beta)
+	if len(beta["assigneeIds"].([]any)) != 1 {
+		t.Fatalf("beta task: expected 1 assignee, got %d", len(beta["assigneeIds"].([]any)))
+	}
+}
+
 // --- Edge Case Tests ---
 
 func TestAuthLoginUnknownEmail(t *testing.T) {

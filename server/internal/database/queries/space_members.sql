@@ -38,5 +38,10 @@ RETURNING *;
 SELECT COUNT(*) FROM space_members
 WHERE space_slug = ? AND role = 'admin';
 
+-- name: ListSpaceMemberUserIDs :many
+SELECT user_id FROM space_members
+WHERE space_slug = ?
+ORDER BY user_id ASC;
+
 -- name: DeleteSpaceMember :execresult
 DELETE FROM space_members WHERE space_slug = ? AND user_id = ?;

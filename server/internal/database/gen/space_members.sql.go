@@ -87,6 +87,35 @@ func (q *Queries) GetSpaceMember(ctx context.Context, arg GetSpaceMemberParams) 
 	return i, err
 }
 
+const listSpaceMemberUserIDs = `-- name: ListSpaceMemberUserIDs :many
+SELECT user_id FROM space_members
+WHERE space_slug = ?
+ORDER BY user_id ASC
+`
+
+func (q *Queries) ListSpaceMemberUserIDs(ctx context.Context, spaceSlug string) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listSpaceMemberUserIDs, spaceSlug)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var user_id int64
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listSpaceMembersBySpace = `-- name: ListSpaceMembersBySpace :many
 SELECT
     sm.space_slug,

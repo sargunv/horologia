@@ -104,6 +104,35 @@ func spaceFromDB(s dbgen.Space) (*apigen.Space, error) {
 	}, nil
 }
 
+// parseAssigneeIDs parses a GROUP_CONCAT result (comma-separated int64s) into
+// formatted user ID strings. An empty string returns an empty slice.
+func parseAssigneeIDs(raw any) ([]string, error) {
+	var s string
+	switch v := raw.(type) {
+	case nil:
+		return []string{}, nil
+	case string:
+		s = v
+	case []byte:
+		s = string(v)
+	default:
+		return nil, fmt.Errorf("unexpected assignee_ids type %T", raw)
+	}
+	if s == "" {
+		return []string{}, nil
+	}
+	parts := strings.Split(s, ",")
+	ids := make([]string, 0, len(parts))
+	for _, p := range parts {
+		id, err := strconv.ParseInt(strings.TrimSpace(p), 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("corrupt assignee_ids value %q: %w", p, err)
+		}
+		ids = append(ids, formatUserID(id))
+	}
+	return ids, nil
+}
+
 func taskFromDBRow(row dbgen.GetTaskWithStatusRow) (*apigen.Task, error) {
 	createdAt, err := parseTime(row.CreatedAt)
 	if err != nil {
@@ -114,6 +143,11 @@ func taskFromDBRow(row dbgen.GetTaskWithStatusRow) (*apigen.Task, error) {
 		return nil, fmt.Errorf("parse updated_at: %w", err)
 	}
 
+	assigneeIDs, err := parseAssigneeIDs(row.AssigneeIds)
+	if err != nil {
+		return nil, fmt.Errorf("parse assignee_ids: %w", err)
+	}
+
 	t := &apigen.Task{
 		ID:          formatTaskID(row.ID),
 		Title:       row.Title,
@@ -122,8 +156,9 @@ func taskFromDBRow(row dbgen.GetTaskWithStatusRow) (*apigen.Task, error) {
 			Name:     row.StatusName,
 			Category: apigen.StatusCategory(row.StatusCategory),
 		},
-		CreatedAt: createdAt,
-		UpdatedAt: updatedAt,
+		AssigneeIds: assigneeIDs,
+		CreatedAt:   createdAt,
+		UpdatedAt:   updatedAt,
 	}
 
 	if row.DueDate != nil {

@@ -86,7 +86,13 @@ func (h *Handler) SpaceMembersUpdate(ctx context.Context, req *apigen.SpaceMembe
 		return nil, badRequest(err.Error())
 	}
 
-	q := dbgen.New(h.DB)
+	tx, err := h.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	q := dbgen.New(tx)
 
 	// Guard against removing the last admin.
 	if req.Role != apigen.SpaceRoleAdmin {
@@ -109,6 +115,10 @@ func (h *Handler) SpaceMembersUpdate(ctx context.Context, req *apigen.SpaceMembe
 		return nil, err
 	}
 
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
 	return memberFromDB(member, targetUser.Name, targetUser.Email)
 }
 
@@ -122,10 +132,24 @@ func (h *Handler) SpaceMembersDelete(ctx context.Context, params apigen.SpaceMem
 		return badRequest(err.Error())
 	}
 
-	q := dbgen.New(h.DB)
+	tx, err := h.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	q := dbgen.New(tx)
 
 	// Guard against removing the last admin.
 	if err := h.ensureNotLastAdmin(ctx, q, params.SpaceSlug, userID); err != nil {
+		return err
+	}
+
+	// Remove task assignments for this user in this space before removing membership.
+	if err := q.DeleteTaskAssigneesBySpaceAndUser(ctx, dbgen.DeleteTaskAssigneesBySpaceAndUserParams{
+		UserID:    userID,
+		SpaceSlug: params.SpaceSlug,
+	}); err != nil {
 		return err
 	}
 
@@ -136,7 +160,11 @@ func (h *Handler) SpaceMembersDelete(ctx context.Context, params apigen.SpaceMem
 	if err != nil {
 		return err
 	}
-	return checkDeleted(result)
+	if err := checkDeleted(result); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // ensureNotLastAdmin returns an error if the given user is the only admin in the space.

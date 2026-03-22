@@ -2134,6 +2134,14 @@ func (s *Task) encodeFields(e *jx.Encoder) {
 		s.Status.Encode(e)
 	}
 	{
+		e.FieldStart("assigneeIds")
+		e.ArrStart()
+		for _, elem := range s.AssigneeIds {
+			e.Str(elem)
+		}
+		e.ArrEnd()
+	}
+	{
 		e.FieldStart("dueDate")
 		s.DueDate.Encode(e, json.EncodeDate)
 	}
@@ -2147,14 +2155,15 @@ func (s *Task) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfTask = [7]string{
+var jsonFieldsNameOfTask = [8]string{
 	0: "id",
 	1: "title",
 	2: "description",
 	3: "status",
-	4: "dueDate",
-	5: "createdAt",
-	6: "updatedAt",
+	4: "assigneeIds",
+	5: "dueDate",
+	6: "createdAt",
+	7: "updatedAt",
 }
 
 // Decode decodes Task from json.
@@ -2212,8 +2221,28 @@ func (s *Task) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
-		case "dueDate":
+		case "assigneeIds":
 			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				s.AssigneeIds = make([]string, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem string
+					v, err := d.Str()
+					elem = string(v)
+					if err != nil {
+						return err
+					}
+					s.AssigneeIds = append(s.AssigneeIds, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"assigneeIds\"")
+			}
+		case "dueDate":
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				if err := s.DueDate.Decode(d, json.DecodeDate); err != nil {
 					return err
@@ -2223,7 +2252,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"dueDate\"")
 			}
 		case "createdAt":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -2235,7 +2264,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"createdAt\"")
 			}
 		case "updatedAt":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -2256,7 +2285,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b01111111,
+		0b11111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -2328,6 +2357,16 @@ func (s *TaskCreate) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.AssigneeIds != nil {
+			e.FieldStart("assigneeIds")
+			e.ArrStart()
+			for _, elem := range s.AssigneeIds {
+				e.Str(elem)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
 		if s.DueDate.Set {
 			e.FieldStart("dueDate")
 			s.DueDate.Encode(e, json.EncodeDate)
@@ -2335,11 +2374,12 @@ func (s *TaskCreate) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfTaskCreate = [4]string{
+var jsonFieldsNameOfTaskCreate = [5]string{
 	0: "title",
 	1: "description",
 	2: "statusName",
-	3: "dueDate",
+	3: "assigneeIds",
+	4: "dueDate",
 }
 
 // Decode decodes TaskCreate from json.
@@ -2382,6 +2422,25 @@ func (s *TaskCreate) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"statusName\"")
+			}
+		case "assigneeIds":
+			if err := func() error {
+				s.AssigneeIds = make([]string, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem string
+					v, err := d.Str()
+					elem = string(v)
+					if err != nil {
+						return err
+					}
+					s.AssigneeIds = append(s.AssigneeIds, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"assigneeIds\"")
 			}
 		case "dueDate":
 			if err := func() error {
@@ -2709,6 +2768,16 @@ func (s *TaskUpdate) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.AssigneeIds != nil {
+			e.FieldStart("assigneeIds")
+			e.ArrStart()
+			for _, elem := range s.AssigneeIds {
+				e.Str(elem)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
 		if s.DueDate.Set {
 			e.FieldStart("dueDate")
 			s.DueDate.Encode(e, json.EncodeDate)
@@ -2716,11 +2785,12 @@ func (s *TaskUpdate) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfTaskUpdate = [4]string{
+var jsonFieldsNameOfTaskUpdate = [5]string{
 	0: "title",
 	1: "description",
 	2: "statusName",
-	3: "dueDate",
+	3: "assigneeIds",
+	4: "dueDate",
 }
 
 // Decode decodes TaskUpdate from json.
@@ -2760,6 +2830,25 @@ func (s *TaskUpdate) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"statusName\"")
+			}
+		case "assigneeIds":
+			if err := func() error {
+				s.AssigneeIds = make([]string, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem string
+					v, err := d.Str()
+					elem = string(v)
+					if err != nil {
+						return err
+					}
+					s.AssigneeIds = append(s.AssigneeIds, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"assigneeIds\"")
 			}
 		case "dueDate":
 			if err := func() error {
