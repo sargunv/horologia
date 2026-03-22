@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/pressly/goose/v3"
+	"golang.org/x/crypto/bcrypt"
 	_ "modernc.org/sqlite"
 
 	"github.com/sargunv/tend/server/internal/database/gen"
@@ -65,9 +66,9 @@ var defaultStatuses = []gen.CreateTaskStatusParams{
 	{Name: "done", Category: "completion", Position: 1},
 }
 
-// CreateSpaceWithDefaults creates a space and its default statuses
-// ("todo" and "done") in a single transaction.
-func CreateSpaceWithDefaults(ctx context.Context, db *sql.DB, slug, name, description string) (gen.Space, error) {
+// CreateSpaceWithDefaults creates a space, its default statuses ("todo" and "done"),
+// and adds the creator as an admin member, all in a single transaction.
+func CreateSpaceWithDefaults(ctx context.Context, db *sql.DB, slug, name, description string, creatorUserID int64) (gen.Space, error) {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return gen.Space{}, fmt.Errorf("begin tx: %w", err)
@@ -95,9 +96,44 @@ func CreateSpaceWithDefaults(ctx context.Context, db *sql.DB, slug, name, descri
 		}
 	}
 
+	// Add creator as admin.
+	if _, err := q.CreateSpaceMember(ctx, gen.CreateSpaceMemberParams{
+		SpaceSlug: space.Slug,
+		UserID:    creatorUserID,
+		Role:      "admin",
+		CreatedAt: now,
+	}); err != nil {
+		return gen.Space{}, fmt.Errorf("create admin member: %w", err)
+	}
+
 	if err := tx.Commit(); err != nil {
 		return gen.Space{}, fmt.Errorf("commit: %w", err)
 	}
 
 	return space, nil
+}
+
+// CreateUserWithPassword creates a user with a bcrypt-hashed password.
+func CreateUserWithPassword(ctx context.Context, db *sql.DB, email, name, password string, isOwner bool) (gen.User, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return gen.User{}, fmt.Errorf("hash password: %w", err)
+	}
+	hashStr := string(hash)
+	now := time.Now().UTC().Format(time.RFC3339)
+
+	var ownerFlag int64
+	if isOwner {
+		ownerFlag = 1
+	}
+
+	q := gen.New(db)
+	return q.CreateUser(ctx, gen.CreateUserParams{
+		Email:        email,
+		Name:         name,
+		PasswordHash: &hashStr,
+		IsOwner:      ownerFlag,
+		CreatedAt:    now,
+		UpdatedAt:    now,
+	})
 }

@@ -44,6 +44,21 @@ func decodeCursor(opt apigen.OptString) (string, error) {
 	return string(b), nil
 }
 
+func decodeCursorInt64(opt apigen.OptString) (int64, error) {
+	s, err := decodeCursor(opt)
+	if err != nil {
+		return 0, err
+	}
+	if s == "" {
+		return 0, nil
+	}
+	id, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid cursor")
+	}
+	return id, nil
+}
+
 func formatTaskID(id int64) string {
 	return "T" + strconv.FormatInt(id, 10)
 }
@@ -172,4 +187,87 @@ func dueDateFromExisting(existing *string, update apigen.OptNilDate) *string {
 	}
 	s := formatTime(update.Value)
 	return &s
+}
+
+func formatUserID(id int64) string {
+	return "U" + strconv.FormatInt(id, 10)
+}
+
+func parseUserID(s string) (int64, error) {
+	if !strings.HasPrefix(s, "U") {
+		return 0, fmt.Errorf("invalid user ID %q: must start with U", s)
+	}
+	id, err := strconv.ParseInt(s[1:], 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid user ID %q: %w", s, err)
+	}
+	return id, nil
+}
+
+func parseTokenID(s string) (int64, error) {
+	id, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid token ID %q: %w", s, err)
+	}
+	return id, nil
+}
+
+func userFromDB(u dbgen.User) (*apigen.User, error) {
+	createdAt, err := parseTime(u.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("parse created_at: %w", err)
+	}
+	updatedAt, err := parseTime(u.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("parse updated_at: %w", err)
+	}
+	return &apigen.User{
+		ID:        formatUserID(u.ID),
+		Email:     u.Email,
+		Name:      u.Name,
+		IsOwner:   u.IsOwner != 0,
+		CreatedAt: createdAt,
+		UpdatedAt: updatedAt,
+	}, nil
+}
+
+func authTokenFromDB(t dbgen.AuthToken) (*apigen.AuthToken, error) {
+	createdAt, err := parseTime(t.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("parse created_at: %w", err)
+	}
+	return &apigen.AuthToken{
+		ID:        strconv.FormatInt(t.ID, 10),
+		Name:      t.Name,
+		Kind:      apigen.AuthTokenKind(t.Kind),
+		CreatedAt: createdAt,
+	}, nil
+}
+
+func memberFromDB(m dbgen.SpaceMember, userName, userEmail string) (*apigen.SpaceMember, error) {
+	createdAt, err := parseTime(m.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("parse created_at: %w", err)
+	}
+	return &apigen.SpaceMember{
+		UserId:    formatUserID(m.UserID),
+		UserName:  userName,
+		UserEmail: userEmail,
+		Role:      apigen.SpaceRole(m.Role),
+		CreatedAt: createdAt,
+	}, nil
+}
+
+func memberFromListRow(row dbgen.ListSpaceMembersBySpaceRow) (*apigen.SpaceMember, error) {
+	createdAt, err := parseTime(row.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("parse created_at: %w", err)
+	}
+	return &apigen.SpaceMember{
+		UserId:    formatUserID(row.UserID),
+		UserName:  row.UserName,
+		UserEmail: row.UserEmail,
+		Role:      apigen.SpaceRole(row.Role),
+		CreatedAt: createdAt,
+	}, nil
 }

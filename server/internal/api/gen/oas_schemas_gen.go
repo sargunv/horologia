@@ -65,6 +65,242 @@ func (s *ApiErrorStatusCode) SetResponse(val ApiError) {
 	s.Response = val
 }
 
+// AuthDeleteTokenNoContent is response for AuthDeleteToken operation.
+type AuthDeleteTokenNoContent struct{}
+
+// Ref: #/components/schemas/AuthToken
+type AuthToken struct {
+	ID        string        `json:"id"`
+	Name      string        `json:"name"`
+	Kind      AuthTokenKind `json:"kind"`
+	CreatedAt time.Time     `json:"createdAt"`
+}
+
+// GetID returns the value of ID.
+func (s *AuthToken) GetID() string {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *AuthToken) GetName() string {
+	return s.Name
+}
+
+// GetKind returns the value of Kind.
+func (s *AuthToken) GetKind() AuthTokenKind {
+	return s.Kind
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *AuthToken) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// SetID sets the value of ID.
+func (s *AuthToken) SetID(val string) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *AuthToken) SetName(val string) {
+	s.Name = val
+}
+
+// SetKind sets the value of Kind.
+func (s *AuthToken) SetKind(val AuthTokenKind) {
+	s.Kind = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *AuthToken) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// Ref: #/components/schemas/AuthTokenCreate
+type AuthTokenCreate struct {
+	Name string `json:"name"`
+}
+
+// GetName returns the value of Name.
+func (s *AuthTokenCreate) GetName() string {
+	return s.Name
+}
+
+// SetName sets the value of Name.
+func (s *AuthTokenCreate) SetName(val string) {
+	s.Name = val
+}
+
+// Ref: #/components/schemas/AuthTokenCreateResponse
+type AuthTokenCreateResponse struct {
+	Token     string    `json:"token"`
+	AuthToken AuthToken `json:"authToken"`
+}
+
+// GetToken returns the value of Token.
+func (s *AuthTokenCreateResponse) GetToken() string {
+	return s.Token
+}
+
+// GetAuthToken returns the value of AuthToken.
+func (s *AuthTokenCreateResponse) GetAuthToken() AuthToken {
+	return s.AuthToken
+}
+
+// SetToken sets the value of Token.
+func (s *AuthTokenCreateResponse) SetToken(val string) {
+	s.Token = val
+}
+
+// SetAuthToken sets the value of AuthToken.
+func (s *AuthTokenCreateResponse) SetAuthToken(val AuthToken) {
+	s.AuthToken = val
+}
+
+type AuthTokenKind string
+
+const (
+	AuthTokenKindSession AuthTokenKind = "session"
+	AuthTokenKindAPI     AuthTokenKind = "api"
+)
+
+// AllValues returns all AuthTokenKind values.
+func (AuthTokenKind) AllValues() []AuthTokenKind {
+	return []AuthTokenKind{
+		AuthTokenKindSession,
+		AuthTokenKindAPI,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s AuthTokenKind) MarshalText() ([]byte, error) {
+	switch s {
+	case AuthTokenKindSession:
+		return []byte(s), nil
+	case AuthTokenKindAPI:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *AuthTokenKind) UnmarshalText(data []byte) error {
+	switch AuthTokenKind(data) {
+	case AuthTokenKindSession:
+		*s = AuthTokenKindSession
+		return nil
+	case AuthTokenKindAPI:
+		*s = AuthTokenKindAPI
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/AuthTokenPage
+type AuthTokenPage struct {
+	Items      []AuthToken `json:"items"`
+	NextCursor NilString   `json:"nextCursor"`
+}
+
+// GetItems returns the value of Items.
+func (s *AuthTokenPage) GetItems() []AuthToken {
+	return s.Items
+}
+
+// GetNextCursor returns the value of NextCursor.
+func (s *AuthTokenPage) GetNextCursor() NilString {
+	return s.NextCursor
+}
+
+// SetItems sets the value of Items.
+func (s *AuthTokenPage) SetItems(val []AuthToken) {
+	s.Items = val
+}
+
+// SetNextCursor sets the value of NextCursor.
+func (s *AuthTokenPage) SetNextCursor(val NilString) {
+	s.NextCursor = val
+}
+
+type BearerAuth struct {
+	Token string
+	Roles []string
+}
+
+// GetToken returns the value of Token.
+func (s *BearerAuth) GetToken() string {
+	return s.Token
+}
+
+// GetRoles returns the value of Roles.
+func (s *BearerAuth) GetRoles() []string {
+	return s.Roles
+}
+
+// SetToken sets the value of Token.
+func (s *BearerAuth) SetToken(val string) {
+	s.Token = val
+}
+
+// SetRoles sets the value of Roles.
+func (s *BearerAuth) SetRoles(val []string) {
+	s.Roles = val
+}
+
+// Ref: #/components/schemas/LoginRequest
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+// GetEmail returns the value of Email.
+func (s *LoginRequest) GetEmail() string {
+	return s.Email
+}
+
+// GetPassword returns the value of Password.
+func (s *LoginRequest) GetPassword() string {
+	return s.Password
+}
+
+// SetEmail sets the value of Email.
+func (s *LoginRequest) SetEmail(val string) {
+	s.Email = val
+}
+
+// SetPassword sets the value of Password.
+func (s *LoginRequest) SetPassword(val string) {
+	s.Password = val
+}
+
+// Ref: #/components/schemas/LoginResponse
+type LoginResponse struct {
+	Token string `json:"token"`
+	User  User   `json:"user"`
+}
+
+// GetToken returns the value of Token.
+func (s *LoginResponse) GetToken() string {
+	return s.Token
+}
+
+// GetUser returns the value of User.
+func (s *LoginResponse) GetUser() User {
+	return s.User
+}
+
+// SetToken sets the value of Token.
+func (s *LoginResponse) SetToken(val string) {
+	s.Token = val
+}
+
+// SetUser sets the value of User.
+func (s *LoginResponse) SetUser(val User) {
+	s.User = val
+}
+
 // NewNilDate returns new NilDate with value set to v.
 func NewNilDate(v time.Time) NilDate {
 	return NilDate{
@@ -406,6 +642,135 @@ func (s *SpaceCreate) SetDescription(val OptString) {
 	s.Description = val
 }
 
+// Ref: #/components/schemas/SpaceMember
+type SpaceMember struct {
+	UserId    string    `json:"userId"`
+	UserName  string    `json:"userName"`
+	UserEmail string    `json:"userEmail"`
+	Role      SpaceRole `json:"role"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+// GetUserId returns the value of UserId.
+func (s *SpaceMember) GetUserId() string {
+	return s.UserId
+}
+
+// GetUserName returns the value of UserName.
+func (s *SpaceMember) GetUserName() string {
+	return s.UserName
+}
+
+// GetUserEmail returns the value of UserEmail.
+func (s *SpaceMember) GetUserEmail() string {
+	return s.UserEmail
+}
+
+// GetRole returns the value of Role.
+func (s *SpaceMember) GetRole() SpaceRole {
+	return s.Role
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *SpaceMember) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// SetUserId sets the value of UserId.
+func (s *SpaceMember) SetUserId(val string) {
+	s.UserId = val
+}
+
+// SetUserName sets the value of UserName.
+func (s *SpaceMember) SetUserName(val string) {
+	s.UserName = val
+}
+
+// SetUserEmail sets the value of UserEmail.
+func (s *SpaceMember) SetUserEmail(val string) {
+	s.UserEmail = val
+}
+
+// SetRole sets the value of Role.
+func (s *SpaceMember) SetRole(val SpaceRole) {
+	s.Role = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *SpaceMember) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// Ref: #/components/schemas/SpaceMemberCreate
+type SpaceMemberCreate struct {
+	UserId string    `json:"userId"`
+	Role   SpaceRole `json:"role"`
+}
+
+// GetUserId returns the value of UserId.
+func (s *SpaceMemberCreate) GetUserId() string {
+	return s.UserId
+}
+
+// GetRole returns the value of Role.
+func (s *SpaceMemberCreate) GetRole() SpaceRole {
+	return s.Role
+}
+
+// SetUserId sets the value of UserId.
+func (s *SpaceMemberCreate) SetUserId(val string) {
+	s.UserId = val
+}
+
+// SetRole sets the value of Role.
+func (s *SpaceMemberCreate) SetRole(val SpaceRole) {
+	s.Role = val
+}
+
+// Ref: #/components/schemas/SpaceMemberPage
+type SpaceMemberPage struct {
+	Items      []SpaceMember `json:"items"`
+	NextCursor NilString     `json:"nextCursor"`
+}
+
+// GetItems returns the value of Items.
+func (s *SpaceMemberPage) GetItems() []SpaceMember {
+	return s.Items
+}
+
+// GetNextCursor returns the value of NextCursor.
+func (s *SpaceMemberPage) GetNextCursor() NilString {
+	return s.NextCursor
+}
+
+// SetItems sets the value of Items.
+func (s *SpaceMemberPage) SetItems(val []SpaceMember) {
+	s.Items = val
+}
+
+// SetNextCursor sets the value of NextCursor.
+func (s *SpaceMemberPage) SetNextCursor(val NilString) {
+	s.NextCursor = val
+}
+
+// Ref: #/components/schemas/SpaceMemberUpdate
+type SpaceMemberUpdate struct {
+	Role SpaceRole `json:"role"`
+}
+
+// GetRole returns the value of Role.
+func (s *SpaceMemberUpdate) GetRole() SpaceRole {
+	return s.Role
+}
+
+// SetRole sets the value of Role.
+func (s *SpaceMemberUpdate) SetRole(val SpaceRole) {
+	s.Role = val
+}
+
+// SpaceMembersDeleteNoContent is response for SpaceMembersDelete operation.
+type SpaceMembersDeleteNoContent struct{}
+
 // Ref: #/components/schemas/SpacePage
 type SpacePage struct {
 	Items      []Space   `json:"items"`
@@ -430,6 +795,55 @@ func (s *SpacePage) SetItems(val []Space) {
 // SetNextCursor sets the value of NextCursor.
 func (s *SpacePage) SetNextCursor(val NilString) {
 	s.NextCursor = val
+}
+
+// Ref: #/components/schemas/SpaceRole
+type SpaceRole string
+
+const (
+	SpaceRoleAdmin  SpaceRole = "admin"
+	SpaceRoleMember SpaceRole = "member"
+	SpaceRoleViewer SpaceRole = "viewer"
+)
+
+// AllValues returns all SpaceRole values.
+func (SpaceRole) AllValues() []SpaceRole {
+	return []SpaceRole{
+		SpaceRoleAdmin,
+		SpaceRoleMember,
+		SpaceRoleViewer,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SpaceRole) MarshalText() ([]byte, error) {
+	switch s {
+	case SpaceRoleAdmin:
+		return []byte(s), nil
+	case SpaceRoleMember:
+		return []byte(s), nil
+	case SpaceRoleViewer:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SpaceRole) UnmarshalText(data []byte) error {
+	switch SpaceRole(data) {
+	case SpaceRoleAdmin:
+		*s = SpaceRoleAdmin
+		return nil
+	case SpaceRoleMember:
+		*s = SpaceRoleMember
+		return nil
+	case SpaceRoleViewer:
+		*s = SpaceRoleViewer
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/SpaceUpdate
@@ -741,3 +1155,73 @@ func (s *TaskUpdate) SetDueDate(val OptNilDate) {
 
 // TasksDeleteNoContent is response for TasksDelete operation.
 type TasksDeleteNoContent struct{}
+
+// Ref: #/components/schemas/User
+type User struct {
+	ID        string    `json:"id"`
+	Email     string    `json:"email"`
+	Name      string    `json:"name"`
+	IsOwner   bool      `json:"isOwner"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetID returns the value of ID.
+func (s *User) GetID() string {
+	return s.ID
+}
+
+// GetEmail returns the value of Email.
+func (s *User) GetEmail() string {
+	return s.Email
+}
+
+// GetName returns the value of Name.
+func (s *User) GetName() string {
+	return s.Name
+}
+
+// GetIsOwner returns the value of IsOwner.
+func (s *User) GetIsOwner() bool {
+	return s.IsOwner
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *User) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *User) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// SetID sets the value of ID.
+func (s *User) SetID(val string) {
+	s.ID = val
+}
+
+// SetEmail sets the value of Email.
+func (s *User) SetEmail(val string) {
+	s.Email = val
+}
+
+// SetName sets the value of Name.
+func (s *User) SetName(val string) {
+	s.Name = val
+}
+
+// SetIsOwner sets the value of IsOwner.
+func (s *User) SetIsOwner(val bool) {
+	s.IsOwner = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *User) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *User) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}

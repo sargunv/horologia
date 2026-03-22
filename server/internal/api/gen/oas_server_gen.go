@@ -8,6 +8,38 @@ import (
 
 // Handler handles operations described by OpenAPI v3 specification.
 type Handler interface {
+	// AuthCreateToken implements Auth_createToken operation.
+	//
+	// POST /auth/tokens
+	AuthCreateToken(ctx context.Context, req *AuthTokenCreate) (*AuthTokenCreateResponse, error)
+	// AuthDeleteToken implements Auth_deleteToken operation.
+	//
+	// DELETE /auth/tokens/{tokenId}
+	AuthDeleteToken(ctx context.Context, params AuthDeleteTokenParams) error
+	// AuthListTokens implements Auth_listTokens operation.
+	//
+	// GET /auth/tokens
+	AuthListTokens(ctx context.Context, params AuthListTokensParams) (*AuthTokenPage, error)
+	// AuthLogin implements Auth_login operation.
+	//
+	// POST /auth/login
+	AuthLogin(ctx context.Context, req *LoginRequest) (*LoginResponse, error)
+	// SpaceMembersCreate implements SpaceMembers_create operation.
+	//
+	// POST /spaces/{spaceSlug}/members
+	SpaceMembersCreate(ctx context.Context, req *SpaceMemberCreate, params SpaceMembersCreateParams) (*SpaceMember, error)
+	// SpaceMembersDelete implements SpaceMembers_delete operation.
+	//
+	// DELETE /spaces/{spaceSlug}/members/{userId}
+	SpaceMembersDelete(ctx context.Context, params SpaceMembersDeleteParams) error
+	// SpaceMembersList implements SpaceMembers_list operation.
+	//
+	// GET /spaces/{spaceSlug}/members
+	SpaceMembersList(ctx context.Context, params SpaceMembersListParams) (*SpaceMemberPage, error)
+	// SpaceMembersUpdate implements SpaceMembers_update operation.
+	//
+	// PATCH /spaces/{spaceSlug}/members/{userId}
+	SpaceMembersUpdate(ctx context.Context, req *SpaceMemberUpdate, params SpaceMembersUpdateParams) (*SpaceMember, error)
 	// SpaceTasksCreate implements SpaceTasks_create operation.
 	//
 	// POST /spaces/{spaceSlug}/tasks
@@ -48,6 +80,10 @@ type Handler interface {
 	//
 	// PATCH /tasks/{taskId}
 	TasksUpdate(ctx context.Context, req *TaskUpdate, params TasksUpdateParams) (*Task, error)
+	// UsersMe implements Users_me operation.
+	//
+	// GET /users/me
+	UsersMe(ctx context.Context) (*User, error)
 	// NewError creates *ApiErrorStatusCode from error returned by handler.
 	//
 	// Used for common default response.
@@ -57,18 +93,20 @@ type Handler interface {
 // Server implements http server based on OpenAPI v3 specification and
 // calls Handler to handle requests.
 type Server struct {
-	h Handler
+	h   Handler
+	sec SecurityHandler
 	baseServer
 }
 
 // NewServer creates new Server.
-func NewServer(h Handler, opts ...ServerOption) (*Server, error) {
+func NewServer(h Handler, sec SecurityHandler, opts ...ServerOption) (*Server, error) {
 	s, err := newServerConfig(opts...).baseServer()
 	if err != nil {
 		return nil, err
 	}
 	return &Server{
 		h:          h,
+		sec:        sec,
 		baseServer: s,
 	}, nil
 }

@@ -4,12 +4,29 @@
 
 package gen
 
+type AuthToken struct {
+	ID        int64
+	UserID    int64
+	TokenHash string
+	Name      string
+	Kind      string
+	ExpiresAt *string
+	CreatedAt string
+}
+
 type Space struct {
 	Slug        string
 	Name        string
 	Description string
 	CreatedAt   string
 	UpdatedAt   string
+}
+
+type SpaceMember struct {
+	SpaceSlug string
+	UserID    int64
+	Role      string
+	CreatedAt string
 }
 
 type Task struct {
@@ -28,4 +45,15 @@ type TaskStatus struct {
 	Name      string
 	Category  string
 	Position  int64
+}
+
+type User struct {
+	ID           int64
+	Email        string
+	Name         string
+	PasswordHash *string
+	IsOwner      int64
+	OidcSubject  *string
+	CreatedAt    string
+	UpdatedAt    string
 }

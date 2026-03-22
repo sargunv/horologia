@@ -2,6 +2,9 @@ package api_test
 
 import (
 	"context"
+	"crypto/sha256"
+	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -9,12 +12,20 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/sargunv/tend/server/internal/api"
 	"github.com/sargunv/tend/server/internal/database"
+	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 )
 
-func setupTestServer(t *testing.T) *httptest.Server {
+type testEnv struct {
+	Server *httptest.Server
+	Token  string
+	db     *sql.DB
+}
+
+func setupTestServer(t *testing.T) *testEnv {
 	t.Helper()
 
 	db, err := database.Open(":memory:")
@@ -31,6 +42,29 @@ func setupTestServer(t *testing.T) *httptest.Server {
 		t.Fatalf("migrate: %v", err)
 	}
 
+	// Create a test owner user.
+	user, err := database.CreateUserWithPassword(context.Background(), db, "test@example.com", "Test User", "password", true)
+	if err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	// Create a test auth token.
+	rawToken := "test-token-for-integration-tests"
+	hash := sha256.Sum256([]byte(rawToken))
+	tokenHash := hex.EncodeToString(hash[:])
+
+	q := dbgen.New(db)
+	_, err = q.CreateAuthToken(context.Background(), dbgen.CreateAuthTokenParams{
+		UserID:    user.ID,
+		TokenHash: tokenHash,
+		Name:      "test",
+		Kind:      "session",
+		CreatedAt: time.Now().UTC().Format(time.RFC3339),
+	})
+	if err != nil {
+		t.Fatalf("create token: %v", err)
+	}
+
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 	handler := &api.Handler{DB: db, Log: log}
 	h, err := api.NewServer(handler, log)
@@ -38,27 +72,60 @@ func setupTestServer(t *testing.T) *httptest.Server {
 		t.Fatalf("new server: %v", err)
 	}
 
-	return httptest.NewServer(h)
+	return &testEnv{
+		Server: httptest.NewServer(h),
+		Token:  rawToken,
+		db:     db,
+	}
 }
 
-func doRequest(t *testing.T, ts *httptest.Server, method, path, body string) *http.Response {
+func doRequestAs(t *testing.T, env *testEnv, token, method, path, body string) *http.Response {
 	t.Helper()
 	var bodyReader io.Reader
 	if body != "" {
 		bodyReader = strings.NewReader(body)
 	}
-	req, err := http.NewRequest(method, ts.URL+path, bodyReader)
+	req, err := http.NewRequest(method, env.Server.URL+path, bodyReader)
 	if err != nil {
 		t.Fatalf("new request: %v", err)
 	}
 	if body != "" {
 		req.Header.Set("Content-Type", "application/json")
 	}
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("do request: %v", err)
 	}
 	return resp
+}
+
+func doRequest(t *testing.T, env *testEnv, method, path, body string) *http.Response {
+	t.Helper()
+	return doRequestAs(t, env, env.Token, method, path, body)
+}
+
+// createTestUser creates a non-owner user via the DB and logs them in to get a token.
+func createTestUser(t *testing.T, env *testEnv, email, name, password string) string {
+	t.Helper()
+	_, err := database.CreateUserWithPassword(context.Background(), env.db, email, name, password, false)
+	if err != nil {
+		t.Fatalf("create test user: %v", err)
+	}
+
+	// Login to get a token.
+	resp := doRequestAs(t, env, "", "POST", "/auth/login",
+		`{"email":"`+email+`","password":"`+password+`"}`)
+	if resp.StatusCode != http.StatusOK {
+		data, _ := io.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		t.Fatalf("login test user: got status %d; body: %s", resp.StatusCode, data)
+	}
+	var result map[string]any
+	readJSON(t, resp, &result)
+	return result["token"].(string)
 }
 
 func readJSON(t *testing.T, resp *http.Response, v any) {
@@ -93,10 +160,10 @@ func assertStatusClose(t *testing.T, resp *http.Response, want int) {
 }
 
 // createSpace is a test helper that creates a space and returns the response.
-func createSpace(t *testing.T, ts *httptest.Server, slug, name string) map[string]any {
+func createSpace(t *testing.T, env *testEnv, slug, name string) map[string]any {
 	t.Helper()
 	body := `{"slug":"` + slug + `","name":"` + name + `"}`
-	resp := doRequest(t, ts, "POST", "/spaces", body)
+	resp := doRequest(t, env, "POST", "/spaces", body)
 	if resp.StatusCode != http.StatusCreated {
 		data, _ := io.ReadAll(resp.Body)
 		_ = resp.Body.Close()
@@ -108,9 +175,9 @@ func createSpace(t *testing.T, ts *httptest.Server, slug, name string) map[strin
 }
 
 // createTask is a test helper that creates a task and returns the response.
-func createTask(t *testing.T, ts *httptest.Server, spaceSlug, jsonBody string) map[string]any {
+func createTask(t *testing.T, env *testEnv, spaceSlug, jsonBody string) map[string]any {
 	t.Helper()
-	resp := doRequest(t, ts, "POST", "/spaces/"+spaceSlug+"/tasks", jsonBody)
+	resp := doRequest(t, env, "POST", "/spaces/"+spaceSlug+"/tasks", jsonBody)
 	if resp.StatusCode != http.StatusCreated {
 		data, _ := io.ReadAll(resp.Body)
 		_ = resp.Body.Close()
@@ -121,13 +188,82 @@ func createTask(t *testing.T, ts *httptest.Server, spaceSlug, jsonBody string) m
 	return result
 }
 
+// --- Auth Tests ---
+
+func TestAuthLoginSuccess(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	// Login doesn't need auth header, but doRequest always adds one. Use a raw request.
+	req, _ := http.NewRequest("POST", env.Server.URL+"/auth/login", strings.NewReader(`{"email":"test@example.com","password":"password"}`))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("do request: %v", err)
+	}
+	assertStatus(t, resp, http.StatusOK)
+
+	var result map[string]any
+	readJSON(t, resp, &result)
+	if result["token"] == nil || result["token"] == "" {
+		t.Error("expected a token in response")
+	}
+	user := result["user"].(map[string]any)
+	if user["email"] != "test@example.com" {
+		t.Errorf("email = %v, want test@example.com", user["email"])
+	}
+}
+
+func TestAuthLoginBadPassword(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	req, _ := http.NewRequest("POST", env.Server.URL+"/auth/login", strings.NewReader(`{"email":"test@example.com","password":"wrong"}`))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("do request: %v", err)
+	}
+	assertStatusClose(t, resp, http.StatusBadRequest)
+}
+
+func TestUnauthenticatedRequest(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	// Request without auth header.
+	req, _ := http.NewRequest("GET", env.Server.URL+"/spaces", nil)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("do request: %v", err)
+	}
+	assertStatusClose(t, resp, http.StatusUnauthorized)
+}
+
+func TestUsersMe(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	resp := doRequest(t, env, "GET", "/users/me", "")
+	assertStatus(t, resp, http.StatusOK)
+
+	var user map[string]any
+	readJSON(t, resp, &user)
+	if user["email"] != "test@example.com" {
+		t.Errorf("email = %v, want test@example.com", user["email"])
+	}
+	if user["isOwner"] != true {
+		t.Errorf("isOwner = %v, want true", user["isOwner"])
+	}
+}
+
 // --- Space Tests ---
 
 func TestSpacesCreate(t *testing.T) {
-	ts := setupTestServer(t)
-	defer ts.Close()
+	env := setupTestServer(t)
+	defer env.Server.Close()
 
-	resp := doRequest(t, ts, "POST", "/spaces", `{"slug":"home","name":"Home"}`)
+	resp := doRequest(t, env, "POST", "/spaces", `{"slug":"home","name":"Home"}`)
 	assertStatus(t, resp, http.StatusCreated)
 
 	var space map[string]any
@@ -150,22 +286,22 @@ func TestSpacesCreate(t *testing.T) {
 }
 
 func TestSpacesCreateDuplicate(t *testing.T) {
-	ts := setupTestServer(t)
-	defer ts.Close()
+	env := setupTestServer(t)
+	defer env.Server.Close()
 
-	createSpace(t, ts, "home", "Home")
+	createSpace(t, env, "home", "Home")
 
-	resp := doRequest(t, ts, "POST", "/spaces", `{"slug":"home","name":"Home 2"}`)
+	resp := doRequest(t, env, "POST", "/spaces", `{"slug":"home","name":"Home 2"}`)
 	assertStatusClose(t, resp, http.StatusConflict)
 }
 
 func TestSpacesRead(t *testing.T) {
-	ts := setupTestServer(t)
-	defer ts.Close()
+	env := setupTestServer(t)
+	defer env.Server.Close()
 
-	createSpace(t, ts, "home", "Home")
+	createSpace(t, env, "home", "Home")
 
-	resp := doRequest(t, ts, "GET", "/spaces/home", "")
+	resp := doRequest(t, env, "GET", "/spaces/home", "")
 	assertStatus(t, resp, http.StatusOK)
 
 	var space map[string]any
@@ -176,18 +312,18 @@ func TestSpacesRead(t *testing.T) {
 }
 
 func TestSpacesReadNotFound(t *testing.T) {
-	ts := setupTestServer(t)
-	defer ts.Close()
+	env := setupTestServer(t)
+	defer env.Server.Close()
 
-	resp := doRequest(t, ts, "GET", "/spaces/nonexistent", "")
+	resp := doRequest(t, env, "GET", "/spaces/nonexistent", "")
 	assertStatusClose(t, resp, http.StatusNotFound)
 }
 
 func TestSpacesListEmpty(t *testing.T) {
-	ts := setupTestServer(t)
-	defer ts.Close()
+	env := setupTestServer(t)
+	defer env.Server.Close()
 
-	resp := doRequest(t, ts, "GET", "/spaces", "")
+	resp := doRequest(t, env, "GET", "/spaces", "")
 	assertStatus(t, resp, http.StatusOK)
 
 	var page map[string]any
@@ -202,15 +338,15 @@ func TestSpacesListEmpty(t *testing.T) {
 }
 
 func TestSpacesList(t *testing.T) {
-	ts := setupTestServer(t)
-	defer ts.Close()
+	env := setupTestServer(t)
+	defer env.Server.Close()
 
 	// Insert in non-alphabetical order to prove sort is applied.
-	createSpace(t, ts, "gamma", "Gamma")
-	createSpace(t, ts, "alpha", "Alpha")
-	createSpace(t, ts, "beta", "Beta")
+	createSpace(t, env, "gamma", "Gamma")
+	createSpace(t, env, "alpha", "Alpha")
+	createSpace(t, env, "beta", "Beta")
 
-	resp := doRequest(t, ts, "GET", "/spaces", "")
+	resp := doRequest(t, env, "GET", "/spaces", "")
 	assertStatus(t, resp, http.StatusOK)
 
 	var page map[string]any
@@ -226,17 +362,17 @@ func TestSpacesList(t *testing.T) {
 }
 
 func TestSpacesListPagination(t *testing.T) {
-	ts := setupTestServer(t)
-	defer ts.Close()
+	env := setupTestServer(t)
+	defer env.Server.Close()
 
 	// Create 4 items to test exact page boundary (4 items / limit 2 = 2 full pages).
-	createSpace(t, ts, "a", "A")
-	createSpace(t, ts, "b", "B")
-	createSpace(t, ts, "c", "C")
-	createSpace(t, ts, "d", "D")
+	createSpace(t, env, "a", "A")
+	createSpace(t, env, "b", "B")
+	createSpace(t, env, "c", "C")
+	createSpace(t, env, "d", "D")
 
 	// Page 1: should return "a" and "b" with a cursor.
-	resp := doRequest(t, ts, "GET", "/spaces?limit=2", "")
+	resp := doRequest(t, env, "GET", "/spaces?limit=2", "")
 	assertStatus(t, resp, http.StatusOK)
 	var page1 map[string]any
 	readJSON(t, resp, &page1)
@@ -254,7 +390,7 @@ func TestSpacesListPagination(t *testing.T) {
 	}
 
 	// Page 2: should return "c" and "d" with null cursor (exact boundary).
-	resp2 := doRequest(t, ts, "GET", "/spaces?limit=2&cursor="+cursor.(string), "")
+	resp2 := doRequest(t, env, "GET", "/spaces?limit=2&cursor="+cursor.(string), "")
 	assertStatus(t, resp2, http.StatusOK)
 	var page2 map[string]any
 	readJSON(t, resp2, &page2)
@@ -272,17 +408,17 @@ func TestSpacesListPagination(t *testing.T) {
 }
 
 func TestSpacesUpdate(t *testing.T) {
-	ts := setupTestServer(t)
-	defer ts.Close()
+	env := setupTestServer(t)
+	defer env.Server.Close()
 
-	createSpace(t, ts, "home", "Home")
+	createSpace(t, env, "home", "Home")
 
 	// First set a description so we can verify partial update preserves it.
-	resp := doRequest(t, ts, "PATCH", "/spaces/home", `{"description":"My house"}`)
+	resp := doRequest(t, env, "PATCH", "/spaces/home", `{"description":"My house"}`)
 	assertStatusClose(t, resp, http.StatusOK)
 
 	// Now update only the name — description should be preserved.
-	resp2 := doRequest(t, ts, "PATCH", "/spaces/home", `{"name":"House"}`)
+	resp2 := doRequest(t, env, "PATCH", "/spaces/home", `{"name":"House"}`)
 	assertStatus(t, resp2, http.StatusOK)
 	var space map[string]any
 	readJSON(t, resp2, &space)
@@ -295,28 +431,28 @@ func TestSpacesUpdate(t *testing.T) {
 }
 
 func TestSpacesDelete(t *testing.T) {
-	ts := setupTestServer(t)
-	defer ts.Close()
+	env := setupTestServer(t)
+	defer env.Server.Close()
 
-	createSpace(t, ts, "home", "Home")
+	createSpace(t, env, "home", "Home")
 
-	resp := doRequest(t, ts, "DELETE", "/spaces/home", "")
+	resp := doRequest(t, env, "DELETE", "/spaces/home", "")
 	assertStatusClose(t, resp, http.StatusNoContent)
 
 	// Verify it's gone.
-	resp2 := doRequest(t, ts, "GET", "/spaces/home", "")
+	resp2 := doRequest(t, env, "GET", "/spaces/home", "")
 	assertStatusClose(t, resp2, http.StatusNotFound)
 }
 
 // --- Task Tests ---
 
 func TestTasksCreate(t *testing.T) {
-	ts := setupTestServer(t)
-	defer ts.Close()
+	env := setupTestServer(t)
+	defer env.Server.Close()
 
-	createSpace(t, ts, "home", "Home")
+	createSpace(t, env, "home", "Home")
 
-	resp := doRequest(t, ts, "POST", "/spaces/home/tasks", `{"title":"Wash dishes"}`)
+	resp := doRequest(t, env, "POST", "/spaces/home/tasks", `{"title":"Wash dishes"}`)
 	assertStatus(t, resp, http.StatusCreated)
 
 	var task map[string]any
@@ -348,13 +484,13 @@ func TestTasksCreate(t *testing.T) {
 }
 
 func TestTasksCreateWithFields(t *testing.T) {
-	ts := setupTestServer(t)
-	defer ts.Close()
+	env := setupTestServer(t)
+	defer env.Server.Close()
 
-	createSpace(t, ts, "home", "Home")
+	createSpace(t, env, "home", "Home")
 
 	body := `{"title":"Clean","description":"Deep clean","statusName":"done","dueDate":"2025-06-15"}`
-	resp := doRequest(t, ts, "POST", "/spaces/home/tasks", body)
+	resp := doRequest(t, env, "POST", "/spaces/home/tasks", body)
 	assertStatus(t, resp, http.StatusCreated)
 
 	var task map[string]any
@@ -375,32 +511,32 @@ func TestTasksCreateWithFields(t *testing.T) {
 }
 
 func TestTasksCreateInNonexistentSpace(t *testing.T) {
-	ts := setupTestServer(t)
-	defer ts.Close()
+	env := setupTestServer(t)
+	defer env.Server.Close()
 
-	resp := doRequest(t, ts, "POST", "/spaces/nonexistent/tasks", `{"title":"Task"}`)
+	resp := doRequest(t, env, "POST", "/spaces/nonexistent/tasks", `{"title":"Task"}`)
 	assertStatusClose(t, resp, http.StatusNotFound)
 }
 
 func TestTasksCreateInvalidStatus(t *testing.T) {
-	ts := setupTestServer(t)
-	defer ts.Close()
+	env := setupTestServer(t)
+	defer env.Server.Close()
 
-	createSpace(t, ts, "home", "Home")
+	createSpace(t, env, "home", "Home")
 
-	resp := doRequest(t, ts, "POST", "/spaces/home/tasks", `{"title":"Task","statusName":"bogus"}`)
+	resp := doRequest(t, env, "POST", "/spaces/home/tasks", `{"title":"Task","statusName":"bogus"}`)
 	assertStatusClose(t, resp, http.StatusBadRequest)
 }
 
 func TestTasksRead(t *testing.T) {
-	ts := setupTestServer(t)
-	defer ts.Close()
+	env := setupTestServer(t)
+	defer env.Server.Close()
 
-	createSpace(t, ts, "home", "Home")
-	created := createTask(t, ts, "home", `{"title":"Mop floors"}`)
+	createSpace(t, env, "home", "Home")
+	created := createTask(t, env, "home", `{"title":"Mop floors"}`)
 	id := created["id"].(string)
 
-	resp := doRequest(t, ts, "GET", "/tasks/"+id, "")
+	resp := doRequest(t, env, "GET", "/tasks/"+id, "")
 	assertStatus(t, resp, http.StatusOK)
 	var task map[string]any
 	readJSON(t, resp, &task)
@@ -410,28 +546,28 @@ func TestTasksRead(t *testing.T) {
 }
 
 func TestTasksReadNotFound(t *testing.T) {
-	ts := setupTestServer(t)
-	defer ts.Close()
+	env := setupTestServer(t)
+	defer env.Server.Close()
 
-	resp := doRequest(t, ts, "GET", "/tasks/T999", "")
+	resp := doRequest(t, env, "GET", "/tasks/T999", "")
 	assertStatusClose(t, resp, http.StatusNotFound)
 }
 
 func TestTasksReadInvalidID(t *testing.T) {
-	ts := setupTestServer(t)
-	defer ts.Close()
+	env := setupTestServer(t)
+	defer env.Server.Close()
 
-	resp := doRequest(t, ts, "GET", "/tasks/invalid", "")
+	resp := doRequest(t, env, "GET", "/tasks/invalid", "")
 	assertStatusClose(t, resp, http.StatusBadRequest)
 }
 
 func TestTasksListEmpty(t *testing.T) {
-	ts := setupTestServer(t)
-	defer ts.Close()
+	env := setupTestServer(t)
+	defer env.Server.Close()
 
-	createSpace(t, ts, "home", "Home")
+	createSpace(t, env, "home", "Home")
 
-	resp := doRequest(t, ts, "GET", "/spaces/home/tasks", "")
+	resp := doRequest(t, env, "GET", "/spaces/home/tasks", "")
 	assertStatus(t, resp, http.StatusOK)
 
 	var page map[string]any
@@ -446,19 +582,19 @@ func TestTasksListEmpty(t *testing.T) {
 }
 
 func TestTasksListPagination(t *testing.T) {
-	ts := setupTestServer(t)
-	defer ts.Close()
+	env := setupTestServer(t)
+	defer env.Server.Close()
 
-	createSpace(t, ts, "home", "Home")
+	createSpace(t, env, "home", "Home")
 	// Create 4 tasks with distinct titles for verification.
 	var createdIDs []string
 	for i := 1; i <= 4; i++ {
-		task := createTask(t, ts, "home", `{"title":"Task"}`)
+		task := createTask(t, env, "home", `{"title":"Task"}`)
 		createdIDs = append(createdIDs, task["id"].(string))
 	}
 
 	// Page 1: should return 2 items with a cursor.
-	resp := doRequest(t, ts, "GET", "/spaces/home/tasks?limit=2", "")
+	resp := doRequest(t, env, "GET", "/spaces/home/tasks?limit=2", "")
 	assertStatus(t, resp, http.StatusOK)
 	var page1 map[string]any
 	readJSON(t, resp, &page1)
@@ -478,7 +614,7 @@ func TestTasksListPagination(t *testing.T) {
 	}
 
 	// Page 2: should return the last 2 items with null cursor (exact boundary).
-	resp2 := doRequest(t, ts, "GET", "/spaces/home/tasks?limit=2&cursor="+cursor.(string), "")
+	resp2 := doRequest(t, env, "GET", "/spaces/home/tasks?limit=2&cursor="+cursor.(string), "")
 	assertStatus(t, resp2, http.StatusOK)
 	var page2 map[string]any
 	readJSON(t, resp2, &page2)
@@ -497,23 +633,23 @@ func TestTasksListPagination(t *testing.T) {
 }
 
 func TestTasksListNonexistentSpace(t *testing.T) {
-	ts := setupTestServer(t)
-	defer ts.Close()
+	env := setupTestServer(t)
+	defer env.Server.Close()
 
-	resp := doRequest(t, ts, "GET", "/spaces/nonexistent/tasks", "")
+	resp := doRequest(t, env, "GET", "/spaces/nonexistent/tasks", "")
 	assertStatusClose(t, resp, http.StatusNotFound)
 }
 
 func TestTasksUpdate(t *testing.T) {
-	ts := setupTestServer(t)
-	defer ts.Close()
+	env := setupTestServer(t)
+	defer env.Server.Close()
 
-	createSpace(t, ts, "home", "Home")
+	createSpace(t, env, "home", "Home")
 	// Create with a non-empty description to test merge preservation.
-	created := createTask(t, ts, "home", `{"title":"Old title","description":"Keep me"}`)
+	created := createTask(t, env, "home", `{"title":"Old title","description":"Keep me"}`)
 	id := created["id"].(string)
 
-	resp := doRequest(t, ts, "PATCH", "/tasks/"+id, `{"title":"New title"}`)
+	resp := doRequest(t, env, "PATCH", "/tasks/"+id, `{"title":"New title"}`)
 	assertStatus(t, resp, http.StatusOK)
 	var updated map[string]any
 	readJSON(t, resp, &updated)
@@ -527,14 +663,14 @@ func TestTasksUpdate(t *testing.T) {
 }
 
 func TestTasksUpdateStatus(t *testing.T) {
-	ts := setupTestServer(t)
-	defer ts.Close()
+	env := setupTestServer(t)
+	defer env.Server.Close()
 
-	createSpace(t, ts, "home", "Home")
-	created := createTask(t, ts, "home", `{"title":"Chore"}`)
+	createSpace(t, env, "home", "Home")
+	created := createTask(t, env, "home", `{"title":"Chore"}`)
 	id := created["id"].(string)
 
-	resp := doRequest(t, ts, "PATCH", "/tasks/"+id, `{"statusName":"done"}`)
+	resp := doRequest(t, env, "PATCH", "/tasks/"+id, `{"statusName":"done"}`)
 	assertStatus(t, resp, http.StatusOK)
 	var updated map[string]any
 	readJSON(t, resp, &updated)
@@ -548,27 +684,27 @@ func TestTasksUpdateStatus(t *testing.T) {
 }
 
 func TestTasksUpdateInvalidStatus(t *testing.T) {
-	ts := setupTestServer(t)
-	defer ts.Close()
+	env := setupTestServer(t)
+	defer env.Server.Close()
 
-	createSpace(t, ts, "home", "Home")
-	created := createTask(t, ts, "home", `{"title":"Chore"}`)
+	createSpace(t, env, "home", "Home")
+	created := createTask(t, env, "home", `{"title":"Chore"}`)
 	id := created["id"].(string)
 
-	resp := doRequest(t, ts, "PATCH", "/tasks/"+id, `{"statusName":"nonexistent"}`)
+	resp := doRequest(t, env, "PATCH", "/tasks/"+id, `{"statusName":"nonexistent"}`)
 	assertStatusClose(t, resp, http.StatusBadRequest)
 }
 
 func TestTasksUpdateClearDueDate(t *testing.T) {
-	ts := setupTestServer(t)
-	defer ts.Close()
+	env := setupTestServer(t)
+	defer env.Server.Close()
 
-	createSpace(t, ts, "home", "Home")
-	created := createTask(t, ts, "home", `{"title":"Task","dueDate":"2025-06-15"}`)
+	createSpace(t, env, "home", "Home")
+	created := createTask(t, env, "home", `{"title":"Task","dueDate":"2025-06-15"}`)
 	id := created["id"].(string)
 
 	// Verify the due date was actually set.
-	resp := doRequest(t, ts, "GET", "/tasks/"+id, "")
+	resp := doRequest(t, env, "GET", "/tasks/"+id, "")
 	assertStatus(t, resp, http.StatusOK)
 	var fetched map[string]any
 	readJSON(t, resp, &fetched)
@@ -577,7 +713,7 @@ func TestTasksUpdateClearDueDate(t *testing.T) {
 	}
 
 	// Clear due date by sending null.
-	resp2 := doRequest(t, ts, "PATCH", "/tasks/"+id, `{"dueDate":null}`)
+	resp2 := doRequest(t, env, "PATCH", "/tasks/"+id, `{"dueDate":null}`)
 	assertStatus(t, resp2, http.StatusOK)
 	var updated map[string]any
 	readJSON(t, resp2, &updated)
@@ -587,34 +723,375 @@ func TestTasksUpdateClearDueDate(t *testing.T) {
 }
 
 func TestTasksDelete(t *testing.T) {
-	ts := setupTestServer(t)
-	defer ts.Close()
+	env := setupTestServer(t)
+	defer env.Server.Close()
 
-	createSpace(t, ts, "home", "Home")
-	created := createTask(t, ts, "home", `{"title":"Temp"}`)
+	createSpace(t, env, "home", "Home")
+	created := createTask(t, env, "home", `{"title":"Temp"}`)
 	id := created["id"].(string)
 
-	resp := doRequest(t, ts, "DELETE", "/tasks/"+id, "")
+	resp := doRequest(t, env, "DELETE", "/tasks/"+id, "")
 	assertStatusClose(t, resp, http.StatusNoContent)
 
 	// Verify it's gone.
-	resp2 := doRequest(t, ts, "GET", "/tasks/"+id, "")
+	resp2 := doRequest(t, env, "GET", "/tasks/"+id, "")
 	assertStatusClose(t, resp2, http.StatusNotFound)
 }
 
 func TestSpaceDeleteCascadesTasks(t *testing.T) {
-	ts := setupTestServer(t)
-	defer ts.Close()
+	env := setupTestServer(t)
+	defer env.Server.Close()
 
-	createSpace(t, ts, "home", "Home")
-	created := createTask(t, ts, "home", `{"title":"Chore"}`)
+	createSpace(t, env, "home", "Home")
+	created := createTask(t, env, "home", `{"title":"Chore"}`)
 	id := created["id"].(string)
 
 	// Delete the space - tasks should cascade.
-	resp := doRequest(t, ts, "DELETE", "/spaces/home", "")
+	resp := doRequest(t, env, "DELETE", "/spaces/home", "")
 	assertStatusClose(t, resp, http.StatusNoContent)
 
 	// Task should be gone.
-	resp2 := doRequest(t, ts, "GET", "/tasks/"+id, "")
+	resp2 := doRequest(t, env, "GET", "/tasks/"+id, "")
 	assertStatusClose(t, resp2, http.StatusNotFound)
+}
+
+// --- Authorization Tests ---
+
+func TestNonMemberCannotAccessSpace(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	createSpace(t, env, "secret", "Secret")
+	userToken := createTestUser(t, env, "bob@example.com", "Bob", "pass123")
+
+	// Non-member cannot read the space.
+	assertStatusClose(t, doRequestAs(t, env, userToken, "GET", "/spaces/secret", ""), http.StatusNotFound)
+	// Non-member cannot update the space.
+	assertStatusClose(t, doRequestAs(t, env, userToken, "PATCH", "/spaces/secret", `{"name":"X"}`), http.StatusNotFound)
+	// Non-member cannot delete the space.
+	assertStatusClose(t, doRequestAs(t, env, userToken, "DELETE", "/spaces/secret", ""), http.StatusNotFound)
+	// Non-member cannot list tasks.
+	assertStatusClose(t, doRequestAs(t, env, userToken, "GET", "/spaces/secret/tasks", ""), http.StatusNotFound)
+	// Non-member cannot create tasks.
+	assertStatusClose(t, doRequestAs(t, env, userToken, "POST", "/spaces/secret/tasks", `{"title":"Task"}`), http.StatusNotFound)
+}
+
+func TestViewerCannotWriteToSpace(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	createSpace(t, env, "home", "Home")
+	userToken := createTestUser(t, env, "viewer@example.com", "Viewer", "pass123")
+
+	// Get the user ID from /users/me.
+	resp := doRequestAs(t, env, userToken, "GET", "/users/me", "")
+	assertStatus(t, resp, http.StatusOK)
+	var me map[string]any
+	readJSON(t, resp, &me)
+	userID := me["id"].(string)
+
+	// Add as viewer.
+	doRequest(t, env, "POST", "/spaces/home/members", `{"userId":"`+userID+`","role":"viewer"}`)
+
+	// Viewer can read the space.
+	assertStatusClose(t, doRequestAs(t, env, userToken, "GET", "/spaces/home", ""), http.StatusOK)
+	// Viewer can list tasks.
+	assertStatusClose(t, doRequestAs(t, env, userToken, "GET", "/spaces/home/tasks", ""), http.StatusOK)
+	// Viewer cannot create tasks.
+	assertStatusClose(t, doRequestAs(t, env, userToken, "POST", "/spaces/home/tasks", `{"title":"X"}`), http.StatusBadRequest)
+	// Viewer cannot update space.
+	assertStatusClose(t, doRequestAs(t, env, userToken, "PATCH", "/spaces/home", `{"name":"X"}`), http.StatusBadRequest)
+	// Viewer cannot delete space.
+	assertStatusClose(t, doRequestAs(t, env, userToken, "DELETE", "/spaces/home", ""), http.StatusBadRequest)
+}
+
+func TestMemberCannotManageSpace(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	createSpace(t, env, "home", "Home")
+	userToken := createTestUser(t, env, "member@example.com", "Member", "pass123")
+
+	resp := doRequestAs(t, env, userToken, "GET", "/users/me", "")
+	assertStatus(t, resp, http.StatusOK)
+	var me map[string]any
+	readJSON(t, resp, &me)
+	userID := me["id"].(string)
+
+	// Add as member.
+	doRequest(t, env, "POST", "/spaces/home/members", `{"userId":"`+userID+`","role":"member"}`)
+
+	// Member can create tasks.
+	resp2 := doRequestAs(t, env, userToken, "POST", "/spaces/home/tasks", `{"title":"My task"}`)
+	assertStatusClose(t, resp2, http.StatusCreated)
+	// Member cannot update space settings.
+	assertStatusClose(t, doRequestAs(t, env, userToken, "PATCH", "/spaces/home", `{"name":"X"}`), http.StatusBadRequest)
+	// Member cannot delete space.
+	assertStatusClose(t, doRequestAs(t, env, userToken, "DELETE", "/spaces/home", ""), http.StatusBadRequest)
+	// Member cannot manage members.
+	assertStatusClose(t, doRequestAs(t, env, userToken, "POST", "/spaces/home/members", `{"userId":"`+userID+`","role":"viewer"}`), http.StatusBadRequest)
+}
+
+func TestNonOwnerSpacesListFiltered(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	createSpace(t, env, "alpha", "Alpha")
+	createSpace(t, env, "beta", "Beta")
+	createSpace(t, env, "gamma", "Gamma")
+
+	userToken := createTestUser(t, env, "user@example.com", "User", "pass123")
+
+	resp := doRequestAs(t, env, userToken, "GET", "/users/me", "")
+	assertStatus(t, resp, http.StatusOK)
+	var me map[string]any
+	readJSON(t, resp, &me)
+	userID := me["id"].(string)
+
+	// Add user to only "beta".
+	doRequest(t, env, "POST", "/spaces/beta/members", `{"userId":"`+userID+`","role":"member"}`)
+
+	// Non-owner should only see "beta".
+	resp2 := doRequestAs(t, env, userToken, "GET", "/spaces", "")
+	assertStatus(t, resp2, http.StatusOK)
+	var page map[string]any
+	readJSON(t, resp2, &page)
+	items := page["items"].([]any)
+	if len(items) != 1 {
+		t.Fatalf("got %d items, want 1", len(items))
+	}
+	if items[0].(map[string]any)["slug"] != "beta" {
+		t.Errorf("slug = %v, want beta", items[0].(map[string]any)["slug"])
+	}
+}
+
+// --- Auth Token CRUD Tests ---
+
+func TestAuthTokenCreate(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	resp := doRequest(t, env, "POST", "/auth/tokens", `{"name":"my-token"}`)
+	assertStatus(t, resp, http.StatusCreated)
+
+	var result map[string]any
+	readJSON(t, resp, &result)
+	if result["token"] == nil || result["token"] == "" {
+		t.Error("expected token in response")
+	}
+	authToken := result["authToken"].(map[string]any)
+	if authToken["name"] != "my-token" {
+		t.Errorf("name = %v, want my-token", authToken["name"])
+	}
+	if authToken["kind"] != "api" {
+		t.Errorf("kind = %v, want api", authToken["kind"])
+	}
+}
+
+func TestAuthTokenList(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	doRequest(t, env, "POST", "/auth/tokens", `{"name":"token-a"}`)
+	doRequest(t, env, "POST", "/auth/tokens", `{"name":"token-b"}`)
+
+	resp := doRequest(t, env, "GET", "/auth/tokens", "")
+	assertStatus(t, resp, http.StatusOK)
+	var page map[string]any
+	readJSON(t, resp, &page)
+	items := page["items"].([]any)
+	// Should include the setup session token + 2 API tokens.
+	if len(items) < 2 {
+		t.Fatalf("got %d items, want at least 2", len(items))
+	}
+}
+
+func TestAuthTokenDelete(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	// Create a token.
+	resp := doRequest(t, env, "POST", "/auth/tokens", `{"name":"disposable"}`)
+	assertStatus(t, resp, http.StatusCreated)
+	var result map[string]any
+	readJSON(t, resp, &result)
+	rawToken := result["token"].(string)
+	tokenID := result["authToken"].(map[string]any)["id"].(string)
+
+	// Verify the new token works.
+	assertStatusClose(t, doRequestAs(t, env, rawToken, "GET", "/users/me", ""), http.StatusOK)
+
+	// Delete it.
+	assertStatusClose(t, doRequest(t, env, "DELETE", "/auth/tokens/"+tokenID, ""), http.StatusNoContent)
+
+	// Using the deleted token should fail.
+	assertStatusClose(t, doRequestAs(t, env, rawToken, "GET", "/users/me", ""), http.StatusUnauthorized)
+}
+
+func TestAuthTokenDeleteOtherUser(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	// Create a token as owner.
+	resp := doRequest(t, env, "POST", "/auth/tokens", `{"name":"owner-token"}`)
+	assertStatus(t, resp, http.StatusCreated)
+	var result map[string]any
+	readJSON(t, resp, &result)
+	tokenID := result["authToken"].(map[string]any)["id"].(string)
+
+	// Second user tries to delete owner's token.
+	userToken := createTestUser(t, env, "other@example.com", "Other", "pass123")
+	assertStatusClose(t, doRequestAs(t, env, userToken, "DELETE", "/auth/tokens/"+tokenID, ""), http.StatusNotFound)
+}
+
+// --- Space Member CRUD Tests ---
+
+func TestSpaceMembersCreate(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	createSpace(t, env, "home", "Home")
+	userToken := createTestUser(t, env, "alice@example.com", "Alice", "pass123")
+
+	resp := doRequestAs(t, env, userToken, "GET", "/users/me", "")
+	assertStatus(t, resp, http.StatusOK)
+	var me map[string]any
+	readJSON(t, resp, &me)
+	userID := me["id"].(string)
+
+	resp2 := doRequest(t, env, "POST", "/spaces/home/members", `{"userId":"`+userID+`","role":"member"}`)
+	assertStatus(t, resp2, http.StatusCreated)
+	var member map[string]any
+	readJSON(t, resp2, &member)
+	if member["userId"] != userID {
+		t.Errorf("userId = %v, want %v", member["userId"], userID)
+	}
+	if member["role"] != "member" {
+		t.Errorf("role = %v, want member", member["role"])
+	}
+	if member["userName"] != "Alice" {
+		t.Errorf("userName = %v, want Alice", member["userName"])
+	}
+}
+
+func TestSpaceMembersList(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	createSpace(t, env, "home", "Home")
+
+	resp := doRequest(t, env, "GET", "/spaces/home/members", "")
+	assertStatus(t, resp, http.StatusOK)
+	var page map[string]any
+	readJSON(t, resp, &page)
+	items := page["items"].([]any)
+	// Creator is auto-added as admin.
+	if len(items) != 1 {
+		t.Fatalf("got %d members, want 1", len(items))
+	}
+	if items[0].(map[string]any)["role"] != "admin" {
+		t.Errorf("role = %v, want admin", items[0].(map[string]any)["role"])
+	}
+}
+
+func TestSpaceMembersUpdate(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	createSpace(t, env, "home", "Home")
+	userToken := createTestUser(t, env, "bob@example.com", "Bob", "pass123")
+
+	resp := doRequestAs(t, env, userToken, "GET", "/users/me", "")
+	assertStatus(t, resp, http.StatusOK)
+	var me map[string]any
+	readJSON(t, resp, &me)
+	userID := me["id"].(string)
+
+	// Add as member.
+	doRequest(t, env, "POST", "/spaces/home/members", `{"userId":"`+userID+`","role":"member"}`)
+
+	// Promote to admin.
+	resp2 := doRequest(t, env, "PATCH", "/spaces/home/members/"+userID, `{"role":"admin"}`)
+	assertStatus(t, resp2, http.StatusOK)
+	var updated map[string]any
+	readJSON(t, resp2, &updated)
+	if updated["role"] != "admin" {
+		t.Errorf("role = %v, want admin", updated["role"])
+	}
+}
+
+func TestSpaceMembersDelete(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	createSpace(t, env, "home", "Home")
+	userToken := createTestUser(t, env, "charlie@example.com", "Charlie", "pass123")
+
+	resp := doRequestAs(t, env, userToken, "GET", "/users/me", "")
+	assertStatus(t, resp, http.StatusOK)
+	var me map[string]any
+	readJSON(t, resp, &me)
+	userID := me["id"].(string)
+
+	// Add then remove.
+	doRequest(t, env, "POST", "/spaces/home/members", `{"userId":"`+userID+`","role":"member"}`)
+	assertStatusClose(t, doRequest(t, env, "DELETE", "/spaces/home/members/"+userID, ""), http.StatusNoContent)
+
+	// User can no longer access the space.
+	assertStatusClose(t, doRequestAs(t, env, userToken, "GET", "/spaces/home", ""), http.StatusNotFound)
+}
+
+func TestSpaceMembersLastAdminGuard(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	createSpace(t, env, "home", "Home")
+
+	// Get owner's user ID.
+	resp := doRequest(t, env, "GET", "/users/me", "")
+	assertStatus(t, resp, http.StatusOK)
+	var me map[string]any
+	readJSON(t, resp, &me)
+	ownerID := me["id"].(string)
+
+	// Try to downgrade the only admin to viewer.
+	assertStatusClose(t, doRequest(t, env, "PATCH", "/spaces/home/members/"+ownerID, `{"role":"viewer"}`), http.StatusBadRequest)
+	// Try to remove the only admin.
+	assertStatusClose(t, doRequest(t, env, "DELETE", "/spaces/home/members/"+ownerID, ""), http.StatusBadRequest)
+}
+
+// --- Edge Case Tests ---
+
+func TestAuthLoginUnknownEmail(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	resp := doRequestAs(t, env, "", "POST", "/auth/login", `{"email":"nobody@example.com","password":"anything"}`)
+	assertStatusClose(t, resp, http.StatusBadRequest)
+}
+
+func TestExpiredTokenRejected(t *testing.T) {
+	env := setupTestServer(t)
+	defer env.Server.Close()
+
+	// Create a token that's already expired directly in the DB.
+	rawToken := "expired-test-token"
+	hash := sha256.Sum256([]byte(rawToken))
+	tokenHash := hex.EncodeToString(hash[:])
+	pastTime := time.Now().Add(-1 * time.Hour).UTC().Format(time.RFC3339)
+
+	q := dbgen.New(env.db)
+	_, err := q.CreateAuthToken(context.Background(), dbgen.CreateAuthTokenParams{
+		UserID:    1, // owner user
+		TokenHash: tokenHash,
+		Name:      "expired",
+		Kind:      "session",
+		ExpiresAt: &pastTime,
+		CreatedAt: time.Now().UTC().Format(time.RFC3339),
+	})
+	if err != nil {
+		t.Fatalf("create expired token: %v", err)
+	}
+
+	assertStatusClose(t, doRequestAs(t, env, rawToken, "GET", "/users/me", ""), http.StatusUnauthorized)
 }

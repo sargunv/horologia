@@ -13,6 +13,62 @@ type UnimplementedHandler struct{}
 
 var _ Handler = UnimplementedHandler{}
 
+// AuthCreateToken implements Auth_createToken operation.
+//
+// POST /auth/tokens
+func (UnimplementedHandler) AuthCreateToken(ctx context.Context, req *AuthTokenCreate) (r *AuthTokenCreateResponse, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// AuthDeleteToken implements Auth_deleteToken operation.
+//
+// DELETE /auth/tokens/{tokenId}
+func (UnimplementedHandler) AuthDeleteToken(ctx context.Context, params AuthDeleteTokenParams) error {
+	return ht.ErrNotImplemented
+}
+
+// AuthListTokens implements Auth_listTokens operation.
+//
+// GET /auth/tokens
+func (UnimplementedHandler) AuthListTokens(ctx context.Context, params AuthListTokensParams) (r *AuthTokenPage, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// AuthLogin implements Auth_login operation.
+//
+// POST /auth/login
+func (UnimplementedHandler) AuthLogin(ctx context.Context, req *LoginRequest) (r *LoginResponse, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SpaceMembersCreate implements SpaceMembers_create operation.
+//
+// POST /spaces/{spaceSlug}/members
+func (UnimplementedHandler) SpaceMembersCreate(ctx context.Context, req *SpaceMemberCreate, params SpaceMembersCreateParams) (r *SpaceMember, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SpaceMembersDelete implements SpaceMembers_delete operation.
+//
+// DELETE /spaces/{spaceSlug}/members/{userId}
+func (UnimplementedHandler) SpaceMembersDelete(ctx context.Context, params SpaceMembersDeleteParams) error {
+	return ht.ErrNotImplemented
+}
+
+// SpaceMembersList implements SpaceMembers_list operation.
+//
+// GET /spaces/{spaceSlug}/members
+func (UnimplementedHandler) SpaceMembersList(ctx context.Context, params SpaceMembersListParams) (r *SpaceMemberPage, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SpaceMembersUpdate implements SpaceMembers_update operation.
+//
+// PATCH /spaces/{spaceSlug}/members/{userId}
+func (UnimplementedHandler) SpaceMembersUpdate(ctx context.Context, req *SpaceMemberUpdate, params SpaceMembersUpdateParams) (r *SpaceMember, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // SpaceTasksCreate implements SpaceTasks_create operation.
 //
 // POST /spaces/{spaceSlug}/tasks
@@ -80,6 +136,13 @@ func (UnimplementedHandler) TasksRead(ctx context.Context, params TasksReadParam
 //
 // PATCH /tasks/{taskId}
 func (UnimplementedHandler) TasksUpdate(ctx context.Context, req *TaskUpdate, params TasksUpdateParams) (r *Task, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UsersMe implements Users_me operation.
+//
+// GET /users/me
+func (UnimplementedHandler) UsersMe(ctx context.Context) (r *User, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

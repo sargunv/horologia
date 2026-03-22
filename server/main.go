@@ -141,7 +141,7 @@ var serveCmd = &cobra.Command{
 
 var createAdminCmd = &cobra.Command{
 	Use:   "create-admin",
-	Short: "Create an admin user",
+	Short: "Create a global owner user",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := loadConfig()
 		if err != nil {
@@ -153,16 +153,37 @@ var createAdminCmd = &cobra.Command{
 			return err
 		}
 
-		db, err := database.Open(cfg.DB)
+		db, migrator, err := openDB(cfg)
 		if err != nil {
 			return err
 		}
 		defer func() { _ = db.Close() }()
 
-		// TODO: implement
-		log.Warn("create-admin: not yet implemented")
+		if _, err := migrator.Up(context.Background()); err != nil {
+			return fmt.Errorf("auto-migrate: %w", err)
+		}
+
+		email, _ := cmd.Flags().GetString("email")
+		name, _ := cmd.Flags().GetString("name")
+		password, _ := cmd.Flags().GetString("password")
+
+		user, err := database.CreateUserWithPassword(context.Background(), db, email, name, password, true)
+		if err != nil {
+			return fmt.Errorf("create admin: %w", err)
+		}
+
+		log.Info("admin created", "id", user.ID, "email", user.Email, "name", user.Name)
 		return nil
 	},
+}
+
+func init() {
+	createAdminCmd.Flags().String("email", "", "admin email (required)")
+	createAdminCmd.Flags().String("name", "", "admin display name (required)")
+	createAdminCmd.Flags().String("password", "", "admin password (required)")
+	_ = createAdminCmd.MarkFlagRequired("email")
+	_ = createAdminCmd.MarkFlagRequired("name")
+	_ = createAdminCmd.MarkFlagRequired("password")
 }
 
 func main() {
