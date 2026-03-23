@@ -34,7 +34,11 @@ description = "Run the server"
 depends = ["build"]
 run = "./tend-server serve"
 
+[tasks.reset-db]
+description = "Delete and recreate the dev database"
+run = "rm -f tend.db tend.db-shm tend.db-wal"
+
 [tasks.create-admin]
-description = "Create a global owner user"
+description = "Create the dev admin user (admin@localhost / password)"
 depends = ["build"]
-run = "./tend-server create-admin --email {{arg(name=\"email\")}} --name {{arg(name=\"name\")}} --password {{arg(name=\"password\")}}"
+run = "./tend-server create-admin --email admin@localhost --name Admin --password password"

@@ -75,6 +75,14 @@ function LoginPage() {
             {login.isPending ? "Signing in\u2026" : "Sign in"}
           </button>
         </form>
+        <div className="mt-4 flex items-center gap-3">
+          <hr className="flex-1 border-surface-300 dark:border-surface-700" />
+          <span className="text-xs text-surface-500">or</span>
+          <hr className="flex-1 border-surface-300 dark:border-surface-700" />
+        </div>
+        <a href="/api/auth/oidc" className="btn preset-tonal-surface w-full mt-4">
+          Sign in with OIDC
+        </a>
       </div>
     </div>
   );

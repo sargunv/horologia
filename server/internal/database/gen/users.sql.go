@@ -109,6 +109,20 @@ func (q *Queries) GetUserByOIDCSubject(ctx context.Context, oidcSubject *string)
 	return i, err
 }
 
+const setUserOIDCSubject = `-- name: SetUserOIDCSubject :exec
+UPDATE users SET oidc_subject = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+`
+
+type SetUserOIDCSubjectParams struct {
+	OidcSubject *string
+	ID          int64
+}
+
+func (q *Queries) SetUserOIDCSubject(ctx context.Context, arg SetUserOIDCSubjectParams) error {
+	_, err := q.db.ExecContext(ctx, setUserOIDCSubject, arg.OidcSubject, arg.ID)
+	return err
+}
+
 const updateUser = `-- name: UpdateUser :one
 UPDATE users
 SET name = ?, email = ?, updated_at = ?

@@ -7,7 +7,7 @@ environment:
   - "TEND_OIDC_ISSUER=http://localhost:5556/"
   - "TEND_OIDC_CLIENT_ID=tend"
   - "TEND_OIDC_CLIENT_SECRET=tend-dev-secret"
-  - "TEND_OIDC_REDIRECT_URL=http://localhost:8080/auth/oidc/callback"
+  - "TEND_OIDC_REDIRECT_URL=http://localhost:5173/api/auth/oidc/callback"
 
 processes:
   server:
