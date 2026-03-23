@@ -31,7 +31,7 @@ processes:
         condition: process_healthy
 
   oidc:
-    command: go run ./cmd/dev-oidc
+    command: air -c .air-oidc.toml
     working_dir: ./server
     readiness_probe:
       http_get:

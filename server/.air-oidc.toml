@@ -1,0 +1,12 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "go build -o tmp/dev-oidc ./cmd/dev-oidc"
+bin = "tmp/dev-oidc"
+include_ext = ["go"]
+exclude_dir = ["tmp", "api/gen", "internal/database/gen"]
+delay = 500
+
+[log]
+main_only = true
