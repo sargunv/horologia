@@ -2,40 +2,19 @@ package api
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"strconv"
-
-	"golang.org/x/crypto/bcrypt"
 
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 )
 
-// sentinelHash is a pre-computed bcrypt hash used to prevent timing-based
-// email enumeration. When the email is not found or has no password, we still
-// run a bcrypt comparison against this hash so the response time is constant.
-var sentinelHash, _ = bcrypt.GenerateFromPassword([]byte("sentinel"), bcrypt.DefaultCost)
-
 // --- Auth: Login ---
 
 func (h *Handler) AuthLogin(ctx context.Context, req *apigen.LoginRequest) (*apigen.LoginResponse, error) {
 	q := dbgen.New(h.DB)
-	user, err := q.GetUserByEmail(ctx, req.Email)
-	if errors.Is(err, sql.ErrNoRows) {
-		_ = bcrypt.CompareHashAndPassword(sentinelHash, []byte(req.Password))
-		return nil, badRequest("invalid email or password")
-	}
+
+	user, err := validatePassword(ctx, q, req.Email, req.Password)
 	if err != nil {
-		return nil, err
-	}
-
-	hashToCompare := sentinelHash
-	if user.PasswordHash != nil {
-		hashToCompare = []byte(*user.PasswordHash)
-	}
-
-	if err := bcrypt.CompareHashAndPassword(hashToCompare, []byte(req.Password)); err != nil {
 		return nil, badRequest("invalid email or password")
 	}
 

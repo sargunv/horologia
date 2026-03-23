@@ -60,6 +60,14 @@ func (q *Queries) DeleteAuthToken(ctx context.Context, arg DeleteAuthTokenParams
 	return q.db.ExecContext(ctx, deleteAuthToken, arg.ID, arg.UserID)
 }
 
+const deleteAuthTokenByHash = `-- name: DeleteAuthTokenByHash :execresult
+DELETE FROM auth_tokens WHERE token_hash = ?
+`
+
+func (q *Queries) DeleteAuthTokenByHash(ctx context.Context, tokenHash string) (sql.Result, error) {
+	return q.db.ExecContext(ctx, deleteAuthTokenByHash, tokenHash)
+}
+
 const deleteExpiredTokens = `-- name: DeleteExpiredTokens :execresult
 DELETE FROM auth_tokens WHERE expires_at IS NOT NULL AND expires_at < ?
 `

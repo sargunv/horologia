@@ -3,7 +3,9 @@ package api
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -94,7 +96,12 @@ func handleOIDCCallback(w http.ResponseWriter, r *http.Request, tokens *oidc.Tok
 	// Try to find existing user by OIDC subject.
 	subjectStr := subject
 	user, err := q.GetUserByOIDCSubject(ctx, &subjectStr)
-	if err != nil {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		handler.Log.ErrorContext(ctx, "oidc: get user", "error", err)
+		http.Error(w, "failed to look up user", http.StatusInternalServerError)
+		return
+	}
+	if errors.Is(err, sql.ErrNoRows) {
 		// User doesn't exist yet — create one.
 		ts := now()
 		user, err = q.CreateUser(ctx, dbgen.CreateUserParams{
@@ -133,13 +140,8 @@ func handleOIDCCallback(w http.ResponseWriter, r *http.Request, tokens *oidc.Tok
 		return
 	}
 
-	// TODO: This returns the session token as raw JSON with no redirect.
-	// Once a web frontend exists, this should redirect to the frontend with the
-	// token (e.g. as a URL fragment or via a secure cookie). For CLI auth, consider
-	// supporting a localhost callback URL so `tend login` can open the browser,
-	// catch the OIDC callback on a local port, and extract the token automatically.
-	w.Header().Set("Content-Type", "application/json")
-	_, _ = fmt.Fprintf(w, `{"token":%q}`, raw)
+	setSessionCookie(w, raw)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 // MountOIDC wraps an ogen handler with optional OIDC routes.

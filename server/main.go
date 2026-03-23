@@ -125,6 +125,9 @@ var serveCmd = &cobra.Command{
 			finalHandler = api.MountOIDC(h, oidcHandler, log)
 		}
 
+		// Mount web auth routes (cookie login/logout) and cookie-to-bearer middleware.
+		finalHandler = api.MountWebAuth(finalHandler, handler)
+
 		ln, err := net.Listen("tcp", cfg.Addr)
 		if err != nil {
 			return fmt.Errorf("listen: %w", err)

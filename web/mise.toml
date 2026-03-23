@@ -1,7 +1,23 @@
 [tasks.dev]
 description = "Start dev server"
-run = "echo TODO"
+run = "vp dev"
 
 [tasks.build]
 description = "Build for production"
-run = "echo TODO"
+depends = ["codegen"]
+run = "vp build"
+
+[tasks.codegen]
+description = "Generate OpenAPI types"
+depends = ["//api:compile"]
+sources = ["../api/tsp-output/schema/openapi.yaml"]
+outputs = ["src/api/schema.d.ts"]
+run = "npx openapi-typescript ../api/tsp-output/schema/openapi.yaml -o src/api/schema.d.ts"
+
+[tasks.check]
+description = "Run lint and type checks"
+run = "vp check"
+
+[tasks.test]
+description = "Run tests"
+run = "vp test"

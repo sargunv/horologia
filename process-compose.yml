@@ -23,12 +23,12 @@ processes:
       period_seconds: 5
       failure_threshold: 10
 
-  # web:
-  #   command: pnpm dev
-  #   working_dir: ./web
-  #   depends_on:
-  #     server:
-  #       condition: process_healthy
+  web:
+    command: pnpm exec vp dev
+    working_dir: ./web
+    depends_on:
+      server:
+        condition: process_healthy
 
   oidc:
     command: go run ./cmd/dev-oidc

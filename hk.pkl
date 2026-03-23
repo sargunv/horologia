@@ -39,4 +39,10 @@ hooks {
       ...allSteps
     }
   }
+  ["fix"] {
+    fix = true
+    steps {
+      ...allSteps
+    }
+  }
 }

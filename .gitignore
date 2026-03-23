@@ -7,6 +7,8 @@
 # Web
 node_modules/
 dist/
+/web/src/routeTree.gen.ts
+/web/src/api/schema.d.ts
 
 # dprint
 .dprint/

@@ -29,5 +29,8 @@ LIMIT ?;
 -- name: DeleteAuthToken :execresult
 DELETE FROM auth_tokens WHERE id = ? AND user_id = ?;
 
+-- name: DeleteAuthTokenByHash :execresult
+DELETE FROM auth_tokens WHERE token_hash = ?;
+
 -- name: DeleteExpiredTokens :execresult
 DELETE FROM auth_tokens WHERE expires_at IS NOT NULL AND expires_at < ?;
