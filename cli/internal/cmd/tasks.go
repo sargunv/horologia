@@ -18,20 +18,23 @@ var taskSchema = map[string]any{
 		"id":          map[string]any{"type": "string"},
 		"title":       map[string]any{"type": "string"},
 		"description": map[string]any{"type": "string"},
-		"status": map[string]any{
+		"status":      map[string]any{"type": "string"},
+		"assigneeIds": map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
+		"tags":        map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
+		"relations": map[string]any{"type": "array", "items": map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"name":     map[string]any{"type": "string"},
-				"category": map[string]any{"type": "string", "enum": []string{"initial", "intermediate", "completion"}},
+				"kind":      map[string]any{"type": "string"},
+				"taskId":    map[string]any{"type": "string"},
+				"createdAt": map[string]any{"type": "string", "format": "date-time"},
 			},
-			"required": []string{"name", "category"},
-		},
-		"assigneeIds": map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
-		"dueDate":     map[string]any{"type": []string{"string", "null"}, "format": "date"},
-		"createdAt":   map[string]any{"type": "string", "format": "date-time"},
-		"updatedAt":   map[string]any{"type": "string", "format": "date-time"},
+			"required": []string{"kind", "taskId", "createdAt"},
+		}},
+		"dueDate":   map[string]any{"type": []string{"string", "null"}, "format": "date"},
+		"createdAt": map[string]any{"type": "string", "format": "date-time"},
+		"updatedAt": map[string]any{"type": "string", "format": "date-time"},
 	},
-	"required": []string{"id", "title", "description", "status", "assigneeIds", "dueDate", "createdAt", "updatedAt"},
+	"required": []string{"id", "title", "description", "status", "assigneeIds", "tags", "relations", "dueDate", "createdAt", "updatedAt"},
 }
 
 var taskHeaders = []string{"ID", "Title", "Status", "Due", "Assignees", "Created"}

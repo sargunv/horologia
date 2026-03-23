@@ -8,6 +8,7 @@ package gen
 import (
 	"context"
 	"database/sql"
+	"strings"
 
 	"github.com/sargunv/tend/server/internal/types"
 )
@@ -116,6 +117,72 @@ func (q *Queries) ListRelationsByTaskAsTarget(ctx context.Context, targetTaskID 
 	items := []ListRelationsByTaskAsTargetRow{}
 	for rows.Next() {
 		var i ListRelationsByTaskAsTargetRow
+		if err := rows.Scan(
+			&i.SourceTaskID,
+			&i.TargetTaskID,
+			&i.Kind,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRelationsByTasks = `-- name: ListRelationsByTasks :many
+SELECT source_task_id, target_task_id, kind, created_at
+FROM task_relations
+WHERE source_task_id IN (/*SLICE:source_task_ids*/?)
+   OR target_task_id IN (/*SLICE:target_task_ids*/?)
+ORDER BY created_at ASC
+`
+
+type ListRelationsByTasksParams struct {
+	SourceTaskIds []int64
+	TargetTaskIds []int64
+}
+
+type ListRelationsByTasksRow struct {
+	SourceTaskID int64
+	TargetTaskID int64
+	Kind         string
+	CreatedAt    types.EpochSeconds
+}
+
+func (q *Queries) ListRelationsByTasks(ctx context.Context, arg ListRelationsByTasksParams) ([]ListRelationsByTasksRow, error) {
+	query := listRelationsByTasks
+	var queryParams []interface{}
+	if len(arg.SourceTaskIds) > 0 {
+		for _, v := range arg.SourceTaskIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:source_task_ids*/?", strings.Repeat(",?", len(arg.SourceTaskIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:source_task_ids*/?", "NULL", 1)
+	}
+	if len(arg.TargetTaskIds) > 0 {
+		for _, v := range arg.TargetTaskIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:target_task_ids*/?", strings.Repeat(",?", len(arg.TargetTaskIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:target_task_ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListRelationsByTasksRow{}
+	for rows.Next() {
+		var i ListRelationsByTasksRow
 		if err := rows.Scan(
 			&i.SourceTaskID,
 			&i.TargetTaskID,

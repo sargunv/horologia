@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"database/sql"
 	"strconv"
 
 	apigen "github.com/sargunv/tend/server/api/gen"
@@ -19,9 +20,17 @@ func (h *Handler) SpaceTagsList(ctx context.Context, params apigen.SpaceTagsList
 	}
 
 	limit := clampLimit(params.Limit)
-	q := dbgen.New(h.DB)
 
-	// Verify the space exists.
+	tx, err := h.DB.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	q := dbgen.New(tx)
+
+	// Verify the space exists (without this, a nonexistent space returns
+	// an empty 200 instead of 404).
 	if _, err := q.GetSpace(ctx, params.SpaceSlug); err != nil {
 		return nil, err
 	}
@@ -35,7 +44,7 @@ func (h *Handler) SpaceTagsList(ctx context.Context, params apigen.SpaceTagsList
 		return nil, err
 	}
 
-	items, nextCursor, err := paginate(rows, limit, tagFromDB, tagCursorKey)
+	items, nextCursor, err := paginate(rows, limit, func(t dbgen.Tag) (*apigen.Tag, error) { return tagFromDB(t), nil }, tagCursorKey)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +79,7 @@ func (h *Handler) SpaceTagsCreate(ctx context.Context, req *apigen.TagCreate, pa
 		return nil, err
 	}
 
-	return tagFromDB(tag)
+	return tagFromDB(tag), nil
 }
 
 func (h *Handler) SpaceTagsUpdate(ctx context.Context, req *apigen.TagUpdate, params apigen.SpaceTagsUpdateParams) (*apigen.Tag, error) {
@@ -112,7 +121,7 @@ func (h *Handler) SpaceTagsUpdate(ctx context.Context, req *apigen.TagUpdate, pa
 		return nil, err
 	}
 
-	return tagFromDB(tag)
+	return tagFromDB(tag), nil
 }
 
 func (h *Handler) SpaceTagsDelete(ctx context.Context, params apigen.SpaceTagsDeleteParams) error {

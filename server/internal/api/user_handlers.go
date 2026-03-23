@@ -14,5 +14,5 @@ func (h *Handler) UsersMe(ctx context.Context) (*apigen.User, error) {
 	if err != nil {
 		return nil, err
 	}
-	return userFromDB(user)
+	return userFromDB(user), nil
 }

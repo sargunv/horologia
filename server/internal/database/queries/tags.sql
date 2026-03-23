@@ -3,10 +3,11 @@ INSERT INTO tags (space_slug, name, name_folded, created_at)
 VALUES (?, ?, ?, ?)
 RETURNING *;
 
--- name: EnsureTag :exec
+-- name: EnsureTag :one
 INSERT INTO tags (space_slug, name, name_folded, created_at)
 VALUES (?, ?, ?, ?)
-ON CONFLICT (space_slug, name_folded) DO NOTHING;
+ON CONFLICT (space_slug, name_folded) DO UPDATE SET name = name
+RETURNING *;
 
 -- name: GetTagByFoldedName :one
 SELECT * FROM tags

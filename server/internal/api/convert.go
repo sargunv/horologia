@@ -80,14 +80,14 @@ func now() types.EpochSeconds {
 	return types.Now()
 }
 
-func spaceFromDB(s dbgen.Space) (*apigen.Space, error) {
+func spaceFromDB(s dbgen.Space) *apigen.Space {
 	return &apigen.Space{
 		Slug:        s.Slug,
 		Name:        s.Name,
 		Description: s.Description,
 		CreatedAt:   s.CreatedAt.Time(),
 		UpdatedAt:   s.UpdatedAt.Time(),
-	}, nil
+	}
 }
 
 // taskRelationRow is the common shape returned by both ListRelationsByTaskAsSource
@@ -270,7 +270,7 @@ func parseTokenID(s string) (int64, error) {
 	return id, nil
 }
 
-func userFromDB(u dbgen.User) (*apigen.User, error) {
+func userFromDB(u dbgen.User) *apigen.User {
 	return &apigen.User{
 		ID:        formatUserID(u.ID),
 		Email:     u.Email,
@@ -278,36 +278,36 @@ func userFromDB(u dbgen.User) (*apigen.User, error) {
 		IsOwner:   u.IsOwner != 0,
 		CreatedAt: u.CreatedAt.Time(),
 		UpdatedAt: u.UpdatedAt.Time(),
-	}, nil
+	}
 }
 
-func authTokenFromDB(t dbgen.AuthToken) (*apigen.AuthToken, error) {
+func authTokenFromDB(t dbgen.AuthToken) *apigen.AuthToken {
 	return &apigen.AuthToken{
 		ID:        strconv.FormatInt(t.ID, 10),
 		Name:      t.Name,
 		Kind:      apigen.AuthTokenKind(t.Kind),
 		CreatedAt: t.CreatedAt.Time(),
-	}, nil
+	}
 }
 
-func memberFromDB(m dbgen.SpaceMember, userName, userEmail string) (*apigen.SpaceMember, error) {
+func memberFromDB(m dbgen.SpaceMember, userName, userEmail string) *apigen.SpaceMember {
 	return &apigen.SpaceMember{
 		UserId:    formatUserID(m.UserID),
 		UserName:  userName,
 		UserEmail: userEmail,
 		Role:      apigen.SpaceRole(m.Role),
 		CreatedAt: m.CreatedAt.Time(),
-	}, nil
+	}
 }
 
-func memberFromListRow(row dbgen.ListSpaceMembersBySpaceRow) (*apigen.SpaceMember, error) {
+func memberFromListRow(row dbgen.ListSpaceMembersBySpaceRow) *apigen.SpaceMember {
 	return &apigen.SpaceMember{
 		UserId:    formatUserID(row.UserID),
 		UserName:  row.UserName,
 		UserEmail: row.UserEmail,
 		Role:      apigen.SpaceRole(row.Role),
 		CreatedAt: row.CreatedAt.Time(),
-	}, nil
+	}
 }
 
 var caseFolder = cases.Fold(cases.HandleFinalSigma(false))
@@ -323,9 +323,9 @@ func validateTagName(name string) error {
 	return nil
 }
 
-func tagFromDB(t dbgen.Tag) (*apigen.Tag, error) {
+func tagFromDB(t dbgen.Tag) *apigen.Tag {
 	return &apigen.Tag{
 		Name:      t.Name,
 		CreatedAt: t.CreatedAt.Time(),
-	}, nil
+	}
 }

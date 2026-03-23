@@ -34,10 +34,7 @@ func (h *Handler) AuthLogin(ctx context.Context, req *apigen.LoginRequest) (*api
 		return nil, err
 	}
 
-	apiUser, err := userFromDB(user)
-	if err != nil {
-		return nil, err
-	}
+	apiUser := userFromDB(user)
 
 	return &apigen.LoginResponse{
 		Token: raw,
@@ -67,7 +64,7 @@ func (h *Handler) AuthListTokens(ctx context.Context, params apigen.AuthListToke
 		return nil, err
 	}
 
-	items, nextCursor, err := paginate(tokens, limit, authTokenFromDB, func(t dbgen.AuthToken) string {
+	items, nextCursor, err := paginate(tokens, limit, func(t dbgen.AuthToken) (*apigen.AuthToken, error) { return authTokenFromDB(t), nil }, func(t dbgen.AuthToken) string {
 		return strconv.FormatInt(t.ID, 10)
 	})
 	if err != nil {
@@ -97,10 +94,7 @@ func (h *Handler) AuthCreateToken(ctx context.Context, req *apigen.AuthTokenCrea
 		return nil, err
 	}
 
-	apiToken, err := authTokenFromDB(token)
-	if err != nil {
-		return nil, err
-	}
+	apiToken := authTokenFromDB(token)
 
 	return &apigen.AuthTokenCreateResponse{
 		Token:     raw,

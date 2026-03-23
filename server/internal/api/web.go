@@ -88,12 +88,7 @@ func WebLoginHandler(handler *Handler) http.Handler {
 
 		setSessionCookie(w, raw)
 
-		apiUser, err := userFromDB(user)
-		if err != nil {
-			handler.Log.ErrorContext(ctx, "web-login: convert user", "error", err)
-			writeJSONError(w, http.StatusInternalServerError, "internal error")
-			return
-		}
+		apiUser := userFromDB(user)
 
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{"user": apiUser})

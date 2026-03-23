@@ -4,6 +4,12 @@ JOIN tags tg ON tg.id = tt.tag_id
 WHERE tt.task_id = ?
 ORDER BY tg.name ASC;
 
+-- name: ListTagNamesByTasks :many
+SELECT tt.task_id, tg.name FROM task_tags tt
+JOIN tags tg ON tg.id = tt.tag_id
+WHERE tt.task_id IN (sqlc.slice('task_ids'))
+ORDER BY tt.task_id, tg.name;
+
 -- name: InsertTaskTag :exec
 INSERT INTO task_tags (task_id, tag_id, created_at)
 VALUES (?, ?, ?);

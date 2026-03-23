@@ -143,6 +143,87 @@ func (h *Handler) fetchTask(ctx context.Context, q *dbgen.Queries, id int64) (*a
 	return taskFromDB(task, assigneeIDs, tagNames, relations)
 }
 
+// enrichTasks batch-fetches assignees, tags, and relations for a slice of tasks
+// and converts them to API types. Uses 3 queries total instead of 5N.
+func (h *Handler) enrichTasks(ctx context.Context, q *dbgen.Queries, tasks []dbgen.Task) ([]apigen.Task, error) {
+	if len(tasks) == 0 {
+		return []apigen.Task{}, nil
+	}
+
+	// Collect task IDs for batch queries.
+	taskIDs := make([]int64, len(tasks))
+	for i, t := range tasks {
+		taskIDs[i] = t.ID
+	}
+
+	// Batch-fetch assignees, tags, and relations (3 queries total).
+	assigneeRows, err := q.ListAssigneeUserIDsByTasks(ctx, taskIDs)
+	if err != nil {
+		return nil, err
+	}
+	tagRows, err := q.ListTagNamesByTasks(ctx, taskIDs)
+	if err != nil {
+		return nil, err
+	}
+	relationRows, err := q.ListRelationsByTasks(ctx, dbgen.ListRelationsByTasksParams{
+		SourceTaskIds: taskIDs,
+		TargetTaskIds: taskIDs,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Group assignees by task ID.
+	assigneeMap := make(map[int64][]int64)
+	for _, r := range assigneeRows {
+		assigneeMap[r.TaskID] = append(assigneeMap[r.TaskID], r.UserID)
+	}
+
+	// Group tag names by task ID.
+	tagMap := make(map[int64][]string)
+	for _, r := range tagRows {
+		tagMap[r.TaskID] = append(tagMap[r.TaskID], r.Name)
+	}
+
+	// Group relations by task ID (a relation appears for both source and target).
+	relationMap := make(map[int64][]taskRelationRow)
+	for _, r := range relationRows {
+		row := taskRelationRow{
+			SourceTaskID: r.SourceTaskID,
+			TargetTaskID: r.TargetTaskID,
+			Kind:         r.Kind,
+			CreatedAt:    r.CreatedAt,
+		}
+		if r.SourceTaskID != r.TargetTaskID {
+			relationMap[r.SourceTaskID] = append(relationMap[r.SourceTaskID], row)
+			relationMap[r.TargetTaskID] = append(relationMap[r.TargetTaskID], row)
+		}
+	}
+
+	// Convert each task with its pre-fetched related data.
+	result := make([]apigen.Task, 0, len(tasks))
+	for _, task := range tasks {
+		assignees := assigneeMap[task.ID]
+		if assignees == nil {
+			assignees = []int64{}
+		}
+		tags := tagMap[task.ID]
+		if tags == nil {
+			tags = []string{}
+		}
+		relations := relationMap[task.ID]
+		if relations == nil {
+			relations = []taskRelationRow{}
+		}
+		apiTask, err := taskFromDB(task, assignees, tags, relations)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, *apiTask)
+	}
+	return result, nil
+}
+
 // --- Spaces ---
 
 func (h *Handler) SpacesCreate(ctx context.Context, req *apigen.SpaceCreate) (*apigen.Space, error) {
@@ -157,7 +238,7 @@ func (h *Handler) SpacesCreate(ctx context.Context, req *apigen.SpaceCreate) (*a
 	if err != nil {
 		return nil, err
 	}
-	return spaceFromDB(space)
+	return spaceFromDB(space), nil
 }
 
 func (h *Handler) SpacesList(ctx context.Context, params apigen.SpacesListParams) (*apigen.SpacePage, error) {
@@ -187,7 +268,7 @@ func (h *Handler) SpacesList(ctx context.Context, params apigen.SpacesListParams
 		return nil, err
 	}
 
-	items, nextCursor, err := paginate(spaces, limit, spaceFromDB, func(s dbgen.Space) string {
+	items, nextCursor, err := paginate(spaces, limit, func(s dbgen.Space) (*apigen.Space, error) { return spaceFromDB(s), nil }, func(s dbgen.Space) string {
 		return s.Slug
 	})
 	if err != nil {
@@ -206,7 +287,7 @@ func (h *Handler) SpacesRead(ctx context.Context, params apigen.SpacesReadParams
 	if err != nil {
 		return nil, err
 	}
-	return spaceFromDB(space)
+	return spaceFromDB(space), nil
 }
 
 func (h *Handler) SpacesUpdate(ctx context.Context, req *apigen.SpaceUpdate, params apigen.SpacesUpdateParams) (*apigen.Space, error) {
@@ -239,7 +320,7 @@ func (h *Handler) SpacesUpdate(ctx context.Context, req *apigen.SpaceUpdate, par
 		return nil, err
 	}
 
-	return spaceFromDB(space)
+	return spaceFromDB(space), nil
 }
 
 func (h *Handler) SpacesDelete(ctx context.Context, params apigen.SpacesDeleteParams) error {
@@ -365,15 +446,23 @@ func (h *Handler) SpaceTasksList(ctx context.Context, params apigen.SpaceTasksLi
 		return nil, err
 	}
 
-	convertRow := func(task dbgen.Task) (*apigen.Task, error) {
-		return h.fetchTask(ctx, q, task.ID)
+	// Trim to page size and determine next cursor.
+	hasMore := int64(len(rows)) > limit
+	if hasMore {
+		rows = rows[:limit]
 	}
 
-	items, nextCursor, err := paginate(rows, limit, convertRow, func(t dbgen.Task) string {
-		return strconv.FormatInt(t.ID, 10)
-	})
+	// Batch-enrich all tasks in 3 queries (not 5N).
+	items, err := h.enrichTasks(ctx, q, rows)
 	if err != nil {
 		return nil, err
+	}
+
+	var nextCursor apigen.NilString
+	if hasMore {
+		nextCursor = encodeCursor(strconv.FormatInt(rows[len(rows)-1].ID, 10))
+	} else {
+		nextCursor.SetToNull()
 	}
 
 	return &apigen.TaskPage{Items: items, NextCursor: nextCursor}, nil
@@ -387,7 +476,13 @@ func (h *Handler) SpaceTasksRead(ctx context.Context, params apigen.SpaceTasksRe
 	if err != nil {
 		return nil, badRequest(err.Error())
 	}
-	q := dbgen.New(h.DB)
+	tx, err := h.DB.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	q := dbgen.New(tx)
 	return h.fetchTask(ctx, q, id)
 }
 
@@ -471,9 +566,6 @@ func (h *Handler) SpaceTasksDelete(ctx context.Context, params apigen.SpaceTasks
 // in the specified space. Global owners always pass.
 func (h *Handler) requireSpaceRole(ctx context.Context, spaceSlug string, roles ...string) error {
 	user := UserFromContext(ctx)
-	if user == nil {
-		return badRequest("authentication required")
-	}
 	if user.IsOwner {
 		return nil
 	}
@@ -591,18 +683,12 @@ func (h *Handler) setTaskTags(ctx context.Context, q *dbgen.Queries, taskID int6
 
 	ts := now()
 	for _, entry := range entries {
-		// Insert the tag if it doesn't exist, then fetch it.
-		if err := q.EnsureTag(ctx, dbgen.EnsureTagParams{
+		// Upsert the tag (no-op on conflict) and get its ID in one query.
+		tag, err := q.EnsureTag(ctx, dbgen.EnsureTagParams{
 			SpaceSlug:  spaceSlug,
 			Name:       entry.displayName,
 			NameFolded: entry.foldedName,
 			CreatedAt:  ts,
-		}); err != nil {
-			return err
-		}
-		tag, err := q.GetTagByFoldedName(ctx, dbgen.GetTagByFoldedNameParams{
-			SpaceSlug:  spaceSlug,
-			NameFolded: entry.foldedName,
 		})
 		if err != nil {
 			return err

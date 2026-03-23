@@ -56,10 +56,11 @@ func (q *Queries) DeleteTag(ctx context.Context, arg DeleteTagParams) (sql.Resul
 	return q.db.ExecContext(ctx, deleteTag, arg.SpaceSlug, arg.NameFolded)
 }
 
-const ensureTag = `-- name: EnsureTag :exec
+const ensureTag = `-- name: EnsureTag :one
 INSERT INTO tags (space_slug, name, name_folded, created_at)
 VALUES (?, ?, ?, ?)
-ON CONFLICT (space_slug, name_folded) DO NOTHING
+ON CONFLICT (space_slug, name_folded) DO UPDATE SET name = name
+RETURNING id, space_slug, name, name_folded, created_at
 `
 
 type EnsureTagParams struct {
@@ -69,14 +70,22 @@ type EnsureTagParams struct {
 	CreatedAt  types.EpochSeconds
 }
 
-func (q *Queries) EnsureTag(ctx context.Context, arg EnsureTagParams) error {
-	_, err := q.db.ExecContext(ctx, ensureTag,
+func (q *Queries) EnsureTag(ctx context.Context, arg EnsureTagParams) (Tag, error) {
+	row := q.db.QueryRowContext(ctx, ensureTag,
 		arg.SpaceSlug,
 		arg.Name,
 		arg.NameFolded,
 		arg.CreatedAt,
 	)
-	return err
+	var i Tag
+	err := row.Scan(
+		&i.ID,
+		&i.SpaceSlug,
+		&i.Name,
+		&i.NameFolded,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const getTagByFoldedName = `-- name: GetTagByFoldedName :one

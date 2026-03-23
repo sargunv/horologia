@@ -21,7 +21,20 @@ func (h *Handler) SpaceMembersList(ctx context.Context, params apigen.SpaceMembe
 	}
 
 	limit := clampLimit(params.Limit)
-	q := dbgen.New(h.DB)
+
+	tx, err := h.DB.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	q := dbgen.New(tx)
+
+	// Verify the space exists (owner bypasses requireSpaceRead so this
+	// ensures a 404 instead of an empty 200 for nonexistent spaces).
+	if _, err := q.GetSpace(ctx, params.SpaceSlug); err != nil {
+		return nil, err
+	}
 
 	rows, err := q.ListSpaceMembersBySpace(ctx, dbgen.ListSpaceMembersBySpaceParams{
 		SpaceSlug: params.SpaceSlug,
@@ -32,7 +45,9 @@ func (h *Handler) SpaceMembersList(ctx context.Context, params apigen.SpaceMembe
 		return nil, err
 	}
 
-	items, nextCursor, err := paginate(rows, limit, memberFromListRow, func(r dbgen.ListSpaceMembersBySpaceRow) string {
+	items, nextCursor, err := paginate(rows, limit, func(r dbgen.ListSpaceMembersBySpaceRow) (*apigen.SpaceMember, error) {
+		return memberFromListRow(r), nil
+	}, func(r dbgen.ListSpaceMembersBySpaceRow) string {
 		return strconv.FormatInt(r.UserID, 10)
 	})
 	if err != nil {
@@ -73,7 +88,7 @@ func (h *Handler) SpaceMembersCreate(ctx context.Context, req *apigen.SpaceMembe
 		return nil, err
 	}
 
-	return memberFromDB(member, targetUser.Name, targetUser.Email)
+	return memberFromDB(member, targetUser.Name, targetUser.Email), nil
 }
 
 func (h *Handler) SpaceMembersUpdate(ctx context.Context, req *apigen.SpaceMemberUpdate, params apigen.SpaceMembersUpdateParams) (*apigen.SpaceMember, error) {
@@ -119,7 +134,7 @@ func (h *Handler) SpaceMembersUpdate(ctx context.Context, req *apigen.SpaceMembe
 		return nil, err
 	}
 
-	return memberFromDB(member, targetUser.Name, targetUser.Email)
+	return memberFromDB(member, targetUser.Name, targetUser.Email), nil
 }
 
 func (h *Handler) SpaceMembersDelete(ctx context.Context, params apigen.SpaceMembersDeleteParams) error {

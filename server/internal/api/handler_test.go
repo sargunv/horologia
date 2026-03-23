@@ -73,8 +73,11 @@ func setupTestServer(t *testing.T) *testEnv {
 		t.Fatalf("new server: %v", err)
 	}
 
+	srv := httptest.NewServer(h)
+	t.Cleanup(srv.Close)
+
 	return &testEnv{
-		Server: httptest.NewServer(h),
+		Server: srv,
 		Token:  rawToken,
 		db:     db,
 	}
@@ -127,6 +130,27 @@ func createTestUser(t *testing.T, env *testEnv, email, name, password string) st
 	var result map[string]any
 	readJSON(t, resp, &result)
 	return result["token"].(string)
+}
+
+// getUserID calls GET /users/me with the given token and returns the user ID.
+func getUserID(t *testing.T, env *testEnv, token string) string {
+	t.Helper()
+	resp := doRequestAs(t, env, token, "GET", "/users/me", "")
+	assertStatus(t, resp, http.StatusOK)
+	var me map[string]any
+	readJSON(t, resp, &me)
+	return me["id"].(string)
+}
+
+// createAndAddMember creates a test user, resolves their ID, and adds them to
+// the given space with the specified role. Returns (token, userID).
+func createAndAddMember(t *testing.T, env *testEnv, spaceSlug, email, name, password, role string) (string, string) {
+	t.Helper()
+	token := createTestUser(t, env, email, name, password)
+	userID := getUserID(t, env, token)
+	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/"+spaceSlug+"/members",
+		`{"userId":"`+userID+`","role":"`+role+`"}`), http.StatusCreated)
+	return token, userID
 }
 
 func readJSON(t *testing.T, resp *http.Response, v any) {
@@ -193,7 +217,6 @@ func createTask(t *testing.T, env *testEnv, spaceSlug, jsonBody string) map[stri
 
 func TestAuthLoginSuccess(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	// Login doesn't need auth header, but doRequest always adds one. Use a raw request.
 	req, _ := http.NewRequest("POST", env.Server.URL+"/auth/login", strings.NewReader(`{"email":"test@example.com","password":"password"}`))
@@ -217,7 +240,6 @@ func TestAuthLoginSuccess(t *testing.T) {
 
 func TestAuthLoginBadPassword(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	req, _ := http.NewRequest("POST", env.Server.URL+"/auth/login", strings.NewReader(`{"email":"test@example.com","password":"wrong"}`))
 	req.Header.Set("Content-Type", "application/json")
@@ -230,7 +252,6 @@ func TestAuthLoginBadPassword(t *testing.T) {
 
 func TestUnauthenticatedRequest(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	// Request without auth header.
 	req, _ := http.NewRequest("GET", env.Server.URL+"/spaces", nil)
@@ -243,7 +264,6 @@ func TestUnauthenticatedRequest(t *testing.T) {
 
 func TestUsersMe(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	resp := doRequest(t, env, "GET", "/users/me", "")
 	assertStatus(t, resp, http.StatusOK)
@@ -262,7 +282,6 @@ func TestUsersMe(t *testing.T) {
 
 func TestSpacesCreate(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	resp := doRequest(t, env, "POST", "/spaces", `{"slug":"home","name":"Home"}`)
 	assertStatus(t, resp, http.StatusCreated)
@@ -288,7 +307,6 @@ func TestSpacesCreate(t *testing.T) {
 
 func TestSpacesCreateDuplicate(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 
@@ -298,7 +316,6 @@ func TestSpacesCreateDuplicate(t *testing.T) {
 
 func TestSpacesRead(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 
@@ -314,7 +331,6 @@ func TestSpacesRead(t *testing.T) {
 
 func TestSpacesReadNotFound(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	resp := doRequest(t, env, "GET", "/spaces/nonexistent", "")
 	assertStatusClose(t, resp, http.StatusNotFound)
@@ -322,7 +338,6 @@ func TestSpacesReadNotFound(t *testing.T) {
 
 func TestSpacesListEmpty(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	resp := doRequest(t, env, "GET", "/spaces", "")
 	assertStatus(t, resp, http.StatusOK)
@@ -340,7 +355,6 @@ func TestSpacesListEmpty(t *testing.T) {
 
 func TestSpacesList(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	// Insert in non-alphabetical order to prove sort is applied.
 	createSpace(t, env, "gamma", "Gamma")
@@ -364,7 +378,6 @@ func TestSpacesList(t *testing.T) {
 
 func TestSpacesListPagination(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	// Create 4 items to test exact page boundary (4 items / limit 2 = 2 full pages).
 	createSpace(t, env, "a", "A")
@@ -410,7 +423,6 @@ func TestSpacesListPagination(t *testing.T) {
 
 func TestSpacesUpdate(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 
@@ -433,7 +445,6 @@ func TestSpacesUpdate(t *testing.T) {
 
 func TestSpacesDelete(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 
@@ -449,7 +460,6 @@ func TestSpacesDelete(t *testing.T) {
 
 func TestTasksCreate(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 
@@ -482,7 +492,6 @@ func TestTasksCreate(t *testing.T) {
 
 func TestTasksCreateWithFields(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 
@@ -505,7 +514,6 @@ func TestTasksCreateWithFields(t *testing.T) {
 
 func TestTasksCreateInNonexistentSpace(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	resp := doRequest(t, env, "POST", "/spaces/nonexistent/tasks", `{"title":"Task"}`)
 	assertStatusClose(t, resp, http.StatusNotFound)
@@ -513,7 +521,6 @@ func TestTasksCreateInNonexistentSpace(t *testing.T) {
 
 func TestTasksCreateInvalidStatus(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 
@@ -523,7 +530,6 @@ func TestTasksCreateInvalidStatus(t *testing.T) {
 
 func TestTasksRead(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 	created := createTask(t, env, "home", `{"title":"Mop floors"}`)
@@ -540,7 +546,6 @@ func TestTasksRead(t *testing.T) {
 
 func TestTasksReadNotFound(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 
@@ -550,7 +555,6 @@ func TestTasksReadNotFound(t *testing.T) {
 
 func TestTasksReadInvalidID(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 
@@ -560,7 +564,6 @@ func TestTasksReadInvalidID(t *testing.T) {
 
 func TestTasksListEmpty(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 
@@ -580,7 +583,6 @@ func TestTasksListEmpty(t *testing.T) {
 
 func TestTasksListPagination(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 	// Create 4 tasks with distinct titles for verification.
@@ -631,7 +633,6 @@ func TestTasksListPagination(t *testing.T) {
 
 func TestTasksListNonexistentSpace(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	resp := doRequest(t, env, "GET", "/spaces/nonexistent/tasks", "")
 	assertStatusClose(t, resp, http.StatusNotFound)
@@ -639,7 +640,6 @@ func TestTasksListNonexistentSpace(t *testing.T) {
 
 func TestTasksUpdate(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 	// Create with a non-empty description to test merge preservation.
@@ -661,7 +661,6 @@ func TestTasksUpdate(t *testing.T) {
 
 func TestTasksUpdateStatus(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 	created := createTask(t, env, "home", `{"title":"Chore"}`)
@@ -678,7 +677,6 @@ func TestTasksUpdateStatus(t *testing.T) {
 
 func TestTasksUpdateInvalidStatus(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 	created := createTask(t, env, "home", `{"title":"Chore"}`)
@@ -690,7 +688,6 @@ func TestTasksUpdateInvalidStatus(t *testing.T) {
 
 func TestTasksUpdateClearDueDate(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 	created := createTask(t, env, "home", `{"title":"Task","dueDate":"2025-06-15"}`)
@@ -717,7 +714,6 @@ func TestTasksUpdateClearDueDate(t *testing.T) {
 
 func TestTasksDelete(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 	created := createTask(t, env, "home", `{"title":"Temp"}`)
@@ -733,7 +729,6 @@ func TestTasksDelete(t *testing.T) {
 
 func TestSpaceDeleteCascadesTasks(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 	created := createTask(t, env, "home", `{"title":"Chore"}`)
@@ -752,7 +747,6 @@ func TestSpaceDeleteCascadesTasks(t *testing.T) {
 
 func TestNonMemberCannotAccessSpace(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "secret", "Secret")
 	userToken := createTestUser(t, env, "bob@example.com", "Bob", "pass123")
@@ -771,20 +765,9 @@ func TestNonMemberCannotAccessSpace(t *testing.T) {
 
 func TestViewerCannotWriteToSpace(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
-	userToken := createTestUser(t, env, "viewer@example.com", "Viewer", "pass123")
-
-	// Get the user ID from /users/me.
-	resp := doRequestAs(t, env, userToken, "GET", "/users/me", "")
-	assertStatus(t, resp, http.StatusOK)
-	var me map[string]any
-	readJSON(t, resp, &me)
-	userID := me["id"].(string)
-
-	// Add as viewer.
-	doRequest(t, env, "POST", "/spaces/home/members", `{"userId":"`+userID+`","role":"viewer"}`)
+	userToken, _ := createAndAddMember(t, env, "home", "viewer@example.com", "Viewer", "pass123", "viewer")
 
 	// Viewer can read the space.
 	assertStatusClose(t, doRequestAs(t, env, userToken, "GET", "/spaces/home", ""), http.StatusOK)
@@ -800,19 +783,9 @@ func TestViewerCannotWriteToSpace(t *testing.T) {
 
 func TestMemberCannotManageSpace(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
-	userToken := createTestUser(t, env, "member@example.com", "Member", "pass123")
-
-	resp := doRequestAs(t, env, userToken, "GET", "/users/me", "")
-	assertStatus(t, resp, http.StatusOK)
-	var me map[string]any
-	readJSON(t, resp, &me)
-	userID := me["id"].(string)
-
-	// Add as member.
-	doRequest(t, env, "POST", "/spaces/home/members", `{"userId":"`+userID+`","role":"member"}`)
+	userToken, userID := createAndAddMember(t, env, "home", "member@example.com", "Member", "pass123", "member")
 
 	// Member can create tasks.
 	resp2 := doRequestAs(t, env, userToken, "POST", "/spaces/home/tasks", `{"title":"My task"}`)
@@ -827,22 +800,12 @@ func TestMemberCannotManageSpace(t *testing.T) {
 
 func TestNonOwnerSpacesListFiltered(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "alpha", "Alpha")
 	createSpace(t, env, "beta", "Beta")
 	createSpace(t, env, "gamma", "Gamma")
 
-	userToken := createTestUser(t, env, "user@example.com", "User", "pass123")
-
-	resp := doRequestAs(t, env, userToken, "GET", "/users/me", "")
-	assertStatus(t, resp, http.StatusOK)
-	var me map[string]any
-	readJSON(t, resp, &me)
-	userID := me["id"].(string)
-
-	// Add user to only "beta".
-	doRequest(t, env, "POST", "/spaces/beta/members", `{"userId":"`+userID+`","role":"member"}`)
+	userToken, _ := createAndAddMember(t, env, "beta", "user@example.com", "User", "pass123", "member")
 
 	// Non-owner should only see "beta".
 	resp2 := doRequestAs(t, env, userToken, "GET", "/spaces", "")
@@ -862,7 +825,6 @@ func TestNonOwnerSpacesListFiltered(t *testing.T) {
 
 func TestAuthTokenCreate(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	resp := doRequest(t, env, "POST", "/auth/tokens", `{"name":"my-token"}`)
 	assertStatus(t, resp, http.StatusCreated)
@@ -883,7 +845,6 @@ func TestAuthTokenCreate(t *testing.T) {
 
 func TestAuthTokenList(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	doRequest(t, env, "POST", "/auth/tokens", `{"name":"token-a"}`)
 	doRequest(t, env, "POST", "/auth/tokens", `{"name":"token-b"}`)
@@ -901,7 +862,6 @@ func TestAuthTokenList(t *testing.T) {
 
 func TestAuthTokenDelete(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	// Create a token.
 	resp := doRequest(t, env, "POST", "/auth/tokens", `{"name":"disposable"}`)
@@ -923,7 +883,6 @@ func TestAuthTokenDelete(t *testing.T) {
 
 func TestAuthTokenDeleteOtherUser(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	// Create a token as owner.
 	resp := doRequest(t, env, "POST", "/auth/tokens", `{"name":"owner-token"}`)
@@ -941,16 +900,10 @@ func TestAuthTokenDeleteOtherUser(t *testing.T) {
 
 func TestSpaceMembersCreate(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
-	userToken := createTestUser(t, env, "alice@example.com", "Alice", "pass123")
-
-	resp := doRequestAs(t, env, userToken, "GET", "/users/me", "")
-	assertStatus(t, resp, http.StatusOK)
-	var me map[string]any
-	readJSON(t, resp, &me)
-	userID := me["id"].(string)
+	aliceToken := createTestUser(t, env, "alice@example.com", "Alice", "pass123")
+	userID := getUserID(t, env, aliceToken)
 
 	resp2 := doRequest(t, env, "POST", "/spaces/home/members", `{"userId":"`+userID+`","role":"member"}`)
 	assertStatus(t, resp2, http.StatusCreated)
@@ -969,7 +922,6 @@ func TestSpaceMembersCreate(t *testing.T) {
 
 func TestSpaceMembersList(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 
@@ -989,19 +941,9 @@ func TestSpaceMembersList(t *testing.T) {
 
 func TestSpaceMembersUpdate(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
-	userToken := createTestUser(t, env, "bob@example.com", "Bob", "pass123")
-
-	resp := doRequestAs(t, env, userToken, "GET", "/users/me", "")
-	assertStatus(t, resp, http.StatusOK)
-	var me map[string]any
-	readJSON(t, resp, &me)
-	userID := me["id"].(string)
-
-	// Add as member.
-	doRequest(t, env, "POST", "/spaces/home/members", `{"userId":"`+userID+`","role":"member"}`)
+	_, userID := createAndAddMember(t, env, "home", "bob@example.com", "Bob", "pass123", "member")
 
 	// Promote to admin.
 	resp2 := doRequest(t, env, "PATCH", "/spaces/home/members/"+userID, `{"role":"admin"}`)
@@ -1015,19 +957,11 @@ func TestSpaceMembersUpdate(t *testing.T) {
 
 func TestSpaceMembersDelete(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
-	userToken := createTestUser(t, env, "charlie@example.com", "Charlie", "pass123")
+	userToken, userID := createAndAddMember(t, env, "home", "charlie@example.com", "Charlie", "pass123", "member")
 
-	resp := doRequestAs(t, env, userToken, "GET", "/users/me", "")
-	assertStatus(t, resp, http.StatusOK)
-	var me map[string]any
-	readJSON(t, resp, &me)
-	userID := me["id"].(string)
-
-	// Add then remove.
-	doRequest(t, env, "POST", "/spaces/home/members", `{"userId":"`+userID+`","role":"member"}`)
+	// Remove.
 	assertStatusClose(t, doRequest(t, env, "DELETE", "/spaces/home/members/"+userID, ""), http.StatusNoContent)
 
 	// User can no longer access the space.
@@ -1036,7 +970,6 @@ func TestSpaceMembersDelete(t *testing.T) {
 
 func TestSpaceMembersLastAdminGuard(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 
@@ -1057,7 +990,6 @@ func TestSpaceMembersLastAdminGuard(t *testing.T) {
 
 func TestTaskAssigneesOnCreate(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 
@@ -1081,7 +1013,6 @@ func TestTaskAssigneesOnCreate(t *testing.T) {
 
 func TestTaskAssigneesEmptyByDefault(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 	task := createTask(t, env, "home", `{"title":"No assignees"}`)
@@ -1093,7 +1024,6 @@ func TestTaskAssigneesEmptyByDefault(t *testing.T) {
 
 func TestTaskAssigneesUpdate(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 
@@ -1105,13 +1035,7 @@ func TestTaskAssigneesUpdate(t *testing.T) {
 	ownerID := me["id"].(string)
 
 	// Create a second user and add as member.
-	userToken := createTestUser(t, env, "bob@example.com", "Bob", "pass123")
-	resp2 := doRequestAs(t, env, userToken, "GET", "/users/me", "")
-	assertStatus(t, resp2, http.StatusOK)
-	var me2 map[string]any
-	readJSON(t, resp2, &me2)
-	bobID := me2["id"].(string)
-	doRequest(t, env, "POST", "/spaces/home/members", `{"userId":"`+bobID+`","role":"member"}`)
+	_, bobID := createAndAddMember(t, env, "home", "bob@example.com", "Bob", "pass123", "member")
 
 	// Create task without assignees.
 	task := createTask(t, env, "home", `{"title":"Test"}`)
@@ -1147,7 +1071,6 @@ func TestTaskAssigneesUpdate(t *testing.T) {
 
 func TestTaskAssigneesPreservedOnUnrelatedUpdate(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 
@@ -1180,17 +1103,12 @@ func TestTaskAssigneesPreservedOnUnrelatedUpdate(t *testing.T) {
 
 func TestTaskAssigneesNonMemberRejected(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 
 	// Create a user but don't add them as a member.
 	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass123")
-	resp := doRequestAs(t, env, outsiderToken, "GET", "/users/me", "")
-	assertStatus(t, resp, http.StatusOK)
-	var me map[string]any
-	readJSON(t, resp, &me)
-	outsiderID := me["id"].(string)
+	outsiderID := getUserID(t, env, outsiderToken)
 
 	// Try to assign the non-member.
 	task := createTask(t, env, "home", `{"title":"Test"}`)
@@ -1201,19 +1119,12 @@ func TestTaskAssigneesNonMemberRejected(t *testing.T) {
 
 func TestTaskAssigneesCrossSpaceRejected(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "alpha", "Alpha")
 	createSpace(t, env, "beta", "Beta")
 
 	// Create user and add to beta only.
-	userToken := createTestUser(t, env, "bob@example.com", "Bob", "pass123")
-	resp := doRequestAs(t, env, userToken, "GET", "/users/me", "")
-	assertStatus(t, resp, http.StatusOK)
-	var me map[string]any
-	readJSON(t, resp, &me)
-	bobID := me["id"].(string)
-	doRequest(t, env, "POST", "/spaces/beta/members", `{"userId":"`+bobID+`","role":"member"}`)
+	_, bobID := createAndAddMember(t, env, "beta", "bob@example.com", "Bob", "pass123", "member")
 
 	// Try to assign bob to a task in alpha (where he's not a member).
 	task := createTask(t, env, "alpha", `{"title":"Test"}`)
@@ -1224,7 +1135,6 @@ func TestTaskAssigneesCrossSpaceRejected(t *testing.T) {
 
 func TestTaskAssigneesDeduplicated(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 
@@ -1244,7 +1154,6 @@ func TestTaskAssigneesDeduplicated(t *testing.T) {
 
 func TestTaskDeleteCascadesAssignees(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 
@@ -1266,7 +1175,6 @@ func TestTaskDeleteCascadesAssignees(t *testing.T) {
 
 func TestTaskAssigneesInListResponse(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 
@@ -1308,18 +1216,11 @@ func TestTaskAssigneesInListResponse(t *testing.T) {
 
 func TestMemberRemovalClearsAssignments(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 
 	// Create a user and add as member.
-	userToken := createTestUser(t, env, "bob@example.com", "Bob", "pass123")
-	resp := doRequestAs(t, env, userToken, "GET", "/users/me", "")
-	assertStatus(t, resp, http.StatusOK)
-	var me map[string]any
-	readJSON(t, resp, &me)
-	bobID := me["id"].(string)
-	doRequest(t, env, "POST", "/spaces/home/members", `{"userId":"`+bobID+`","role":"member"}`)
+	_, bobID := createAndAddMember(t, env, "home", "bob@example.com", "Bob", "pass123", "member")
 
 	// Assign bob to a task.
 	task := createTask(t, env, "home", `{"title":"Bob's task","assigneeIds":["`+bobID+`"]}`)
@@ -1349,7 +1250,6 @@ func TestMemberRemovalClearsAssignments(t *testing.T) {
 
 func TestTaskAssigneesInvalidIDFormat(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 	task := createTask(t, env, "home", `{"title":"Test"}`)
@@ -1362,7 +1262,6 @@ func TestTaskAssigneesInvalidIDFormat(t *testing.T) {
 
 func TestTaskAssigneesNonExistentUser(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "home", "Home")
 	task := createTask(t, env, "home", `{"title":"Test"}`)
@@ -1375,7 +1274,6 @@ func TestTaskAssigneesNonExistentUser(t *testing.T) {
 
 func TestMemberRemovalIsolation(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	createSpace(t, env, "alpha", "Alpha")
 	createSpace(t, env, "beta", "Beta")
@@ -1420,7 +1318,6 @@ func TestMemberRemovalIsolation(t *testing.T) {
 
 func TestAuthLoginUnknownEmail(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	resp := doRequestAs(t, env, "", "POST", "/auth/login", `{"email":"nobody@example.com","password":"anything"}`)
 	assertStatusClose(t, resp, http.StatusBadRequest)
@@ -1428,7 +1325,6 @@ func TestAuthLoginUnknownEmail(t *testing.T) {
 
 func TestExpiredTokenRejected(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
 
 	// Create a token that's already expired directly in the DB.
 	rawToken := "expired-test-token"
@@ -1450,6 +1346,157 @@ func TestExpiredTokenRejected(t *testing.T) {
 	}
 
 	assertStatusClose(t, doRequestAs(t, env, rawToken, "GET", "/users/me", ""), http.StatusUnauthorized)
+}
+
+// --- Tags ---
+
+func TestSpaceTagsCreate(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "tag-test", "Tag Test")
+
+	resp := doRequest(t, env, "POST", "/spaces/tag-test/tags", `{"name":"Bug"}`)
+	assertStatus(t, resp, http.StatusCreated)
+	var tag map[string]any
+	readJSON(t, resp, &tag)
+	if tag["name"] != "Bug" {
+		t.Fatalf("got name %v, want Bug", tag["name"])
+	}
+	if tag["createdAt"] == nil {
+		t.Fatal("expected createdAt to be set")
+	}
+}
+
+func TestSpaceTagsCreateDuplicate(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "tag-dup", "Tag Dup")
+
+	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-dup/tags", `{"name":"Bug"}`), http.StatusCreated)
+
+	// Same name (exact case) should 409.
+	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-dup/tags", `{"name":"Bug"}`), http.StatusConflict)
+}
+
+func TestSpaceTagsCreateCaseFoldDuplicate(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "tag-fold", "Tag Fold")
+
+	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-fold/tags", `{"name":"Bug"}`), http.StatusCreated)
+
+	// Different case but same folded name should also 409.
+	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-fold/tags", `{"name":"bug"}`), http.StatusConflict)
+}
+
+func TestSpaceTagsCreateEmpty(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "tag-empty", "Tag Empty")
+
+	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-empty/tags", `{"name":""}`), http.StatusBadRequest)
+}
+
+func TestSpaceTagsList(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "tag-list", "Tag List")
+
+	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-list/tags", `{"name":"Alpha"}`), http.StatusCreated)
+	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-list/tags", `{"name":"Beta"}`), http.StatusCreated)
+
+	resp := doRequest(t, env, "GET", "/spaces/tag-list/tags", "")
+	assertStatus(t, resp, http.StatusOK)
+	var page map[string]any
+	readJSON(t, resp, &page)
+	items := page["items"].([]any)
+	if len(items) != 2 {
+		t.Fatalf("got %d tags, want 2", len(items))
+	}
+}
+
+func TestSpaceTagsListEmpty(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "tag-le", "Tag List Empty")
+
+	resp := doRequest(t, env, "GET", "/spaces/tag-le/tags", "")
+	assertStatus(t, resp, http.StatusOK)
+	var page map[string]any
+	readJSON(t, resp, &page)
+	items := page["items"].([]any)
+	if len(items) != 0 {
+		t.Fatalf("got %d tags, want 0", len(items))
+	}
+}
+
+func TestSpaceTagsUpdate(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "tag-upd", "Tag Update")
+
+	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-upd/tags", `{"name":"Bug"}`), http.StatusCreated)
+
+	resp := doRequest(t, env, "PATCH", "/spaces/tag-upd/tags/Bug", `{"name":"Defect"}`)
+	assertStatus(t, resp, http.StatusOK)
+	var tag map[string]any
+	readJSON(t, resp, &tag)
+	if tag["name"] != "Defect" {
+		t.Fatalf("got name %v, want Defect", tag["name"])
+	}
+}
+
+func TestSpaceTagsUpdateCaseFoldCollision(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "tag-coll", "Tag Collision")
+
+	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-coll/tags", `{"name":"Bug"}`), http.StatusCreated)
+	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-coll/tags", `{"name":"Feature"}`), http.StatusCreated)
+
+	// Renaming "Feature" to "bug" should conflict with "Bug".
+	assertStatusClose(t, doRequest(t, env, "PATCH", "/spaces/tag-coll/tags/Feature", `{"name":"bug"}`), http.StatusConflict)
+}
+
+func TestSpaceTagsUpdateNotFound(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "tag-unf", "Tag Update NF")
+
+	assertStatusClose(t, doRequest(t, env, "PATCH", "/spaces/tag-unf/tags/nonexistent", `{"name":"X"}`), http.StatusNotFound)
+}
+
+func TestSpaceTagsDelete(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "tag-del", "Tag Delete")
+
+	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-del/tags", `{"name":"Bug"}`), http.StatusCreated)
+
+	assertStatusClose(t, doRequest(t, env, "DELETE", "/spaces/tag-del/tags/Bug", ""), http.StatusNoContent)
+
+	// List should be empty now.
+	resp := doRequest(t, env, "GET", "/spaces/tag-del/tags", "")
+	assertStatus(t, resp, http.StatusOK)
+	var page map[string]any
+	readJSON(t, resp, &page)
+	if len(page["items"].([]any)) != 0 {
+		t.Fatal("expected no tags after delete")
+	}
+}
+
+func TestSpaceTagsDeleteNotFound(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "tag-dnf", "Tag Delete NF")
+
+	assertStatusClose(t, doRequest(t, env, "DELETE", "/spaces/tag-dnf/tags/nonexistent", ""), http.StatusNotFound)
+}
+
+func TestSpaceTagsCrossSpaceIsolation(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "tag-a", "Tag A")
+	createSpace(t, env, "tag-b", "Tag B")
+
+	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-a/tags", `{"name":"Bug"}`), http.StatusCreated)
+
+	// Tag in space A should not appear in space B.
+	resp := doRequest(t, env, "GET", "/spaces/tag-b/tags", "")
+	assertStatus(t, resp, http.StatusOK)
+	var page map[string]any
+	readJSON(t, resp, &page)
+	if len(page["items"].([]any)) != 0 {
+		t.Fatal("space B should have no tags")
+	}
 }
 
 // --- Task Relations ---
@@ -1496,7 +1543,7 @@ func createRelation(t *testing.T, env *testEnv, spaceSlug, taskID, kind, related
 
 func TestTaskRelationsCreate(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
+
 	createSpace(t, env, "rel-test", "Relation Test")
 	t1 := createTask(t, env, "rel-test", `{"title":"Task 1"}`)
 	t2 := createTask(t, env, "rel-test", `{"title":"Task 2"}`)
@@ -1525,7 +1572,7 @@ func TestTaskRelationsCreate(t *testing.T) {
 
 func TestTaskRelationsSymmetric(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
+
 	createSpace(t, env, "sym-test", "Symmetric Test")
 	t1 := createTask(t, env, "sym-test", `{"title":"Task 1"}`)
 	t2 := createTask(t, env, "sym-test", `{"title":"Task 2"}`)
@@ -1543,7 +1590,7 @@ func TestTaskRelationsSymmetric(t *testing.T) {
 
 func TestTaskRelationsDelete(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
+
 	createSpace(t, env, "del-test", "Delete Test")
 	t1 := createTask(t, env, "del-test", `{"title":"Task 1"}`)
 	t2 := createTask(t, env, "del-test", `{"title":"Task 2"}`)
@@ -1562,7 +1609,7 @@ func TestTaskRelationsDelete(t *testing.T) {
 
 func TestTaskRelationsDeleteFromOtherSide(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
+
 	createSpace(t, env, "del2-test", "Delete Other Side Test")
 	t1 := createTask(t, env, "del2-test", `{"title":"Task 1"}`)
 	t2 := createTask(t, env, "del2-test", `{"title":"Task 2"}`)
@@ -1582,7 +1629,7 @@ func TestTaskRelationsDeleteFromOtherSide(t *testing.T) {
 
 func TestTaskRelationsDeleteNonExistent(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
+
 	createSpace(t, env, "del-ne", "Delete Non-Existent")
 	t1 := createTask(t, env, "del-ne", `{"title":"Task 1"}`)
 	t2 := createTask(t, env, "del-ne", `{"title":"Task 2"}`)
@@ -1595,7 +1642,7 @@ func TestTaskRelationsDeleteNonExistent(t *testing.T) {
 
 func TestTaskRelationsSelfRejected(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
+
 	createSpace(t, env, "self-test", "Self Test")
 	t1 := createTask(t, env, "self-test", `{"title":"Task 1"}`)
 
@@ -1606,7 +1653,7 @@ func TestTaskRelationsSelfRejected(t *testing.T) {
 
 func TestTaskRelationsCrossSpaceRejected(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
+
 	createSpace(t, env, "space-a", "Space A")
 	createSpace(t, env, "space-b", "Space B")
 	t1 := createTask(t, env, "space-a", `{"title":"Task 1"}`)
@@ -1619,7 +1666,7 @@ func TestTaskRelationsCrossSpaceRejected(t *testing.T) {
 
 func TestTaskRelationsNonExistentTask(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
+
 	createSpace(t, env, "ne-test", "Non-Existent Test")
 	t1 := createTask(t, env, "ne-test", `{"title":"Task 1"}`)
 
@@ -1630,7 +1677,7 @@ func TestTaskRelationsNonExistentTask(t *testing.T) {
 
 func TestTaskRelationsDuplicateRejected(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
+
 	createSpace(t, env, "dup-test", "Dup Test")
 	t1 := createTask(t, env, "dup-test", `{"title":"Task 1"}`)
 	t2 := createTask(t, env, "dup-test", `{"title":"Task 2"}`)
@@ -1646,7 +1693,7 @@ func TestTaskRelationsDuplicateRejected(t *testing.T) {
 
 func TestTaskRelationsDuplicateViaInverse(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
+
 	createSpace(t, env, "dup-inv", "Dup Inverse Test")
 	t1 := createTask(t, env, "dup-inv", `{"title":"Task 1"}`)
 	t2 := createTask(t, env, "dup-inv", `{"title":"Task 2"}`)
@@ -1662,7 +1709,7 @@ func TestTaskRelationsDuplicateViaInverse(t *testing.T) {
 
 func TestTaskRelationsCreateViaBlockedBy(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
+
 	createSpace(t, env, "blkby-test", "Blocked By Test")
 	t1 := createTask(t, env, "blkby-test", `{"title":"Task 1"}`)
 	t2 := createTask(t, env, "blkby-test", `{"title":"Task 2"}`)
@@ -1679,7 +1726,7 @@ func TestTaskRelationsCreateViaBlockedBy(t *testing.T) {
 
 func TestTaskRelationsParentChild(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
+
 	createSpace(t, env, "pc-test", "Parent Child Test")
 	parent := createTask(t, env, "pc-test", `{"title":"Parent"}`)
 	child := createTask(t, env, "pc-test", `{"title":"Child"}`)
@@ -1696,7 +1743,7 @@ func TestTaskRelationsParentChild(t *testing.T) {
 
 func TestTaskRelationsDuplicatesKind(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
+
 	createSpace(t, env, "dup-kind", "Duplicates Kind Test")
 	t1 := createTask(t, env, "dup-kind", `{"title":"Task 1"}`)
 	t2 := createTask(t, env, "dup-kind", `{"title":"Task 2"}`)
@@ -1714,7 +1761,7 @@ func TestTaskRelationsDuplicatesKind(t *testing.T) {
 
 func TestTaskRelationsInListResponse(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
+
 	createSpace(t, env, "list-rel", "List Rel Test")
 	t1 := createTask(t, env, "list-rel", `{"title":"Task 1"}`)
 	t2 := createTask(t, env, "list-rel", `{"title":"Task 2"}`)
@@ -1749,7 +1796,7 @@ func TestTaskRelationsInListResponse(t *testing.T) {
 
 func TestTaskRelationsEmptyByDefault(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
+
 	createSpace(t, env, "empty-rel", "Empty Rel Test")
 	task := createTask(t, env, "empty-rel", `{"title":"Task 1"}`)
 
@@ -1763,7 +1810,7 @@ func TestTaskRelationsEmptyByDefault(t *testing.T) {
 
 func TestTaskRelationsNonMemberRejected(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
+
 	createSpace(t, env, "perm-test", "Permission Test")
 	t1 := createTask(t, env, "perm-test", `{"title":"Task 1"}`)
 	t2 := createTask(t, env, "perm-test", `{"title":"Task 2"}`)
@@ -1779,7 +1826,7 @@ func TestTaskRelationsNonMemberRejected(t *testing.T) {
 
 func TestTaskRelationsCascadeOnTaskDelete(t *testing.T) {
 	env := setupTestServer(t)
-	defer env.Server.Close()
+
 	createSpace(t, env, "cascade-rel", "Cascade Test")
 	t1 := createTask(t, env, "cascade-rel", `{"title":"Task 1"}`)
 	t2 := createTask(t, env, "cascade-rel", `{"title":"Task 2"}`)

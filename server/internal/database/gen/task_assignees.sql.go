@@ -7,6 +7,7 @@ package gen
 
 import (
 	"context"
+	"strings"
 
 	"github.com/sargunv/tend/server/internal/types"
 )
@@ -71,6 +72,50 @@ func (q *Queries) ListAssigneeUserIDsByTask(ctx context.Context, taskID int64) (
 			return nil, err
 		}
 		items = append(items, user_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAssigneeUserIDsByTasks = `-- name: ListAssigneeUserIDsByTasks :many
+SELECT task_id, user_id FROM task_assignees
+WHERE task_id IN (/*SLICE:task_ids*/?)
+ORDER BY task_id, user_id
+`
+
+type ListAssigneeUserIDsByTasksRow struct {
+	TaskID int64
+	UserID int64
+}
+
+func (q *Queries) ListAssigneeUserIDsByTasks(ctx context.Context, taskIds []int64) ([]ListAssigneeUserIDsByTasksRow, error) {
+	query := listAssigneeUserIDsByTasks
+	var queryParams []interface{}
+	if len(taskIds) > 0 {
+		for _, v := range taskIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:task_ids*/?", strings.Repeat(",?", len(taskIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:task_ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAssigneeUserIDsByTasksRow{}
+	for rows.Next() {
+		var i ListAssigneeUserIDsByTasksRow
+		if err := rows.Scan(&i.TaskID, &i.UserID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
