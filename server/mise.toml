@@ -1,6 +1,3 @@
-[env]
-TEND_DB = "{{config_root}}/tend.db"
-
 [tasks.generate]
 description = "Run all code generation"
 depends = ["//api:compile"]
@@ -41,4 +38,5 @@ run = "rm -f tend.db tend.db-shm tend.db-wal"
 [tasks.create-admin]
 description = "Create the dev admin user (admin@localhost / password)"
 depends = ["build"]
+env = { TEND_DB = "{{config_root}}/tend.db" }
 run = "./tend-server create-admin --email admin@localhost --name Admin --password password"
