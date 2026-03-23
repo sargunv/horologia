@@ -23,7 +23,7 @@ type Handler struct {
 
 func (h *Handler) NewError(ctx context.Context, err error) *apigen.ApiErrorStatusCode {
 	code := http.StatusInternalServerError
-	apiCode := "internal_error"
+	apiCode := "internal_server_error"
 	message := "an internal error occurred"
 
 	var secErr *ogenerrors.SecurityError

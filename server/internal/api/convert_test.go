@@ -318,7 +318,7 @@ func TestConvert_relationFromDB(t *testing.T) {
 }
 
 func TestConvert_paginate(t *testing.T) {
-	identity := func(v int) (*int, error) { return &v, nil }
+	identity := func(rows []int) ([]int, error) { return rows, nil }
 	cursorOf := func(v int) string { return "c" }
 
 	tests := []struct {

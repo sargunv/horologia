@@ -254,23 +254,13 @@ func (h *Handler) SpaceTasksList(ctx context.Context, params apigen.SpaceTasksLi
 		return nil, err
 	}
 
-	// Trim to page size and determine next cursor.
-	hasMore := int64(len(rows)) > limit
-	if hasMore {
-		rows = rows[:limit]
-	}
-
-	// Batch-enrich all tasks in 3 queries (not 5N).
-	items, err := h.enrichTasks(ctx, q, rows)
+	items, nextCursor, err := paginate(rows, limit, func(rows []dbgen.Task) ([]apigen.Task, error) {
+		return h.enrichTasks(ctx, q, rows)
+	}, func(t dbgen.Task) string {
+		return strconv.FormatInt(t.ID, 10)
+	})
 	if err != nil {
 		return nil, err
-	}
-
-	var nextCursor apigen.NilString
-	if hasMore {
-		nextCursor = encodeCursor(strconv.FormatInt(rows[len(rows)-1].ID, 10))
-	} else {
-		nextCursor.SetToNull()
 	}
 
 	return &apigen.TaskPage{Items: items, NextCursor: nextCursor}, nil

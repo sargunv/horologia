@@ -194,8 +194,8 @@ func MountOIDC(base http.Handler, oidcHandler http.Handler, log *slog.Logger) ht
 		return base
 	}
 	mux := http.NewServeMux()
-	mux.Handle("/auth/oidc", oidcHandler)
-	mux.Handle("/auth/oidc/callback", oidcHandler)
+	mux.Handle("GET /auth/oidc", oidcHandler)
+	mux.Handle("GET /auth/oidc/callback", oidcHandler)
 	mux.Handle("/", base)
 	log.Info("OIDC enabled")
 	return mux

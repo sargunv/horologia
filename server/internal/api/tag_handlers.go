@@ -45,7 +45,13 @@ func (h *Handler) SpaceTagsList(ctx context.Context, params apigen.SpaceTagsList
 		return nil, err
 	}
 
-	items, nextCursor, err := paginate(rows, limit, func(t dbgen.Tag) (*apigen.Tag, error) { return tagFromDB(t), nil }, tagCursorKey)
+	items, nextCursor, err := paginate(rows, limit, func(rows []dbgen.Tag) ([]apigen.Tag, error) {
+		items := make([]apigen.Tag, len(rows))
+		for i, t := range rows {
+			items[i] = *tagFromDB(t)
+		}
+		return items, nil
+	}, tagCursorKey)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +69,13 @@ func (h *Handler) SpaceTagsCreate(ctx context.Context, req *apigen.TagCreate, pa
 		return nil, err
 	}
 
-	q := dbgen.New(h.DB)
+	tx, err := h.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	q := dbgen.New(tx)
 
 	// Verify the space exists.
 	if _, err := q.GetSpace(ctx, params.SpaceSlug); err != nil {
@@ -77,6 +89,10 @@ func (h *Handler) SpaceTagsCreate(ctx context.Context, req *apigen.TagCreate, pa
 		CreatedAt:  types.Now(),
 	})
 	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 

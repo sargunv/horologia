@@ -46,8 +46,12 @@ func (h *Handler) SpaceMembersList(ctx context.Context, params apigen.SpaceMembe
 		return nil, err
 	}
 
-	items, nextCursor, err := paginate(rows, limit, func(r dbgen.ListSpaceMembersBySpaceRow) (*apigen.SpaceMember, error) {
-		return memberToAPI(r.UserID, r.UserName, r.UserEmail, r.Role, r.CreatedAt), nil
+	items, nextCursor, err := paginate(rows, limit, func(rows []dbgen.ListSpaceMembersBySpaceRow) ([]apigen.SpaceMember, error) {
+		items := make([]apigen.SpaceMember, len(rows))
+		for i, r := range rows {
+			items[i] = *memberToAPI(r.UserID, r.UserName, r.UserEmail, r.Role, r.CreatedAt)
+		}
+		return items, nil
 	}, func(r dbgen.ListSpaceMembersBySpaceRow) string {
 		return strconv.FormatInt(r.UserID, 10)
 	})
@@ -68,7 +72,13 @@ func (h *Handler) SpaceMembersCreate(ctx context.Context, req *apigen.SpaceMembe
 		return nil, badRequest(err.Error())
 	}
 
-	q := dbgen.New(h.DB)
+	tx, err := h.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	q := dbgen.New(tx)
 
 	// Verify the target user exists.
 	targetUser, err := q.GetUserByID(ctx, userID)
@@ -86,6 +96,10 @@ func (h *Handler) SpaceMembersCreate(ctx context.Context, req *apigen.SpaceMembe
 		CreatedAt: types.Now(),
 	})
 	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 

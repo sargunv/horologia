@@ -53,7 +53,13 @@ func (h *Handler) SpacesList(ctx context.Context, params apigen.SpacesListParams
 		return nil, err
 	}
 
-	items, nextCursor, err := paginate(spaces, limit, func(s dbgen.Space) (*apigen.Space, error) { return spaceFromDB(s), nil }, func(s dbgen.Space) string {
+	items, nextCursor, err := paginate(spaces, limit, func(rows []dbgen.Space) ([]apigen.Space, error) {
+		items := make([]apigen.Space, len(rows))
+		for i, s := range rows {
+			items[i] = *spaceFromDB(s)
+		}
+		return items, nil
+	}, func(s dbgen.Space) string {
 		return s.Slug
 	})
 	if err != nil {

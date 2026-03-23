@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 
 	"golang.org/x/crypto/bcrypt"
 
@@ -180,11 +181,19 @@ func MountWebAuth(base http.Handler, handler *Handler) http.Handler {
 	return mux
 }
 
+func httpStatusToCode(status int) string {
+	text := http.StatusText(status)
+	if text == "" {
+		return "internal_error"
+	}
+	return strings.ToLower(strings.ReplaceAll(text, " ", "_"))
+}
+
 func writeJSONError(w http.ResponseWriter, status int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(map[string]string{
-		"code":    http.StatusText(status),
+		"code":    httpStatusToCode(status),
 		"message": message,
 	})
 }

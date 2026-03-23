@@ -107,35 +107,54 @@ var directedKindMap = map[apigen.TaskRelationKind]struct {
 	apigen.TaskRelationKindBlockedBy: {"blocks", true},
 }
 
+// inverseKindMap is derived from directedKindMap at init time. It maps
+// (storedKind, isFlipped) to the API-facing directed kind.
+var inverseKindMap map[struct {
+	kind string
+	flip bool
+}]apigen.TaskRelationKind
+
+// symmetricKinds lists stored relation kinds that are symmetric (same kind in both directions).
+var symmetricKinds = map[string]bool{
+	string(apigen.TaskRelationKindRelatesTo):  true,
+	string(apigen.TaskRelationKindDuplicates): true,
+}
+
+func init() {
+	inverseKindMap = make(map[struct {
+		kind string
+		flip bool
+	}]apigen.TaskRelationKind, len(directedKindMap))
+	for apiKind, c := range directedKindMap {
+		inverseKindMap[struct {
+			kind string
+			flip bool
+		}{c.storedKind, c.flip}] = apiKind
+	}
+}
+
 func relationFromDB(rel taskRelationRow, perspectiveTaskID int64) (apigen.TaskRelation, error) {
+	isSource := rel.SourceTaskID == perspectiveTaskID
+
 	var kind apigen.TaskRelationKind
 	var relatedID int64
 
-	switch rel.Kind {
-	case "parent":
-		if rel.SourceTaskID == perspectiveTaskID {
-			kind = apigen.TaskRelationKindParentOf
-			relatedID = rel.TargetTaskID
-		} else {
-			kind = apigen.TaskRelationKindChildOf
-			relatedID = rel.SourceTaskID
-		}
-	case "blocks":
-		if rel.SourceTaskID == perspectiveTaskID {
-			kind = apigen.TaskRelationKindBlocks
-			relatedID = rel.TargetTaskID
-		} else {
-			kind = apigen.TaskRelationKindBlockedBy
-			relatedID = rel.SourceTaskID
-		}
-	case "relates_to", "duplicates":
+	if isSource {
+		relatedID = rel.TargetTaskID
+	} else {
+		relatedID = rel.SourceTaskID
+	}
+
+	key := struct {
+		kind string
+		flip bool
+	}{rel.Kind, !isSource}
+
+	if k, ok := inverseKindMap[key]; ok {
+		kind = k
+	} else if symmetricKinds[rel.Kind] {
 		kind = apigen.TaskRelationKind(rel.Kind)
-		if rel.SourceTaskID == perspectiveTaskID {
-			relatedID = rel.TargetTaskID
-		} else {
-			relatedID = rel.SourceTaskID
-		}
-	default:
+	} else {
 		return apigen.TaskRelation{}, fmt.Errorf("unknown relation kind %q", rel.Kind)
 	}
 
@@ -200,20 +219,16 @@ func taskFromDB(task dbgen.Task, assigneeUserIDs []int64, tagNames []string, rel
 func paginate[DB any, API any](
 	rows []DB,
 	limit int64,
-	convert func(DB) (*API, error),
+	convertAll func([]DB) ([]API, error),
 	cursorOf func(DB) string,
 ) ([]API, apigen.NilString, error) {
 	hasMore := int64(len(rows)) > limit
 	if hasMore {
 		rows = rows[:limit]
 	}
-	items := make([]API, 0, len(rows))
-	for _, row := range rows {
-		item, err := convert(row)
-		if err != nil {
-			return nil, apigen.NilString{}, err
-		}
-		items = append(items, *item)
+	items, err := convertAll(rows)
+	if err != nil {
+		return nil, apigen.NilString{}, err
 	}
 	var next apigen.NilString
 	if hasMore {
