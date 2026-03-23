@@ -55,16 +55,12 @@ model TaskUpdate {
   dueDate?: plainDate | null;
 }
 
-model TaskListParams {
-  ...PageParams;
-}
-
 model TaskPage is Page<Task>;
 
 @route("/spaces/{spaceSlug}/tasks")
 @tag("Tasks")
 interface SpaceTasks {
-  @get list(@path spaceSlug: string, ...TaskListParams): TaskPage | ApiError;
+  @get list(@path spaceSlug: string, ...PageParams): TaskPage | ApiError;
 
   @post create(@path spaceSlug: string, @body body: TaskCreate): {
     @statusCode statusCode: 201;

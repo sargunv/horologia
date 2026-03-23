@@ -8,6 +8,7 @@ import (
 
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 func (h *Handler) SpaceMembersList(ctx context.Context, params apigen.SpaceMembersListParams) (*apigen.SpaceMemberPage, error) {
@@ -46,7 +47,7 @@ func (h *Handler) SpaceMembersList(ctx context.Context, params apigen.SpaceMembe
 	}
 
 	items, nextCursor, err := paginate(rows, limit, func(r dbgen.ListSpaceMembersBySpaceRow) (*apigen.SpaceMember, error) {
-		return memberFromListRow(r), nil
+		return memberToAPI(r.UserID, r.UserName, r.UserEmail, r.Role, r.CreatedAt), nil
 	}, func(r dbgen.ListSpaceMembersBySpaceRow) string {
 		return strconv.FormatInt(r.UserID, 10)
 	})
@@ -82,13 +83,13 @@ func (h *Handler) SpaceMembersCreate(ctx context.Context, req *apigen.SpaceMembe
 		SpaceSlug: params.SpaceSlug,
 		UserID:    userID,
 		Role:      string(req.Role),
-		CreatedAt: now(),
+		CreatedAt: types.Now(),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return memberFromDB(member, targetUser.Name, targetUser.Email), nil
+	return memberToAPI(member.UserID, targetUser.Name, targetUser.Email, member.Role, member.CreatedAt), nil
 }
 
 func (h *Handler) SpaceMembersUpdate(ctx context.Context, req *apigen.SpaceMemberUpdate, params apigen.SpaceMembersUpdateParams) (*apigen.SpaceMember, error) {
@@ -134,7 +135,7 @@ func (h *Handler) SpaceMembersUpdate(ctx context.Context, req *apigen.SpaceMembe
 		return nil, err
 	}
 
-	return memberFromDB(member, targetUser.Name, targetUser.Email), nil
+	return memberToAPI(member.UserID, targetUser.Name, targetUser.Email, member.Role, member.CreatedAt), nil
 }
 
 func (h *Handler) SpaceMembersDelete(ctx context.Context, params apigen.SpaceMembersDeleteParams) error {

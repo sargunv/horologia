@@ -53,6 +53,7 @@ func (q *Queries) InsertTaskRelation(ctx context.Context, arg InsertTaskRelation
 }
 
 const listRelationsByTaskAsSource = `-- name: ListRelationsByTaskAsSource :many
+
 SELECT source_task_id, target_task_id, kind, created_at
 FROM task_relations
 WHERE source_task_id = ?
@@ -66,6 +67,9 @@ type ListRelationsByTaskAsSourceRow struct {
 	CreatedAt    types.EpochSeconds
 }
 
+// Two single-task queries instead of one with OR, so each can use its own index
+// (PK for source, idx_task_relations_target for target). Used by fetchTask for
+// single-task reads; the batch ListRelationsByTasks is used for list endpoints.
 func (q *Queries) ListRelationsByTaskAsSource(ctx context.Context, sourceTaskID int64) ([]ListRelationsByTaskAsSourceRow, error) {
 	rows, err := q.db.QueryContext(ctx, listRelationsByTaskAsSource, sourceTaskID)
 	if err != nil {

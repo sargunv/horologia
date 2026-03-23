@@ -76,10 +76,6 @@ func parseTaskID(s string) (int64, error) {
 	return id, nil
 }
 
-func now() types.EpochSeconds {
-	return types.Now()
-}
-
 func spaceFromDB(s dbgen.Space) *apigen.Space {
 	return &apigen.Space{
 		Slug:        s.Slug,
@@ -290,23 +286,13 @@ func authTokenFromDB(t dbgen.AuthToken) *apigen.AuthToken {
 	}
 }
 
-func memberFromDB(m dbgen.SpaceMember, userName, userEmail string) *apigen.SpaceMember {
+func memberToAPI(userID int64, userName, userEmail, role string, createdAt types.EpochSeconds) *apigen.SpaceMember {
 	return &apigen.SpaceMember{
-		UserId:    formatUserID(m.UserID),
+		UserId:    formatUserID(userID),
 		UserName:  userName,
 		UserEmail: userEmail,
-		Role:      apigen.SpaceRole(m.Role),
-		CreatedAt: m.CreatedAt.Time(),
-	}
-}
-
-func memberFromListRow(row dbgen.ListSpaceMembersBySpaceRow) *apigen.SpaceMember {
-	return &apigen.SpaceMember{
-		UserId:    formatUserID(row.UserID),
-		UserName:  row.UserName,
-		UserEmail: row.UserEmail,
-		Role:      apigen.SpaceRole(row.Role),
-		CreatedAt: row.CreatedAt.Time(),
+		Role:      apigen.SpaceRole(role),
+		CreatedAt: createdAt.Time(),
 	}
 }
 

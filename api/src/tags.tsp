@@ -13,9 +13,7 @@ model TagCreate {
   @maxLength(100) name: string;
 }
 
-model TagUpdate {
-  @maxLength(100) name: string;
-}
+model TagUpdate is TagCreate;
 
 model TagPage is Page<Tag>;
 

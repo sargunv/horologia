@@ -6,6 +6,7 @@ import (
 
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 // --- Auth: Login ---
@@ -28,7 +29,7 @@ func (h *Handler) AuthLogin(ctx context.Context, req *apigen.LoginRequest) (*api
 		TokenHash: hash,
 		Name:      "",
 		Kind:      "session",
-		CreatedAt: now(),
+		CreatedAt: types.Now(),
 	})
 	if err != nil {
 		return nil, err
@@ -88,7 +89,7 @@ func (h *Handler) AuthCreateToken(ctx context.Context, req *apigen.AuthTokenCrea
 		TokenHash: hash,
 		Name:      req.Name,
 		Kind:      "api",
-		CreatedAt: now(),
+		CreatedAt: types.Now(),
 	})
 	if err != nil {
 		return nil, err

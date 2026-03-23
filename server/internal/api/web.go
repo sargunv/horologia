@@ -10,6 +10,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 // sentinelHash is a pre-computed bcrypt hash used to prevent timing-based
@@ -78,7 +79,7 @@ func WebLoginHandler(handler *Handler) http.Handler {
 			TokenHash: hash,
 			Name:      "",
 			Kind:      "session",
-			CreatedAt: now(),
+			CreatedAt: types.Now(),
 		})
 		if err != nil {
 			handler.Log.ErrorContext(ctx, "web-login: create token", "error", err)

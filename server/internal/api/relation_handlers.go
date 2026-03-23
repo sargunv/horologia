@@ -5,6 +5,7 @@ import (
 
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 func (h *Handler) SpaceTaskRelationsCreate(ctx context.Context, req *apigen.TaskRelationCreate, params apigen.SpaceTaskRelationsCreateParams) (*apigen.TaskRelation, error) {
@@ -38,7 +39,7 @@ func (h *Handler) SpaceTaskRelationsCreate(ctx context.Context, req *apigen.Task
 
 	storedKind, storedSource, storedTarget := canonicalizeRelation(req.Kind, sourceID, targetID)
 
-	ts := now()
+	ts := types.Now()
 	if err := q.InsertTaskRelation(ctx, dbgen.InsertTaskRelationParams{
 		SourceTaskID: storedSource,
 		TargetTaskID: storedTarget,

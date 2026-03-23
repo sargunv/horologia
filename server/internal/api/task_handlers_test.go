@@ -1,0 +1,544 @@
+package api_test
+
+import (
+	"net/http"
+	"strings"
+	"testing"
+)
+
+func TestTasksCreate(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+
+	resp := doRequest(t, env, "POST", "/spaces/home/tasks", `{"title":"Wash dishes"}`)
+	assertStatus(t, resp, http.StatusCreated)
+
+	var task map[string]any
+	readJSON(t, resp, &task)
+	if task["title"] != "Wash dishes" {
+		t.Errorf("title = %v, want Wash dishes", task["title"])
+	}
+	// Should default to the initial status.
+	if task["status"] != "todo" {
+		t.Errorf("status = %v, want todo", task["status"])
+	}
+	// ID should be T-prefixed.
+	id := task["id"].(string)
+	if !strings.HasPrefix(id, "T") {
+		t.Errorf("id = %v, want T-prefixed", id)
+	}
+	// Due date should be null.
+	if task["dueDate"] != nil {
+		t.Errorf("dueDate = %v, want nil", task["dueDate"])
+	}
+	// Timestamps should be set.
+	if task["createdAt"] == nil || task["createdAt"] == "" {
+		t.Error("createdAt should be set")
+	}
+}
+
+func TestTasksCreateWithFields(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+
+	body := `{"title":"Clean","description":"Deep clean","status":"done","dueDate":"2025-06-15"}`
+	resp := doRequest(t, env, "POST", "/spaces/home/tasks", body)
+	assertStatus(t, resp, http.StatusCreated)
+
+	var task map[string]any
+	readJSON(t, resp, &task)
+	if task["description"] != "Deep clean" {
+		t.Errorf("description = %v, want Deep clean", task["description"])
+	}
+	if task["status"] != "done" {
+		t.Errorf("status = %v, want done", task["status"])
+	}
+	if task["dueDate"] == nil {
+		t.Error("dueDate should not be nil")
+	}
+}
+
+func TestTasksCreateInNonexistentSpace(t *testing.T) {
+	env := setupTestServer(t)
+
+	resp := doRequest(t, env, "POST", "/spaces/nonexistent/tasks", `{"title":"Task"}`)
+	assertStatusClose(t, resp, http.StatusNotFound)
+}
+
+func TestTasksCreateInvalidStatus(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+
+	resp := doRequest(t, env, "POST", "/spaces/home/tasks", `{"title":"Task","status":"bogus"}`)
+	assertStatusClose(t, resp, http.StatusBadRequest)
+}
+
+func TestTasksRead(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+	created := createTask(t, env, "home", `{"title":"Mop floors"}`)
+	id := created["id"].(string)
+
+	resp := doRequest(t, env, "GET", "/spaces/home/tasks/"+id, "")
+	assertStatus(t, resp, http.StatusOK)
+	var task map[string]any
+	readJSON(t, resp, &task)
+	if task["title"] != "Mop floors" {
+		t.Errorf("title = %v, want Mop floors", task["title"])
+	}
+}
+
+func TestTasksReadNotFound(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+
+	resp := doRequest(t, env, "GET", "/spaces/home/tasks/T999", "")
+	assertStatusClose(t, resp, http.StatusNotFound)
+}
+
+func TestTasksReadInvalidID(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+
+	resp := doRequest(t, env, "GET", "/spaces/home/tasks/invalid", "")
+	assertStatusClose(t, resp, http.StatusBadRequest)
+}
+
+func TestTasksListEmpty(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+
+	resp := doRequest(t, env, "GET", "/spaces/home/tasks", "")
+	assertStatus(t, resp, http.StatusOK)
+
+	var page map[string]any
+	readJSON(t, resp, &page)
+	items := page["items"].([]any)
+	if len(items) != 0 {
+		t.Fatalf("got %d items, want 0", len(items))
+	}
+	if page["nextCursor"] != nil {
+		t.Error("expected null nextCursor")
+	}
+}
+
+func TestTasksListPagination(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+	// Create 4 tasks with distinct titles for verification.
+	var createdIDs []string
+	for i := 1; i <= 4; i++ {
+		task := createTask(t, env, "home", `{"title":"Task"}`)
+		createdIDs = append(createdIDs, task["id"].(string))
+	}
+
+	// Page 1: should return 2 items with a cursor.
+	resp := doRequest(t, env, "GET", "/spaces/home/tasks?limit=2", "")
+	assertStatus(t, resp, http.StatusOK)
+	var page1 map[string]any
+	readJSON(t, resp, &page1)
+	items1 := page1["items"].([]any)
+	if len(items1) != 2 {
+		t.Fatalf("page 1: got %d items, want 2", len(items1))
+	}
+	// Verify page 1 contains the first two created tasks.
+	if items1[0].(map[string]any)["id"] != createdIDs[0] || items1[1].(map[string]any)["id"] != createdIDs[1] {
+		t.Errorf("page 1: got ids %v/%v, want %v/%v",
+			items1[0].(map[string]any)["id"], items1[1].(map[string]any)["id"],
+			createdIDs[0], createdIDs[1])
+	}
+	cursor := page1["nextCursor"]
+	if cursor == nil {
+		t.Fatal("page 1: expected nextCursor")
+	}
+
+	// Page 2: should return the last 2 items with null cursor (exact boundary).
+	resp2 := doRequest(t, env, "GET", "/spaces/home/tasks?limit=2&cursor="+cursor.(string), "")
+	assertStatus(t, resp2, http.StatusOK)
+	var page2 map[string]any
+	readJSON(t, resp2, &page2)
+	items2 := page2["items"].([]any)
+	if len(items2) != 2 {
+		t.Fatalf("page 2: got %d items, want 2", len(items2))
+	}
+	if items2[0].(map[string]any)["id"] != createdIDs[2] || items2[1].(map[string]any)["id"] != createdIDs[3] {
+		t.Errorf("page 2: got ids %v/%v, want %v/%v",
+			items2[0].(map[string]any)["id"], items2[1].(map[string]any)["id"],
+			createdIDs[2], createdIDs[3])
+	}
+	if page2["nextCursor"] != nil {
+		t.Error("page 2: expected null nextCursor")
+	}
+}
+
+func TestTasksListNonexistentSpace(t *testing.T) {
+	env := setupTestServer(t)
+
+	resp := doRequest(t, env, "GET", "/spaces/nonexistent/tasks", "")
+	assertStatusClose(t, resp, http.StatusNotFound)
+}
+
+func TestTasksUpdate(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+	// Create with a non-empty description to test merge preservation.
+	created := createTask(t, env, "home", `{"title":"Old title","description":"Keep me"}`)
+	id := created["id"].(string)
+
+	resp := doRequest(t, env, "PATCH", "/spaces/home/tasks/"+id, `{"title":"New title"}`)
+	assertStatus(t, resp, http.StatusOK)
+	var updated map[string]any
+	readJSON(t, resp, &updated)
+	if updated["title"] != "New title" {
+		t.Errorf("title = %v, want New title", updated["title"])
+	}
+	// Description should be preserved from the original.
+	if updated["description"] != "Keep me" {
+		t.Errorf("description = %v, want Keep me", updated["description"])
+	}
+}
+
+func TestTasksUpdateStatus(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+	created := createTask(t, env, "home", `{"title":"Chore"}`)
+	id := created["id"].(string)
+
+	resp := doRequest(t, env, "PATCH", "/spaces/home/tasks/"+id, `{"status":"done"}`)
+	assertStatus(t, resp, http.StatusOK)
+	var updated map[string]any
+	readJSON(t, resp, &updated)
+	if updated["status"] != "done" {
+		t.Errorf("status = %v, want done", updated["status"])
+	}
+}
+
+func TestTasksUpdateInvalidStatus(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+	created := createTask(t, env, "home", `{"title":"Chore"}`)
+	id := created["id"].(string)
+
+	resp := doRequest(t, env, "PATCH", "/spaces/home/tasks/"+id, `{"status":"nonexistent"}`)
+	assertStatusClose(t, resp, http.StatusBadRequest)
+}
+
+func TestTasksUpdateClearDueDate(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+	created := createTask(t, env, "home", `{"title":"Task","dueDate":"2025-06-15"}`)
+	id := created["id"].(string)
+
+	// Verify the due date was actually set.
+	resp := doRequest(t, env, "GET", "/spaces/home/tasks/"+id, "")
+	assertStatus(t, resp, http.StatusOK)
+	var fetched map[string]any
+	readJSON(t, resp, &fetched)
+	if fetched["dueDate"] == nil {
+		t.Fatal("dueDate should be set after creation")
+	}
+
+	// Clear due date by sending null.
+	resp2 := doRequest(t, env, "PATCH", "/spaces/home/tasks/"+id, `{"dueDate":null}`)
+	assertStatus(t, resp2, http.StatusOK)
+	var updated map[string]any
+	readJSON(t, resp2, &updated)
+	if updated["dueDate"] != nil {
+		t.Errorf("dueDate = %v, want nil", updated["dueDate"])
+	}
+}
+
+func TestTasksDelete(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+	created := createTask(t, env, "home", `{"title":"Temp"}`)
+	id := created["id"].(string)
+
+	resp := doRequest(t, env, "DELETE", "/spaces/home/tasks/"+id, "")
+	assertStatusClose(t, resp, http.StatusNoContent)
+
+	// Verify it's gone.
+	resp2 := doRequest(t, env, "GET", "/spaces/home/tasks/"+id, "")
+	assertStatusClose(t, resp2, http.StatusNotFound)
+}
+
+func TestSpaceDeleteCascadesTasks(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+	created := createTask(t, env, "home", `{"title":"Chore"}`)
+	id := created["id"].(string)
+
+	// Delete the space - tasks should cascade.
+	resp := doRequest(t, env, "DELETE", "/spaces/home", "")
+	assertStatusClose(t, resp, http.StatusNoContent)
+
+	// Task should be gone.
+	resp2 := doRequest(t, env, "GET", "/spaces/home/tasks/"+id, "")
+	assertStatusClose(t, resp2, http.StatusNotFound)
+}
+
+// --- Task Assignee Tests ---
+
+func TestTaskAssigneesOnCreate(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+
+	// Get owner's user ID.
+	resp := doRequest(t, env, "GET", "/users/me", "")
+	assertStatus(t, resp, http.StatusOK)
+	var me map[string]any
+	readJSON(t, resp, &me)
+	ownerID := me["id"].(string)
+
+	// Create task with assignees.
+	task := createTask(t, env, "home", `{"title":"With assignees","assigneeIds":["`+ownerID+`"]}`)
+	assigneeIds := task["assigneeIds"].([]any)
+	if len(assigneeIds) != 1 {
+		t.Fatalf("got %d assignees, want 1", len(assigneeIds))
+	}
+	if assigneeIds[0].(string) != ownerID {
+		t.Errorf("assigneeIds[0] = %v, want %v", assigneeIds[0], ownerID)
+	}
+}
+
+func TestTaskAssigneesEmptyByDefault(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+	task := createTask(t, env, "home", `{"title":"No assignees"}`)
+	assigneeIds := task["assigneeIds"].([]any)
+	if len(assigneeIds) != 0 {
+		t.Fatalf("got %d assignees, want 0", len(assigneeIds))
+	}
+}
+
+func TestTaskAssigneesUpdate(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+
+	// Get owner's user ID.
+	resp := doRequest(t, env, "GET", "/users/me", "")
+	assertStatus(t, resp, http.StatusOK)
+	var me map[string]any
+	readJSON(t, resp, &me)
+	ownerID := me["id"].(string)
+
+	// Create a second user and add as member.
+	_, bobID := createAndAddMember(t, env, "home", "bob@example.com", "Bob", "pass123", "member")
+
+	// Create task without assignees.
+	task := createTask(t, env, "home", `{"title":"Test"}`)
+	taskID := task["id"].(string)
+
+	// Update: set assignees.
+	resp3 := doRequest(t, env, "PATCH", "/spaces/home/tasks/"+taskID, `{"assigneeIds":["`+ownerID+`","`+bobID+`"]}`)
+	assertStatus(t, resp3, http.StatusOK)
+	var updated map[string]any
+	readJSON(t, resp3, &updated)
+	assigneeIds := updated["assigneeIds"].([]any)
+	if len(assigneeIds) != 2 {
+		t.Fatalf("got %d assignees, want 2", len(assigneeIds))
+	}
+	// Verify actual IDs are present (order is by user_id).
+	ids := make(map[string]bool)
+	for _, id := range assigneeIds {
+		ids[id.(string)] = true
+	}
+	if !ids[ownerID] || !ids[bobID] {
+		t.Errorf("assigneeIds = %v, want both %s and %s", assigneeIds, ownerID, bobID)
+	}
+
+	// Update: clear assignees.
+	resp4 := doRequest(t, env, "PATCH", "/spaces/home/tasks/"+taskID, `{"assigneeIds":[]}`)
+	assertStatus(t, resp4, http.StatusOK)
+	var cleared map[string]any
+	readJSON(t, resp4, &cleared)
+	if len(cleared["assigneeIds"].([]any)) != 0 {
+		t.Error("expected empty assignees after clearing")
+	}
+}
+
+func TestTaskAssigneesPreservedOnUnrelatedUpdate(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+
+	resp := doRequest(t, env, "GET", "/users/me", "")
+	assertStatus(t, resp, http.StatusOK)
+	var me map[string]any
+	readJSON(t, resp, &me)
+	ownerID := me["id"].(string)
+
+	// Create task with assignee.
+	task := createTask(t, env, "home", `{"title":"Test","assigneeIds":["`+ownerID+`"]}`)
+	taskID := task["id"].(string)
+
+	// Update title only — assignees should be preserved.
+	resp2 := doRequest(t, env, "PATCH", "/spaces/home/tasks/"+taskID, `{"title":"Updated"}`)
+	assertStatus(t, resp2, http.StatusOK)
+	var updated map[string]any
+	readJSON(t, resp2, &updated)
+	if updated["title"] != "Updated" {
+		t.Errorf("title = %v, want Updated", updated["title"])
+	}
+	assigneeIds := updated["assigneeIds"].([]any)
+	if len(assigneeIds) != 1 {
+		t.Fatalf("got %d assignees, want 1 (preserved)", len(assigneeIds))
+	}
+	if assigneeIds[0].(string) != ownerID {
+		t.Errorf("assigneeIds[0] = %v, want %v", assigneeIds[0], ownerID)
+	}
+}
+
+func TestTaskAssigneesNonMemberRejected(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+
+	// Create a user but don't add them as a member.
+	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass123")
+	outsiderID := getUserID(t, env, outsiderToken)
+
+	// Try to assign the non-member.
+	task := createTask(t, env, "home", `{"title":"Test"}`)
+	taskID := task["id"].(string)
+	resp2 := doRequest(t, env, "PATCH", "/spaces/home/tasks/"+taskID, `{"assigneeIds":["`+outsiderID+`"]}`)
+	assertStatusClose(t, resp2, http.StatusBadRequest)
+}
+
+func TestTaskAssigneesCrossSpaceRejected(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "alpha", "Alpha")
+	createSpace(t, env, "beta", "Beta")
+
+	// Create user and add to beta only.
+	_, bobID := createAndAddMember(t, env, "beta", "bob@example.com", "Bob", "pass123", "member")
+
+	// Try to assign bob to a task in alpha (where he's not a member).
+	task := createTask(t, env, "alpha", `{"title":"Test"}`)
+	taskID := task["id"].(string)
+	resp2 := doRequest(t, env, "PATCH", "/spaces/alpha/tasks/"+taskID, `{"assigneeIds":["`+bobID+`"]}`)
+	assertStatusClose(t, resp2, http.StatusBadRequest)
+}
+
+func TestTaskAssigneesDeduplicated(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+
+	resp := doRequest(t, env, "GET", "/users/me", "")
+	assertStatus(t, resp, http.StatusOK)
+	var me map[string]any
+	readJSON(t, resp, &me)
+	ownerID := me["id"].(string)
+
+	// Create task with duplicate assignee IDs.
+	task := createTask(t, env, "home", `{"title":"Dedup","assigneeIds":["`+ownerID+`","`+ownerID+`"]}`)
+	assigneeIds := task["assigneeIds"].([]any)
+	if len(assigneeIds) != 1 {
+		t.Fatalf("got %d assignees, want 1 (deduplicated)", len(assigneeIds))
+	}
+}
+
+func TestTaskDeleteCascadesAssignees(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+
+	resp := doRequest(t, env, "GET", "/users/me", "")
+	assertStatus(t, resp, http.StatusOK)
+	var me map[string]any
+	readJSON(t, resp, &me)
+	ownerID := me["id"].(string)
+
+	task := createTask(t, env, "home", `{"title":"Delete me","assigneeIds":["`+ownerID+`"]}`)
+	taskID := task["id"].(string)
+
+	// Delete the task.
+	assertStatusClose(t, doRequest(t, env, "DELETE", "/spaces/home/tasks/"+taskID, ""), http.StatusNoContent)
+
+	// Task is gone.
+	assertStatusClose(t, doRequest(t, env, "GET", "/spaces/home/tasks/"+taskID, ""), http.StatusNotFound)
+}
+
+func TestTaskAssigneesInListResponse(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+
+	resp := doRequest(t, env, "GET", "/users/me", "")
+	assertStatus(t, resp, http.StatusOK)
+	var me map[string]any
+	readJSON(t, resp, &me)
+	ownerID := me["id"].(string)
+
+	// Create two tasks: one with assignees, one without.
+	createTask(t, env, "home", `{"title":"Assigned","assigneeIds":["`+ownerID+`"]}`)
+	createTask(t, env, "home", `{"title":"Unassigned"}`)
+
+	// List tasks and check assigneeIds are present in both items.
+	resp2 := doRequest(t, env, "GET", "/spaces/home/tasks", "")
+	assertStatus(t, resp2, http.StatusOK)
+	var page map[string]any
+	readJSON(t, resp2, &page)
+	items := page["items"].([]any)
+	if len(items) != 2 {
+		t.Fatalf("got %d items, want 2", len(items))
+	}
+
+	for _, item := range items {
+		task := item.(map[string]any)
+		title := task["title"].(string)
+		assignees := task["assigneeIds"].([]any)
+		if title == "Assigned" {
+			if len(assignees) != 1 || assignees[0].(string) != ownerID {
+				t.Errorf("Assigned task: assigneeIds = %v, want [%s]", assignees, ownerID)
+			}
+		} else {
+			if len(assignees) != 0 {
+				t.Errorf("Unassigned task: assigneeIds = %v, want []", assignees)
+			}
+		}
+	}
+}
+
+func TestTaskAssigneesInvalidIDFormat(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+	task := createTask(t, env, "home", `{"title":"Test"}`)
+	taskID := task["id"].(string)
+
+	// Invalid format (no U prefix).
+	resp := doRequest(t, env, "PATCH", "/spaces/home/tasks/"+taskID, `{"assigneeIds":["invalid"]}`)
+	assertStatusClose(t, resp, http.StatusBadRequest)
+}
+
+func TestTaskAssigneesNonExistentUser(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+	task := createTask(t, env, "home", `{"title":"Test"}`)
+	taskID := task["id"].(string)
+
+	// Valid format but user doesn't exist.
+	resp := doRequest(t, env, "PATCH", "/spaces/home/tasks/"+taskID, `{"assigneeIds":["U99999"]}`)
+	assertStatusClose(t, resp, http.StatusBadRequest)
+}
