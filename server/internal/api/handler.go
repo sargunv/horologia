@@ -92,7 +92,37 @@ func checkDeleted(result sql.Result) error {
 	return nil
 }
 
-// fetchTask fetches a task by ID along with its assignees and tags.
+// fetchTaskRelations fetches all relations for a task from both directions.
+func (h *Handler) fetchTaskRelations(ctx context.Context, q *dbgen.Queries, id int64) ([]taskRelationRow, error) {
+	asSource, err := q.ListRelationsByTaskAsSource(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	asTarget, err := q.ListRelationsByTaskAsTarget(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	rows := make([]taskRelationRow, 0, len(asSource)+len(asTarget))
+	for _, r := range asSource {
+		rows = append(rows, taskRelationRow{
+			SourceTaskID: r.SourceTaskID,
+			TargetTaskID: r.TargetTaskID,
+			Kind:         r.Kind,
+			CreatedAt:    r.CreatedAt,
+		})
+	}
+	for _, r := range asTarget {
+		rows = append(rows, taskRelationRow{
+			SourceTaskID: r.SourceTaskID,
+			TargetTaskID: r.TargetTaskID,
+			Kind:         r.Kind,
+			CreatedAt:    r.CreatedAt,
+		})
+	}
+	return rows, nil
+}
+
+// fetchTask fetches a task by ID along with its assignees, tags, and relations.
 func (h *Handler) fetchTask(ctx context.Context, q *dbgen.Queries, id int64) (*apigen.Task, error) {
 	task, err := q.GetTask(ctx, id)
 	if err != nil {
@@ -106,7 +136,11 @@ func (h *Handler) fetchTask(ctx context.Context, q *dbgen.Queries, id int64) (*a
 	if err != nil {
 		return nil, err
 	}
-	return taskFromDB(task, assigneeIDs, tagNames)
+	relations, err := h.fetchTaskRelations(ctx, q, id)
+	if err != nil {
+		return nil, err
+	}
+	return taskFromDB(task, assigneeIDs, tagNames, relations)
 }
 
 // --- Spaces ---
@@ -285,7 +319,7 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 		}
 	}
 
-	// Re-fetch with assignees and tags.
+	// Re-fetch with assignees, tags, and relations.
 	result, err := h.fetchTask(ctx, q, task.ID)
 	if err != nil {
 		return nil, err
@@ -332,15 +366,7 @@ func (h *Handler) SpaceTasksList(ctx context.Context, params apigen.SpaceTasksLi
 	}
 
 	convertRow := func(task dbgen.Task) (*apigen.Task, error) {
-		assigneeIDs, err := q.ListAssigneeUserIDsByTask(ctx, task.ID)
-		if err != nil {
-			return nil, err
-		}
-		tagNames, err := q.ListTagNamesByTask(ctx, task.ID)
-		if err != nil {
-			return nil, err
-		}
-		return taskFromDB(task, assigneeIDs, tagNames)
+		return h.fetchTask(ctx, q, task.ID)
 	}
 
 	items, nextCursor, err := paginate(rows, limit, convertRow, func(t dbgen.Task) string {
@@ -353,32 +379,22 @@ func (h *Handler) SpaceTasksList(ctx context.Context, params apigen.SpaceTasksLi
 	return &apigen.TaskPage{Items: items, NextCursor: nextCursor}, nil
 }
 
-func (h *Handler) TasksRead(ctx context.Context, params apigen.TasksReadParams) (*apigen.Task, error) {
+func (h *Handler) SpaceTasksRead(ctx context.Context, params apigen.SpaceTasksReadParams) (*apigen.Task, error) {
+	if err := h.requireSpaceRead(ctx, params.SpaceSlug); err != nil {
+		return nil, err
+	}
 	id, err := parseTaskID(params.TaskId)
 	if err != nil {
 		return nil, badRequest(err.Error())
 	}
 	q := dbgen.New(h.DB)
-	// Check space access via the task's space slug.
-	task, err := q.GetTask(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	if err := h.requireSpaceRead(ctx, task.SpaceSlug); err != nil {
-		return nil, err
-	}
-	assigneeIDs, err := q.ListAssigneeUserIDsByTask(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	tagNames, err := q.ListTagNamesByTask(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	return taskFromDB(task, assigneeIDs, tagNames)
+	return h.fetchTask(ctx, q, id)
 }
 
-func (h *Handler) TasksUpdate(ctx context.Context, req *apigen.TaskUpdate, params apigen.TasksUpdateParams) (*apigen.Task, error) {
+func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, params apigen.SpaceTasksUpdateParams) (*apigen.Task, error) {
+	if err := h.requireSpaceWrite(ctx, params.SpaceSlug); err != nil {
+		return nil, err
+	}
 	id, err := parseTaskID(params.TaskId)
 	if err != nil {
 		return nil, badRequest(err.Error())
@@ -393,10 +409,6 @@ func (h *Handler) TasksUpdate(ctx context.Context, req *apigen.TaskUpdate, param
 	q := dbgen.New(tx)
 	existing, err := q.GetTask(ctx, id)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := h.requireSpaceWrite(ctx, existing.SpaceSlug); err != nil {
 		return nil, err
 	}
 
@@ -426,7 +438,7 @@ func (h *Handler) TasksUpdate(ctx context.Context, req *apigen.TaskUpdate, param
 		}
 	}
 
-	// Re-fetch with assignees and tags.
+	// Re-fetch with assignees, tags, and relations.
 	result, err := h.fetchTask(ctx, q, id)
 	if err != nil {
 		return nil, err
@@ -439,19 +451,15 @@ func (h *Handler) TasksUpdate(ctx context.Context, req *apigen.TaskUpdate, param
 	return result, nil
 }
 
-func (h *Handler) TasksDelete(ctx context.Context, params apigen.TasksDeleteParams) error {
+func (h *Handler) SpaceTasksDelete(ctx context.Context, params apigen.SpaceTasksDeleteParams) error {
+	if err := h.requireSpaceWrite(ctx, params.SpaceSlug); err != nil {
+		return err
+	}
 	id, err := parseTaskID(params.TaskId)
 	if err != nil {
 		return badRequest(err.Error())
 	}
 	q := dbgen.New(h.DB)
-	task, err := q.GetTask(ctx, id)
-	if err != nil {
-		return err
-	}
-	if err := h.requireSpaceWrite(ctx, task.SpaceSlug); err != nil {
-		return err
-	}
 	result, err := q.DeleteTask(ctx, id)
 	if err != nil {
 		return err

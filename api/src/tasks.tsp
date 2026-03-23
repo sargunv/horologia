@@ -4,6 +4,26 @@ using Http;
 
 namespace Tend;
 
+enum TaskRelationKind {
+  parent_of,
+  child_of,
+  blocks,
+  blocked_by,
+  relates_to,
+  duplicates,
+}
+
+model TaskRelation {
+  kind: TaskRelationKind;
+  taskId: string;
+  createdAt: utcDateTime;
+}
+
+model TaskRelationCreate {
+  kind: TaskRelationKind;
+  taskId: string;
+}
+
 model Task {
   id: string;
   title: string;
@@ -11,6 +31,7 @@ model Task {
   status: string;
   assigneeIds: string[];
   tags: string[];
+  relations: TaskRelation[];
   dueDate: plainDate | null;
   createdAt: utcDateTime;
   updatedAt: utcDateTime;
@@ -49,14 +70,37 @@ interface SpaceTasks {
     @statusCode statusCode: 201;
     @body body: Task;
   } | ApiError;
+
+  @get read(@path spaceSlug: string, @path taskId: string): Task | ApiError;
+
+  @patch update(
+    @path spaceSlug: string,
+    @path taskId: string,
+    @body body: TaskUpdate,
+  ): Task | ApiError;
+
+  @delete delete(
+    @path spaceSlug: string,
+    @path taskId: string,
+  ): void | ApiError;
 }
 
-@route("/tasks")
+@route("/spaces/{spaceSlug}/tasks/{taskId}/relations")
 @tag("Tasks")
-interface Tasks {
-  @get read(@path taskId: string): Task | ApiError;
+interface SpaceTaskRelations {
+  @post create(
+    @path spaceSlug: string,
+    @path taskId: string,
+    @body body: TaskRelationCreate,
+  ): {
+    @statusCode statusCode: 201;
+    @body body: TaskRelation;
+  } | ApiError;
 
-  @patch update(@path taskId: string, @body body: TaskUpdate): Task | ApiError;
-
-  @delete delete(@path taskId: string): void | ApiError;
+  @delete delete(
+    @path spaceSlug: string,
+    @path taskId: string,
+    @path kind: TaskRelationKind,
+    @path relatedTaskId: string,
+  ): void | ApiError;
 }

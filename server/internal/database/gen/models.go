@@ -58,6 +58,14 @@ type TaskAssignee struct {
 	CreatedAt types.EpochSeconds
 }
 
+type TaskRelation struct {
+	SourceTaskID int64
+	TargetTaskID int64
+	SpaceSlug    string
+	Kind         string
+	CreatedAt    types.EpochSeconds
+}
+
 type TaskStatus struct {
 	SpaceSlug string
 	Name      string

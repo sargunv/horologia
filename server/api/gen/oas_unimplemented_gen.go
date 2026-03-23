@@ -97,6 +97,20 @@ func (UnimplementedHandler) SpaceTagsUpdate(ctx context.Context, req *TagUpdate,
 	return r, ht.ErrNotImplemented
 }
 
+// SpaceTaskRelationsCreate implements SpaceTaskRelations_create operation.
+//
+// POST /spaces/{spaceSlug}/tasks/{taskId}/relations
+func (UnimplementedHandler) SpaceTaskRelationsCreate(ctx context.Context, req *TaskRelationCreate, params SpaceTaskRelationsCreateParams) (r *TaskRelation, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SpaceTaskRelationsDelete implements SpaceTaskRelations_delete operation.
+//
+// DELETE /spaces/{spaceSlug}/tasks/{taskId}/relations/{kind}/{relatedTaskId}
+func (UnimplementedHandler) SpaceTaskRelationsDelete(ctx context.Context, params SpaceTaskRelationsDeleteParams) error {
+	return ht.ErrNotImplemented
+}
+
 // SpaceTasksCreate implements SpaceTasks_create operation.
 //
 // POST /spaces/{spaceSlug}/tasks
@@ -104,10 +118,31 @@ func (UnimplementedHandler) SpaceTasksCreate(ctx context.Context, req *TaskCreat
 	return r, ht.ErrNotImplemented
 }
 
+// SpaceTasksDelete implements SpaceTasks_delete operation.
+//
+// DELETE /spaces/{spaceSlug}/tasks/{taskId}
+func (UnimplementedHandler) SpaceTasksDelete(ctx context.Context, params SpaceTasksDeleteParams) error {
+	return ht.ErrNotImplemented
+}
+
 // SpaceTasksList implements SpaceTasks_list operation.
 //
 // GET /spaces/{spaceSlug}/tasks
 func (UnimplementedHandler) SpaceTasksList(ctx context.Context, params SpaceTasksListParams) (r *TaskPage, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SpaceTasksRead implements SpaceTasks_read operation.
+//
+// GET /spaces/{spaceSlug}/tasks/{taskId}
+func (UnimplementedHandler) SpaceTasksRead(ctx context.Context, params SpaceTasksReadParams) (r *Task, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SpaceTasksUpdate implements SpaceTasks_update operation.
+//
+// PATCH /spaces/{spaceSlug}/tasks/{taskId}
+func (UnimplementedHandler) SpaceTasksUpdate(ctx context.Context, req *TaskUpdate, params SpaceTasksUpdateParams) (r *Task, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -143,27 +178,6 @@ func (UnimplementedHandler) SpacesRead(ctx context.Context, params SpacesReadPar
 //
 // PATCH /spaces/{spaceSlug}
 func (UnimplementedHandler) SpacesUpdate(ctx context.Context, req *SpaceUpdate, params SpacesUpdateParams) (r *Space, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// TasksDelete implements Tasks_delete operation.
-//
-// DELETE /tasks/{taskId}
-func (UnimplementedHandler) TasksDelete(ctx context.Context, params TasksDeleteParams) error {
-	return ht.ErrNotImplemented
-}
-
-// TasksRead implements Tasks_read operation.
-//
-// GET /tasks/{taskId}
-func (UnimplementedHandler) TasksRead(ctx context.Context, params TasksReadParams) (r *Task, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// TasksUpdate implements Tasks_update operation.
-//
-// PATCH /tasks/{taskId}
-func (UnimplementedHandler) TasksUpdate(ctx context.Context, req *TaskUpdate, params TasksUpdateParams) (r *Task, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

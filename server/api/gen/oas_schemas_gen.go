@@ -849,6 +849,12 @@ func (s *SpaceRole) UnmarshalText(data []byte) error {
 // SpaceTagsDeleteNoContent is response for SpaceTagsDelete operation.
 type SpaceTagsDeleteNoContent struct{}
 
+// SpaceTaskRelationsDeleteNoContent is response for SpaceTaskRelationsDelete operation.
+type SpaceTaskRelationsDeleteNoContent struct{}
+
+// SpaceTasksDeleteNoContent is response for SpaceTasksDelete operation.
+type SpaceTasksDeleteNoContent struct{}
+
 // Ref: #/components/schemas/SpaceUpdate
 type SpaceUpdate struct {
 	Name        OptString `json:"name"`
@@ -962,15 +968,16 @@ func (s *TagUpdate) SetName(val string) {
 
 // Ref: #/components/schemas/Task
 type Task struct {
-	ID          string    `json:"id"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	Status      string    `json:"status"`
-	AssigneeIds []string  `json:"assigneeIds"`
-	Tags        []string  `json:"tags"`
-	DueDate     NilDate   `json:"dueDate"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
+	ID          string         `json:"id"`
+	Title       string         `json:"title"`
+	Description string         `json:"description"`
+	Status      string         `json:"status"`
+	AssigneeIds []string       `json:"assigneeIds"`
+	Tags        []string       `json:"tags"`
+	Relations   []TaskRelation `json:"relations"`
+	DueDate     NilDate        `json:"dueDate"`
+	CreatedAt   time.Time      `json:"createdAt"`
+	UpdatedAt   time.Time      `json:"updatedAt"`
 }
 
 // GetID returns the value of ID.
@@ -1001,6 +1008,11 @@ func (s *Task) GetAssigneeIds() []string {
 // GetTags returns the value of Tags.
 func (s *Task) GetTags() []string {
 	return s.Tags
+}
+
+// GetRelations returns the value of Relations.
+func (s *Task) GetRelations() []TaskRelation {
+	return s.Relations
 }
 
 // GetDueDate returns the value of DueDate.
@@ -1046,6 +1058,11 @@ func (s *Task) SetAssigneeIds(val []string) {
 // SetTags sets the value of Tags.
 func (s *Task) SetTags(val []string) {
 	s.Tags = val
+}
+
+// SetRelations sets the value of Relations.
+func (s *Task) SetRelations(val []TaskRelation) {
+	s.Relations = val
 }
 
 // SetDueDate sets the value of DueDate.
@@ -1159,6 +1176,139 @@ func (s *TaskPage) SetNextCursor(val NilString) {
 	s.NextCursor = val
 }
 
+// Ref: #/components/schemas/TaskRelation
+type TaskRelation struct {
+	Kind      TaskRelationKind `json:"kind"`
+	TaskId    string           `json:"taskId"`
+	CreatedAt time.Time        `json:"createdAt"`
+}
+
+// GetKind returns the value of Kind.
+func (s *TaskRelation) GetKind() TaskRelationKind {
+	return s.Kind
+}
+
+// GetTaskId returns the value of TaskId.
+func (s *TaskRelation) GetTaskId() string {
+	return s.TaskId
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *TaskRelation) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// SetKind sets the value of Kind.
+func (s *TaskRelation) SetKind(val TaskRelationKind) {
+	s.Kind = val
+}
+
+// SetTaskId sets the value of TaskId.
+func (s *TaskRelation) SetTaskId(val string) {
+	s.TaskId = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *TaskRelation) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// Ref: #/components/schemas/TaskRelationCreate
+type TaskRelationCreate struct {
+	Kind   TaskRelationKind `json:"kind"`
+	TaskId string           `json:"taskId"`
+}
+
+// GetKind returns the value of Kind.
+func (s *TaskRelationCreate) GetKind() TaskRelationKind {
+	return s.Kind
+}
+
+// GetTaskId returns the value of TaskId.
+func (s *TaskRelationCreate) GetTaskId() string {
+	return s.TaskId
+}
+
+// SetKind sets the value of Kind.
+func (s *TaskRelationCreate) SetKind(val TaskRelationKind) {
+	s.Kind = val
+}
+
+// SetTaskId sets the value of TaskId.
+func (s *TaskRelationCreate) SetTaskId(val string) {
+	s.TaskId = val
+}
+
+// Ref: #/components/schemas/TaskRelationKind
+type TaskRelationKind string
+
+const (
+	TaskRelationKindParentOf   TaskRelationKind = "parent_of"
+	TaskRelationKindChildOf    TaskRelationKind = "child_of"
+	TaskRelationKindBlocks     TaskRelationKind = "blocks"
+	TaskRelationKindBlockedBy  TaskRelationKind = "blocked_by"
+	TaskRelationKindRelatesTo  TaskRelationKind = "relates_to"
+	TaskRelationKindDuplicates TaskRelationKind = "duplicates"
+)
+
+// AllValues returns all TaskRelationKind values.
+func (TaskRelationKind) AllValues() []TaskRelationKind {
+	return []TaskRelationKind{
+		TaskRelationKindParentOf,
+		TaskRelationKindChildOf,
+		TaskRelationKindBlocks,
+		TaskRelationKindBlockedBy,
+		TaskRelationKindRelatesTo,
+		TaskRelationKindDuplicates,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TaskRelationKind) MarshalText() ([]byte, error) {
+	switch s {
+	case TaskRelationKindParentOf:
+		return []byte(s), nil
+	case TaskRelationKindChildOf:
+		return []byte(s), nil
+	case TaskRelationKindBlocks:
+		return []byte(s), nil
+	case TaskRelationKindBlockedBy:
+		return []byte(s), nil
+	case TaskRelationKindRelatesTo:
+		return []byte(s), nil
+	case TaskRelationKindDuplicates:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TaskRelationKind) UnmarshalText(data []byte) error {
+	switch TaskRelationKind(data) {
+	case TaskRelationKindParentOf:
+		*s = TaskRelationKindParentOf
+		return nil
+	case TaskRelationKindChildOf:
+		*s = TaskRelationKindChildOf
+		return nil
+	case TaskRelationKindBlocks:
+		*s = TaskRelationKindBlocks
+		return nil
+	case TaskRelationKindBlockedBy:
+		*s = TaskRelationKindBlockedBy
+		return nil
+	case TaskRelationKindRelatesTo:
+		*s = TaskRelationKindRelatesTo
+		return nil
+	case TaskRelationKindDuplicates:
+		*s = TaskRelationKindDuplicates
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/TaskUpdate
 type TaskUpdate struct {
 	Title       OptString  `json:"title"`
@@ -1228,9 +1378,6 @@ func (s *TaskUpdate) SetTags(val []string) {
 func (s *TaskUpdate) SetDueDate(val OptNilDate) {
 	s.DueDate = val
 }
-
-// TasksDeleteNoContent is response for TasksDelete operation.
-type TasksDeleteNoContent struct{}
 
 // Ref: #/components/schemas/User
 type User struct {

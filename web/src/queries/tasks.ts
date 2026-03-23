@@ -14,12 +14,12 @@ export function spaceTasksQueryOptions(spaceSlug: string) {
   });
 }
 
-export function taskQueryOptions(taskId: string) {
+export function taskQueryOptions(spaceSlug: string, taskId: string) {
   return queryOptions({
-    queryKey: ["tasks", taskId],
+    queryKey: ["spaces", spaceSlug, "tasks", taskId],
     queryFn: async () => {
-      const { data, error } = await apiClient.GET("/tasks/{taskId}", {
-        params: { path: { taskId } },
+      const { data, error } = await apiClient.GET("/spaces/{spaceSlug}/tasks/{taskId}", {
+        params: { path: { spaceSlug, taskId } },
       });
       if (error) throw error;
       return data;

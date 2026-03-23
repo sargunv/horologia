@@ -90,10 +90,90 @@ func spaceFromDB(s dbgen.Space) (*apigen.Space, error) {
 	}, nil
 }
 
-func taskFromDB(task dbgen.Task, assigneeUserIDs []int64, tagNames []string) (*apigen.Task, error) {
+// taskRelationRow is the common shape returned by both ListRelationsByTaskAsSource
+// and ListRelationsByTaskAsTarget.
+type taskRelationRow struct {
+	SourceTaskID int64
+	TargetTaskID int64
+	Kind         string
+	CreatedAt    types.EpochSeconds
+}
+
+// directedKindMap maps API-facing directed relation kinds to their stored canonical kind
+// and whether source/target should be flipped.
+var directedKindMap = map[apigen.TaskRelationKind]struct {
+	storedKind string
+	flip       bool
+}{
+	apigen.TaskRelationKindParentOf:  {"parent", false},
+	apigen.TaskRelationKindChildOf:   {"parent", true},
+	apigen.TaskRelationKindBlocks:    {"blocks", false},
+	apigen.TaskRelationKindBlockedBy: {"blocks", true},
+}
+
+func relationFromDB(rel taskRelationRow, perspectiveTaskID int64) (apigen.TaskRelation, error) {
+	var kind apigen.TaskRelationKind
+	var relatedID int64
+
+	switch rel.Kind {
+	case "parent":
+		if rel.SourceTaskID == perspectiveTaskID {
+			kind = apigen.TaskRelationKindParentOf
+			relatedID = rel.TargetTaskID
+		} else {
+			kind = apigen.TaskRelationKindChildOf
+			relatedID = rel.SourceTaskID
+		}
+	case "blocks":
+		if rel.SourceTaskID == perspectiveTaskID {
+			kind = apigen.TaskRelationKindBlocks
+			relatedID = rel.TargetTaskID
+		} else {
+			kind = apigen.TaskRelationKindBlockedBy
+			relatedID = rel.SourceTaskID
+		}
+	case "relates_to", "duplicates":
+		kind = apigen.TaskRelationKind(rel.Kind)
+		if rel.SourceTaskID == perspectiveTaskID {
+			relatedID = rel.TargetTaskID
+		} else {
+			relatedID = rel.SourceTaskID
+		}
+	default:
+		return apigen.TaskRelation{}, fmt.Errorf("unknown relation kind %q", rel.Kind)
+	}
+
+	return apigen.TaskRelation{
+		Kind:      kind,
+		TaskId:    formatTaskID(relatedID),
+		CreatedAt: rel.CreatedAt.Time(),
+	}, nil
+}
+
+func canonicalizeRelation(kind apigen.TaskRelationKind, sourceID, targetID int64) (storedKind string, storedSource, storedTarget int64) {
+	if c, ok := directedKindMap[kind]; ok {
+		if c.flip {
+			sourceID, targetID = targetID, sourceID
+		}
+		return c.storedKind, sourceID, targetID
+	}
+	// Symmetric kinds: normalize order so the lower ID is always source.
+	return string(kind), min(sourceID, targetID), max(sourceID, targetID)
+}
+
+func taskFromDB(task dbgen.Task, assigneeUserIDs []int64, tagNames []string, relations []taskRelationRow) (*apigen.Task, error) {
 	assigneeIDs := make([]string, len(assigneeUserIDs))
 	for i, uid := range assigneeUserIDs {
 		assigneeIDs[i] = formatUserID(uid)
+	}
+
+	apiRelations := make([]apigen.TaskRelation, 0, len(relations))
+	for _, rel := range relations {
+		r, err := relationFromDB(rel, task.ID)
+		if err != nil {
+			return nil, err
+		}
+		apiRelations = append(apiRelations, r)
 	}
 
 	t := &apigen.Task{
@@ -103,6 +183,7 @@ func taskFromDB(task dbgen.Task, assigneeUserIDs []int64, tagNames []string) (*a
 		Status:      task.StatusName,
 		AssigneeIds: assigneeIDs,
 		Tags:        tagNames,
+		Relations:   apiRelations,
 		CreatedAt:   task.CreatedAt.Time(),
 		UpdatedAt:   task.UpdatedAt.Time(),
 	}

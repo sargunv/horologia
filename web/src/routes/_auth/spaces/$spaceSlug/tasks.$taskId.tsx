@@ -7,7 +7,7 @@ export const Route = createFileRoute("/_auth/spaces/$spaceSlug/tasks/$taskId")({
   loader: ({ context, params }) =>
     Promise.all([
       context.queryClient.ensureQueryData(spaceQueryOptions(params.spaceSlug)),
-      context.queryClient.ensureQueryData(taskQueryOptions(params.taskId)),
+      context.queryClient.ensureQueryData(taskQueryOptions(params.spaceSlug, params.taskId)),
     ]),
   component: TaskDetailPage,
 });
@@ -15,7 +15,8 @@ export const Route = createFileRoute("/_auth/spaces/$spaceSlug/tasks/$taskId")({
 function TaskDetailPage() {
   const { spaceSlug } = Route.useParams();
   const { data: space } = useSuspenseQuery(spaceQueryOptions(spaceSlug));
-  const { data: task } = useSuspenseQuery(taskQueryOptions(Route.useParams().taskId));
+  const { taskId } = Route.useParams();
+  const { data: task } = useSuspenseQuery(taskQueryOptions(spaceSlug, taskId));
 
   return (
     <div className="space-y-6">

@@ -56,14 +56,34 @@ type Handler interface {
 	//
 	// PATCH /spaces/{spaceSlug}/tags/{tagName}
 	SpaceTagsUpdate(ctx context.Context, req *TagUpdate, params SpaceTagsUpdateParams) (*Tag, error)
+	// SpaceTaskRelationsCreate implements SpaceTaskRelations_create operation.
+	//
+	// POST /spaces/{spaceSlug}/tasks/{taskId}/relations
+	SpaceTaskRelationsCreate(ctx context.Context, req *TaskRelationCreate, params SpaceTaskRelationsCreateParams) (*TaskRelation, error)
+	// SpaceTaskRelationsDelete implements SpaceTaskRelations_delete operation.
+	//
+	// DELETE /spaces/{spaceSlug}/tasks/{taskId}/relations/{kind}/{relatedTaskId}
+	SpaceTaskRelationsDelete(ctx context.Context, params SpaceTaskRelationsDeleteParams) error
 	// SpaceTasksCreate implements SpaceTasks_create operation.
 	//
 	// POST /spaces/{spaceSlug}/tasks
 	SpaceTasksCreate(ctx context.Context, req *TaskCreate, params SpaceTasksCreateParams) (*Task, error)
+	// SpaceTasksDelete implements SpaceTasks_delete operation.
+	//
+	// DELETE /spaces/{spaceSlug}/tasks/{taskId}
+	SpaceTasksDelete(ctx context.Context, params SpaceTasksDeleteParams) error
 	// SpaceTasksList implements SpaceTasks_list operation.
 	//
 	// GET /spaces/{spaceSlug}/tasks
 	SpaceTasksList(ctx context.Context, params SpaceTasksListParams) (*TaskPage, error)
+	// SpaceTasksRead implements SpaceTasks_read operation.
+	//
+	// GET /spaces/{spaceSlug}/tasks/{taskId}
+	SpaceTasksRead(ctx context.Context, params SpaceTasksReadParams) (*Task, error)
+	// SpaceTasksUpdate implements SpaceTasks_update operation.
+	//
+	// PATCH /spaces/{spaceSlug}/tasks/{taskId}
+	SpaceTasksUpdate(ctx context.Context, req *TaskUpdate, params SpaceTasksUpdateParams) (*Task, error)
 	// SpacesCreate implements Spaces_create operation.
 	//
 	// POST /spaces
@@ -84,18 +104,6 @@ type Handler interface {
 	//
 	// PATCH /spaces/{spaceSlug}
 	SpacesUpdate(ctx context.Context, req *SpaceUpdate, params SpacesUpdateParams) (*Space, error)
-	// TasksDelete implements Tasks_delete operation.
-	//
-	// DELETE /tasks/{taskId}
-	TasksDelete(ctx context.Context, params TasksDeleteParams) error
-	// TasksRead implements Tasks_read operation.
-	//
-	// GET /tasks/{taskId}
-	TasksRead(ctx context.Context, params TasksReadParams) (*Task, error)
-	// TasksUpdate implements Tasks_update operation.
-	//
-	// PATCH /tasks/{taskId}
-	TasksUpdate(ctx context.Context, req *TaskUpdate, params TasksUpdateParams) (*Task, error)
 	// UsersMe implements Users_me operation.
 	//
 	// GET /users/me

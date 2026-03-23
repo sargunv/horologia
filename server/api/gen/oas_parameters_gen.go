@@ -1132,6 +1132,356 @@ func decodeSpaceTagsUpdateParams(args [2]string, argsEscaped bool, r *http.Reque
 	return params, nil
 }
 
+// SpaceTaskRelationsCreateParams is parameters of SpaceTaskRelations_create operation.
+type SpaceTaskRelationsCreateParams struct {
+	SpaceSlug string
+	TaskId    string
+}
+
+func unpackSpaceTaskRelationsCreateParams(packed middleware.Parameters) (params SpaceTaskRelationsCreateParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "spaceSlug",
+			In:   "path",
+		}
+		params.SpaceSlug = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "taskId",
+			In:   "path",
+		}
+		params.TaskId = packed[key].(string)
+	}
+	return params
+}
+
+func decodeSpaceTaskRelationsCreateParams(args [2]string, argsEscaped bool, r *http.Request) (params SpaceTaskRelationsCreateParams, _ error) {
+	// Decode path: spaceSlug.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "spaceSlug",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.SpaceSlug = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "spaceSlug",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: taskId.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "taskId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.TaskId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "taskId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// SpaceTaskRelationsDeleteParams is parameters of SpaceTaskRelations_delete operation.
+type SpaceTaskRelationsDeleteParams struct {
+	SpaceSlug     string
+	TaskId        string
+	Kind          TaskRelationKind
+	RelatedTaskId string
+}
+
+func unpackSpaceTaskRelationsDeleteParams(packed middleware.Parameters) (params SpaceTaskRelationsDeleteParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "spaceSlug",
+			In:   "path",
+		}
+		params.SpaceSlug = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "taskId",
+			In:   "path",
+		}
+		params.TaskId = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "kind",
+			In:   "path",
+		}
+		params.Kind = packed[key].(TaskRelationKind)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "relatedTaskId",
+			In:   "path",
+		}
+		params.RelatedTaskId = packed[key].(string)
+	}
+	return params
+}
+
+func decodeSpaceTaskRelationsDeleteParams(args [4]string, argsEscaped bool, r *http.Request) (params SpaceTaskRelationsDeleteParams, _ error) {
+	// Decode path: spaceSlug.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "spaceSlug",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.SpaceSlug = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "spaceSlug",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: taskId.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "taskId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.TaskId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "taskId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: kind.
+	if err := func() error {
+		param := args[2]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[2])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "kind",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Kind = TaskRelationKind(c)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.Kind.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "kind",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: relatedTaskId.
+	if err := func() error {
+		param := args[3]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[3])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "relatedTaskId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.RelatedTaskId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "relatedTaskId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // SpaceTasksCreateParams is parameters of SpaceTasks_create operation.
 type SpaceTasksCreateParams struct {
 	SpaceSlug string
@@ -1190,6 +1540,124 @@ func decodeSpaceTasksCreateParams(args [1]string, argsEscaped bool, r *http.Requ
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "spaceSlug",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// SpaceTasksDeleteParams is parameters of SpaceTasks_delete operation.
+type SpaceTasksDeleteParams struct {
+	SpaceSlug string
+	TaskId    string
+}
+
+func unpackSpaceTasksDeleteParams(packed middleware.Parameters) (params SpaceTasksDeleteParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "spaceSlug",
+			In:   "path",
+		}
+		params.SpaceSlug = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "taskId",
+			In:   "path",
+		}
+		params.TaskId = packed[key].(string)
+	}
+	return params
+}
+
+func decodeSpaceTasksDeleteParams(args [2]string, argsEscaped bool, r *http.Request) (params SpaceTasksDeleteParams, _ error) {
+	// Decode path: spaceSlug.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "spaceSlug",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.SpaceSlug = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "spaceSlug",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: taskId.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "taskId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.TaskId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "taskId",
 			In:   "path",
 			Err:  err,
 		}
@@ -1359,6 +1827,242 @@ func decodeSpaceTasksListParams(args [1]string, argsEscaped bool, r *http.Reques
 		return params, &ogenerrors.DecodeParamError{
 			Name: "limit",
 			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// SpaceTasksReadParams is parameters of SpaceTasks_read operation.
+type SpaceTasksReadParams struct {
+	SpaceSlug string
+	TaskId    string
+}
+
+func unpackSpaceTasksReadParams(packed middleware.Parameters) (params SpaceTasksReadParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "spaceSlug",
+			In:   "path",
+		}
+		params.SpaceSlug = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "taskId",
+			In:   "path",
+		}
+		params.TaskId = packed[key].(string)
+	}
+	return params
+}
+
+func decodeSpaceTasksReadParams(args [2]string, argsEscaped bool, r *http.Request) (params SpaceTasksReadParams, _ error) {
+	// Decode path: spaceSlug.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "spaceSlug",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.SpaceSlug = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "spaceSlug",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: taskId.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "taskId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.TaskId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "taskId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// SpaceTasksUpdateParams is parameters of SpaceTasks_update operation.
+type SpaceTasksUpdateParams struct {
+	SpaceSlug string
+	TaskId    string
+}
+
+func unpackSpaceTasksUpdateParams(packed middleware.Parameters) (params SpaceTasksUpdateParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "spaceSlug",
+			In:   "path",
+		}
+		params.SpaceSlug = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "taskId",
+			In:   "path",
+		}
+		params.TaskId = packed[key].(string)
+	}
+	return params
+}
+
+func decodeSpaceTasksUpdateParams(args [2]string, argsEscaped bool, r *http.Request) (params SpaceTasksUpdateParams, _ error) {
+	// Decode path: spaceSlug.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "spaceSlug",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.SpaceSlug = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "spaceSlug",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: taskId.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "taskId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.TaskId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "taskId",
+			In:   "path",
 			Err:  err,
 		}
 	}
@@ -1668,201 +2372,6 @@ func decodeSpacesUpdateParams(args [1]string, argsEscaped bool, r *http.Request)
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "spaceSlug",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// TasksDeleteParams is parameters of Tasks_delete operation.
-type TasksDeleteParams struct {
-	TaskId string
-}
-
-func unpackTasksDeleteParams(packed middleware.Parameters) (params TasksDeleteParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "taskId",
-			In:   "path",
-		}
-		params.TaskId = packed[key].(string)
-	}
-	return params
-}
-
-func decodeTasksDeleteParams(args [1]string, argsEscaped bool, r *http.Request) (params TasksDeleteParams, _ error) {
-	// Decode path: taskId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "taskId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.TaskId = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "taskId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// TasksReadParams is parameters of Tasks_read operation.
-type TasksReadParams struct {
-	TaskId string
-}
-
-func unpackTasksReadParams(packed middleware.Parameters) (params TasksReadParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "taskId",
-			In:   "path",
-		}
-		params.TaskId = packed[key].(string)
-	}
-	return params
-}
-
-func decodeTasksReadParams(args [1]string, argsEscaped bool, r *http.Request) (params TasksReadParams, _ error) {
-	// Decode path: taskId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "taskId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.TaskId = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "taskId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// TasksUpdateParams is parameters of Tasks_update operation.
-type TasksUpdateParams struct {
-	TaskId string
-}
-
-func unpackTasksUpdateParams(packed middleware.Parameters) (params TasksUpdateParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "taskId",
-			In:   "path",
-		}
-		params.TaskId = packed[key].(string)
-	}
-	return params
-}
-
-func decodeTasksUpdateParams(args [1]string, argsEscaped bool, r *http.Request) (params TasksUpdateParams, _ error) {
-	// Decode path: taskId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "taskId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.TaskId = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "taskId",
 			In:   "path",
 			Err:  err,
 		}

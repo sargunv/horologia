@@ -162,12 +162,14 @@ func newTasksListCmd() *cobra.Command {
 }
 
 func newTasksGetCmd() *cobra.Command {
-	return &cobra.Command{
+	var space string
+
+	cmd := &cobra.Command{
 		Use:     "get <task-id>",
 		Short:   "Get a task by ID",
 		Long:    "Display full details for the task identified by the given ID (e.g. T42).",
 		Args:    cobra.ExactArgs(1),
-		Example: "  tend tasks get T42",
+		Example: "  tend tasks get --space engineering T42",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			app := GetAppContext(cmd)
 
@@ -175,8 +177,9 @@ func newTasksGetCmd() *cobra.Command {
 				return output.PrintResource(app.Printer, output.ResourceView[gen.Task]{Schema: taskSchema})
 			}
 
-			task, err := app.Client.TasksRead(cmd.Context(), gen.TasksReadParams{
-				TaskId: args[0],
+			task, err := app.Client.SpaceTasksRead(cmd.Context(), gen.SpaceTasksReadParams{
+				SpaceSlug: space,
+				TaskId:    args[0],
 			})
 			if err != nil {
 				return FormatAPIError(err)
@@ -189,6 +192,11 @@ func newTasksGetCmd() *cobra.Command {
 			})
 		},
 	}
+
+	cmd.Flags().StringVar(&space, "space", "", "Space slug (required)")
+	_ = cmd.MarkFlagRequired("space")
+
+	return cmd
 }
 
 func newTasksCreateCmd() *cobra.Command {
@@ -258,7 +266,7 @@ assigns the default initial status. Status names are defined per space.`,
 }
 
 func newTasksUpdateCmd() *cobra.Command {
-	var title, description, statusName string
+	var space, title, description, statusName string
 	var dueDate string
 	var assignees []string
 	var clearDue, clearAssignees bool
@@ -270,11 +278,11 @@ func newTasksUpdateCmd() *cobra.Command {
 are changed. Use --clear-due to remove a due date, and --clear-assignees
 to remove all assignees.`,
 		Args: cobra.ExactArgs(1),
-		Example: `  tend tasks update T42 --title "New title"
-  tend tasks update T42 --due 2026-05-01
-  tend tasks update T42 --clear-due
-  tend tasks update T42 --assignee U1 --assignee U2
-  tend tasks update T42 --clear-assignees`,
+		Example: `  tend tasks update --space engineering T42 --title "New title"
+  tend tasks update --space engineering T42 --due 2026-05-01
+  tend tasks update --space engineering T42 --clear-due
+  tend tasks update --space engineering T42 --assignee U1 --assignee U2
+  tend tasks update --space engineering T42 --clear-assignees`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			app := GetAppContext(cmd)
 
@@ -315,8 +323,9 @@ to remove all assignees.`,
 				req.AssigneeIds = assignees
 			}
 
-			task, err := app.Client.TasksUpdate(cmd.Context(), req, gen.TasksUpdateParams{
-				TaskId: args[0],
+			task, err := app.Client.SpaceTasksUpdate(cmd.Context(), req, gen.SpaceTasksUpdateParams{
+				SpaceSlug: space,
+				TaskId:    args[0],
 			})
 			if err != nil {
 				return FormatAPIError(err)
@@ -330,6 +339,8 @@ to remove all assignees.`,
 		},
 	}
 
+	cmd.Flags().StringVar(&space, "space", "", "Space slug (required)")
+	_ = cmd.MarkFlagRequired("space")
 	cmd.Flags().StringVar(&title, "title", "", "Task title")
 	cmd.Flags().StringVar(&description, "description", "", "Task description")
 	cmd.Flags().StringVar(&statusName, "status", "", "Status name (as defined in the space)")
@@ -344,12 +355,14 @@ to remove all assignees.`,
 }
 
 func newTasksDeleteCmd() *cobra.Command {
-	return &cobra.Command{
+	var space string
+
+	cmd := &cobra.Command{
 		Use:     "delete <task-id>",
 		Short:   "Delete a task",
 		Long:    "Permanently delete a task.",
 		Args:    cobra.ExactArgs(1),
-		Example: "  tend tasks delete T42",
+		Example: "  tend tasks delete --space engineering T42",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			app := GetAppContext(cmd)
 
@@ -357,8 +370,9 @@ func newTasksDeleteCmd() *cobra.Command {
 				return fmt.Errorf("--json-schema is not supported for delete commands")
 			}
 
-			err := app.Client.TasksDelete(cmd.Context(), gen.TasksDeleteParams{
-				TaskId: args[0],
+			err := app.Client.SpaceTasksDelete(cmd.Context(), gen.SpaceTasksDeleteParams{
+				SpaceSlug: space,
+				TaskId:    args[0],
 			})
 			if err != nil {
 				return FormatAPIError(err)
@@ -371,4 +385,9 @@ func newTasksDeleteCmd() *cobra.Command {
 			return nil
 		},
 	}
+
+	cmd.Flags().StringVar(&space, "space", "", "Space slug (required)")
+	_ = cmd.MarkFlagRequired("space")
+
+	return cmd
 }
