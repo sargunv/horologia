@@ -13,6 +13,7 @@ import (
 
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 type contextKey int
@@ -84,4 +85,20 @@ func generateToken() (raw string, hash string, err error) {
 func hashToken(token string) string {
 	h := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(h[:])
+}
+
+// createSessionToken generates a token, stores it in the DB, and returns the raw value.
+func createSessionToken(ctx context.Context, q *dbgen.Queries, userID int64) (string, error) {
+	raw, hash, err := generateToken()
+	if err != nil {
+		return "", err
+	}
+	_, err = q.CreateAuthToken(ctx, dbgen.CreateAuthTokenParams{
+		UserID:    userID,
+		TokenHash: hash,
+		Name:      "",
+		Kind:      "session",
+		CreatedAt: types.Now(),
+	})
+	return raw, err
 }

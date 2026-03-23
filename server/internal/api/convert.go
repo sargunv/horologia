@@ -216,6 +216,18 @@ func taskFromDB(task dbgen.Task, assigneeUserIDs []int64, tagNames []string, rel
 	return t, nil
 }
 
+// convertEach wraps a per-element converter into the slice converter
+// signature expected by paginate.
+func convertEach[DB any, API any](f func(DB) *API) func([]DB) ([]API, error) {
+	return func(rows []DB) ([]API, error) {
+		items := make([]API, len(rows))
+		for i, r := range rows {
+			items[i] = *f(r)
+		}
+		return items, nil
+	}
+}
+
 func paginate[DB any, API any](
 	rows []DB,
 	limit int64,

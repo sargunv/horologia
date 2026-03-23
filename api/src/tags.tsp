@@ -10,7 +10,7 @@ model Tag {
 }
 
 model TagCreate {
-  @maxLength(100) name: string;
+  @minLength(1) @maxLength(100) name: string;
 }
 
 model TagUpdate is TagCreate;

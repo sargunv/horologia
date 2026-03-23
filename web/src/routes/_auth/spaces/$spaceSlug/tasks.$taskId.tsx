@@ -1,6 +1,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { spaceQueryOptions } from "../../../../queries/spaces.ts";
+import { ErrorDisplay } from "../../../../components/ui/error-display.tsx";
+import { spaceMembersQueryOptions, spaceQueryOptions } from "../../../../queries/spaces.ts";
 import { taskQueryOptions } from "../../../../queries/tasks.ts";
 
 export const Route = createFileRoute("/_auth/spaces/$spaceSlug/tasks/$taskId")({
@@ -8,15 +9,20 @@ export const Route = createFileRoute("/_auth/spaces/$spaceSlug/tasks/$taskId")({
     Promise.all([
       context.queryClient.ensureQueryData(spaceQueryOptions(params.spaceSlug)),
       context.queryClient.ensureQueryData(taskQueryOptions(params.spaceSlug, params.taskId)),
+      context.queryClient.ensureQueryData(spaceMembersQueryOptions(params.spaceSlug)),
     ]),
+  errorComponent: ({ error }) => <ErrorDisplay error={error} />,
+  pendingComponent: () => <p className="text-surface-500">Loading...</p>,
   component: TaskDetailPage,
 });
 
 function TaskDetailPage() {
-  const { spaceSlug } = Route.useParams();
+  const { spaceSlug, taskId } = Route.useParams();
   const { data: space } = useSuspenseQuery(spaceQueryOptions(spaceSlug));
-  const { taskId } = Route.useParams();
   const { data: task } = useSuspenseQuery(taskQueryOptions(spaceSlug, taskId));
+  const { data: members } = useSuspenseQuery(spaceMembersQueryOptions(spaceSlug));
+
+  const memberMap = new Map(members.items.map((m) => [m.userId, m.userName]));
 
   return (
     <div className="space-y-6">
@@ -51,7 +57,11 @@ function TaskDetailPage() {
           </div>
           <div className="flex gap-4">
             <dt className="text-surface-500 w-24">Assignees</dt>
-            <dd>{task.assigneeIds.length > 0 ? task.assigneeIds.join(", ") : "Unassigned"}</dd>
+            <dd>
+              {task.assigneeIds.length > 0
+                ? task.assigneeIds.map((id) => memberMap.get(id) ?? id).join(", ")
+                : "Unassigned"}
+            </dd>
           </div>
         </dl>
       </div>

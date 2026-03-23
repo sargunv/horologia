@@ -141,12 +141,7 @@ func TestSpaceMembersLastAdminGuard(t *testing.T) {
 
 	createSpace(t, env, "home", "Home")
 
-	// Get owner's user ID.
-	resp := doRequest(t, env, "GET", "/users/me", "")
-	assertStatus(t, resp, http.StatusOK)
-	var me map[string]any
-	readJSON(t, resp, &me)
-	ownerID := me["id"].(string)
+	ownerID := getUserID(t, env, env.Token)
 
 	// Try to downgrade the only admin to viewer.
 	assertStatusClose(t, doRequest(t, env, "PATCH", "/spaces/home/members/"+ownerID, `{"role":"viewer"}`), http.StatusBadRequest)
@@ -196,11 +191,7 @@ func TestMemberRemovalIsolation(t *testing.T) {
 
 	// Create bob and add to both spaces.
 	userToken := createTestUser(t, env, "bob@example.com", "Bob", "pass123")
-	resp := doRequestAs(t, env, userToken, "GET", "/users/me", "")
-	assertStatus(t, resp, http.StatusOK)
-	var me map[string]any
-	readJSON(t, resp, &me)
-	bobID := me["id"].(string)
+	bobID := getUserID(t, env, userToken)
 	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/alpha/members", `{"userId":"`+bobID+`","role":"member"}`), http.StatusCreated)
 	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/beta/members", `{"userId":"`+bobID+`","role":"member"}`), http.StatusCreated)
 

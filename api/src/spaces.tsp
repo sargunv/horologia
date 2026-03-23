@@ -13,14 +13,14 @@ model Space {
 }
 
 model SpaceCreate {
-  slug: string;
-  name: string;
-  description?: string;
+  @minLength(1) @maxLength(100) slug: string;
+  @minLength(1) @maxLength(200) name: string;
+  @maxLength(1000) description?: string;
 }
 
 model SpaceUpdate {
-  name?: string;
-  description?: string;
+  @minLength(1) @maxLength(200) name?: string;
+  @maxLength(1000) description?: string;
 }
 
 model SpacePage is Page<Space>;

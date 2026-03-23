@@ -31,12 +31,6 @@ func (h *Handler) SpaceMembersList(ctx context.Context, params apigen.SpaceMembe
 
 	q := dbgen.New(tx)
 
-	// Verify the space exists (owner bypasses requireSpaceRead so this
-	// ensures a 404 instead of an empty 200 for nonexistent spaces).
-	if _, err := q.GetSpace(ctx, params.SpaceSlug); err != nil {
-		return nil, err
-	}
-
 	rows, err := q.ListSpaceMembersBySpace(ctx, dbgen.ListSpaceMembersBySpaceParams{
 		SpaceSlug: params.SpaceSlug,
 		UserID:    cursorID,

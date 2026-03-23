@@ -111,6 +111,12 @@ func newTasksCmd() *cobra.Command {
 	return tasksCmd
 }
 
+// addSpaceFlag registers a required --space flag on the given command.
+func addSpaceFlag(cmd *cobra.Command, target *string) {
+	cmd.Flags().StringVar(target, "space", "", "Space slug (required)")
+	_ = cmd.MarkFlagRequired("space")
+}
+
 func newTasksListCmd() *cobra.Command {
 	var space, cursor string
 	var limit int32
@@ -156,8 +162,7 @@ func newTasksListCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&space, "space", "", "Space slug (required)")
-	_ = cmd.MarkFlagRequired("space")
+	addSpaceFlag(cmd, &space)
 	cmd.Flags().StringVar(&cursor, "cursor", "", "Resume from a cursor returned by a previous list call")
 	cmd.Flags().Int32Var(&limit, "limit", 0, "Maximum number of results per page (server default if unset)")
 
@@ -196,8 +201,7 @@ func newTasksGetCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&space, "space", "", "Space slug (required)")
-	_ = cmd.MarkFlagRequired("space")
+	addSpaceFlag(cmd, &space)
 
 	return cmd
 }
@@ -256,8 +260,7 @@ assigns the default initial status. Status names are defined per space.`,
 		},
 	}
 
-	cmd.Flags().StringVar(&space, "space", "", "Space slug (required)")
-	_ = cmd.MarkFlagRequired("space")
+	addSpaceFlag(cmd, &space)
 	cmd.Flags().StringVar(&title, "title", "", "Task title (required)")
 	_ = cmd.MarkFlagRequired("title")
 	cmd.Flags().StringVar(&description, "description", "", "Task description")
@@ -342,8 +345,7 @@ to remove all assignees.`,
 		},
 	}
 
-	cmd.Flags().StringVar(&space, "space", "", "Space slug (required)")
-	_ = cmd.MarkFlagRequired("space")
+	addSpaceFlag(cmd, &space)
 	cmd.Flags().StringVar(&title, "title", "", "Task title")
 	cmd.Flags().StringVar(&description, "description", "", "Task description")
 	cmd.Flags().StringVar(&statusName, "status", "", "Status name (as defined in the space)")
@@ -370,7 +372,7 @@ func newTasksDeleteCmd() *cobra.Command {
 			app := GetAppContext(cmd)
 
 			if app.Printer.IsSchemaMode() {
-				return fmt.Errorf("--json-schema is not supported for delete commands")
+				return output.ErrNoSchema
 			}
 
 			err := app.Client.SpaceTasksDelete(cmd.Context(), gen.SpaceTasksDeleteParams{
@@ -381,16 +383,12 @@ func newTasksDeleteCmd() *cobra.Command {
 				return FormatAPIError(err)
 			}
 
-			// In JSON mode, exit code 0 signals success; no output needed.
-			if app.Printer.Mode != output.ModeJSON {
-				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Deleted task %s\n", args[0])
-			}
+			app.Printer.PrintDeletion("task", args[0])
 			return nil
 		},
 	}
 
-	cmd.Flags().StringVar(&space, "space", "", "Space slug (required)")
-	_ = cmd.MarkFlagRequired("space")
+	addSpaceFlag(cmd, &space)
 
 	return cmd
 }

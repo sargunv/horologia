@@ -344,11 +344,7 @@ func TestTaskAssigneesOnCreate(t *testing.T) {
 	createSpace(t, env, "home", "Home")
 
 	// Get owner's user ID.
-	resp := doRequest(t, env, "GET", "/users/me", "")
-	assertStatus(t, resp, http.StatusOK)
-	var me map[string]any
-	readJSON(t, resp, &me)
-	ownerID := me["id"].(string)
+	ownerID := getUserID(t, env, env.Token)
 
 	// Create task with assignees.
 	task := createTask(t, env, "home", `{"title":"With assignees","assigneeIds":["`+ownerID+`"]}`)
@@ -378,11 +374,7 @@ func TestTaskAssigneesUpdate(t *testing.T) {
 	createSpace(t, env, "home", "Home")
 
 	// Get owner's user ID.
-	resp := doRequest(t, env, "GET", "/users/me", "")
-	assertStatus(t, resp, http.StatusOK)
-	var me map[string]any
-	readJSON(t, resp, &me)
-	ownerID := me["id"].(string)
+	ownerID := getUserID(t, env, env.Token)
 
 	// Create a second user and add as member.
 	_, bobID := createAndAddMember(t, env, "home", "bob@example.com", "Bob", "pass123", "member")
@@ -424,11 +416,7 @@ func TestTaskAssigneesPreservedOnUnrelatedUpdate(t *testing.T) {
 
 	createSpace(t, env, "home", "Home")
 
-	resp := doRequest(t, env, "GET", "/users/me", "")
-	assertStatus(t, resp, http.StatusOK)
-	var me map[string]any
-	readJSON(t, resp, &me)
-	ownerID := me["id"].(string)
+	ownerID := getUserID(t, env, env.Token)
 
 	// Create task with assignee.
 	task := createTask(t, env, "home", `{"title":"Test","assigneeIds":["`+ownerID+`"]}`)
@@ -488,11 +476,7 @@ func TestTaskAssigneesDeduplicated(t *testing.T) {
 
 	createSpace(t, env, "home", "Home")
 
-	resp := doRequest(t, env, "GET", "/users/me", "")
-	assertStatus(t, resp, http.StatusOK)
-	var me map[string]any
-	readJSON(t, resp, &me)
-	ownerID := me["id"].(string)
+	ownerID := getUserID(t, env, env.Token)
 
 	// Create task with duplicate assignee IDs.
 	task := createTask(t, env, "home", `{"title":"Dedup","assigneeIds":["`+ownerID+`","`+ownerID+`"]}`)
@@ -507,11 +491,7 @@ func TestTaskDeleteCascadesAssignees(t *testing.T) {
 
 	createSpace(t, env, "home", "Home")
 
-	resp := doRequest(t, env, "GET", "/users/me", "")
-	assertStatus(t, resp, http.StatusOK)
-	var me map[string]any
-	readJSON(t, resp, &me)
-	ownerID := me["id"].(string)
+	ownerID := getUserID(t, env, env.Token)
 
 	task := createTask(t, env, "home", `{"title":"Delete me","assigneeIds":["`+ownerID+`"]}`)
 	taskID := task["id"].(string)
@@ -528,11 +508,7 @@ func TestTaskAssigneesInListResponse(t *testing.T) {
 
 	createSpace(t, env, "home", "Home")
 
-	resp := doRequest(t, env, "GET", "/users/me", "")
-	assertStatus(t, resp, http.StatusOK)
-	var me map[string]any
-	readJSON(t, resp, &me)
-	ownerID := me["id"].(string)
+	ownerID := getUserID(t, env, env.Token)
 
 	// Create two tasks: one with assignees, one without.
 	createTask(t, env, "home", `{"title":"Assigned","assigneeIds":["`+ownerID+`"]}`)
@@ -559,6 +535,41 @@ func TestTaskAssigneesInListResponse(t *testing.T) {
 		} else {
 			if len(assignees) != 0 {
 				t.Errorf("Unassigned task: assigneeIds = %v, want []", assignees)
+			}
+		}
+	}
+}
+
+func TestTaskTagsInListResponse(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+
+	// Create two tasks: one with tags, one without.
+	createTask(t, env, "home", `{"title":"Tagged","tags":["bug","urgent"]}`)
+	createTask(t, env, "home", `{"title":"Untagged"}`)
+
+	// List tasks and check tags are present in both items.
+	resp := doRequest(t, env, "GET", "/spaces/home/tasks", "")
+	assertStatus(t, resp, http.StatusOK)
+	var page map[string]any
+	readJSON(t, resp, &page)
+	items := page["items"].([]any)
+	if len(items) != 2 {
+		t.Fatalf("got %d items, want 2", len(items))
+	}
+
+	for _, item := range items {
+		task := item.(map[string]any)
+		title := task["title"].(string)
+		tags := task["tags"].([]any)
+		if title == "Tagged" {
+			if len(tags) != 2 {
+				t.Errorf("Tagged task: got %d tags, want 2", len(tags))
+			}
+		} else {
+			if len(tags) != 0 {
+				t.Errorf("Untagged task: tags = %v, want []", tags)
 			}
 		}
 	}

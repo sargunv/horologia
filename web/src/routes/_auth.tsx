@@ -1,5 +1,6 @@
 import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
 import { AppShell } from "../components/layout/app-shell.tsx";
+import { ErrorDisplay } from "../components/ui/error-display.tsx";
 import { meQueryOptions } from "../queries/auth.ts";
 
 export const Route = createFileRoute("/_auth")({
@@ -14,6 +15,8 @@ export const Route = createFileRoute("/_auth")({
       });
     }
   },
+  errorComponent: ({ error }) => <ErrorDisplay error={error} />,
+  pendingComponent: () => <p className="text-surface-500">Loading...</p>,
   component: AuthLayout,
 });
 

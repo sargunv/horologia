@@ -30,7 +30,15 @@ function LoginPage() {
     mutationFn: () => webLogin(email, password),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["me"] });
-      const destination = search.redirect?.startsWith("/") ? search.redirect : "/";
+      let destination = "/";
+      try {
+        const parsed = new URL(search.redirect ?? "", window.location.origin);
+        if (parsed.origin === window.location.origin) {
+          destination = parsed.pathname + parsed.search;
+        }
+      } catch {
+        // invalid URL, use default
+      }
       void navigate({ to: destination });
     },
   });

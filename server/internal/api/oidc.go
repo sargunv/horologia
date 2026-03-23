@@ -163,22 +163,9 @@ func handleOIDCCallback(w http.ResponseWriter, r *http.Request, tokens *oidc.Tok
 	}
 
 	// Generate a session token.
-	raw, hash, err := generateToken()
+	raw, err := createSessionToken(ctx, q, user.ID)
 	if err != nil {
-		handler.Log.ErrorContext(ctx, "oidc: generate token", "error", err)
-		http.Error(w, "failed to generate token", http.StatusInternalServerError)
-		return
-	}
-
-	_, err = q.CreateAuthToken(ctx, dbgen.CreateAuthTokenParams{
-		UserID:    user.ID,
-		TokenHash: hash,
-		Name:      "",
-		Kind:      "session",
-		CreatedAt: types.Now(),
-	})
-	if err != nil {
-		handler.Log.ErrorContext(ctx, "oidc: create token", "error", err)
+		handler.Log.ErrorContext(ctx, "oidc: create session", "error", err)
 		http.Error(w, "failed to create session", http.StatusInternalServerError)
 		return
 	}

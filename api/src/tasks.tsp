@@ -38,8 +38,8 @@ model Task {
 }
 
 model TaskCreate {
-  title: string;
-  description?: string;
+  @minLength(1) @maxLength(500) title: string;
+  @maxLength(10000) description?: string;
   status?: string;
   @maxItems(100) assigneeIds?: string[];
   @maxItems(100) tags?: string[];
@@ -47,8 +47,8 @@ model TaskCreate {
 }
 
 model TaskUpdate {
-  title?: string;
-  description?: string;
+  @minLength(1) @maxLength(500) title?: string;
+  @maxLength(10000) description?: string;
   status?: string;
   @maxItems(100) assigneeIds?: string[];
   @maxItems(100) tags?: string[];

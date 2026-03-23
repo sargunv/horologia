@@ -19,18 +19,7 @@ func (h *Handler) AuthLogin(ctx context.Context, req *apigen.LoginRequest) (*api
 		return nil, badRequest("invalid email or password")
 	}
 
-	raw, hash, err := generateToken()
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = q.CreateAuthToken(ctx, dbgen.CreateAuthTokenParams{
-		UserID:    user.ID,
-		TokenHash: hash,
-		Name:      "",
-		Kind:      "session",
-		CreatedAt: types.Now(),
-	})
+	raw, err := createSessionToken(ctx, q, user.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -65,13 +54,7 @@ func (h *Handler) AuthListTokens(ctx context.Context, params apigen.AuthListToke
 		return nil, err
 	}
 
-	items, nextCursor, err := paginate(tokens, limit, func(rows []dbgen.AuthToken) ([]apigen.AuthToken, error) {
-		items := make([]apigen.AuthToken, len(rows))
-		for i, t := range rows {
-			items[i] = *authTokenFromDB(t)
-		}
-		return items, nil
-	}, func(t dbgen.AuthToken) string {
+	items, nextCursor, err := paginate(tokens, limit, convertEach(authTokenFromDB), func(t dbgen.AuthToken) string {
 		return strconv.FormatInt(t.ID, 10)
 	})
 	if err != nil {

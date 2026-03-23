@@ -1,9 +1,12 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { ErrorDisplay } from "../../../components/ui/error-display.tsx";
 import { spacesQueryOptions } from "../../../queries/spaces.ts";
 
 export const Route = createFileRoute("/_auth/spaces/")({
   loader: ({ context }) => context.queryClient.ensureQueryData(spacesQueryOptions()),
+  errorComponent: ({ error }) => <ErrorDisplay error={error} />,
+  pendingComponent: () => <p className="text-surface-500">Loading...</p>,
   component: SpaceListPage,
 });
 
@@ -32,6 +35,9 @@ function SpaceListPage() {
           ))}
         </div>
       )}
+      {data.nextCursor ? (
+        <p className="text-sm text-surface-500">There are more spaces not shown on this page.</p>
+      ) : null}
     </div>
   );
 }

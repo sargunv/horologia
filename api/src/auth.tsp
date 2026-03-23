@@ -22,7 +22,7 @@ model AuthToken {
 }
 
 model AuthTokenCreate {
-  name: string;
+  @minLength(1) @maxLength(100) name: string;
 }
 
 model AuthTokenCreateResponse {

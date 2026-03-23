@@ -37,7 +37,7 @@ Examples:
 
 Each space has:
 
-- **Members** with roles: admin, writer, reader
+- **Members** with roles: admin, member, viewer
 - **Custom statuses** — the space defines its own status workflow (see below)
 - **Tags** — scoped to the space
 - **New task defaults** — space-level defaults for new tasks (e.g., `show_staleness: true`, default
@@ -129,7 +129,7 @@ tasks.
 - **Blocks / blocked-by** — dependency. Blocked tasks are not actionable until the blocker is
   completed.
 - **Relates to** — informational link, no system semantics.
-- **Duplicates / duplicated-by** — marks duplicate tasks.
+- **Duplicates** — symmetric link marking duplicate tasks.
 
 **Comments (future, not v0.1):**
 
@@ -211,10 +211,10 @@ tend/
 └───────────────────────────────┘
         ▲              ▲
         │              │
-   ┌────┴───┐    ┌─────┴────┐
-   │  tend  │    │  Tauri   │
-   │  CLI   │    │  (SPA)   │
-   └────────┘    └──────────┘
+   ┌────┴───┐    ┌──────────────┐
+   │  tend  │    │    Tauri     │
+   │  CLI   │    │ (SPA,future) │
+   └────────┘    └──────────────┘
 ```
 
 **Two Go binaries in a monorepo. Shared OpenAPI spec and generated types.**
@@ -243,7 +243,9 @@ tend/
 - **Database** — SQLite. Single file, easy backup, self-hosted friendly. Designed so Postgres could
   be added later if needed.
 - **Auth** — OIDC support (for use behind Authelia, Authentik, etc.) + username/password. CLI auth
-  via API tokens stored in OS keychain. MCP auth via OAuth 2.1.
+  via API tokens stored in OS keychain. MCP auth via OAuth 2.1. The `create-admin` command creates a
+  **global owner** — a user with `isOwner: true` who bypasses space membership checks and can access
+  all spaces. Regular users only see spaces they are members of.
 - **API tokens** — users can create named personal API tokens (like GitHub PATs). Actions taken via
   a token are attributed to the user but tagged with the token name (e.g., "Sargun (via Claude)").
   Every action records `user_id` + nullable `token_id`. No separate bot accounts — tokens inherit

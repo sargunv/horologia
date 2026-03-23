@@ -1,5 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { ErrorDisplay } from "../../../../components/ui/error-display.tsx";
 import { spaceQueryOptions } from "../../../../queries/spaces.ts";
 import { spaceTasksQueryOptions } from "../../../../queries/tasks.ts";
 
@@ -9,6 +10,8 @@ export const Route = createFileRoute("/_auth/spaces/$spaceSlug/")({
       context.queryClient.ensureQueryData(spaceQueryOptions(params.spaceSlug)),
       context.queryClient.ensureQueryData(spaceTasksQueryOptions(params.spaceSlug)),
     ]),
+  errorComponent: ({ error }) => <ErrorDisplay error={error} />,
+  pendingComponent: () => <p className="text-surface-500">Loading...</p>,
   component: TaskListPage,
 });
 
@@ -63,6 +66,9 @@ function TaskListPage() {
           </table>
         </div>
       )}
+      {tasks.nextCursor ? (
+        <p className="text-sm text-surface-500">There are more tasks not shown on this page.</p>
+      ) : null}
     </div>
   );
 }

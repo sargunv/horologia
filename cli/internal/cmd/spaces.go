@@ -248,7 +248,7 @@ func newSpacesDeleteCmd() *cobra.Command {
 			app := GetAppContext(cmd)
 
 			if app.Printer.IsSchemaMode() {
-				return fmt.Errorf("--json-schema is not supported for delete commands")
+				return output.ErrNoSchema
 			}
 
 			err := app.Client.SpacesDelete(cmd.Context(), gen.SpacesDeleteParams{
@@ -258,10 +258,7 @@ func newSpacesDeleteCmd() *cobra.Command {
 				return FormatAPIError(err)
 			}
 
-			// In JSON mode, exit code 0 signals success; no output needed.
-			if app.Printer.Mode != output.ModeJSON {
-				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Deleted space %s\n", args[0])
-			}
+			app.Printer.PrintDeletion("space", args[0])
 			return nil
 		},
 	}

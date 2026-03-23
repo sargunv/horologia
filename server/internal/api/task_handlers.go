@@ -23,20 +23,10 @@ func (h *Handler) fetchTaskRelations(ctx context.Context, q *dbgen.Queries, id i
 	}
 	rows := make([]taskRelationRow, 0, len(asSource)+len(asTarget))
 	for _, r := range asSource {
-		rows = append(rows, taskRelationRow{
-			SourceTaskID: r.SourceTaskID,
-			TargetTaskID: r.TargetTaskID,
-			Kind:         r.Kind,
-			CreatedAt:    r.CreatedAt,
-		})
+		rows = append(rows, taskRelationRow(r))
 	}
 	for _, r := range asTarget {
-		rows = append(rows, taskRelationRow{
-			SourceTaskID: r.SourceTaskID,
-			TargetTaskID: r.TargetTaskID,
-			Kind:         r.Kind,
-			CreatedAt:    r.CreatedAt,
-		})
+		rows = append(rows, taskRelationRow(r))
 	}
 	return rows, nil
 }
@@ -107,12 +97,7 @@ func (h *Handler) enrichTasks(ctx context.Context, q *dbgen.Queries, tasks []dbg
 	// Group relations by task ID (a relation appears for both source and target).
 	relationMap := make(map[int64][]taskRelationRow)
 	for _, r := range relationRows {
-		row := taskRelationRow{
-			SourceTaskID: r.SourceTaskID,
-			TargetTaskID: r.TargetTaskID,
-			Kind:         r.Kind,
-			CreatedAt:    r.CreatedAt,
-		}
+		row := taskRelationRow(r)
 		if r.SourceTaskID != r.TargetTaskID {
 			relationMap[r.SourceTaskID] = append(relationMap[r.SourceTaskID], row)
 			relationMap[r.TargetTaskID] = append(relationMap[r.TargetTaskID], row)
@@ -156,11 +141,6 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 	defer func() { _ = tx.Rollback() }()
 
 	q := dbgen.New(tx)
-
-	// Verify the space exists.
-	if _, err := q.GetSpace(ctx, params.SpaceSlug); err != nil {
-		return nil, err
-	}
 
 	// Resolve the status name.
 	statusName := req.Status.Or("")
@@ -239,11 +219,6 @@ func (h *Handler) SpaceTasksList(ctx context.Context, params apigen.SpaceTasksLi
 	defer func() { _ = tx.Rollback() }()
 
 	q := dbgen.New(tx)
-
-	// Verify the space exists.
-	if _, err := q.GetSpace(ctx, params.SpaceSlug); err != nil {
-		return nil, err
-	}
 
 	rows, err := q.ListTasksBySpace(ctx, dbgen.ListTasksBySpaceParams{
 		SpaceSlug: params.SpaceSlug,

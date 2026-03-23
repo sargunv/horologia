@@ -12,7 +12,7 @@ description = "Generate OpenAPI types"
 depends = ["//api:compile"]
 sources = ["../api/tsp-output/schema/openapi.yaml"]
 outputs = ["src/api/schema.d.ts"]
-run = "npx openapi-typescript ../api/tsp-output/schema/openapi.yaml -o src/api/schema.d.ts"
+run = "pnpm exec openapi-typescript ../api/tsp-output/schema/openapi.yaml -o src/api/schema.d.ts"
 
 [tasks.check]
 description = "Run lint and type checks"

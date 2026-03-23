@@ -11,7 +11,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/types"
 )
 
 // sentinelHash is a pre-computed bcrypt hash used to prevent timing-based
@@ -45,11 +44,6 @@ func CookieAuthMiddleware(next http.Handler) http.Handler {
 // and returns the user as JSON (without the raw token).
 func WebLoginHandler(handler *Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-
 		var req struct {
 			Email    string `json:"email"`
 			Password string `json:"password"`
@@ -68,22 +62,9 @@ func WebLoginHandler(handler *Handler) http.Handler {
 			return
 		}
 
-		raw, hash, err := generateToken()
+		raw, err := createSessionToken(ctx, q, user.ID)
 		if err != nil {
-			handler.Log.ErrorContext(ctx, "web-login: generate token", "error", err)
-			writeJSONError(w, http.StatusInternalServerError, "internal error")
-			return
-		}
-
-		_, err = q.CreateAuthToken(ctx, dbgen.CreateAuthTokenParams{
-			UserID:    user.ID,
-			TokenHash: hash,
-			Name:      "",
-			Kind:      "session",
-			CreatedAt: types.Now(),
-		})
-		if err != nil {
-			handler.Log.ErrorContext(ctx, "web-login: create token", "error", err)
+			handler.Log.ErrorContext(ctx, "web-login: create session", "error", err)
 			writeJSONError(w, http.StatusInternalServerError, "internal error")
 			return
 		}
@@ -101,11 +82,6 @@ func WebLoginHandler(handler *Handler) http.Handler {
 // It reads the session cookie, deletes the token from the DB, and clears the cookie.
 func WebLogoutHandler(handler *Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-
 		c, err := r.Cookie(sessionCookieName)
 		if err != nil {
 			clearSessionCookie(w)

@@ -12,11 +12,18 @@ export function meQueryOptions() {
   });
 }
 
+async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
+  const res = await fetch(`/api${path}`, { credentials: "include", ...init });
+  if (res.status === 401) {
+    window.dispatchEvent(new CustomEvent("tend:unauthorized"));
+  }
+  return res;
+}
+
 export async function webLogin(email: string, password: string) {
-  const res = await fetch("/api/auth/web-login", {
+  const res = await apiFetch("/auth/web-login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    credentials: "include",
     body: JSON.stringify({ email, password }),
   });
   if (!res.ok) {
@@ -27,8 +34,5 @@ export async function webLogin(email: string, password: string) {
 }
 
 export async function webLogout() {
-  await fetch("/api/auth/web-logout", {
-    method: "POST",
-    credentials: "include",
-  });
+  await apiFetch("/auth/web-logout", { method: "POST" });
 }

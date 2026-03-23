@@ -30,12 +30,6 @@ func (h *Handler) SpaceTagsList(ctx context.Context, params apigen.SpaceTagsList
 
 	q := dbgen.New(tx)
 
-	// Verify the space exists (without this, a nonexistent space returns
-	// an empty 200 instead of 404).
-	if _, err := q.GetSpace(ctx, params.SpaceSlug); err != nil {
-		return nil, err
-	}
-
 	rows, err := q.ListTagsBySpace(ctx, dbgen.ListTagsBySpaceParams{
 		SpaceSlug: params.SpaceSlug,
 		ID:        cursorID,
@@ -45,13 +39,7 @@ func (h *Handler) SpaceTagsList(ctx context.Context, params apigen.SpaceTagsList
 		return nil, err
 	}
 
-	items, nextCursor, err := paginate(rows, limit, func(rows []dbgen.Tag) ([]apigen.Tag, error) {
-		items := make([]apigen.Tag, len(rows))
-		for i, t := range rows {
-			items[i] = *tagFromDB(t)
-		}
-		return items, nil
-	}, tagCursorKey)
+	items, nextCursor, err := paginate(rows, limit, convertEach(tagFromDB), tagCursorKey)
 	if err != nil {
 		return nil, err
 	}
@@ -76,11 +64,6 @@ func (h *Handler) SpaceTagsCreate(ctx context.Context, req *apigen.TagCreate, pa
 	defer func() { _ = tx.Rollback() }()
 
 	q := dbgen.New(tx)
-
-	// Verify the space exists.
-	if _, err := q.GetSpace(ctx, params.SpaceSlug); err != nil {
-		return nil, err
-	}
 
 	tag, err := q.CreateTag(ctx, dbgen.CreateTagParams{
 		SpaceSlug:  params.SpaceSlug,

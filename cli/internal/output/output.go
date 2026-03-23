@@ -36,6 +36,17 @@ func (p *Printer) IsSchemaMode() bool {
 	return p.Mode == ModeJSONSchema
 }
 
+// ErrNoSchema is returned when --json-schema is used with a command that has no schema.
+var ErrNoSchema = fmt.Errorf("--json-schema is not supported for delete commands")
+
+// PrintDeletion writes a human-readable deletion confirmation in table mode.
+// In JSON mode, exit code 0 signals success and no output is needed.
+func (p *Printer) PrintDeletion(resourceType, id string) {
+	if p.Mode == ModeTable {
+		_, _ = fmt.Fprintf(p.Out, "Deleted %s %s\n", resourceType, id)
+	}
+}
+
 // ResourceView describes how to display a single resource.
 type ResourceView[T any] struct {
 	// Value is the resource to display (a struct with json tags for JSON mode).
