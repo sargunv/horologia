@@ -53,19 +53,29 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 }
 
 const deleteTask = `-- name: DeleteTask :execresult
-DELETE FROM tasks WHERE id = ?
+DELETE FROM tasks WHERE id = ? AND space_slug = ?
 `
 
-func (q *Queries) DeleteTask(ctx context.Context, id int64) (sql.Result, error) {
-	return q.db.ExecContext(ctx, deleteTask, id)
+type DeleteTaskParams struct {
+	ID        int64
+	SpaceSlug string
+}
+
+func (q *Queries) DeleteTask(ctx context.Context, arg DeleteTaskParams) (sql.Result, error) {
+	return q.db.ExecContext(ctx, deleteTask, arg.ID, arg.SpaceSlug)
 }
 
 const getTask = `-- name: GetTask :one
-SELECT id, space_slug, title, description, status_name, due_date, created_at, updated_at FROM tasks WHERE id = ?
+SELECT id, space_slug, title, description, status_name, due_date, created_at, updated_at FROM tasks WHERE id = ? AND space_slug = ?
 `
 
-func (q *Queries) GetTask(ctx context.Context, id int64) (Task, error) {
-	row := q.db.QueryRowContext(ctx, getTask, id)
+type GetTaskParams struct {
+	ID        int64
+	SpaceSlug string
+}
+
+func (q *Queries) GetTask(ctx context.Context, arg GetTaskParams) (Task, error) {
+	row := q.db.QueryRowContext(ctx, getTask, arg.ID, arg.SpaceSlug)
 	var i Task
 	err := row.Scan(
 		&i.ID,
@@ -128,7 +138,7 @@ func (q *Queries) ListTasksBySpace(ctx context.Context, arg ListTasksBySpacePara
 const updateTask = `-- name: UpdateTask :one
 UPDATE tasks
 SET title = ?, description = ?, status_name = ?, due_date = ?, updated_at = ?
-WHERE id = ?
+WHERE id = ? AND space_slug = ?
 RETURNING id, space_slug, title, description, status_name, due_date, created_at, updated_at
 `
 
@@ -139,6 +149,7 @@ type UpdateTaskParams struct {
 	DueDate     *string
 	UpdatedAt   types.EpochSeconds
 	ID          int64
+	SpaceSlug   string
 }
 
 func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error) {
@@ -149,6 +160,7 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 		arg.DueDate,
 		arg.UpdatedAt,
 		arg.ID,
+		arg.SpaceSlug,
 	)
 	var i Task
 	err := row.Scan(

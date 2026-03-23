@@ -3,6 +3,8 @@ package api
 import (
 	"context"
 
+	"github.com/ogen-go/ogen/ogenerrors"
+
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 )
 
@@ -10,6 +12,9 @@ import (
 // in the specified space. Global owners always pass.
 func (h *Handler) requireSpaceRole(ctx context.Context, spaceSlug string, roles ...string) error {
 	user := UserFromContext(ctx)
+	if user == nil {
+		return &ogenerrors.SecurityError{Err: ogenerrors.ErrSecurityRequirementIsNotSatisfied}
+	}
 	if user.IsOwner {
 		return nil
 	}

@@ -125,7 +125,7 @@ func TestTaskRelationsCrossSpaceRejected(t *testing.T) {
 
 	resp := doRequest(t, env, "POST", "/spaces/space-a/tasks/"+t1["id"].(string)+"/relations",
 		`{"kind":"blocks","taskId":"`+t2["id"].(string)+`"}`)
-	assertStatusClose(t, resp, http.StatusBadRequest)
+	assertStatusClose(t, resp, http.StatusNotFound)
 }
 
 func TestTaskRelationsNonExistentTask(t *testing.T) {

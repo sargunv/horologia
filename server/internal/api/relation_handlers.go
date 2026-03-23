@@ -29,12 +29,9 @@ func (h *Handler) SpaceTaskRelationsCreate(ctx context.Context, req *apigen.Task
 	q := dbgen.New(h.DB)
 
 	// Verify target task exists and is in the same space.
-	targetTask, err := q.GetTask(ctx, targetID)
+	_, err = q.GetTask(ctx, dbgen.GetTaskParams{ID: targetID, SpaceSlug: params.SpaceSlug})
 	if err != nil {
 		return nil, err
-	}
-	if targetTask.SpaceSlug != params.SpaceSlug {
-		return nil, badRequest("tasks must be in the same space")
 	}
 
 	storedKind, storedSource, storedTarget := canonicalizeRelation(req.Kind, sourceID, targetID)

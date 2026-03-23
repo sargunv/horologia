@@ -291,6 +291,51 @@ func TestSpaceDeleteCascadesTasks(t *testing.T) {
 	assertStatusClose(t, resp2, http.StatusNotFound)
 }
 
+// --- Cross-Space Isolation Tests ---
+
+func TestCrossSpaceTaskRead(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "space-a", "Space A")
+	createSpace(t, env, "space-b", "Space B")
+	task := createTask(t, env, "space-b", `{"title":"Secret"}`)
+	id := task["id"].(string)
+
+	// Reading space-b's task via space-a's URL should 404.
+	resp := doRequest(t, env, "GET", "/spaces/space-a/tasks/"+id, "")
+	assertStatusClose(t, resp, http.StatusNotFound)
+}
+
+func TestCrossSpaceTaskUpdate(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "space-a", "Space A")
+	createSpace(t, env, "space-b", "Space B")
+	task := createTask(t, env, "space-b", `{"title":"Secret"}`)
+	id := task["id"].(string)
+
+	// Updating space-b's task via space-a's URL should 404.
+	resp := doRequest(t, env, "PATCH", "/spaces/space-a/tasks/"+id, `{"title":"Hacked"}`)
+	assertStatusClose(t, resp, http.StatusNotFound)
+}
+
+func TestCrossSpaceTaskDelete(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "space-a", "Space A")
+	createSpace(t, env, "space-b", "Space B")
+	task := createTask(t, env, "space-b", `{"title":"Secret"}`)
+	id := task["id"].(string)
+
+	// Deleting space-b's task via space-a's URL should 404.
+	resp := doRequest(t, env, "DELETE", "/spaces/space-a/tasks/"+id, "")
+	assertStatusClose(t, resp, http.StatusNotFound)
+
+	// Task should still exist in space-b.
+	resp2 := doRequest(t, env, "GET", "/spaces/space-b/tasks/"+id, "")
+	assertStatusClose(t, resp2, http.StatusOK)
+}
+
 // --- Task Assignee Tests ---
 
 func TestTaskAssigneesOnCreate(t *testing.T) {

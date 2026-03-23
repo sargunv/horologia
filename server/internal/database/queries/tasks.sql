@@ -4,7 +4,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetTask :one
-SELECT * FROM tasks WHERE id = ?;
+SELECT * FROM tasks WHERE id = ? AND space_slug = ?;
 
 -- name: ListTasksBySpace :many
 SELECT * FROM tasks
@@ -15,8 +15,8 @@ LIMIT ?;
 -- name: UpdateTask :one
 UPDATE tasks
 SET title = ?, description = ?, status_name = ?, due_date = ?, updated_at = ?
-WHERE id = ?
+WHERE id = ? AND space_slug = ?
 RETURNING *;
 
 -- name: DeleteTask :execresult
-DELETE FROM tasks WHERE id = ?;
+DELETE FROM tasks WHERE id = ? AND space_slug = ?;
