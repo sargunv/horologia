@@ -39,28 +39,6 @@ func (q *Queries) CreateTaskStatus(ctx context.Context, arg CreateTaskStatusPara
 	return i, err
 }
 
-const getTaskStatus = `-- name: GetTaskStatus :one
-SELECT space_slug, name, category, position FROM task_statuses
-WHERE space_slug = ? AND name = ?
-`
-
-type GetTaskStatusParams struct {
-	SpaceSlug string
-	Name      string
-}
-
-func (q *Queries) GetTaskStatus(ctx context.Context, arg GetTaskStatusParams) (TaskStatus, error) {
-	row := q.db.QueryRowContext(ctx, getTaskStatus, arg.SpaceSlug, arg.Name)
-	var i TaskStatus
-	err := row.Scan(
-		&i.SpaceSlug,
-		&i.Name,
-		&i.Category,
-		&i.Position,
-	)
-	return i, err
-}
-
 const listTaskStatusesBySpace = `-- name: ListTaskStatusesBySpace :many
 SELECT space_slug, name, category, position FROM task_statuses
 WHERE space_slug = ?

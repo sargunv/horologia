@@ -14,9 +14,3 @@ SELECT * FROM users WHERE oidc_subject = ?;
 
 -- name: SetUserOIDCSubject :exec
 UPDATE users SET oidc_subject = ?, updated_at = ? WHERE id = ?;
-
--- name: UpdateUser :one
-UPDATE users
-SET name = ?, email = ?, updated_at = ?
-WHERE id = ?
-RETURNING *;

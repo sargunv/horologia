@@ -25,12 +25,13 @@
 
 ## Views & UX
 
-8. **Web editing** — create/edit tasks, spaces, members from the web UI
-9. **Today view** — unified dashboard across all spaces, sorted by staleness/urgency
-10. **Search** — full-text search on title/description, filterable by space/status/assignee/tags
-11. **Markdown rendering** — render descriptions as Markdown in web UI
+8. **Web pagination** — handle `nextCursor` in list views
+9. **Web editing** — create/edit tasks, spaces, members from the web UI
+10. **Today view** — unified dashboard across all spaces, sorted by staleness/urgency
+11. **Search** — full-text search on title/description, filterable by space/status/assignee/tags
+12. **Markdown rendering** — render descriptions as Markdown in web UI
 
 ## Infrastructure
 
-12. **MCP endpoint** — Streamable HTTP at `/mcp`
-13. **Dockerfile** — single container deployment
+13. **MCP endpoint** — Streamable HTTP at `/mcp`
+14. **Dockerfile** — single container deployment

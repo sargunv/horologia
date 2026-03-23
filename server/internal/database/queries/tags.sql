@@ -4,6 +4,8 @@ VALUES (?, ?, ?, ?)
 RETURNING *;
 
 -- name: EnsureTag :one
+-- Uses DO UPDATE SET name = name (a no-op) instead of DO NOTHING so that
+-- RETURNING returns the row even when the insert is skipped due to conflict.
 INSERT INTO tags (space_slug, name, name_folded, created_at)
 VALUES (?, ?, ?, ?)
 ON CONFLICT (space_slug, name_folded) DO UPDATE SET name = name

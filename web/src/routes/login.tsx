@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, isRedirect, redirect, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
 import { ErrorDisplay } from "../components/ui/error-display.tsx";
 import { queryClient } from "../lib/query-client.ts";
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/login")({
       await context.queryClient.ensureQueryData(meQueryOptions());
       throw redirect({ to: "/" });
     } catch (e: unknown) {
-      if (e !== null && typeof e === "object" && "to" in e) throw e;
+      if (isRedirect(e)) throw e;
     }
   },
   component: LoginPage,

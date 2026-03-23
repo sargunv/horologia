@@ -70,6 +70,8 @@ type EnsureTagParams struct {
 	CreatedAt  types.EpochSeconds
 }
 
+// Uses DO UPDATE SET name = name (a no-op) instead of DO NOTHING so that
+// RETURNING returns the row even when the insert is skipped due to conflict.
 func (q *Queries) EnsureTag(ctx context.Context, arg EnsureTagParams) (Tag, error) {
 	row := q.db.QueryRowContext(ctx, ensureTag,
 		arg.SpaceSlug,

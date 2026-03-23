@@ -125,38 +125,3 @@ func (q *Queries) SetUserOIDCSubject(ctx context.Context, arg SetUserOIDCSubject
 	_, err := q.db.ExecContext(ctx, setUserOIDCSubject, arg.OidcSubject, arg.UpdatedAt, arg.ID)
 	return err
 }
-
-const updateUser = `-- name: UpdateUser :one
-UPDATE users
-SET name = ?, email = ?, updated_at = ?
-WHERE id = ?
-RETURNING id, email, name, password_hash, is_owner, oidc_subject, created_at, updated_at
-`
-
-type UpdateUserParams struct {
-	Name      string
-	Email     string
-	UpdatedAt types.EpochSeconds
-	ID        int64
-}
-
-func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, updateUser,
-		arg.Name,
-		arg.Email,
-		arg.UpdatedAt,
-		arg.ID,
-	)
-	var i User
-	err := row.Scan(
-		&i.ID,
-		&i.Email,
-		&i.Name,
-		&i.PasswordHash,
-		&i.IsOwner,
-		&i.OidcSubject,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
