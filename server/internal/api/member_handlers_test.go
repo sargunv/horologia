@@ -27,6 +27,20 @@ func TestSpaceMembersCreate(t *testing.T) {
 	}
 }
 
+func TestSpaceMembersCreateDuplicate(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+	aliceToken := createTestUser(t, env, "alice@example.com", "Alice", "pass123")
+	userID := getUserID(t, env, aliceToken)
+
+	// First add succeeds.
+	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/home/members", `{"userId":"`+userID+`","role":"member"}`), http.StatusCreated)
+
+	// Second add should be 409 Conflict.
+	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/home/members", `{"userId":"`+userID+`","role":"member"}`), http.StatusConflict)
+}
+
 func TestSpaceMembersList(t *testing.T) {
 	env := setupTestServer(t)
 
@@ -46,6 +60,44 @@ func TestSpaceMembersList(t *testing.T) {
 	}
 }
 
+func TestSpaceMembersListPagination(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+	// Space creator is auto-added as admin (1 member already).
+	// Add 3 more members for a total of 4.
+	createAndAddMember(t, env, "home", "b@example.com", "B", "pass123", "member")
+	createAndAddMember(t, env, "home", "c@example.com", "C", "pass123", "member")
+	createAndAddMember(t, env, "home", "d@example.com", "D", "pass123", "member")
+
+	// Page 1: limit=2, should return 2 items with a cursor.
+	resp := doRequest(t, env, "GET", "/spaces/home/members?limit=2", "")
+	assertStatus(t, resp, http.StatusOK)
+	var page1 map[string]any
+	readJSON(t, resp, &page1)
+	items1 := page1["items"].([]any)
+	if len(items1) != 2 {
+		t.Fatalf("page 1: got %d items, want 2", len(items1))
+	}
+	cursor := page1["nextCursor"]
+	if cursor == nil {
+		t.Fatal("page 1: expected nextCursor")
+	}
+
+	// Page 2: should return remaining 2 items with null cursor.
+	resp2 := doRequest(t, env, "GET", "/spaces/home/members?limit=2&cursor="+cursor.(string), "")
+	assertStatus(t, resp2, http.StatusOK)
+	var page2 map[string]any
+	readJSON(t, resp2, &page2)
+	items2 := page2["items"].([]any)
+	if len(items2) != 2 {
+		t.Fatalf("page 2: got %d items, want 2", len(items2))
+	}
+	if page2["nextCursor"] != nil {
+		t.Error("page 2: expected null nextCursor")
+	}
+}
+
 func TestSpaceMembersUpdate(t *testing.T) {
 	env := setupTestServer(t)
 
@@ -60,6 +112,15 @@ func TestSpaceMembersUpdate(t *testing.T) {
 	if updated["role"] != "admin" {
 		t.Errorf("role = %v, want admin", updated["role"])
 	}
+}
+
+func TestSpaceMembersUpdateNotFound(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+
+	// Attempt to update a non-existent member.
+	assertStatusClose(t, doRequest(t, env, "PATCH", "/spaces/home/members/U999999", `{"role":"admin"}`), http.StatusNotFound)
 }
 
 func TestSpaceMembersDelete(t *testing.T) {

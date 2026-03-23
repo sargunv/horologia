@@ -98,9 +98,9 @@ func TestAuthTokenList(t *testing.T) {
 	var page map[string]any
 	readJSON(t, resp, &page)
 	items := page["items"].([]any)
-	// Should include the setup session token + 2 API tokens.
-	if len(items) < 2 {
-		t.Fatalf("got %d items, want at least 2", len(items))
+	// Should include the setup session token + 2 API tokens = 3.
+	if len(items) != 3 {
+		t.Fatalf("got %d items, want 3", len(items))
 	}
 }
 
@@ -138,6 +138,30 @@ func TestAuthTokenDeleteOtherUser(t *testing.T) {
 	// Second user tries to delete owner's token.
 	userToken := createTestUser(t, env, "other@example.com", "Other", "pass123")
 	assertStatusClose(t, doRequestAs(t, env, userToken, "DELETE", "/auth/tokens/"+tokenID, ""), http.StatusNotFound)
+}
+
+func TestAuthTokenListIsolation(t *testing.T) {
+	env := setupTestServer(t)
+
+	// Owner creates a token.
+	assertStatusClose(t, doRequest(t, env, "POST", "/auth/tokens", `{"name":"owner-token"}`), http.StatusCreated)
+
+	// Second user creates a token.
+	userToken := createTestUser(t, env, "other@example.com", "Other", "pass123")
+	assertStatusClose(t, doRequestAs(t, env, userToken, "POST", "/auth/tokens", `{"name":"other-token"}`), http.StatusCreated)
+
+	// Second user lists tokens — should not see owner's tokens.
+	resp := doRequestAs(t, env, userToken, "GET", "/auth/tokens", "")
+	assertStatus(t, resp, http.StatusOK)
+	var page map[string]any
+	readJSON(t, resp, &page)
+	items := page["items"].([]any)
+	for _, item := range items {
+		tok := item.(map[string]any)
+		if tok["name"] == "owner-token" {
+			t.Fatal("second user can see owner's token")
+		}
+	}
 }
 
 func TestExpiredTokenRejected(t *testing.T) {

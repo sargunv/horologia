@@ -587,3 +587,29 @@ func TestTaskAssigneesNonExistentUser(t *testing.T) {
 	resp := doRequest(t, env, "PATCH", "/spaces/home/tasks/"+taskID, `{"assigneeIds":["U99999"]}`)
 	assertStatusClose(t, resp, http.StatusBadRequest)
 }
+
+func TestTaskTagCaseFoldingPreservesDisplayName(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "tag-fold", "Tag Fold")
+
+	// 1. Explicitly create tag with display name "Bug".
+	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-fold/tags", `{"name":"Bug"}`), http.StatusCreated)
+
+	// 2. Create a task using lowercase "bug".
+	task := createTask(t, env, "tag-fold", `{"title":"Test","tags":["bug"]}`)
+	taskID := task["id"].(string)
+
+	// 3. GET the task — tag should be "Bug" (original display name), not "bug".
+	resp := doRequest(t, env, "GET", "/spaces/tag-fold/tasks/"+taskID, "")
+	assertStatus(t, resp, http.StatusOK)
+	var fetched map[string]any
+	readJSON(t, resp, &fetched)
+	tags := fetched["tags"].([]any)
+	if len(tags) != 1 {
+		t.Fatalf("got %d tags, want 1", len(tags))
+	}
+	if tags[0] != "Bug" {
+		t.Errorf("tag = %v, want Bug", tags[0])
+	}
+}

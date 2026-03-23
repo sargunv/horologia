@@ -153,3 +153,30 @@ func TestSpaceTagsCrossSpaceIsolation(t *testing.T) {
 		t.Fatal("space B should have no tags")
 	}
 }
+
+func TestSpaceTagsNonMemberRejected(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "tag-acl", "Tag ACL")
+
+	// Non-member user.
+	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass123")
+
+	// Cannot list tags.
+	assertStatusClose(t, doRequestAs(t, env, outsiderToken, "GET", "/spaces/tag-acl/tags", ""), http.StatusNotFound)
+
+	// Cannot create tags.
+	assertStatusClose(t, doRequestAs(t, env, outsiderToken, "POST", "/spaces/tag-acl/tags", `{"name":"Bug"}`), http.StatusNotFound)
+}
+
+func TestSpaceTagsViewerCannotWrite(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "tag-vw", "Tag Viewer Write")
+
+	viewerToken, _ := createAndAddMember(t, env, "tag-vw", "viewer@example.com", "Viewer", "pass123", "viewer")
+
+	// Viewer can list tags.
+	assertStatusClose(t, doRequestAs(t, env, viewerToken, "GET", "/spaces/tag-vw/tags", ""), http.StatusOK)
+
+	// Viewer cannot create tags.
+	assertStatusClose(t, doRequestAs(t, env, viewerToken, "POST", "/spaces/tag-vw/tags", `{"name":"Bug"}`), http.StatusBadRequest)
+}
