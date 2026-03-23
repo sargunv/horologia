@@ -20,9 +20,16 @@ export function AppShell({ user, children }: AppShellProps) {
   return (
     <div className="flex min-h-screen flex-col">
       <header className="flex items-center justify-between border-b border-surface-200 dark:border-surface-800 px-6 py-3">
-        <Link to="/" className="h4 font-bold">
-          Tend
-        </Link>
+        <div className="flex items-center gap-6">
+          <Link to="/" className="text-lg font-bold">
+            Tend
+          </Link>
+          <nav className="flex items-center gap-4 text-sm">
+            <Link to="/spaces" className="hover:underline">
+              Spaces
+            </Link>
+          </nav>
+        </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-surface-500">{user.name}</span>
           <button
@@ -34,7 +41,9 @@ export function AppShell({ user, children }: AppShellProps) {
           </button>
         </div>
       </header>
-      <main className="flex-1 p-6">{children}</main>
+      <main className="flex-1 p-6">
+        <div className="mx-auto max-w-4xl">{children}</div>
+      </main>
     </div>
   );
 }

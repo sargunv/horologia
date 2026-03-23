@@ -41,7 +41,7 @@ function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-surface-50 dark:bg-surface-950">
+    <div className="flex min-h-screen items-center justify-center">
       <div className="card w-full max-w-sm p-6">
         <h1 className="h3 mb-6 text-center">Sign in to Tend</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -72,7 +72,7 @@ function LoginPage() {
             className="btn preset-filled-primary-500 w-full"
             disabled={login.isPending}
           >
-            {login.isPending ? "Signing in..." : "Sign in"}
+            {login.isPending ? "Signing in\u2026" : "Sign in"}
           </button>
         </form>
       </div>

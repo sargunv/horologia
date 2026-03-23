@@ -1,7 +1,7 @@
 version: "0.5"
 
 environment:
-  - "TEND_DB=server/tend.db"
+  - "TEND_DB=tend.db"
   - "TEND_LOG_FORMAT=text"
   - "TEND_LOG_LEVEL=debug"
   - "TEND_OIDC_ISSUER=http://localhost:5556/"

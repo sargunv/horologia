@@ -1,7 +1,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { spaceQueryOptions } from "../../../queries/spaces.ts";
-import { spaceTasksQueryOptions } from "../../../queries/tasks.ts";
+import { spaceQueryOptions } from "../../../../queries/spaces.ts";
+import { spaceTasksQueryOptions } from "../../../../queries/tasks.ts";
 
 export const Route = createFileRoute("/_auth/spaces/$spaceSlug/")({
   loader: ({ context, params }) =>
@@ -21,7 +21,7 @@ function TaskListPage() {
     <div className="space-y-4">
       <div>
         <Link to="/spaces" className="text-sm text-surface-500 hover:underline">
-          Spaces
+          &larr; Spaces
         </Link>
         <h1 className="h2">{space.name}</h1>
         {space.description ? <p className="text-surface-500">{space.description}</p> : null}
@@ -54,7 +54,9 @@ function TaskListPage() {
                     </Link>
                   </td>
                   <td>
-                    <StatusBadge name={task.status.name} category={task.status.category} />
+                    <span className={`badge ${statusPreset(task.status.category)}`}>
+                      {task.status.name}
+                    </span>
                   </td>
                   <td className="text-sm text-surface-500">{task.dueDate ?? "\u2014"}</td>
                 </tr>
@@ -67,12 +69,13 @@ function TaskListPage() {
   );
 }
 
-function StatusBadge({ name, category }: { name: string; category: string }) {
-  const preset =
-    category === "completion"
-      ? "preset-filled-success-500"
-      : category === "initial"
-        ? "preset-filled-surface-500"
-        : "preset-filled-primary-500";
-  return <span className={`badge ${preset}`}>{name}</span>;
+function statusPreset(category: string): string {
+  switch (category) {
+    case "completion":
+      return "preset-filled-success-500";
+    case "intermediate":
+      return "preset-filled-primary-500";
+    default:
+      return "preset-filled-surface-500";
+  }
 }
