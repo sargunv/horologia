@@ -4,29 +4,33 @@
 
 package gen
 
+import (
+	"github.com/sargunv/tend/server/internal/types"
+)
+
 type AuthToken struct {
 	ID        int64
 	UserID    int64
 	TokenHash string
 	Name      string
 	Kind      string
-	ExpiresAt *string
-	CreatedAt string
+	ExpiresAt *types.EpochSeconds
+	CreatedAt types.EpochSeconds
 }
 
 type Space struct {
 	Slug        string
 	Name        string
 	Description string
-	CreatedAt   string
-	UpdatedAt   string
+	CreatedAt   types.EpochSeconds
+	UpdatedAt   types.EpochSeconds
 }
 
 type SpaceMember struct {
 	SpaceSlug string
 	UserID    int64
 	Role      string
-	CreatedAt string
+	CreatedAt types.EpochSeconds
 }
 
 type Task struct {
@@ -36,14 +40,14 @@ type Task struct {
 	Description string
 	StatusName  string
 	DueDate     *string
-	CreatedAt   string
-	UpdatedAt   string
+	CreatedAt   types.EpochSeconds
+	UpdatedAt   types.EpochSeconds
 }
 
 type TaskAssignee struct {
 	TaskID    int64
 	UserID    int64
-	CreatedAt string
+	CreatedAt types.EpochSeconds
 }
 
 type TaskStatus struct {
@@ -60,6 +64,6 @@ type User struct {
 	PasswordHash *string
 	IsOwner      int64
 	OidcSubject  *string
-	CreatedAt    string
-	UpdatedAt    string
+	CreatedAt    types.EpochSeconds
+	UpdatedAt    types.EpochSeconds
 }

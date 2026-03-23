@@ -7,6 +7,8 @@ package gen
 
 import (
 	"context"
+
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 const createUser = `-- name: CreateUser :one
@@ -21,8 +23,8 @@ type CreateUserParams struct {
 	PasswordHash *string
 	IsOwner      int64
 	OidcSubject  *string
-	CreatedAt    string
-	UpdatedAt    string
+	CreatedAt    types.EpochSeconds
+	UpdatedAt    types.EpochSeconds
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -110,16 +112,17 @@ func (q *Queries) GetUserByOIDCSubject(ctx context.Context, oidcSubject *string)
 }
 
 const setUserOIDCSubject = `-- name: SetUserOIDCSubject :exec
-UPDATE users SET oidc_subject = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+UPDATE users SET oidc_subject = ?, updated_at = ? WHERE id = ?
 `
 
 type SetUserOIDCSubjectParams struct {
 	OidcSubject *string
+	UpdatedAt   types.EpochSeconds
 	ID          int64
 }
 
 func (q *Queries) SetUserOIDCSubject(ctx context.Context, arg SetUserOIDCSubjectParams) error {
-	_, err := q.db.ExecContext(ctx, setUserOIDCSubject, arg.OidcSubject, arg.ID)
+	_, err := q.db.ExecContext(ctx, setUserOIDCSubject, arg.OidcSubject, arg.UpdatedAt, arg.ID)
 	return err
 }
 
@@ -133,7 +136,7 @@ RETURNING id, email, name, password_hash, is_owner, oidc_subject, created_at, up
 type UpdateUserParams struct {
 	Name      string
 	Email     string
-	UpdatedAt string
+	UpdatedAt types.EpochSeconds
 	ID        int64
 }
 

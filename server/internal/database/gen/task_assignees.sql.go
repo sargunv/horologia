@@ -7,6 +7,8 @@ package gen
 
 import (
 	"context"
+
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 const deleteTaskAssignees = `-- name: DeleteTaskAssignees :exec
@@ -42,7 +44,7 @@ VALUES (?, ?, ?)
 type InsertTaskAssigneeParams struct {
 	TaskID    int64
 	UserID    int64
-	CreatedAt string
+	CreatedAt types.EpochSeconds
 }
 
 func (q *Queries) InsertTaskAssignee(ctx context.Context, arg InsertTaskAssigneeParams) error {

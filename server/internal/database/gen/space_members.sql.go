@@ -8,6 +8,8 @@ package gen
 import (
 	"context"
 	"database/sql"
+
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 const countSpaceAdmins = `-- name: CountSpaceAdmins :one
@@ -32,7 +34,7 @@ type CreateSpaceMemberParams struct {
 	SpaceSlug string
 	UserID    int64
 	Role      string
-	CreatedAt string
+	CreatedAt types.EpochSeconds
 }
 
 func (q *Queries) CreateSpaceMember(ctx context.Context, arg CreateSpaceMemberParams) (SpaceMember, error) {
@@ -141,7 +143,7 @@ type ListSpaceMembersBySpaceRow struct {
 	SpaceSlug string
 	UserID    int64
 	Role      string
-	CreatedAt string
+	CreatedAt types.EpochSeconds
 	UserName  string
 	UserEmail string
 }

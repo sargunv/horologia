@@ -13,7 +13,7 @@ SELECT * FROM users WHERE email = ?;
 SELECT * FROM users WHERE oidc_subject = ?;
 
 -- name: SetUserOIDCSubject :exec
-UPDATE users SET oidc_subject = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;
+UPDATE users SET oidc_subject = ?, updated_at = ? WHERE id = ?;
 
 -- name: UpdateUser :one
 UPDATE users

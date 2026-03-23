@@ -17,6 +17,7 @@ import (
 	"github.com/sargunv/tend/server/internal/api"
 	"github.com/sargunv/tend/server/internal/database"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 type testEnv struct {
@@ -59,7 +60,7 @@ func setupTestServer(t *testing.T) *testEnv {
 		TokenHash: tokenHash,
 		Name:      "test",
 		Kind:      "session",
-		CreatedAt: time.Now().UTC().Format(time.RFC3339),
+		CreatedAt: types.Now(),
 	})
 	if err != nil {
 		t.Fatalf("create token: %v", err)
@@ -1441,7 +1442,7 @@ func TestExpiredTokenRejected(t *testing.T) {
 	rawToken := "expired-test-token"
 	hash := sha256.Sum256([]byte(rawToken))
 	tokenHash := hex.EncodeToString(hash[:])
-	pastTime := time.Now().Add(-1 * time.Hour).UTC().Format(time.RFC3339)
+	pastTime := types.EpochSeconds(time.Now().Add(-1 * time.Hour))
 
 	q := dbgen.New(env.db)
 	_, err := q.CreateAuthToken(context.Background(), dbgen.CreateAuthTokenParams{
@@ -1450,7 +1451,7 @@ func TestExpiredTokenRejected(t *testing.T) {
 		Name:      "expired",
 		Kind:      "session",
 		ExpiresAt: &pastTime,
-		CreatedAt: time.Now().UTC().Format(time.RFC3339),
+		CreatedAt: types.Now(),
 	})
 	if err != nil {
 		t.Fatalf("create expired token: %v", err)

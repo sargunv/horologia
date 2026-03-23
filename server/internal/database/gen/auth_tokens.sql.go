@@ -8,6 +8,8 @@ package gen
 import (
 	"context"
 	"database/sql"
+
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 const createAuthToken = `-- name: CreateAuthToken :one
@@ -21,8 +23,8 @@ type CreateAuthTokenParams struct {
 	TokenHash string
 	Name      string
 	Kind      string
-	ExpiresAt *string
-	CreatedAt string
+	ExpiresAt *types.EpochSeconds
+	CreatedAt types.EpochSeconds
 }
 
 func (q *Queries) CreateAuthToken(ctx context.Context, arg CreateAuthTokenParams) (AuthToken, error) {
@@ -72,7 +74,7 @@ const deleteExpiredTokens = `-- name: DeleteExpiredTokens :execresult
 DELETE FROM auth_tokens WHERE expires_at IS NOT NULL AND expires_at < ?
 `
 
-func (q *Queries) DeleteExpiredTokens(ctx context.Context, expiresAt *string) (sql.Result, error) {
+func (q *Queries) DeleteExpiredTokens(ctx context.Context, expiresAt *types.EpochSeconds) (sql.Result, error) {
 	return q.db.ExecContext(ctx, deleteExpiredTokens, expiresAt)
 }
 
@@ -100,8 +102,8 @@ type GetAuthTokenByHashRow struct {
 	TokenHash   string
 	Name        string
 	Kind        string
-	ExpiresAt   *string
-	CreatedAt   string
+	ExpiresAt   *types.EpochSeconds
+	CreatedAt   types.EpochSeconds
 	UserID2     int64
 	UserEmail   string
 	UserName    string

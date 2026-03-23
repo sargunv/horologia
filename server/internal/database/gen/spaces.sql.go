@@ -8,6 +8,8 @@ package gen
 import (
 	"context"
 	"database/sql"
+
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 const createSpace = `-- name: CreateSpace :one
@@ -20,8 +22,8 @@ type CreateSpaceParams struct {
 	Slug        string
 	Name        string
 	Description string
-	CreatedAt   string
-	UpdatedAt   string
+	CreatedAt   types.EpochSeconds
+	UpdatedAt   types.EpochSeconds
 }
 
 func (q *Queries) CreateSpace(ctx context.Context, arg CreateSpaceParams) (Space, error) {
@@ -119,7 +121,7 @@ RETURNING slug, name, description, created_at, updated_at
 type UpdateSpaceParams struct {
 	Name        string
 	Description string
-	UpdatedAt   string
+	UpdatedAt   types.EpochSeconds
 	Slug        string
 }
 

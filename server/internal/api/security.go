@@ -7,7 +7,6 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/ogen-go/ogen/ogenerrors"
@@ -56,11 +55,7 @@ func (h *Handler) HandleBearerAuth(ctx context.Context, operationName apigen.Ope
 
 	// Check expiration.
 	if row.ExpiresAt != nil {
-		exp, err := parseTime(*row.ExpiresAt)
-		if err != nil {
-			return ctx, fmt.Errorf("invalid token expiry: %w", err)
-		}
-		if time.Now().After(exp) {
+		if time.Now().After(row.ExpiresAt.Time()) {
 			return ctx, ogenerrors.ErrSkipServerSecurity
 		}
 	}

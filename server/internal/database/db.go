@@ -6,13 +6,13 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
-	"time"
 
 	"github.com/pressly/goose/v3"
 	"golang.org/x/crypto/bcrypt"
 	_ "modernc.org/sqlite"
 
 	"github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 //go:embed migrations/*.sql
@@ -76,7 +76,7 @@ func CreateSpaceWithDefaults(ctx context.Context, db *sql.DB, slug, name, descri
 	defer func() { _ = tx.Rollback() }()
 
 	q := gen.New(tx)
-	now := time.Now().UTC().Format(time.RFC3339)
+	now := types.Now()
 
 	space, err := q.CreateSpace(ctx, gen.CreateSpaceParams{
 		Slug:        slug,
@@ -120,7 +120,7 @@ func CreateUserWithPassword(ctx context.Context, db *sql.DB, email, name, passwo
 		return gen.User{}, fmt.Errorf("hash password: %w", err)
 	}
 	hashStr := string(hash)
-	now := time.Now().UTC().Format(time.RFC3339)
+	now := types.Now()
 
 	var ownerFlag int64
 	if isOwner {

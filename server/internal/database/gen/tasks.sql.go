@@ -8,6 +8,8 @@ package gen
 import (
 	"context"
 	"database/sql"
+
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 const createTask = `-- name: CreateTask :one
@@ -22,8 +24,8 @@ type CreateTaskParams struct {
 	Description string
 	StatusName  string
 	DueDate     *string
-	CreatedAt   string
-	UpdatedAt   string
+	CreatedAt   types.EpochSeconds
+	UpdatedAt   types.EpochSeconds
 }
 
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
@@ -84,8 +86,8 @@ type GetTaskWithStatusRow struct {
 	Title          string
 	Description    string
 	DueDate        *string
-	CreatedAt      string
-	UpdatedAt      string
+	CreatedAt      types.EpochSeconds
+	UpdatedAt      types.EpochSeconds
 	StatusName     string
 	StatusCategory string
 	AssigneeIds    interface{}
@@ -143,8 +145,8 @@ type ListTasksBySpaceRow struct {
 	Title          string
 	Description    string
 	DueDate        *string
-	CreatedAt      string
-	UpdatedAt      string
+	CreatedAt      types.EpochSeconds
+	UpdatedAt      types.EpochSeconds
 	StatusName     string
 	StatusCategory string
 	AssigneeIds    interface{}
@@ -196,7 +198,7 @@ type UpdateTaskParams struct {
 	Description string
 	StatusName  string
 	DueDate     *string
-	UpdatedAt   string
+	UpdatedAt   types.EpochSeconds
 	ID          int64
 }
 

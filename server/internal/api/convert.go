@@ -9,6 +9,7 @@ import (
 
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 const (
@@ -74,33 +75,17 @@ func parseTaskID(s string) (int64, error) {
 	return id, nil
 }
 
-func parseTime(s string) (time.Time, error) {
-	return time.Parse(time.RFC3339, s)
-}
-
-func formatTime(t time.Time) string {
-	return t.UTC().Format(time.RFC3339)
-}
-
-func now() string {
-	return formatTime(time.Now())
+func now() types.EpochSeconds {
+	return types.Now()
 }
 
 func spaceFromDB(s dbgen.Space) (*apigen.Space, error) {
-	createdAt, err := parseTime(s.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("parse created_at: %w", err)
-	}
-	updatedAt, err := parseTime(s.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("parse updated_at: %w", err)
-	}
 	return &apigen.Space{
 		Slug:        s.Slug,
 		Name:        s.Name,
 		Description: s.Description,
-		CreatedAt:   createdAt,
-		UpdatedAt:   updatedAt,
+		CreatedAt:   s.CreatedAt.Time(),
+		UpdatedAt:   s.UpdatedAt.Time(),
 	}, nil
 }
 
@@ -134,15 +119,6 @@ func parseAssigneeIDs(raw any) ([]string, error) {
 }
 
 func taskFromDBRow(row dbgen.GetTaskWithStatusRow) (*apigen.Task, error) {
-	createdAt, err := parseTime(row.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("parse created_at: %w", err)
-	}
-	updatedAt, err := parseTime(row.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("parse updated_at: %w", err)
-	}
-
 	assigneeIDs, err := parseAssigneeIDs(row.AssigneeIds)
 	if err != nil {
 		return nil, fmt.Errorf("parse assignee_ids: %w", err)
@@ -157,12 +133,12 @@ func taskFromDBRow(row dbgen.GetTaskWithStatusRow) (*apigen.Task, error) {
 			Category: apigen.StatusCategory(row.StatusCategory),
 		},
 		AssigneeIds: assigneeIDs,
-		CreatedAt:   createdAt,
-		UpdatedAt:   updatedAt,
+		CreatedAt:   row.CreatedAt.Time(),
+		UpdatedAt:   row.UpdatedAt.Time(),
 	}
 
 	if row.DueDate != nil {
-		d, err := parseTime(*row.DueDate)
+		d, err := time.Parse("2006-01-02", *row.DueDate)
 		if err != nil {
 			return nil, fmt.Errorf("parse due_date: %w", err)
 		}
@@ -209,7 +185,7 @@ func dueDateToDB(opt apigen.OptNilDate) *string {
 	if !opt.IsSet() || opt.IsNull() {
 		return nil
 	}
-	s := formatTime(opt.Value)
+	s := opt.Value.Format("2006-01-02")
 	return &s
 }
 
@@ -220,7 +196,7 @@ func dueDateFromExisting(existing *string, update apigen.OptNilDate) *string {
 	if update.IsNull() {
 		return nil
 	}
-	s := formatTime(update.Value)
+	s := update.Value.Format("2006-01-02")
 	return &s
 }
 
@@ -248,61 +224,41 @@ func parseTokenID(s string) (int64, error) {
 }
 
 func userFromDB(u dbgen.User) (*apigen.User, error) {
-	createdAt, err := parseTime(u.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("parse created_at: %w", err)
-	}
-	updatedAt, err := parseTime(u.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("parse updated_at: %w", err)
-	}
 	return &apigen.User{
 		ID:        formatUserID(u.ID),
 		Email:     u.Email,
 		Name:      u.Name,
 		IsOwner:   u.IsOwner != 0,
-		CreatedAt: createdAt,
-		UpdatedAt: updatedAt,
+		CreatedAt: u.CreatedAt.Time(),
+		UpdatedAt: u.UpdatedAt.Time(),
 	}, nil
 }
 
 func authTokenFromDB(t dbgen.AuthToken) (*apigen.AuthToken, error) {
-	createdAt, err := parseTime(t.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("parse created_at: %w", err)
-	}
 	return &apigen.AuthToken{
 		ID:        strconv.FormatInt(t.ID, 10),
 		Name:      t.Name,
 		Kind:      apigen.AuthTokenKind(t.Kind),
-		CreatedAt: createdAt,
+		CreatedAt: t.CreatedAt.Time(),
 	}, nil
 }
 
 func memberFromDB(m dbgen.SpaceMember, userName, userEmail string) (*apigen.SpaceMember, error) {
-	createdAt, err := parseTime(m.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("parse created_at: %w", err)
-	}
 	return &apigen.SpaceMember{
 		UserId:    formatUserID(m.UserID),
 		UserName:  userName,
 		UserEmail: userEmail,
 		Role:      apigen.SpaceRole(m.Role),
-		CreatedAt: createdAt,
+		CreatedAt: m.CreatedAt.Time(),
 	}, nil
 }
 
 func memberFromListRow(row dbgen.ListSpaceMembersBySpaceRow) (*apigen.SpaceMember, error) {
-	createdAt, err := parseTime(row.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("parse created_at: %w", err)
-	}
 	return &apigen.SpaceMember{
 		UserId:    formatUserID(row.UserID),
 		UserName:  row.UserName,
 		UserEmail: row.UserEmail,
 		Role:      apigen.SpaceRole(row.Role),
-		CreatedAt: createdAt,
+		CreatedAt: row.CreatedAt.Time(),
 	}, nil
 }

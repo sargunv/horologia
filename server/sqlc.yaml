@@ -10,3 +10,27 @@ sql:
         sql_package: "database/sql"
         emit_empty_slices: true
         emit_pointers_for_null_types: true
+        overrides:
+          - column: "spaces.created_at"
+            go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"
+          - column: "spaces.updated_at"
+            go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"
+          - column: "tasks.created_at"
+            go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"
+          - column: "tasks.updated_at"
+            go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"
+          - column: "users.created_at"
+            go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"
+          - column: "users.updated_at"
+            go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"
+          - column: "auth_tokens.expires_at"
+            go_type:
+              import: "github.com/sargunv/tend/server/internal/types"
+              type: "EpochSeconds"
+              pointer: true
+          - column: "auth_tokens.created_at"
+            go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"
+          - column: "space_members.created_at"
+            go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"
+          - column: "task_assignees.created_at"
+            go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"

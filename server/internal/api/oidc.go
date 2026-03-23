@@ -150,6 +150,7 @@ func handleOIDCCallback(w http.ResponseWriter, r *http.Request, tokens *oidc.Tok
 			// Existing user found by email — link the OIDC subject.
 			if err := q.SetUserOIDCSubject(ctx, dbgen.SetUserOIDCSubjectParams{
 				OidcSubject: &subjectStr,
+				UpdatedAt:   now(),
 				ID:          user.ID,
 			}); err != nil {
 				handler.Log.ErrorContext(ctx, "oidc: link user", "error", err)
