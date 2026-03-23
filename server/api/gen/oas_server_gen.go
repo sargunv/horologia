@@ -40,6 +40,22 @@ type Handler interface {
 	//
 	// PATCH /spaces/{spaceSlug}/members/{userId}
 	SpaceMembersUpdate(ctx context.Context, req *SpaceMemberUpdate, params SpaceMembersUpdateParams) (*SpaceMember, error)
+	// SpaceTagsCreate implements SpaceTags_create operation.
+	//
+	// POST /spaces/{spaceSlug}/tags
+	SpaceTagsCreate(ctx context.Context, req *TagCreate, params SpaceTagsCreateParams) (*Tag, error)
+	// SpaceTagsDelete implements SpaceTags_delete operation.
+	//
+	// DELETE /spaces/{spaceSlug}/tags/{tagName}
+	SpaceTagsDelete(ctx context.Context, params SpaceTagsDeleteParams) error
+	// SpaceTagsList implements SpaceTags_list operation.
+	//
+	// GET /spaces/{spaceSlug}/tags
+	SpaceTagsList(ctx context.Context, params SpaceTagsListParams) (*TagPage, error)
+	// SpaceTagsUpdate implements SpaceTags_update operation.
+	//
+	// PATCH /spaces/{spaceSlug}/tags/{tagName}
+	SpaceTagsUpdate(ctx context.Context, req *TagUpdate, params SpaceTagsUpdateParams) (*Tag, error)
 	// SpaceTasksCreate implements SpaceTasks_create operation.
 	//
 	// POST /spaces/{spaceSlug}/tasks

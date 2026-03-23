@@ -60,76 +60,30 @@ func (q *Queries) DeleteTask(ctx context.Context, id int64) (sql.Result, error) 
 	return q.db.ExecContext(ctx, deleteTask, id)
 }
 
-const getTaskWithStatus = `-- name: GetTaskWithStatus :one
-SELECT
-    t.id,
-    t.space_slug,
-    t.title,
-    t.description,
-    t.due_date,
-    t.created_at,
-    t.updated_at,
-    ts.name     AS status_name,
-    ts.category AS status_category,
-    COALESCE(
-        (SELECT GROUP_CONCAT(ta.user_id) FROM task_assignees ta WHERE ta.task_id = t.id),
-        ''
-    ) AS assignee_ids
-FROM tasks t
-JOIN task_statuses ts ON ts.space_slug = t.space_slug AND ts.name = t.status_name
-WHERE t.id = ?
+const getTask = `-- name: GetTask :one
+SELECT id, space_slug, title, description, status_name, due_date, created_at, updated_at FROM tasks WHERE id = ?
 `
 
-type GetTaskWithStatusRow struct {
-	ID             int64
-	SpaceSlug      string
-	Title          string
-	Description    string
-	DueDate        *string
-	CreatedAt      types.EpochSeconds
-	UpdatedAt      types.EpochSeconds
-	StatusName     string
-	StatusCategory string
-	AssigneeIds    interface{}
-}
-
-func (q *Queries) GetTaskWithStatus(ctx context.Context, id int64) (GetTaskWithStatusRow, error) {
-	row := q.db.QueryRowContext(ctx, getTaskWithStatus, id)
-	var i GetTaskWithStatusRow
+func (q *Queries) GetTask(ctx context.Context, id int64) (Task, error) {
+	row := q.db.QueryRowContext(ctx, getTask, id)
+	var i Task
 	err := row.Scan(
 		&i.ID,
 		&i.SpaceSlug,
 		&i.Title,
 		&i.Description,
+		&i.StatusName,
 		&i.DueDate,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.StatusName,
-		&i.StatusCategory,
-		&i.AssigneeIds,
 	)
 	return i, err
 }
 
 const listTasksBySpace = `-- name: ListTasksBySpace :many
-SELECT
-    t.id,
-    t.space_slug,
-    t.title,
-    t.description,
-    t.due_date,
-    t.created_at,
-    t.updated_at,
-    ts.name     AS status_name,
-    ts.category AS status_category,
-    COALESCE(
-        (SELECT GROUP_CONCAT(ta.user_id) FROM task_assignees ta WHERE ta.task_id = t.id),
-        ''
-    ) AS assignee_ids
-FROM tasks t
-JOIN task_statuses ts ON ts.space_slug = t.space_slug AND ts.name = t.status_name
-WHERE t.space_slug = ? AND t.id > ?
-ORDER BY t.id ASC
+SELECT id, space_slug, title, description, status_name, due_date, created_at, updated_at FROM tasks
+WHERE space_slug = ? AND id > ?
+ORDER BY id ASC
 LIMIT ?
 `
 
@@ -139,39 +93,24 @@ type ListTasksBySpaceParams struct {
 	Limit     int64
 }
 
-type ListTasksBySpaceRow struct {
-	ID             int64
-	SpaceSlug      string
-	Title          string
-	Description    string
-	DueDate        *string
-	CreatedAt      types.EpochSeconds
-	UpdatedAt      types.EpochSeconds
-	StatusName     string
-	StatusCategory string
-	AssigneeIds    interface{}
-}
-
-func (q *Queries) ListTasksBySpace(ctx context.Context, arg ListTasksBySpaceParams) ([]ListTasksBySpaceRow, error) {
+func (q *Queries) ListTasksBySpace(ctx context.Context, arg ListTasksBySpaceParams) ([]Task, error) {
 	rows, err := q.db.QueryContext(ctx, listTasksBySpace, arg.SpaceSlug, arg.ID, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ListTasksBySpaceRow{}
+	items := []Task{}
 	for rows.Next() {
-		var i ListTasksBySpaceRow
+		var i Task
 		if err := rows.Scan(
 			&i.ID,
 			&i.SpaceSlug,
 			&i.Title,
 			&i.Description,
+			&i.StatusName,
 			&i.DueDate,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.StatusName,
-			&i.StatusCategory,
-			&i.AssigneeIds,
 		); err != nil {
 			return nil, err
 		}

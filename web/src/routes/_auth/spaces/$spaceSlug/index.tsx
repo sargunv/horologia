@@ -54,9 +54,7 @@ function TaskListPage() {
                     </Link>
                   </td>
                   <td>
-                    <span className={`badge ${statusPreset(task.status.category)}`}>
-                      {task.status.name}
-                    </span>
+                    <span className="badge">{task.status}</span>
                   </td>
                   <td className="text-sm text-surface-500">{task.dueDate ?? "\u2014"}</td>
                 </tr>
@@ -67,15 +65,4 @@ function TaskListPage() {
       )}
     </div>
   );
-}
-
-function statusPreset(category: string): string {
-  switch (category) {
-    case "completion":
-      return "preset-filled-success-500";
-    case "intermediate":
-      return "preset-filled-primary-500";
-    default:
-      return "preset-filled-surface-500";
-  }
 }

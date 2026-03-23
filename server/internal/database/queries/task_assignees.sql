@@ -1,3 +1,8 @@
+-- name: ListAssigneeUserIDsByTask :many
+SELECT user_id FROM task_assignees
+WHERE task_id = ?
+ORDER BY user_id ASC;
+
 -- name: InsertTaskAssignee :exec
 INSERT INTO task_assignees (task_id, user_id, created_at)
 VALUES (?, ?, ?);

@@ -3,44 +3,13 @@ INSERT INTO tasks (space_slug, title, description, status_name, due_date, create
 VALUES (?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
--- name: GetTaskWithStatus :one
-SELECT
-    t.id,
-    t.space_slug,
-    t.title,
-    t.description,
-    t.due_date,
-    t.created_at,
-    t.updated_at,
-    ts.name     AS status_name,
-    ts.category AS status_category,
-    COALESCE(
-        (SELECT GROUP_CONCAT(ta.user_id) FROM task_assignees ta WHERE ta.task_id = t.id),
-        ''
-    ) AS assignee_ids
-FROM tasks t
-JOIN task_statuses ts ON ts.space_slug = t.space_slug AND ts.name = t.status_name
-WHERE t.id = ?;
+-- name: GetTask :one
+SELECT * FROM tasks WHERE id = ?;
 
 -- name: ListTasksBySpace :many
-SELECT
-    t.id,
-    t.space_slug,
-    t.title,
-    t.description,
-    t.due_date,
-    t.created_at,
-    t.updated_at,
-    ts.name     AS status_name,
-    ts.category AS status_category,
-    COALESCE(
-        (SELECT GROUP_CONCAT(ta.user_id) FROM task_assignees ta WHERE ta.task_id = t.id),
-        ''
-    ) AS assignee_ids
-FROM tasks t
-JOIN task_statuses ts ON ts.space_slug = t.space_slug AND ts.name = t.status_name
-WHERE t.space_slug = ? AND t.id > ?
-ORDER BY t.id ASC
+SELECT * FROM tasks
+WHERE space_slug = ? AND id > ?
+ORDER BY id ASC
 LIMIT ?;
 
 -- name: UpdateTask :one

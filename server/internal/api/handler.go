@@ -92,6 +92,23 @@ func checkDeleted(result sql.Result) error {
 	return nil
 }
 
+// fetchTask fetches a task by ID along with its assignees and tags.
+func (h *Handler) fetchTask(ctx context.Context, q *dbgen.Queries, id int64) (*apigen.Task, error) {
+	task, err := q.GetTask(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	assigneeIDs, err := q.ListAssigneeUserIDsByTask(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	tagNames, err := q.ListTagNamesByTask(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return taskFromDB(task, assigneeIDs, tagNames)
+}
+
 // --- Spaces ---
 
 func (h *Handler) SpacesCreate(ctx context.Context, req *apigen.SpaceCreate) (*apigen.Space, error) {
@@ -223,7 +240,7 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 	}
 
 	// Resolve the status name.
-	statusName := req.StatusName.Or("")
+	statusName := req.Status.Or("")
 	if statusName == "" {
 		statuses, err := q.ListTaskStatusesBySpace(ctx, params.SpaceSlug)
 		if err != nil {
@@ -261,8 +278,15 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 		}
 	}
 
-	// Re-fetch with status category join.
-	row, err := q.GetTaskWithStatus(ctx, task.ID)
+	// Set tags if provided.
+	if req.Tags != nil {
+		if err := h.setTaskTags(ctx, q, task.ID, params.SpaceSlug, req.Tags); err != nil {
+			return nil, err
+		}
+	}
+
+	// Re-fetch with assignees and tags.
+	result, err := h.fetchTask(ctx, q, task.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +295,7 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 		return nil, err
 	}
 
-	return taskFromDBRow(row)
+	return result, nil
 }
 
 func (h *Handler) SpaceTasksList(ctx context.Context, params apigen.SpaceTasksListParams) (*apigen.TaskPage, error) {
@@ -284,7 +308,14 @@ func (h *Handler) SpaceTasksList(ctx context.Context, params apigen.SpaceTasksLi
 	}
 
 	limit := clampLimit(params.Limit)
-	q := dbgen.New(h.DB)
+
+	tx, err := h.DB.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	q := dbgen.New(tx)
 
 	// Verify the space exists.
 	if _, err := q.GetSpace(ctx, params.SpaceSlug); err != nil {
@@ -300,8 +331,20 @@ func (h *Handler) SpaceTasksList(ctx context.Context, params apigen.SpaceTasksLi
 		return nil, err
 	}
 
-	items, nextCursor, err := paginate(rows, limit, taskFromListRow, func(r dbgen.ListTasksBySpaceRow) string {
-		return strconv.FormatInt(r.ID, 10)
+	convertRow := func(task dbgen.Task) (*apigen.Task, error) {
+		assigneeIDs, err := q.ListAssigneeUserIDsByTask(ctx, task.ID)
+		if err != nil {
+			return nil, err
+		}
+		tagNames, err := q.ListTagNamesByTask(ctx, task.ID)
+		if err != nil {
+			return nil, err
+		}
+		return taskFromDB(task, assigneeIDs, tagNames)
+	}
+
+	items, nextCursor, err := paginate(rows, limit, convertRow, func(t dbgen.Task) string {
+		return strconv.FormatInt(t.ID, 10)
 	})
 	if err != nil {
 		return nil, err
@@ -316,14 +359,23 @@ func (h *Handler) TasksRead(ctx context.Context, params apigen.TasksReadParams) 
 		return nil, badRequest(err.Error())
 	}
 	q := dbgen.New(h.DB)
-	row, err := q.GetTaskWithStatus(ctx, id)
+	// Check space access via the task's space slug.
+	task, err := q.GetTask(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	if err := h.requireSpaceRead(ctx, row.SpaceSlug); err != nil {
+	if err := h.requireSpaceRead(ctx, task.SpaceSlug); err != nil {
 		return nil, err
 	}
-	return taskFromDBRow(row)
+	assigneeIDs, err := q.ListAssigneeUserIDsByTask(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	tagNames, err := q.ListTagNamesByTask(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return taskFromDB(task, assigneeIDs, tagNames)
 }
 
 func (h *Handler) TasksUpdate(ctx context.Context, req *apigen.TaskUpdate, params apigen.TasksUpdateParams) (*apigen.Task, error) {
@@ -339,7 +391,7 @@ func (h *Handler) TasksUpdate(ctx context.Context, req *apigen.TaskUpdate, param
 	defer func() { _ = tx.Rollback() }()
 
 	q := dbgen.New(tx)
-	existing, err := q.GetTaskWithStatus(ctx, id)
+	existing, err := q.GetTask(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -352,7 +404,7 @@ func (h *Handler) TasksUpdate(ctx context.Context, req *apigen.TaskUpdate, param
 		ID:          id,
 		Title:       req.Title.Or(existing.Title),
 		Description: req.Description.Or(existing.Description),
-		StatusName:  req.StatusName.Or(existing.StatusName),
+		StatusName:  req.Status.Or(existing.StatusName),
 		DueDate:     dueDateFromExisting(existing.DueDate, req.DueDate),
 		UpdatedAt:   now(),
 	})
@@ -367,8 +419,15 @@ func (h *Handler) TasksUpdate(ctx context.Context, req *apigen.TaskUpdate, param
 		}
 	}
 
-	// Re-fetch with status category join after update.
-	row, err := q.GetTaskWithStatus(ctx, id)
+	// Replace tags if provided (nil = no change, empty = clear all).
+	if req.Tags != nil {
+		if err := h.setTaskTags(ctx, q, id, existing.SpaceSlug, req.Tags); err != nil {
+			return nil, err
+		}
+	}
+
+	// Re-fetch with assignees and tags.
+	result, err := h.fetchTask(ctx, q, id)
 	if err != nil {
 		return nil, err
 	}
@@ -377,7 +436,7 @@ func (h *Handler) TasksUpdate(ctx context.Context, req *apigen.TaskUpdate, param
 		return nil, err
 	}
 
-	return taskFromDBRow(row)
+	return result, nil
 }
 
 func (h *Handler) TasksDelete(ctx context.Context, params apigen.TasksDeleteParams) error {
@@ -386,11 +445,11 @@ func (h *Handler) TasksDelete(ctx context.Context, params apigen.TasksDeletePara
 		return badRequest(err.Error())
 	}
 	q := dbgen.New(h.DB)
-	row, err := q.GetTaskWithStatus(ctx, id)
+	task, err := q.GetTask(ctx, id)
 	if err != nil {
 		return err
 	}
-	if err := h.requireSpaceWrite(ctx, row.SpaceSlug); err != nil {
+	if err := h.requireSpaceWrite(ctx, task.SpaceSlug); err != nil {
 		return err
 	}
 	result, err := q.DeleteTask(ctx, id)
@@ -482,6 +541,68 @@ func (h *Handler) setTaskAssignees(ctx context.Context, q *dbgen.Queries, taskID
 		if err := q.InsertTaskAssignee(ctx, dbgen.InsertTaskAssigneeParams{
 			TaskID:    taskID,
 			UserID:    uid,
+			CreatedAt: ts,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// setTaskTags replaces all tags for a task. Unknown tag names are auto-created
+// in the task's space. The caller must pass a transactional *dbgen.Queries.
+// Max array length is enforced by ogen's @maxItems(100) validation.
+func (h *Handler) setTaskTags(ctx context.Context, q *dbgen.Queries, taskID int64, spaceSlug string, tagNames []string) error {
+	// Delete existing tags.
+	if err := q.DeleteTaskTags(ctx, taskID); err != nil {
+		return err
+	}
+
+	if len(tagNames) == 0 {
+		return nil
+	}
+
+	// Deduplicate by folded name, preserving first occurrence's display name.
+	type tagEntry struct {
+		displayName string
+		foldedName  string
+	}
+	seen := make(map[string]struct{}, len(tagNames))
+	entries := make([]tagEntry, 0, len(tagNames))
+	for _, name := range tagNames {
+		if err := validateTagName(name); err != nil {
+			return err
+		}
+		folded := foldTagName(name)
+		if _, ok := seen[folded]; ok {
+			continue
+		}
+		seen[folded] = struct{}{}
+		entries = append(entries, tagEntry{displayName: name, foldedName: folded})
+	}
+
+	ts := now()
+	for _, entry := range entries {
+		// Insert the tag if it doesn't exist, then fetch it.
+		if err := q.EnsureTag(ctx, dbgen.EnsureTagParams{
+			SpaceSlug:  spaceSlug,
+			Name:       entry.displayName,
+			NameFolded: entry.foldedName,
+			CreatedAt:  ts,
+		}); err != nil {
+			return err
+		}
+		tag, err := q.GetTagByFoldedName(ctx, dbgen.GetTagByFoldedNameParams{
+			SpaceSlug:  spaceSlug,
+			NameFolded: entry.foldedName,
+		})
+		if err != nil {
+			return err
+		}
+
+		if err := q.InsertTaskTag(ctx, dbgen.InsertTaskTagParams{
+			TaskID:    taskID,
+			TagID:     tag.ID,
 			CreatedAt: ts,
 		}); err != nil {
 			return err

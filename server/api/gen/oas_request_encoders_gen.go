@@ -66,6 +66,34 @@ func encodeSpaceMembersUpdateRequest(
 	return nil
 }
 
+func encodeSpaceTagsCreateRequest(
+	req *TagCreate,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeSpaceTagsUpdateRequest(
+	req *TagUpdate,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeSpaceTasksCreateRequest(
 	req *TaskCreate,
 	r *http.Request,

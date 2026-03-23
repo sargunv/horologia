@@ -846,6 +846,9 @@ func (s *SpaceRole) UnmarshalText(data []byte) error {
 	}
 }
 
+// SpaceTagsDeleteNoContent is response for SpaceTagsDelete operation.
+type SpaceTagsDeleteNoContent struct{}
+
 // Ref: #/components/schemas/SpaceUpdate
 type SpaceUpdate struct {
 	Name        OptString `json:"name"`
@@ -875,65 +878,99 @@ func (s *SpaceUpdate) SetDescription(val OptString) {
 // SpacesDeleteNoContent is response for SpacesDelete operation.
 type SpacesDeleteNoContent struct{}
 
-// Ref: #/components/schemas/StatusCategory
-type StatusCategory string
-
-const (
-	StatusCategoryInitial      StatusCategory = "initial"
-	StatusCategoryIntermediate StatusCategory = "intermediate"
-	StatusCategoryCompletion   StatusCategory = "completion"
-)
-
-// AllValues returns all StatusCategory values.
-func (StatusCategory) AllValues() []StatusCategory {
-	return []StatusCategory{
-		StatusCategoryInitial,
-		StatusCategoryIntermediate,
-		StatusCategoryCompletion,
-	}
+// Ref: #/components/schemas/Tag
+type Tag struct {
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
-// MarshalText implements encoding.TextMarshaler.
-func (s StatusCategory) MarshalText() ([]byte, error) {
-	switch s {
-	case StatusCategoryInitial:
-		return []byte(s), nil
-	case StatusCategoryIntermediate:
-		return []byte(s), nil
-	case StatusCategoryCompletion:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
+// GetName returns the value of Name.
+func (s *Tag) GetName() string {
+	return s.Name
 }
 
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *StatusCategory) UnmarshalText(data []byte) error {
-	switch StatusCategory(data) {
-	case StatusCategoryInitial:
-		*s = StatusCategoryInitial
-		return nil
-	case StatusCategoryIntermediate:
-		*s = StatusCategoryIntermediate
-		return nil
-	case StatusCategoryCompletion:
-		*s = StatusCategoryCompletion
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
+// GetCreatedAt returns the value of CreatedAt.
+func (s *Tag) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// SetName sets the value of Name.
+func (s *Tag) SetName(val string) {
+	s.Name = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *Tag) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// Ref: #/components/schemas/TagCreate
+type TagCreate struct {
+	Name string `json:"name"`
+}
+
+// GetName returns the value of Name.
+func (s *TagCreate) GetName() string {
+	return s.Name
+}
+
+// SetName sets the value of Name.
+func (s *TagCreate) SetName(val string) {
+	s.Name = val
+}
+
+// Ref: #/components/schemas/TagPage
+type TagPage struct {
+	Items      []Tag     `json:"items"`
+	NextCursor NilString `json:"nextCursor"`
+}
+
+// GetItems returns the value of Items.
+func (s *TagPage) GetItems() []Tag {
+	return s.Items
+}
+
+// GetNextCursor returns the value of NextCursor.
+func (s *TagPage) GetNextCursor() NilString {
+	return s.NextCursor
+}
+
+// SetItems sets the value of Items.
+func (s *TagPage) SetItems(val []Tag) {
+	s.Items = val
+}
+
+// SetNextCursor sets the value of NextCursor.
+func (s *TagPage) SetNextCursor(val NilString) {
+	s.NextCursor = val
+}
+
+// Ref: #/components/schemas/TagUpdate
+type TagUpdate struct {
+	Name string `json:"name"`
+}
+
+// GetName returns the value of Name.
+func (s *TagUpdate) GetName() string {
+	return s.Name
+}
+
+// SetName sets the value of Name.
+func (s *TagUpdate) SetName(val string) {
+	s.Name = val
 }
 
 // Ref: #/components/schemas/Task
 type Task struct {
-	ID          string     `json:"id"`
-	Title       string     `json:"title"`
-	Description string     `json:"description"`
-	Status      TaskStatus `json:"status"`
-	AssigneeIds []string   `json:"assigneeIds"`
-	DueDate     NilDate    `json:"dueDate"`
-	CreatedAt   time.Time  `json:"createdAt"`
-	UpdatedAt   time.Time  `json:"updatedAt"`
+	ID          string    `json:"id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Status      string    `json:"status"`
+	AssigneeIds []string  `json:"assigneeIds"`
+	Tags        []string  `json:"tags"`
+	DueDate     NilDate   `json:"dueDate"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
 // GetID returns the value of ID.
@@ -952,13 +989,18 @@ func (s *Task) GetDescription() string {
 }
 
 // GetStatus returns the value of Status.
-func (s *Task) GetStatus() TaskStatus {
+func (s *Task) GetStatus() string {
 	return s.Status
 }
 
 // GetAssigneeIds returns the value of AssigneeIds.
 func (s *Task) GetAssigneeIds() []string {
 	return s.AssigneeIds
+}
+
+// GetTags returns the value of Tags.
+func (s *Task) GetTags() []string {
+	return s.Tags
 }
 
 // GetDueDate returns the value of DueDate.
@@ -992,13 +1034,18 @@ func (s *Task) SetDescription(val string) {
 }
 
 // SetStatus sets the value of Status.
-func (s *Task) SetStatus(val TaskStatus) {
+func (s *Task) SetStatus(val string) {
 	s.Status = val
 }
 
 // SetAssigneeIds sets the value of AssigneeIds.
 func (s *Task) SetAssigneeIds(val []string) {
 	s.AssigneeIds = val
+}
+
+// SetTags sets the value of Tags.
+func (s *Task) SetTags(val []string) {
+	s.Tags = val
 }
 
 // SetDueDate sets the value of DueDate.
@@ -1020,8 +1067,9 @@ func (s *Task) SetUpdatedAt(val time.Time) {
 type TaskCreate struct {
 	Title       string     `json:"title"`
 	Description OptString  `json:"description"`
-	StatusName  OptString  `json:"statusName"`
+	Status      OptString  `json:"status"`
 	AssigneeIds []string   `json:"assigneeIds"`
+	Tags        []string   `json:"tags"`
 	DueDate     OptNilDate `json:"dueDate"`
 }
 
@@ -1035,14 +1083,19 @@ func (s *TaskCreate) GetDescription() OptString {
 	return s.Description
 }
 
-// GetStatusName returns the value of StatusName.
-func (s *TaskCreate) GetStatusName() OptString {
-	return s.StatusName
+// GetStatus returns the value of Status.
+func (s *TaskCreate) GetStatus() OptString {
+	return s.Status
 }
 
 // GetAssigneeIds returns the value of AssigneeIds.
 func (s *TaskCreate) GetAssigneeIds() []string {
 	return s.AssigneeIds
+}
+
+// GetTags returns the value of Tags.
+func (s *TaskCreate) GetTags() []string {
+	return s.Tags
 }
 
 // GetDueDate returns the value of DueDate.
@@ -1060,14 +1113,19 @@ func (s *TaskCreate) SetDescription(val OptString) {
 	s.Description = val
 }
 
-// SetStatusName sets the value of StatusName.
-func (s *TaskCreate) SetStatusName(val OptString) {
-	s.StatusName = val
+// SetStatus sets the value of Status.
+func (s *TaskCreate) SetStatus(val OptString) {
+	s.Status = val
 }
 
 // SetAssigneeIds sets the value of AssigneeIds.
 func (s *TaskCreate) SetAssigneeIds(val []string) {
 	s.AssigneeIds = val
+}
+
+// SetTags sets the value of Tags.
+func (s *TaskCreate) SetTags(val []string) {
+	s.Tags = val
 }
 
 // SetDueDate sets the value of DueDate.
@@ -1101,38 +1159,13 @@ func (s *TaskPage) SetNextCursor(val NilString) {
 	s.NextCursor = val
 }
 
-// Ref: #/components/schemas/TaskStatus
-type TaskStatus struct {
-	Name     string         `json:"name"`
-	Category StatusCategory `json:"category"`
-}
-
-// GetName returns the value of Name.
-func (s *TaskStatus) GetName() string {
-	return s.Name
-}
-
-// GetCategory returns the value of Category.
-func (s *TaskStatus) GetCategory() StatusCategory {
-	return s.Category
-}
-
-// SetName sets the value of Name.
-func (s *TaskStatus) SetName(val string) {
-	s.Name = val
-}
-
-// SetCategory sets the value of Category.
-func (s *TaskStatus) SetCategory(val StatusCategory) {
-	s.Category = val
-}
-
 // Ref: #/components/schemas/TaskUpdate
 type TaskUpdate struct {
 	Title       OptString  `json:"title"`
 	Description OptString  `json:"description"`
-	StatusName  OptString  `json:"statusName"`
+	Status      OptString  `json:"status"`
 	AssigneeIds []string   `json:"assigneeIds"`
+	Tags        []string   `json:"tags"`
 	DueDate     OptNilDate `json:"dueDate"`
 }
 
@@ -1146,14 +1179,19 @@ func (s *TaskUpdate) GetDescription() OptString {
 	return s.Description
 }
 
-// GetStatusName returns the value of StatusName.
-func (s *TaskUpdate) GetStatusName() OptString {
-	return s.StatusName
+// GetStatus returns the value of Status.
+func (s *TaskUpdate) GetStatus() OptString {
+	return s.Status
 }
 
 // GetAssigneeIds returns the value of AssigneeIds.
 func (s *TaskUpdate) GetAssigneeIds() []string {
 	return s.AssigneeIds
+}
+
+// GetTags returns the value of Tags.
+func (s *TaskUpdate) GetTags() []string {
+	return s.Tags
 }
 
 // GetDueDate returns the value of DueDate.
@@ -1171,14 +1209,19 @@ func (s *TaskUpdate) SetDescription(val OptString) {
 	s.Description = val
 }
 
-// SetStatusName sets the value of StatusName.
-func (s *TaskUpdate) SetStatusName(val OptString) {
-	s.StatusName = val
+// SetStatus sets the value of Status.
+func (s *TaskUpdate) SetStatus(val OptString) {
+	s.Status = val
 }
 
 // SetAssigneeIds sets the value of AssigneeIds.
 func (s *TaskUpdate) SetAssigneeIds(val []string) {
 	s.AssigneeIds = val
+}
+
+// SetTags sets the value of Tags.
+func (s *TaskUpdate) SetTags(val []string) {
+	s.Tags = val
 }
 
 // SetDueDate sets the value of DueDate.

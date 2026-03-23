@@ -69,6 +69,34 @@ func (UnimplementedHandler) SpaceMembersUpdate(ctx context.Context, req *SpaceMe
 	return r, ht.ErrNotImplemented
 }
 
+// SpaceTagsCreate implements SpaceTags_create operation.
+//
+// POST /spaces/{spaceSlug}/tags
+func (UnimplementedHandler) SpaceTagsCreate(ctx context.Context, req *TagCreate, params SpaceTagsCreateParams) (r *Tag, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SpaceTagsDelete implements SpaceTags_delete operation.
+//
+// DELETE /spaces/{spaceSlug}/tags/{tagName}
+func (UnimplementedHandler) SpaceTagsDelete(ctx context.Context, params SpaceTagsDeleteParams) error {
+	return ht.ErrNotImplemented
+}
+
+// SpaceTagsList implements SpaceTags_list operation.
+//
+// GET /spaces/{spaceSlug}/tags
+func (UnimplementedHandler) SpaceTagsList(ctx context.Context, params SpaceTagsListParams) (r *TagPage, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SpaceTagsUpdate implements SpaceTags_update operation.
+//
+// PATCH /spaces/{spaceSlug}/tags/{tagName}
+func (UnimplementedHandler) SpaceTagsUpdate(ctx context.Context, req *TagUpdate, params SpaceTagsUpdateParams) (r *Tag, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // SpaceTasksCreate implements SpaceTasks_create operation.
 //
 // POST /spaces/{spaceSlug}/tasks

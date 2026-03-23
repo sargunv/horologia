@@ -33,6 +33,14 @@ type SpaceMember struct {
 	CreatedAt types.EpochSeconds
 }
 
+type Tag struct {
+	ID         int64
+	SpaceSlug  string
+	Name       string
+	NameFolded string
+	CreatedAt  types.EpochSeconds
+}
+
 type Task struct {
 	ID          int64
 	SpaceSlug   string
@@ -55,6 +63,12 @@ type TaskStatus struct {
 	Name      string
 	Category  string
 	Position  int64
+}
+
+type TaskTag struct {
+	TaskID    int64
+	TagID     int64
+	CreatedAt types.EpochSeconds
 }
 
 type User struct {

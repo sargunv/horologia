@@ -9,10 +9,11 @@
 - Auth: OIDC, password login, session tokens, personal API tokens
 - CLI: full CRUD for spaces, tasks, auth
 - Web: login, space list, task list, task detail (read-only)
+- Tags — schema, API (CLI and web remaining)
 
 ## Core Task Features
 
-1. **Tags** — schema, API, CLI, web
+1. **Tags** — CLI, web
 2. **Task relations** — parent/child, blocks/blocked-by, relates-to, duplicates
 3. **Recurrence** — all 5 types (one-off, completion-based, fixed accumulating, fixed
    non-accumulating, on-dependency)

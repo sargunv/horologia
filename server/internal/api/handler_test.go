@@ -462,12 +462,8 @@ func TestTasksCreate(t *testing.T) {
 		t.Errorf("title = %v, want Wash dishes", task["title"])
 	}
 	// Should default to the initial status.
-	status := task["status"].(map[string]any)
-	if status["name"] != "todo" {
-		t.Errorf("status.name = %v, want todo", status["name"])
-	}
-	if status["category"] != "initial" {
-		t.Errorf("status.category = %v, want initial", status["category"])
+	if task["status"] != "todo" {
+		t.Errorf("status = %v, want todo", task["status"])
 	}
 	// ID should be T-prefixed.
 	id := task["id"].(string)
@@ -490,7 +486,7 @@ func TestTasksCreateWithFields(t *testing.T) {
 
 	createSpace(t, env, "home", "Home")
 
-	body := `{"title":"Clean","description":"Deep clean","statusName":"done","dueDate":"2025-06-15"}`
+	body := `{"title":"Clean","description":"Deep clean","status":"done","dueDate":"2025-06-15"}`
 	resp := doRequest(t, env, "POST", "/spaces/home/tasks", body)
 	assertStatus(t, resp, http.StatusCreated)
 
@@ -499,12 +495,8 @@ func TestTasksCreateWithFields(t *testing.T) {
 	if task["description"] != "Deep clean" {
 		t.Errorf("description = %v, want Deep clean", task["description"])
 	}
-	status := task["status"].(map[string]any)
-	if status["name"] != "done" {
-		t.Errorf("status.name = %v, want done", status["name"])
-	}
-	if status["category"] != "completion" {
-		t.Errorf("status.category = %v, want completion", status["category"])
+	if task["status"] != "done" {
+		t.Errorf("status = %v, want done", task["status"])
 	}
 	if task["dueDate"] == nil {
 		t.Error("dueDate should not be nil")
@@ -525,7 +517,7 @@ func TestTasksCreateInvalidStatus(t *testing.T) {
 
 	createSpace(t, env, "home", "Home")
 
-	resp := doRequest(t, env, "POST", "/spaces/home/tasks", `{"title":"Task","statusName":"bogus"}`)
+	resp := doRequest(t, env, "POST", "/spaces/home/tasks", `{"title":"Task","status":"bogus"}`)
 	assertStatusClose(t, resp, http.StatusBadRequest)
 }
 
@@ -671,16 +663,12 @@ func TestTasksUpdateStatus(t *testing.T) {
 	created := createTask(t, env, "home", `{"title":"Chore"}`)
 	id := created["id"].(string)
 
-	resp := doRequest(t, env, "PATCH", "/tasks/"+id, `{"statusName":"done"}`)
+	resp := doRequest(t, env, "PATCH", "/tasks/"+id, `{"status":"done"}`)
 	assertStatus(t, resp, http.StatusOK)
 	var updated map[string]any
 	readJSON(t, resp, &updated)
-	status := updated["status"].(map[string]any)
-	if status["name"] != "done" {
-		t.Errorf("status.name = %v, want done", status["name"])
-	}
-	if status["category"] != "completion" {
-		t.Errorf("status.category = %v, want completion", status["category"])
+	if updated["status"] != "done" {
+		t.Errorf("status = %v, want done", updated["status"])
 	}
 }
 
@@ -692,7 +680,7 @@ func TestTasksUpdateInvalidStatus(t *testing.T) {
 	created := createTask(t, env, "home", `{"title":"Chore"}`)
 	id := created["id"].(string)
 
-	resp := doRequest(t, env, "PATCH", "/tasks/"+id, `{"statusName":"nonexistent"}`)
+	resp := doRequest(t, env, "PATCH", "/tasks/"+id, `{"status":"nonexistent"}`)
 	assertStatusClose(t, resp, http.StatusBadRequest)
 }
 

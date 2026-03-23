@@ -51,3 +51,32 @@ func (q *Queries) InsertTaskAssignee(ctx context.Context, arg InsertTaskAssignee
 	_, err := q.db.ExecContext(ctx, insertTaskAssignee, arg.TaskID, arg.UserID, arg.CreatedAt)
 	return err
 }
+
+const listAssigneeUserIDsByTask = `-- name: ListAssigneeUserIDsByTask :many
+SELECT user_id FROM task_assignees
+WHERE task_id = ?
+ORDER BY user_id ASC
+`
+
+func (q *Queries) ListAssigneeUserIDsByTask(ctx context.Context, taskID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listAssigneeUserIDsByTask, taskID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var user_id int64
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

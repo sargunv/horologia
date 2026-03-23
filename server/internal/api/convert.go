@@ -10,6 +10,7 @@ import (
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
+	"golang.org/x/text/cases"
 )
 
 const (
@@ -89,56 +90,25 @@ func spaceFromDB(s dbgen.Space) (*apigen.Space, error) {
 	}, nil
 }
 
-// parseAssigneeIDs parses a GROUP_CONCAT result (comma-separated int64s) into
-// formatted user ID strings. An empty string returns an empty slice.
-func parseAssigneeIDs(raw any) ([]string, error) {
-	var s string
-	switch v := raw.(type) {
-	case nil:
-		return []string{}, nil
-	case string:
-		s = v
-	case []byte:
-		s = string(v)
-	default:
-		return nil, fmt.Errorf("unexpected assignee_ids type %T", raw)
-	}
-	if s == "" {
-		return []string{}, nil
-	}
-	parts := strings.Split(s, ",")
-	ids := make([]string, 0, len(parts))
-	for _, p := range parts {
-		id, err := strconv.ParseInt(strings.TrimSpace(p), 10, 64)
-		if err != nil {
-			return nil, fmt.Errorf("corrupt assignee_ids value %q: %w", p, err)
-		}
-		ids = append(ids, formatUserID(id))
-	}
-	return ids, nil
-}
-
-func taskFromDBRow(row dbgen.GetTaskWithStatusRow) (*apigen.Task, error) {
-	assigneeIDs, err := parseAssigneeIDs(row.AssigneeIds)
-	if err != nil {
-		return nil, fmt.Errorf("parse assignee_ids: %w", err)
+func taskFromDB(task dbgen.Task, assigneeUserIDs []int64, tagNames []string) (*apigen.Task, error) {
+	assigneeIDs := make([]string, len(assigneeUserIDs))
+	for i, uid := range assigneeUserIDs {
+		assigneeIDs[i] = formatUserID(uid)
 	}
 
 	t := &apigen.Task{
-		ID:          formatTaskID(row.ID),
-		Title:       row.Title,
-		Description: row.Description,
-		Status: apigen.TaskStatus{
-			Name:     row.StatusName,
-			Category: apigen.StatusCategory(row.StatusCategory),
-		},
+		ID:          formatTaskID(task.ID),
+		Title:       task.Title,
+		Description: task.Description,
+		Status:      task.StatusName,
 		AssigneeIds: assigneeIDs,
-		CreatedAt:   row.CreatedAt.Time(),
-		UpdatedAt:   row.UpdatedAt.Time(),
+		Tags:        tagNames,
+		CreatedAt:   task.CreatedAt.Time(),
+		UpdatedAt:   task.UpdatedAt.Time(),
 	}
 
-	if row.DueDate != nil {
-		d, err := time.Parse("2006-01-02", *row.DueDate)
+	if task.DueDate != nil {
+		d, err := time.Parse("2006-01-02", *task.DueDate)
 		if err != nil {
 			return nil, fmt.Errorf("parse due_date: %w", err)
 		}
@@ -148,10 +118,6 @@ func taskFromDBRow(row dbgen.GetTaskWithStatusRow) (*apigen.Task, error) {
 	}
 
 	return t, nil
-}
-
-func taskFromListRow(row dbgen.ListTasksBySpaceRow) (*apigen.Task, error) {
-	return taskFromDBRow(dbgen.GetTaskWithStatusRow(row))
 }
 
 func paginate[DB any, API any](
@@ -260,5 +226,25 @@ func memberFromListRow(row dbgen.ListSpaceMembersBySpaceRow) (*apigen.SpaceMembe
 		UserEmail: row.UserEmail,
 		Role:      apigen.SpaceRole(row.Role),
 		CreatedAt: row.CreatedAt.Time(),
+	}, nil
+}
+
+var caseFolder = cases.Fold(cases.HandleFinalSigma(false))
+
+func foldTagName(name string) string {
+	return caseFolder.String(name)
+}
+
+func validateTagName(name string) error {
+	if name == "" {
+		return badRequest("tag name cannot be empty")
+	}
+	return nil
+}
+
+func tagFromDB(t dbgen.Tag) (*apigen.Tag, error) {
+	return &apigen.Tag{
+		Name:      t.Name,
+		CreatedAt: t.CreatedAt.Time(),
 	}, nil
 }

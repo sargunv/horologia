@@ -70,7 +70,7 @@ func taskRow(t gen.Task) []string {
 	return []string{
 		t.ID,
 		t.Title,
-		t.Status.Name,
+		t.Status,
 		formatDue(t, "-"),
 		formatAssignees(t, "-", 3),
 		t.CreatedAt.Format(time.DateOnly),
@@ -82,8 +82,7 @@ func taskKV(t gen.Task) []output.KV {
 		{Key: "ID", Value: t.ID},
 		{Key: "Title", Value: t.Title},
 		{Key: "Description", Value: t.Description},
-		{Key: "Status", Value: t.Status.Name},
-		{Key: "Category", Value: string(t.Status.Category)},
+		{Key: "Status", Value: t.Status},
 		{Key: "Due Date", Value: formatDue(t, "-")},
 		{Key: "Assignees", Value: formatAssignees(t, "-", 0)},
 		{Key: "Created", Value: t.CreatedAt.Format(time.RFC3339)},
@@ -218,7 +217,7 @@ assigns the default initial status. Status names are defined per space.`,
 				req.Description = gen.NewOptString(description)
 			}
 			if statusName != "" {
-				req.StatusName = gen.NewOptString(statusName)
+				req.Status = gen.NewOptString(statusName)
 			}
 			if cmd.Flags().Changed("due") {
 				d, err := parseDueDate(dueDate)
@@ -299,7 +298,7 @@ to remove all assignees.`,
 				req.Description = gen.NewOptString(description)
 			}
 			if cmd.Flags().Changed("status") {
-				req.StatusName = gen.NewOptString(statusName)
+				req.Status = gen.NewOptString(statusName)
 			}
 			if clearDue {
 				req.DueDate.SetToNull()

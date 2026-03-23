@@ -41,9 +41,7 @@ function TaskDetailPage() {
           <div className="flex gap-4">
             <dt className="text-surface-500 w-24">Status</dt>
             <dd>
-              <span className={`badge ${statusPreset(task.status.category)}`}>
-                {task.status.name}
-              </span>
+              <span className="badge">{task.status}</span>
             </dd>
           </div>
           <div className="flex gap-4">
@@ -65,15 +63,4 @@ function TaskDetailPage() {
       ) : null}
     </div>
   );
-}
-
-function statusPreset(category: string): string {
-  switch (category) {
-    case "completion":
-      return "preset-filled-success-500";
-    case "intermediate":
-      return "preset-filled-primary-500";
-    default:
-      return "preset-filled-surface-500";
-  }
 }
