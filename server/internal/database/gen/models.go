@@ -42,16 +42,19 @@ type Tag struct {
 }
 
 type Task struct {
-	ID           int64
-	SpaceSlug    string
-	Title        string
-	Description  string
-	StatusName   string
-	EffortName   *string
-	PriorityName *string
-	DueDate      *string
-	CreatedAt    types.EpochSeconds
-	UpdatedAt    types.EpochSeconds
+	ID              int64
+	SpaceSlug       string
+	Title           string
+	Description     string
+	StatusName      string
+	EffortName      *string
+	PriorityName    *string
+	DueDate         *string
+	RecurrenceType  string
+	RecurrenceRule  *string
+	LastCompletedAt *types.EpochSeconds
+	CreatedAt       types.EpochSeconds
+	UpdatedAt       types.EpochSeconds
 }
 
 type TaskAssignee struct {

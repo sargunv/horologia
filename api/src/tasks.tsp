@@ -4,6 +4,14 @@ using Http;
 
 namespace Tend;
 
+enum TaskRecurrenceType {
+  one_off,
+  completion_based,
+  fixed_non_accumulating,
+  fixed_accumulating,
+  on_dependency,
+}
+
 enum TaskRelationKind {
   parent_of,
   child_of,
@@ -11,6 +19,8 @@ enum TaskRelationKind {
   blocked_by,
   relates_to,
   duplicates,
+  triggers,
+  triggered_by,
 }
 
 model TaskRelation {
@@ -31,6 +41,9 @@ model Task {
   status: string;
   effort: string | null;
   priority: string | null;
+  recurrenceType: TaskRecurrenceType;
+  recurrenceRule: string | null;
+  lastCompletedAt: utcDateTime | null;
   assigneeIds: string[];
   tags: string[];
   relations: TaskRelation[];
@@ -45,6 +58,8 @@ model TaskCreate {
   status?: string;
   @minLength(1) @maxLength(100) effort?: string;
   @minLength(1) @maxLength(100) priority?: string;
+  recurrenceType?: TaskRecurrenceType;
+  @minLength(1) @maxLength(500) recurrenceRule?: string;
   @maxItems(100) assigneeIds?: string[];
   @maxItems(100) tags?: string[];
   dueDate?: plainDate | null;
@@ -56,6 +71,8 @@ model TaskUpdate {
   status?: string;
   @minLength(1) @maxLength(100) effort?: string | null;
   @minLength(1) @maxLength(100) priority?: string | null;
+  recurrenceType?: TaskRecurrenceType;
+  @minLength(1) @maxLength(500) recurrenceRule?: string | null;
   @maxItems(100) assigneeIds?: string[];
   @maxItems(100) tags?: string[];
   dueDate?: plainDate | null;

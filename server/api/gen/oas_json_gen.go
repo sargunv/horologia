@@ -909,6 +909,52 @@ func (s *NilDate) UnmarshalJSON(data []byte) error {
 	return s.Decode(d, json.DecodeDate)
 }
 
+// Encode encodes time.Time as json.
+func (o NilDateTime) Encode(e *jx.Encoder, format func(*jx.Encoder, time.Time)) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	format(e, o.Value)
+}
+
+// Decode decodes time.Time from json.
+func (o *NilDateTime) Decode(d *jx.Decoder, format func(*jx.Decoder) (time.Time, error)) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilDateTime to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v time.Time
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	v, err := format(d)
+	if err != nil {
+		return err
+	}
+	o.Value = v
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilDateTime) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e, json.EncodeDateTime)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilDateTime) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d, json.DecodeDateTime)
+}
+
 // Encode encodes string as json.
 func (o NilString) Encode(e *jx.Encoder) {
 	if o.Null {
@@ -1088,6 +1134,39 @@ func (s OptString) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptString) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes TaskRecurrenceType as json.
+func (o OptTaskRecurrenceType) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes TaskRecurrenceType from json.
+func (o *OptTaskRecurrenceType) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptTaskRecurrenceType to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptTaskRecurrenceType) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptTaskRecurrenceType) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -2577,6 +2656,18 @@ func (s *Task) encodeFields(e *jx.Encoder) {
 		s.Priority.Encode(e)
 	}
 	{
+		e.FieldStart("recurrenceType")
+		s.RecurrenceType.Encode(e)
+	}
+	{
+		e.FieldStart("recurrenceRule")
+		s.RecurrenceRule.Encode(e)
+	}
+	{
+		e.FieldStart("lastCompletedAt")
+		s.LastCompletedAt.Encode(e, json.EncodeDateTime)
+	}
+	{
 		e.FieldStart("assigneeIds")
 		e.ArrStart()
 		for _, elem := range s.AssigneeIds {
@@ -2614,19 +2705,22 @@ func (s *Task) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfTask = [12]string{
+var jsonFieldsNameOfTask = [15]string{
 	0:  "id",
 	1:  "title",
 	2:  "description",
 	3:  "status",
 	4:  "effort",
 	5:  "priority",
-	6:  "assigneeIds",
-	7:  "tags",
-	8:  "relations",
-	9:  "dueDate",
-	10: "createdAt",
-	11: "updatedAt",
+	6:  "recurrenceType",
+	7:  "recurrenceRule",
+	8:  "lastCompletedAt",
+	9:  "assigneeIds",
+	10: "tags",
+	11: "relations",
+	12: "dueDate",
+	13: "createdAt",
+	14: "updatedAt",
 }
 
 // Decode decodes Task from json.
@@ -2706,8 +2800,38 @@ func (s *Task) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"priority\"")
 			}
-		case "assigneeIds":
+		case "recurrenceType":
 			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				if err := s.RecurrenceType.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"recurrenceType\"")
+			}
+		case "recurrenceRule":
+			requiredBitSet[0] |= 1 << 7
+			if err := func() error {
+				if err := s.RecurrenceRule.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"recurrenceRule\"")
+			}
+		case "lastCompletedAt":
+			requiredBitSet[1] |= 1 << 0
+			if err := func() error {
+				if err := s.LastCompletedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"lastCompletedAt\"")
+			}
+		case "assigneeIds":
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				s.AssigneeIds = make([]string, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -2727,7 +2851,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"assigneeIds\"")
 			}
 		case "tags":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				s.Tags = make([]string, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -2747,7 +2871,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"tags\"")
 			}
 		case "relations":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				s.Relations = make([]TaskRelation, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -2765,7 +2889,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"relations\"")
 			}
 		case "dueDate":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				if err := s.DueDate.Decode(d, json.DecodeDate); err != nil {
 					return err
@@ -2775,7 +2899,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"dueDate\"")
 			}
 		case "createdAt":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -2787,7 +2911,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"createdAt\"")
 			}
 		case "updatedAt":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -2809,7 +2933,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00001111,
+		0b01111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -2893,6 +3017,18 @@ func (s *TaskCreate) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.RecurrenceType.Set {
+			e.FieldStart("recurrenceType")
+			s.RecurrenceType.Encode(e)
+		}
+	}
+	{
+		if s.RecurrenceRule.Set {
+			e.FieldStart("recurrenceRule")
+			s.RecurrenceRule.Encode(e)
+		}
+	}
+	{
 		if s.AssigneeIds != nil {
 			e.FieldStart("assigneeIds")
 			e.ArrStart()
@@ -2920,15 +3056,17 @@ func (s *TaskCreate) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfTaskCreate = [8]string{
+var jsonFieldsNameOfTaskCreate = [10]string{
 	0: "title",
 	1: "description",
 	2: "status",
 	3: "effort",
 	4: "priority",
-	5: "assigneeIds",
-	6: "tags",
-	7: "dueDate",
+	5: "recurrenceType",
+	6: "recurrenceRule",
+	7: "assigneeIds",
+	8: "tags",
+	9: "dueDate",
 }
 
 // Decode decodes TaskCreate from json.
@@ -2936,7 +3074,7 @@ func (s *TaskCreate) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode TaskCreate to nil")
 	}
-	var requiredBitSet [1]uint8
+	var requiredBitSet [2]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -2991,6 +3129,26 @@ func (s *TaskCreate) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"priority\"")
+			}
+		case "recurrenceType":
+			if err := func() error {
+				s.RecurrenceType.Reset()
+				if err := s.RecurrenceType.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"recurrenceType\"")
+			}
+		case "recurrenceRule":
+			if err := func() error {
+				s.RecurrenceRule.Reset()
+				if err := s.RecurrenceRule.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"recurrenceRule\"")
 			}
 		case "assigneeIds":
 			if err := func() error {
@@ -3049,8 +3207,9 @@ func (s *TaskCreate) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
+	for i, mask := range [2]uint8{
 		0b00000001,
+		0b00000000,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -4059,6 +4218,52 @@ func (s *TaskPriorityLevelReplace) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes TaskRecurrenceType as json.
+func (s TaskRecurrenceType) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes TaskRecurrenceType from json.
+func (s *TaskRecurrenceType) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode TaskRecurrenceType to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch TaskRecurrenceType(v) {
+	case TaskRecurrenceTypeOneOff:
+		*s = TaskRecurrenceTypeOneOff
+	case TaskRecurrenceTypeCompletionBased:
+		*s = TaskRecurrenceTypeCompletionBased
+	case TaskRecurrenceTypeFixedNonAccumulating:
+		*s = TaskRecurrenceTypeFixedNonAccumulating
+	case TaskRecurrenceTypeFixedAccumulating:
+		*s = TaskRecurrenceTypeFixedAccumulating
+	case TaskRecurrenceTypeOnDependency:
+		*s = TaskRecurrenceTypeOnDependency
+	default:
+		*s = TaskRecurrenceType(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s TaskRecurrenceType) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *TaskRecurrenceType) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode implements json.Marshaler.
 func (s *TaskRelation) Encode(e *jx.Encoder) {
 	e.ObjStart()
@@ -4326,6 +4531,10 @@ func (s *TaskRelationKind) Decode(d *jx.Decoder) error {
 		*s = TaskRelationKindRelatesTo
 	case TaskRelationKindDuplicates:
 		*s = TaskRelationKindDuplicates
+	case TaskRelationKindTriggers:
+		*s = TaskRelationKindTriggers
+	case TaskRelationKindTriggeredBy:
+		*s = TaskRelationKindTriggeredBy
 	default:
 		*s = TaskRelationKind(v)
 	}
@@ -4921,6 +5130,18 @@ func (s *TaskUpdate) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.RecurrenceType.Set {
+			e.FieldStart("recurrenceType")
+			s.RecurrenceType.Encode(e)
+		}
+	}
+	{
+		if s.RecurrenceRule.Set {
+			e.FieldStart("recurrenceRule")
+			s.RecurrenceRule.Encode(e)
+		}
+	}
+	{
 		if s.AssigneeIds != nil {
 			e.FieldStart("assigneeIds")
 			e.ArrStart()
@@ -4948,15 +5169,17 @@ func (s *TaskUpdate) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfTaskUpdate = [8]string{
+var jsonFieldsNameOfTaskUpdate = [10]string{
 	0: "title",
 	1: "description",
 	2: "status",
 	3: "effort",
 	4: "priority",
-	5: "assigneeIds",
-	6: "tags",
-	7: "dueDate",
+	5: "recurrenceType",
+	6: "recurrenceRule",
+	7: "assigneeIds",
+	8: "tags",
+	9: "dueDate",
 }
 
 // Decode decodes TaskUpdate from json.
@@ -5016,6 +5239,26 @@ func (s *TaskUpdate) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"priority\"")
+			}
+		case "recurrenceType":
+			if err := func() error {
+				s.RecurrenceType.Reset()
+				if err := s.RecurrenceType.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"recurrenceType\"")
+			}
+		case "recurrenceRule":
+			if err := func() error {
+				s.RecurrenceRule.Reset()
+				if err := s.RecurrenceRule.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"recurrenceRule\"")
 			}
 		case "assigneeIds":
 			if err := func() error {

@@ -101,10 +101,12 @@ var directedKindMap = map[apigen.TaskRelationKind]struct {
 	storedKind string
 	flip       bool
 }{
-	apigen.TaskRelationKindParentOf:  {"parent", false},
-	apigen.TaskRelationKindChildOf:   {"parent", true},
-	apigen.TaskRelationKindBlocks:    {"blocks", false},
-	apigen.TaskRelationKindBlockedBy: {"blocks", true},
+	apigen.TaskRelationKindParentOf:    {"parent", false},
+	apigen.TaskRelationKindChildOf:     {"parent", true},
+	apigen.TaskRelationKindBlocks:      {"blocks", false},
+	apigen.TaskRelationKindBlockedBy:   {"blocks", true},
+	apigen.TaskRelationKindTriggers:    {"triggers", false},
+	apigen.TaskRelationKindTriggeredBy: {"triggers", true},
 }
 
 // inverseKindMap is derived from directedKindMap at init time. It maps
@@ -192,17 +194,19 @@ func taskFromDB(task dbgen.Task, assigneeUserIDs []int64, tagNames []string, rel
 	}
 
 	t := &apigen.Task{
-		ID:          formatTaskID(task.ID),
-		Title:       task.Title,
-		Description: task.Description,
-		Status:      task.StatusName,
-		Effort:      nilStringFromDB(task.EffortName),
-		Priority:    nilStringFromDB(task.PriorityName),
-		AssigneeIds: assigneeIDs,
-		Tags:        tagNames,
-		Relations:   apiRelations,
-		CreatedAt:   task.CreatedAt.Time(),
-		UpdatedAt:   task.UpdatedAt.Time(),
+		ID:             formatTaskID(task.ID),
+		Title:          task.Title,
+		Description:    task.Description,
+		Status:         task.StatusName,
+		Effort:         nilStringFromDB(task.EffortName),
+		Priority:       nilStringFromDB(task.PriorityName),
+		RecurrenceType: apigen.TaskRecurrenceType(task.RecurrenceType),
+		RecurrenceRule: nilStringFromDB(task.RecurrenceRule),
+		AssigneeIds:    assigneeIDs,
+		Tags:           tagNames,
+		Relations:      apiRelations,
+		CreatedAt:      task.CreatedAt.Time(),
+		UpdatedAt:      task.UpdatedAt.Time(),
 	}
 
 	if task.DueDate != nil {
@@ -213,6 +217,12 @@ func taskFromDB(task dbgen.Task, assigneeUserIDs []int64, tagNames []string, rel
 		t.DueDate.SetTo(d)
 	} else {
 		t.DueDate.SetToNull()
+	}
+
+	if task.LastCompletedAt != nil {
+		t.LastCompletedAt.SetTo(task.LastCompletedAt.Time())
+	} else {
+		t.LastCompletedAt.SetToNull()
 	}
 
 	return t, nil

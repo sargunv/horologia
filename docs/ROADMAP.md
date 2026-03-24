@@ -13,26 +13,30 @@
 - Task relations — schema, API (CLI and web remaining)
 - Effort and priority levels on tasks — schema, API, CLI flags, web display
 - CRUD for statuses, effort levels, and priority levels (PUT replace-all API)
+- Recurrence — schema, API, completion triggers for completion-based, fixed non-accumulating, and
+  on-dependency types. RRULE (RFC 5545) schedule format. Triggers relation kind.
 
 ## Core Task Features
 
-1. **Recurrence** — all 5 types (one-off, completion-based, fixed accumulating, fixed
-   non-accumulating, on-dependency)
-2. **Completion history / activity log** — log all task actions with user+token attribution
-3. **Rotation pools** — rotating assignees on completion
-4. **Space-level defaults** — default recurrence, staleness toggle, assignees for new tasks
-5. **Today view** — unified dashboard across all spaces, sorted by staleness/urgency
-6. **Search** — full-text search on title/description, filterable by space/status/assignee/tags
+1. **Recurrence: fixed accumulating cron** — server-side cron job to spawn tasks for
+   fixed-accumulating schedules
+2. **Recurrence: auto-advance** — auto-advance due dates for fixed non-accumulating tasks past their
+   grace period
+3. **Completion history / activity log** — log all task actions with user+token attribution
+4. **Rotation pools** — rotating assignees on completion
 
 ## Views & UX
 
 1. **CLI feature parity with backend**
-2. **Web feature parity with backend and CLI**
-3. **Web pagination** — handle `nextCursor` in list views
-4. **Web editing** — create/edit tasks, spaces, members from the web UI
-5. **Markdown rendering** — render descriptions as Markdown in web UI
+2. **MCP feature parity with API**
+3. **Web feature parity with backend and CLI**
+4. **Web pagination** — handle `nextCursor` in list views
+5. **Web editing** — create/edit tasks, spaces, members from the web UI
+6. **Markdown rendering** — render descriptions as Markdown in web UI
+7. **Today view** — unified dashboard across all spaces, sorted by staleness/urgency
+8. **Search** — full-text search on title/description, filterable by space/status/assignee/tags
 
 ## Infrastructure
 
-1. **MCP endpoint** — Streamable HTTP at `/mcp`
+1. **CLI** - goreleaser
 2. **Dockerfile** — single container deployment

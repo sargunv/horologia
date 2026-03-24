@@ -38,5 +38,10 @@ sql:
             go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"
           - column: "task_tags.created_at"
             go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"
+          - column: "tasks.last_completed_at"
+            go_type:
+              import: "github.com/sargunv/tend/server/internal/types"
+              type: "EpochSeconds"
+              pointer: true
           - column: "task_relations.created_at"
             go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"

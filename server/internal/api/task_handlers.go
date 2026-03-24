@@ -152,18 +152,10 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 	// Resolve the status name.
 	statusName := req.Status.Or("")
 	if statusName == "" {
-		statuses, err := q.ListTaskStatusesBySpace(ctx, params.SpaceSlug)
+		var err error
+		statusName, err = findInitialStatus(ctx, q, params.SpaceSlug)
 		if err != nil {
 			return nil, err
-		}
-		for _, s := range statuses {
-			if s.Category == "initial" {
-				statusName = s.Name
-				break
-			}
-		}
-		if statusName == "" {
-			return nil, badRequest("space has no initial status")
 		}
 	}
 
@@ -177,17 +169,25 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 		return nil, err
 	}
 
+	recurrenceType := string(req.RecurrenceType.Or(apigen.TaskRecurrenceTypeOneOff))
+	recurrenceRule := optStringToDB(req.RecurrenceRule)
+
 	ts := types.Now()
+	if err := validateRecurrence(recurrenceType, recurrenceRule, ts.Time()); err != nil {
+		return nil, err
+	}
 	task, err := q.CreateTask(ctx, dbgen.CreateTaskParams{
-		SpaceSlug:    params.SpaceSlug,
-		Title:        req.Title,
-		Description:  req.Description.Or(""),
-		StatusName:   statusName,
-		EffortName:   effortName,
-		PriorityName: priorityName,
-		DueDate:      dueDateToDB(req.DueDate),
-		CreatedAt:    ts,
-		UpdatedAt:    ts,
+		SpaceSlug:      params.SpaceSlug,
+		Title:          req.Title,
+		Description:    req.Description.Or(""),
+		StatusName:     statusName,
+		EffortName:     effortName,
+		PriorityName:   priorityName,
+		DueDate:        dueDateToDB(req.DueDate),
+		RecurrenceType: recurrenceType,
+		RecurrenceRule: recurrenceRule,
+		CreatedAt:      ts,
+		UpdatedAt:      ts,
 	})
 	if err != nil {
 		return nil, err
@@ -309,19 +309,86 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 		return nil, err
 	}
 
+	// Merge recurrence fields. Auto-clear rule when switching to a no-rule type.
+	recurrenceType := string(req.RecurrenceType.Or(apigen.TaskRecurrenceType(existing.RecurrenceType)))
+	recurrenceRule := optNilStringToDB(req.RecurrenceRule, existing.RecurrenceRule)
+	if recurrenceType == "one_off" || recurrenceType == "on_dependency" {
+		recurrenceRule = nil
+	}
+	now := types.Now()
+	if err := validateRecurrence(recurrenceType, recurrenceRule, now.Time()); err != nil {
+		return nil, err
+	}
+
+	newStatus := req.Status.Or(existing.StatusName)
+	newDueDate := dueDateFromExisting(existing.DueDate, req.DueDate)
+	lastCompletedAt := existing.LastCompletedAt
+
+	// Detect completion transition: old status is not completion, new status is.
+	justCompleted := false
+	if newStatus != existing.StatusName {
+		statuses, err := q.ListTaskStatusesBySpace(ctx, params.SpaceSlug)
+		if err != nil {
+			return nil, err
+		}
+		categoryOf := func(name string) string {
+			for _, s := range statuses {
+				if s.Name == name {
+					return s.Category
+				}
+			}
+			return ""
+		}
+		oldIsCompletion := categoryOf(existing.StatusName) == "completion"
+		newIsCompletion := categoryOf(newStatus) == "completion"
+
+		if !oldIsCompletion && newIsCompletion {
+			justCompleted = true
+			lastCompletedAt = &now
+
+			switch recurrenceType {
+			case "completion_based", "fixed_non_accumulating", "fixed_accumulating":
+				next, err := computeNextDueDate(recurrenceType, recurrenceRule, existing.DueDate, now.Time())
+				if err != nil {
+					return nil, err
+				}
+				// If the rule is exhausted (no next occurrence), leave the
+				// task in the completion status instead of resetting it.
+				if next != nil {
+					newDueDate = next
+					initialStatus, err := initialStatusFromSlice(statuses)
+					if err != nil {
+						return nil, err
+					}
+					newStatus = initialStatus
+				}
+			}
+		}
+	}
+
 	_, err = q.UpdateTask(ctx, dbgen.UpdateTaskParams{
-		ID:           id,
-		SpaceSlug:    params.SpaceSlug,
-		Title:        req.Title.Or(existing.Title),
-		Description:  req.Description.Or(existing.Description),
-		StatusName:   req.Status.Or(existing.StatusName),
-		EffortName:   effortName,
-		PriorityName: priorityName,
-		DueDate:      dueDateFromExisting(existing.DueDate, req.DueDate),
-		UpdatedAt:    types.Now(),
+		Title:           req.Title.Or(existing.Title),
+		Description:     req.Description.Or(existing.Description),
+		StatusName:      newStatus,
+		EffortName:      effortName,
+		PriorityName:    priorityName,
+		DueDate:         newDueDate,
+		RecurrenceType:  recurrenceType,
+		RecurrenceRule:  recurrenceRule,
+		LastCompletedAt: lastCompletedAt,
+		UpdatedAt:       now,
+		ID:              id,
+		SpaceSlug:       params.SpaceSlug,
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	// Trigger dependents when a task is completed.
+	if justCompleted {
+		if err := h.applyCompletionTriggers(ctx, q, id, params.SpaceSlug, now); err != nil {
+			return nil, err
+		}
 	}
 
 	// Replace assignees if provided (nil = no change, empty = clear all).
@@ -503,6 +570,8 @@ func validateOptionalLevel(ctx context.Context, q *dbgen.Queries, spaceSlug stri
 		for i, l := range levels {
 			validNames[i] = l.Name
 		}
+	default:
+		panic(fmt.Sprintf("validateOptionalLevel: unknown label %q", label))
 	}
 	for _, v := range validNames {
 		if v == *name {

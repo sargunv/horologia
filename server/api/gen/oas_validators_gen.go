@@ -546,6 +546,17 @@ func (s *Task) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
+		if err := s.RecurrenceType.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "recurrenceType",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if s.AssigneeIds == nil {
 			return errors.New("nil is invalid value")
 		}
@@ -717,6 +728,54 @@ func (s *TaskCreate) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "priority",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.RecurrenceType.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "recurrenceType",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.RecurrenceRule.Get(); ok {
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     1,
+					MinLengthSet:  true,
+					MaxLength:     500,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(value)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "recurrenceRule",
 			Error: err,
 		})
 	}
@@ -1000,6 +1059,23 @@ func (s *TaskPriorityLevelReplace) Validate() error {
 	return nil
 }
 
+func (s TaskRecurrenceType) Validate() error {
+	switch s {
+	case "one_off":
+		return nil
+	case "completion_based":
+		return nil
+	case "fixed_non_accumulating":
+		return nil
+	case "fixed_accumulating":
+		return nil
+	case "on_dependency":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
 func (s *TaskRelation) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -1059,6 +1135,10 @@ func (s TaskRelationKind) Validate() error {
 	case "relates_to":
 		return nil
 	case "duplicates":
+		return nil
+	case "triggers":
+		return nil
+	case "triggered_by":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -1303,6 +1383,24 @@ func (s *TaskUpdate) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "description",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.RecurrenceType.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "recurrenceType",
 			Error: err,
 		})
 	}

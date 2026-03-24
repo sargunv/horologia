@@ -224,3 +224,37 @@ func (q *Queries) ListRelationsByTasks(ctx context.Context, arg ListRelationsByT
 	}
 	return items, nil
 }
+
+const listTriggerTargets = `-- name: ListTriggerTargets :many
+SELECT target_task_id
+FROM task_relations
+WHERE source_task_id = ? AND space_slug = ? AND kind = 'triggers'
+`
+
+type ListTriggerTargetsParams struct {
+	SourceTaskID int64
+	SpaceSlug    string
+}
+
+func (q *Queries) ListTriggerTargets(ctx context.Context, arg ListTriggerTargetsParams) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listTriggerTargets, arg.SourceTaskID, arg.SpaceSlug)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var target_task_id int64
+		if err := rows.Scan(&target_task_id); err != nil {
+			return nil, err
+		}
+		items = append(items, target_task_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

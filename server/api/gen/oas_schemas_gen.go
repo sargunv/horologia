@@ -346,6 +346,51 @@ func (o NilDate) Or(d time.Time) time.Time {
 	return d
 }
 
+// NewNilDateTime returns new NilDateTime with value set to v.
+func NewNilDateTime(v time.Time) NilDateTime {
+	return NilDateTime{
+		Value: v,
+	}
+}
+
+// NilDateTime is nullable time.Time.
+type NilDateTime struct {
+	Value time.Time
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilDateTime) SetTo(v time.Time) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilDateTime) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilDateTime) SetToNull() {
+	o.Null = true
+	var v time.Time
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilDateTime) Get() (v time.Time, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilDateTime) Or(d time.Time) time.Time {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewNilString returns new NilString with value set to v.
 func NewNilString(v string) NilString {
 	return NilString{
@@ -603,6 +648,52 @@ func (o OptString) Get() (v string, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptString) Or(d string) string {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptTaskRecurrenceType returns new OptTaskRecurrenceType with value set to v.
+func NewOptTaskRecurrenceType(v TaskRecurrenceType) OptTaskRecurrenceType {
+	return OptTaskRecurrenceType{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptTaskRecurrenceType is optional TaskRecurrenceType.
+type OptTaskRecurrenceType struct {
+	Value TaskRecurrenceType
+	Set   bool
+}
+
+// IsSet returns true if OptTaskRecurrenceType was set.
+func (o OptTaskRecurrenceType) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptTaskRecurrenceType) Reset() {
+	var v TaskRecurrenceType
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptTaskRecurrenceType) SetTo(v TaskRecurrenceType) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptTaskRecurrenceType) Get() (v TaskRecurrenceType, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptTaskRecurrenceType) Or(d TaskRecurrenceType) TaskRecurrenceType {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -1031,18 +1122,21 @@ func (s *TagUpdate) SetName(val string) {
 
 // Ref: #/components/schemas/Task
 type Task struct {
-	ID          string         `json:"id"`
-	Title       string         `json:"title"`
-	Description string         `json:"description"`
-	Status      string         `json:"status"`
-	Effort      NilString      `json:"effort"`
-	Priority    NilString      `json:"priority"`
-	AssigneeIds []string       `json:"assigneeIds"`
-	Tags        []string       `json:"tags"`
-	Relations   []TaskRelation `json:"relations"`
-	DueDate     NilDate        `json:"dueDate"`
-	CreatedAt   time.Time      `json:"createdAt"`
-	UpdatedAt   time.Time      `json:"updatedAt"`
+	ID              string             `json:"id"`
+	Title           string             `json:"title"`
+	Description     string             `json:"description"`
+	Status          string             `json:"status"`
+	Effort          NilString          `json:"effort"`
+	Priority        NilString          `json:"priority"`
+	RecurrenceType  TaskRecurrenceType `json:"recurrenceType"`
+	RecurrenceRule  NilString          `json:"recurrenceRule"`
+	LastCompletedAt NilDateTime        `json:"lastCompletedAt"`
+	AssigneeIds     []string           `json:"assigneeIds"`
+	Tags            []string           `json:"tags"`
+	Relations       []TaskRelation     `json:"relations"`
+	DueDate         NilDate            `json:"dueDate"`
+	CreatedAt       time.Time          `json:"createdAt"`
+	UpdatedAt       time.Time          `json:"updatedAt"`
 }
 
 // GetID returns the value of ID.
@@ -1073,6 +1167,21 @@ func (s *Task) GetEffort() NilString {
 // GetPriority returns the value of Priority.
 func (s *Task) GetPriority() NilString {
 	return s.Priority
+}
+
+// GetRecurrenceType returns the value of RecurrenceType.
+func (s *Task) GetRecurrenceType() TaskRecurrenceType {
+	return s.RecurrenceType
+}
+
+// GetRecurrenceRule returns the value of RecurrenceRule.
+func (s *Task) GetRecurrenceRule() NilString {
+	return s.RecurrenceRule
+}
+
+// GetLastCompletedAt returns the value of LastCompletedAt.
+func (s *Task) GetLastCompletedAt() NilDateTime {
+	return s.LastCompletedAt
 }
 
 // GetAssigneeIds returns the value of AssigneeIds.
@@ -1135,6 +1244,21 @@ func (s *Task) SetPriority(val NilString) {
 	s.Priority = val
 }
 
+// SetRecurrenceType sets the value of RecurrenceType.
+func (s *Task) SetRecurrenceType(val TaskRecurrenceType) {
+	s.RecurrenceType = val
+}
+
+// SetRecurrenceRule sets the value of RecurrenceRule.
+func (s *Task) SetRecurrenceRule(val NilString) {
+	s.RecurrenceRule = val
+}
+
+// SetLastCompletedAt sets the value of LastCompletedAt.
+func (s *Task) SetLastCompletedAt(val NilDateTime) {
+	s.LastCompletedAt = val
+}
+
 // SetAssigneeIds sets the value of AssigneeIds.
 func (s *Task) SetAssigneeIds(val []string) {
 	s.AssigneeIds = val
@@ -1167,14 +1291,16 @@ func (s *Task) SetUpdatedAt(val time.Time) {
 
 // Ref: #/components/schemas/TaskCreate
 type TaskCreate struct {
-	Title       string     `json:"title"`
-	Description OptString  `json:"description"`
-	Status      OptString  `json:"status"`
-	Effort      OptString  `json:"effort"`
-	Priority    OptString  `json:"priority"`
-	AssigneeIds []string   `json:"assigneeIds"`
-	Tags        []string   `json:"tags"`
-	DueDate     OptNilDate `json:"dueDate"`
+	Title          string                `json:"title"`
+	Description    OptString             `json:"description"`
+	Status         OptString             `json:"status"`
+	Effort         OptString             `json:"effort"`
+	Priority       OptString             `json:"priority"`
+	RecurrenceType OptTaskRecurrenceType `json:"recurrenceType"`
+	RecurrenceRule OptString             `json:"recurrenceRule"`
+	AssigneeIds    []string              `json:"assigneeIds"`
+	Tags           []string              `json:"tags"`
+	DueDate        OptNilDate            `json:"dueDate"`
 }
 
 // GetTitle returns the value of Title.
@@ -1200,6 +1326,16 @@ func (s *TaskCreate) GetEffort() OptString {
 // GetPriority returns the value of Priority.
 func (s *TaskCreate) GetPriority() OptString {
 	return s.Priority
+}
+
+// GetRecurrenceType returns the value of RecurrenceType.
+func (s *TaskCreate) GetRecurrenceType() OptTaskRecurrenceType {
+	return s.RecurrenceType
+}
+
+// GetRecurrenceRule returns the value of RecurrenceRule.
+func (s *TaskCreate) GetRecurrenceRule() OptString {
+	return s.RecurrenceRule
 }
 
 // GetAssigneeIds returns the value of AssigneeIds.
@@ -1240,6 +1376,16 @@ func (s *TaskCreate) SetEffort(val OptString) {
 // SetPriority sets the value of Priority.
 func (s *TaskCreate) SetPriority(val OptString) {
 	s.Priority = val
+}
+
+// SetRecurrenceType sets the value of RecurrenceType.
+func (s *TaskCreate) SetRecurrenceType(val OptTaskRecurrenceType) {
+	s.RecurrenceType = val
+}
+
+// SetRecurrenceRule sets the value of RecurrenceRule.
+func (s *TaskCreate) SetRecurrenceRule(val OptString) {
+	s.RecurrenceRule = val
 }
 
 // SetAssigneeIds sets the value of AssigneeIds.
@@ -1425,6 +1571,69 @@ func (s *TaskPriorityLevelReplace) SetItems(val []TaskPriorityLevelInput) {
 	s.Items = val
 }
 
+// Ref: #/components/schemas/TaskRecurrenceType
+type TaskRecurrenceType string
+
+const (
+	TaskRecurrenceTypeOneOff               TaskRecurrenceType = "one_off"
+	TaskRecurrenceTypeCompletionBased      TaskRecurrenceType = "completion_based"
+	TaskRecurrenceTypeFixedNonAccumulating TaskRecurrenceType = "fixed_non_accumulating"
+	TaskRecurrenceTypeFixedAccumulating    TaskRecurrenceType = "fixed_accumulating"
+	TaskRecurrenceTypeOnDependency         TaskRecurrenceType = "on_dependency"
+)
+
+// AllValues returns all TaskRecurrenceType values.
+func (TaskRecurrenceType) AllValues() []TaskRecurrenceType {
+	return []TaskRecurrenceType{
+		TaskRecurrenceTypeOneOff,
+		TaskRecurrenceTypeCompletionBased,
+		TaskRecurrenceTypeFixedNonAccumulating,
+		TaskRecurrenceTypeFixedAccumulating,
+		TaskRecurrenceTypeOnDependency,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TaskRecurrenceType) MarshalText() ([]byte, error) {
+	switch s {
+	case TaskRecurrenceTypeOneOff:
+		return []byte(s), nil
+	case TaskRecurrenceTypeCompletionBased:
+		return []byte(s), nil
+	case TaskRecurrenceTypeFixedNonAccumulating:
+		return []byte(s), nil
+	case TaskRecurrenceTypeFixedAccumulating:
+		return []byte(s), nil
+	case TaskRecurrenceTypeOnDependency:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TaskRecurrenceType) UnmarshalText(data []byte) error {
+	switch TaskRecurrenceType(data) {
+	case TaskRecurrenceTypeOneOff:
+		*s = TaskRecurrenceTypeOneOff
+		return nil
+	case TaskRecurrenceTypeCompletionBased:
+		*s = TaskRecurrenceTypeCompletionBased
+		return nil
+	case TaskRecurrenceTypeFixedNonAccumulating:
+		*s = TaskRecurrenceTypeFixedNonAccumulating
+		return nil
+	case TaskRecurrenceTypeFixedAccumulating:
+		*s = TaskRecurrenceTypeFixedAccumulating
+		return nil
+	case TaskRecurrenceTypeOnDependency:
+		*s = TaskRecurrenceTypeOnDependency
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/TaskRelation
 type TaskRelation struct {
 	Kind      TaskRelationKind `json:"kind"`
@@ -1492,12 +1701,14 @@ func (s *TaskRelationCreate) SetTaskId(val string) {
 type TaskRelationKind string
 
 const (
-	TaskRelationKindParentOf   TaskRelationKind = "parent_of"
-	TaskRelationKindChildOf    TaskRelationKind = "child_of"
-	TaskRelationKindBlocks     TaskRelationKind = "blocks"
-	TaskRelationKindBlockedBy  TaskRelationKind = "blocked_by"
-	TaskRelationKindRelatesTo  TaskRelationKind = "relates_to"
-	TaskRelationKindDuplicates TaskRelationKind = "duplicates"
+	TaskRelationKindParentOf    TaskRelationKind = "parent_of"
+	TaskRelationKindChildOf     TaskRelationKind = "child_of"
+	TaskRelationKindBlocks      TaskRelationKind = "blocks"
+	TaskRelationKindBlockedBy   TaskRelationKind = "blocked_by"
+	TaskRelationKindRelatesTo   TaskRelationKind = "relates_to"
+	TaskRelationKindDuplicates  TaskRelationKind = "duplicates"
+	TaskRelationKindTriggers    TaskRelationKind = "triggers"
+	TaskRelationKindTriggeredBy TaskRelationKind = "triggered_by"
 )
 
 // AllValues returns all TaskRelationKind values.
@@ -1509,6 +1720,8 @@ func (TaskRelationKind) AllValues() []TaskRelationKind {
 		TaskRelationKindBlockedBy,
 		TaskRelationKindRelatesTo,
 		TaskRelationKindDuplicates,
+		TaskRelationKindTriggers,
+		TaskRelationKindTriggeredBy,
 	}
 }
 
@@ -1526,6 +1739,10 @@ func (s TaskRelationKind) MarshalText() ([]byte, error) {
 	case TaskRelationKindRelatesTo:
 		return []byte(s), nil
 	case TaskRelationKindDuplicates:
+		return []byte(s), nil
+	case TaskRelationKindTriggers:
+		return []byte(s), nil
+	case TaskRelationKindTriggeredBy:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -1552,6 +1769,12 @@ func (s *TaskRelationKind) UnmarshalText(data []byte) error {
 		return nil
 	case TaskRelationKindDuplicates:
 		*s = TaskRelationKindDuplicates
+		return nil
+	case TaskRelationKindTriggers:
+		*s = TaskRelationKindTriggers
+		return nil
+	case TaskRelationKindTriggeredBy:
+		*s = TaskRelationKindTriggeredBy
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -1749,14 +1972,16 @@ func (s *TaskStatusReplace) SetItems(val []TaskStatusInput) {
 
 // Ref: #/components/schemas/TaskUpdate
 type TaskUpdate struct {
-	Title       OptString    `json:"title"`
-	Description OptString    `json:"description"`
-	Status      OptString    `json:"status"`
-	Effort      OptNilString `json:"effort"`
-	Priority    OptNilString `json:"priority"`
-	AssigneeIds []string     `json:"assigneeIds"`
-	Tags        []string     `json:"tags"`
-	DueDate     OptNilDate   `json:"dueDate"`
+	Title          OptString             `json:"title"`
+	Description    OptString             `json:"description"`
+	Status         OptString             `json:"status"`
+	Effort         OptNilString          `json:"effort"`
+	Priority       OptNilString          `json:"priority"`
+	RecurrenceType OptTaskRecurrenceType `json:"recurrenceType"`
+	RecurrenceRule OptNilString          `json:"recurrenceRule"`
+	AssigneeIds    []string              `json:"assigneeIds"`
+	Tags           []string              `json:"tags"`
+	DueDate        OptNilDate            `json:"dueDate"`
 }
 
 // GetTitle returns the value of Title.
@@ -1782,6 +2007,16 @@ func (s *TaskUpdate) GetEffort() OptNilString {
 // GetPriority returns the value of Priority.
 func (s *TaskUpdate) GetPriority() OptNilString {
 	return s.Priority
+}
+
+// GetRecurrenceType returns the value of RecurrenceType.
+func (s *TaskUpdate) GetRecurrenceType() OptTaskRecurrenceType {
+	return s.RecurrenceType
+}
+
+// GetRecurrenceRule returns the value of RecurrenceRule.
+func (s *TaskUpdate) GetRecurrenceRule() OptNilString {
+	return s.RecurrenceRule
 }
 
 // GetAssigneeIds returns the value of AssigneeIds.
@@ -1822,6 +2057,16 @@ func (s *TaskUpdate) SetEffort(val OptNilString) {
 // SetPriority sets the value of Priority.
 func (s *TaskUpdate) SetPriority(val OptNilString) {
 	s.Priority = val
+}
+
+// SetRecurrenceType sets the value of RecurrenceType.
+func (s *TaskUpdate) SetRecurrenceType(val OptTaskRecurrenceType) {
+	s.RecurrenceType = val
+}
+
+// SetRecurrenceRule sets the value of RecurrenceRule.
+func (s *TaskUpdate) SetRecurrenceRule(val OptNilString) {
+	s.RecurrenceRule = val
 }
 
 // SetAssigneeIds sets the value of AssigneeIds.

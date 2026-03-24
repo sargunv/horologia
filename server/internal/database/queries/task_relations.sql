@@ -29,3 +29,8 @@ SELECT source_task_id, target_task_id, kind, created_at
 FROM task_relations
 WHERE target_task_id = ? AND space_slug = ?
 ORDER BY created_at ASC;
+
+-- name: ListTriggerTargets :many
+SELECT target_task_id
+FROM task_relations
+WHERE source_task_id = ? AND space_slug = ? AND kind = 'triggers';
