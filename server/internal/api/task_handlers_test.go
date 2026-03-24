@@ -56,7 +56,11 @@ func TestTasksCreateWithFields(t *testing.T) {
 		t.Errorf("status = %v, want done", task["status"])
 	}
 	if task["due"] == nil {
-		t.Error("dueAt should not be nil")
+		t.Error("due should not be nil")
+	}
+	due := task["due"].(map[string]any)
+	if due["timezone"] != "UTC" {
+		t.Errorf("due.timezone = %v, want UTC", due["timezone"])
 	}
 }
 

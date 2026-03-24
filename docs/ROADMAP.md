@@ -32,7 +32,6 @@
 5. **Web editing** — create/edit tasks, spaces, members from the web UI
 6. **Markdown rendering** — render descriptions as Markdown in web UI
 7. **Today view** — unified dashboard across all spaces, sorted by staleness/urgency
-8. **Search** — full-text search on title/description, filterable by space/status/assignee/tags
 
 ## Infrastructure
 

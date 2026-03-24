@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// dueAt extracts the "at" string from a task's nested "due" field.
+// dueAtFromResponse extracts the "at" string from a task's nested "due" field.
 // Returns ("", false) if due is nil.
 func dueAtFromResponse(task map[string]any) (string, bool) {
 	due := task["due"]
@@ -14,6 +14,16 @@ func dueAtFromResponse(task map[string]any) (string, bool) {
 		return "", false
 	}
 	return due.(map[string]any)["at"].(string), true
+}
+
+// dueTzFromResponse extracts the "timezone" string from a task's nested "due" field.
+// Returns ("", false) if due is nil.
+func dueTzFromResponse(task map[string]any) (string, bool) {
+	due := task["due"]
+	if due == nil {
+		return "", false
+	}
+	return due.(map[string]any)["timezone"].(string), true
 }
 
 func TestRecurrenceOneOffDefault(t *testing.T) {
@@ -550,4 +560,150 @@ func TestRecurrenceSameStatusNoRetrigger(t *testing.T) {
 	if second["lastCompletedAt"] != firstCompleted {
 		t.Fatalf("lastCompletedAt changed on same-status update: got %v, want %v", second["lastCompletedAt"], firstCompleted)
 	}
+}
+
+func TestRecurrenceCompletionBasedNonUTCTimezone(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "rec-tz", "Rec TZ")
+
+	// Create a completion-based task with America/New_York timezone.
+	// Due at midnight Eastern (which is 05:00 UTC during EST).
+	task := createTask(t, env, "rec-tz",
+		`{"title":"Weekly chore","recurrenceType":"completion_based","recurrenceRule":"FREQ=WEEKLY","due":{"at":"2026-03-23T05:00:00Z","timezone":"America/New_York"}}`)
+	taskID := task["id"].(string)
+
+	// Verify timezone is stored and returned.
+	tz, ok := dueTzFromResponse(task)
+	if !ok || tz != "America/New_York" {
+		t.Fatalf("got timezone %q, want America/New_York", tz)
+	}
+
+	// Complete the task.
+	resp := doRequest(t, env, "PATCH", "/spaces/rec-tz/tasks/"+taskID, `{"status":"done"}`)
+	assertStatus(t, resp, http.StatusOK)
+	var updated map[string]any
+	readJSON(t, resp, &updated)
+
+	if updated["status"] != "todo" {
+		t.Fatalf("got status %v, want todo", updated["status"])
+	}
+
+	// Timezone should be preserved after completion.
+	updatedTz, ok := dueTzFromResponse(updated)
+	if !ok || updatedTz != "America/New_York" {
+		t.Fatalf("timezone after completion: got %q, want America/New_York", updatedTz)
+	}
+
+	// The new due date should be midnight Eastern (~7 days from now).
+	// In UTC, midnight Eastern is either 05:00 (EST) or 04:00 (EDT).
+	dueStr, ok := dueAtFromResponse(updated)
+	if !ok {
+		t.Fatal("expected due to be set after completion")
+	}
+	parsedDue, err := time.Parse(time.RFC3339, dueStr)
+	if err != nil {
+		t.Fatalf("parse due.at: %v", err)
+	}
+
+	// Verify the time component is midnight in New York (not midnight UTC).
+	loc, _ := time.LoadLocation("America/New_York")
+	localDue := parsedDue.In(loc)
+	if localDue.Hour() != 0 || localDue.Minute() != 0 {
+		t.Fatalf("expected midnight in America/New_York, got %s", localDue.Format(time.RFC3339))
+	}
+}
+
+func TestRecurrenceFixedNonAccumulatingNonUTCTimezone(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "rec-ftz", "Rec Fixed TZ")
+
+	// Create a fixed non-accumulating task recurring every Saturday in Los Angeles.
+	// Due at midnight Pacific (08:00 UTC during PST).
+	task := createTask(t, env, "rec-ftz",
+		`{"title":"Saturday task","recurrenceType":"fixed_non_accumulating","recurrenceRule":"FREQ=WEEKLY;BYDAY=SA","due":{"at":"2026-03-21T08:00:00Z","timezone":"America/Los_Angeles"}}`)
+	taskID := task["id"].(string)
+
+	// Complete the task.
+	resp := doRequest(t, env, "PATCH", "/spaces/rec-ftz/tasks/"+taskID, `{"status":"done"}`)
+	assertStatus(t, resp, http.StatusOK)
+	var updated map[string]any
+	readJSON(t, resp, &updated)
+
+	if updated["status"] != "todo" {
+		t.Fatalf("got status %v, want todo", updated["status"])
+	}
+
+	// Due date should be a Saturday at midnight Pacific.
+	dueStr, ok := dueAtFromResponse(updated)
+	if !ok {
+		t.Fatal("expected due to be set")
+	}
+	parsedDue, err := time.Parse(time.RFC3339, dueStr)
+	if err != nil {
+		t.Fatalf("parse due.at: %v", err)
+	}
+
+	loc, _ := time.LoadLocation("America/Los_Angeles")
+	localDue := parsedDue.In(loc)
+	if localDue.Weekday() != time.Saturday {
+		t.Fatalf("expected Saturday in LA, got %s (%s)", localDue.Format("2006-01-02"), localDue.Weekday())
+	}
+	if localDue.Hour() != 0 || localDue.Minute() != 0 {
+		t.Fatalf("expected midnight in America/Los_Angeles, got %s", localDue.Format(time.RFC3339))
+	}
+}
+
+func TestDueTimezoneRoundTrip(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "due-rt", "Due Round Trip")
+
+	// Create with a non-UTC timezone.
+	task := createTask(t, env, "due-rt",
+		`{"title":"TZ task","due":{"at":"2026-06-15T04:00:00Z","timezone":"America/New_York"}}`)
+
+	// Verify round-trip: both at and timezone returned correctly.
+	dueStr, ok := dueAtFromResponse(task)
+	if !ok {
+		t.Fatal("expected due to be set")
+	}
+	if dueStr != "2026-06-15T04:00:00Z" {
+		t.Fatalf("due.at = %v, want 2026-06-15T04:00:00Z", dueStr)
+	}
+	tz, ok := dueTzFromResponse(task)
+	if !ok || tz != "America/New_York" {
+		t.Fatalf("due.timezone = %v, want America/New_York", tz)
+	}
+
+	// Update to a different timezone.
+	taskID := task["id"].(string)
+	resp := doRequest(t, env, "PATCH", "/spaces/due-rt/tasks/"+taskID,
+		`{"due":{"at":"2026-06-15T07:00:00Z","timezone":"America/Los_Angeles"}}`)
+	assertStatus(t, resp, http.StatusOK)
+	var updated map[string]any
+	readJSON(t, resp, &updated)
+
+	updatedTz, ok := dueTzFromResponse(updated)
+	if !ok || updatedTz != "America/Los_Angeles" {
+		t.Fatalf("updated due.timezone = %v, want America/Los_Angeles", updatedTz)
+	}
+
+	// Clear due.
+	resp2 := doRequest(t, env, "PATCH", "/spaces/due-rt/tasks/"+taskID, `{"due":null}`)
+	assertStatus(t, resp2, http.StatusOK)
+	var cleared map[string]any
+	readJSON(t, resp2, &cleared)
+
+	if cleared["due"] != nil {
+		t.Fatalf("due = %v, want nil after clear", cleared["due"])
+	}
+}
+
+func TestDueInvalidTimezoneRejected(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "due-inv", "Due Invalid TZ")
+
+	assertStatusClose(t,
+		doRequest(t, env, "POST", "/spaces/due-inv/tasks",
+			`{"title":"Bad","due":{"at":"2026-06-15T00:00:00Z","timezone":"America/Bogus"}}`),
+		http.StatusBadRequest)
 }
