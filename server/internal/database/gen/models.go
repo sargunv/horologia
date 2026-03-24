@@ -84,6 +84,13 @@ type TaskRelation struct {
 	CreatedAt    types.EpochSeconds
 }
 
+type TaskRotationPool struct {
+	TaskID    int64
+	UserID    int64
+	Position  int64
+	CreatedAt types.EpochSeconds
+}
+
 type TaskStatus struct {
 	SpaceSlug string
 	Name      string

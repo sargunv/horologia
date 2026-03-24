@@ -37,7 +37,8 @@ func (h *Handler) fetchTaskRelations(ctx context.Context, q *dbgen.Queries, id i
 	return rows, nil
 }
 
-// fetchTask fetches a task by ID within a space, along with its assignees, tags, and relations.
+// fetchTask fetches a task by ID within a space, along with its assignees,
+// tags, relations, and rotation pool.
 func (h *Handler) fetchTask(ctx context.Context, q *dbgen.Queries, id int64, spaceSlug string) (*apigen.Task, error) {
 	task, err := q.GetTask(ctx, dbgen.GetTaskParams{ID: id, SpaceSlug: spaceSlug})
 	if err != nil {
@@ -55,11 +56,15 @@ func (h *Handler) fetchTask(ctx context.Context, q *dbgen.Queries, id int64, spa
 	if err != nil {
 		return nil, err
 	}
-	return taskFromDB(task, assigneeIDs, tagNames, relations)
+	poolUserIDs, err := q.ListRotationPoolByTask(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return taskFromDB(task, assigneeIDs, tagNames, relations, poolUserIDs)
 }
 
-// enrichTasks batch-fetches assignees, tags, and relations for a slice of tasks
-// and converts them to API types. Uses 3 queries total instead of 5N.
+// enrichTasks batch-fetches assignees, tags, relations, and rotation pool for a
+// slice of tasks and converts them to API types. Uses 4 queries total instead of N*5.
 func (h *Handler) enrichTasks(ctx context.Context, q *dbgen.Queries, spaceSlug string, tasks []dbgen.Task) ([]apigen.Task, error) {
 	if len(tasks) == 0 {
 		return []apigen.Task{}, nil
@@ -71,7 +76,7 @@ func (h *Handler) enrichTasks(ctx context.Context, q *dbgen.Queries, spaceSlug s
 		taskIDs[i] = t.ID
 	}
 
-	// Batch-fetch assignees, tags, and relations (3 queries total).
+	// Batch-fetch assignees, tags, relations, and rotation pool (4 queries total).
 	assigneeRows, err := q.ListAssigneeUserIDsByTasks(ctx, taskIDs)
 	if err != nil {
 		return nil, err
@@ -85,6 +90,10 @@ func (h *Handler) enrichTasks(ctx context.Context, q *dbgen.Queries, spaceSlug s
 		SourceTaskIds: taskIDs,
 		TargetTaskIds: taskIDs,
 	})
+	if err != nil {
+		return nil, err
+	}
+	poolRows, err := q.ListRotationPoolByTasks(ctx, taskIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -111,6 +120,12 @@ func (h *Handler) enrichTasks(ctx context.Context, q *dbgen.Queries, spaceSlug s
 		}
 	}
 
+	// Group rotation pool by task ID. Order preserved by SQL ORDER BY position ASC.
+	poolMap := make(map[int64][]int64)
+	for _, r := range poolRows {
+		poolMap[r.TaskID] = append(poolMap[r.TaskID], r.UserID)
+	}
+
 	// Convert each task with its pre-fetched related data.
 	result := make([]apigen.Task, 0, len(tasks))
 	for _, task := range tasks {
@@ -126,7 +141,11 @@ func (h *Handler) enrichTasks(ctx context.Context, q *dbgen.Queries, spaceSlug s
 		if relations == nil {
 			relations = []taskRelationRow{}
 		}
-		apiTask, err := taskFromDB(task, assignees, tags, relations)
+		pool := poolMap[task.ID]
+		if pool == nil {
+			pool = []int64{}
+		}
+		apiTask, err := taskFromDB(task, assignees, tags, relations, pool)
 		if err != nil {
 			return nil, err
 		}
@@ -206,6 +225,13 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 		}
 	}
 
+	// Set rotation pool if provided.
+	if req.RotationPool != nil {
+		if err := h.setTaskRotationPool(ctx, q, task.ID, params.SpaceSlug, req.RotationPool); err != nil {
+			return nil, err
+		}
+	}
+
 	// Set tags if provided.
 	if req.Tags != nil {
 		if err := h.setTaskTags(ctx, q, task.ID, params.SpaceSlug, req.Tags); err != nil {
@@ -213,7 +239,7 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 		}
 	}
 
-	// Re-fetch with assignees, tags, and relations.
+	// Re-fetch with assignees, tags, relations, and rotation pool.
 	result, err := h.fetchTask(ctx, q, task.ID, params.SpaceSlug)
 	if err != nil {
 		return nil, err
@@ -389,15 +415,38 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 					if err != nil {
 						return nil, err
 					}
+					// Compute rotated assignee for the spawned task.
+					pool, err := q.ListRotationPoolByTask(ctx, id)
+					if err != nil {
+						return nil, err
+					}
+					currentAssignees, err := q.ListAssigneeUserIDsByTask(ctx, id)
+					if err != nil {
+						return nil, err
+					}
+					overrideAssignees := advanceRotation(pool, currentAssignees, 0)
 					if _, err := h.spawnTaskFromTemplate(ctx, q, existing,
 						"fixed_accumulating", recurrenceRule, next, initialStatus, now,
+						overrideAssignees, pool,
 					); err != nil {
 						return nil, err
 					}
 				}
-				// Convert the current task to one_off.
+				// Convert the current task to one_off and clear its rotation pool.
 				recurrenceType = "one_off"
 				recurrenceRule = nil
+				if err := q.DeleteRotationPool(ctx, id); err != nil {
+					return nil, err
+				}
+			}
+
+			// Apply pool rotation for recurrence types that reset in place.
+			// fixed_accumulating is handled above (rotation passed to spawned task).
+			// Explicit req.AssigneeIds (below) will override this if present.
+			if recurrenceType == "completion_based" || recurrenceType == "fixed_non_accumulating" {
+				if err := h.applyPoolRotation(ctx, q, id, now); err != nil {
+					return nil, err
+				}
 			}
 		}
 	}
@@ -435,6 +484,13 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 		}
 	}
 
+	// Replace rotation pool if provided (nil = no change, empty = clear all).
+	if req.RotationPool != nil {
+		if err := h.setTaskRotationPool(ctx, q, id, params.SpaceSlug, req.RotationPool); err != nil {
+			return nil, err
+		}
+	}
+
 	// Replace tags if provided (nil = no change, empty = clear all).
 	if req.Tags != nil {
 		if err := h.setTaskTags(ctx, q, id, params.SpaceSlug, req.Tags); err != nil {
@@ -442,7 +498,7 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 		}
 	}
 
-	// Re-fetch with assignees, tags, and relations.
+	// Re-fetch with assignees, tags, relations, and rotation pool.
 	result, err := h.fetchTask(ctx, q, id, params.SpaceSlug)
 	if err != nil {
 		return nil, err
@@ -471,18 +527,16 @@ func (h *Handler) SpaceTasksDelete(ctx context.Context, params apigen.SpaceTasks
 	return checkDeleted(result)
 }
 
-// setTaskAssignees replaces all assignees for a task. It validates that each
-// user is a member of the task's space.
-// The caller must pass a transactional *dbgen.Queries to ensure atomicity.
-// Max array length is enforced by ogen's @maxItems(100) validation.
-func (h *Handler) setTaskAssignees(ctx context.Context, q *dbgen.Queries, taskID int64, spaceSlug string, assigneeIDs []string) error {
-	// Parse and deduplicate user IDs.
-	seen := make(map[int64]struct{}, len(assigneeIDs))
-	userIDs := make([]int64, 0, len(assigneeIDs))
-	for _, raw := range assigneeIDs {
+// parseAndValidateUserIDs parses string user IDs, deduplicates them (preserving
+// order), and validates that each user is a member of the space. Returns the
+// validated int64 user IDs.
+func parseAndValidateUserIDs(ctx context.Context, q *dbgen.Queries, spaceSlug string, rawIDs []string) ([]int64, error) {
+	seen := make(map[int64]struct{}, len(rawIDs))
+	userIDs := make([]int64, 0, len(rawIDs))
+	for _, raw := range rawIDs {
 		uid, err := parseUserID(raw)
 		if err != nil {
-			return badRequest(err.Error())
+			return nil, badRequest(err.Error())
 		}
 		if _, ok := seen[uid]; ok {
 			continue
@@ -491,24 +545,31 @@ func (h *Handler) setTaskAssignees(ctx context.Context, q *dbgen.Queries, taskID
 		userIDs = append(userIDs, uid)
 	}
 
-	// Batch-fetch space member IDs to validate membership without N+1 queries.
 	memberIDs, err := q.ListSpaceMemberUserIDs(ctx, spaceSlug)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	memberSet := make(map[int64]struct{}, len(memberIDs))
 	for _, mid := range memberIDs {
 		memberSet[mid] = struct{}{}
 	}
-
-	// Verify each user is a member of the space.
 	for _, uid := range userIDs {
 		if _, ok := memberSet[uid]; !ok {
-			return badRequest(fmt.Sprintf("user %s is not a member of this space", formatUserID(uid)))
+			return nil, badRequest(fmt.Sprintf("user %s is not a member of this space", formatUserID(uid)))
 		}
 	}
+	return userIDs, nil
+}
 
-	// Delete existing assignees and insert new ones.
+// setTaskAssignees replaces all assignees for a task. It validates that each
+// user is a member of the task's space.
+// The caller must pass a transactional *dbgen.Queries to ensure atomicity.
+// Max array length is enforced by ogen's @maxItems(100) validation.
+func (h *Handler) setTaskAssignees(ctx context.Context, q *dbgen.Queries, taskID int64, spaceSlug string, assigneeIDs []string) error {
+	userIDs, err := parseAndValidateUserIDs(ctx, q, spaceSlug, assigneeIDs)
+	if err != nil {
+		return err
+	}
 	if err := q.DeleteTaskAssignees(ctx, taskID); err != nil {
 		return err
 	}
@@ -517,6 +578,32 @@ func (h *Handler) setTaskAssignees(ctx context.Context, q *dbgen.Queries, taskID
 		if err := q.InsertTaskAssignee(ctx, dbgen.InsertTaskAssigneeParams{
 			TaskID:    taskID,
 			UserID:    uid,
+			CreatedAt: ts,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// setTaskRotationPool replaces the rotation pool for a task. It validates that
+// each user is a member of the task's space. Order is preserved via position.
+// The caller must pass a transactional *dbgen.Queries to ensure atomicity.
+// Max array length is enforced by ogen's @maxItems(100) validation.
+func (h *Handler) setTaskRotationPool(ctx context.Context, q *dbgen.Queries, taskID int64, spaceSlug string, poolIDs []string) error {
+	userIDs, err := parseAndValidateUserIDs(ctx, q, spaceSlug, poolIDs)
+	if err != nil {
+		return err
+	}
+	if err := q.DeleteRotationPool(ctx, taskID); err != nil {
+		return err
+	}
+	ts := types.Now()
+	for i, uid := range userIDs {
+		if err := q.InsertRotationPoolMember(ctx, dbgen.InsertRotationPoolMemberParams{
+			TaskID:    taskID,
+			UserID:    uid,
+			Position:  int64(i),
 			CreatedAt: ts,
 		}); err != nil {
 			return err

@@ -568,6 +568,17 @@ func (s *Task) Validate() error {
 		})
 	}
 	if err := func() error {
+		if s.RotationPool == nil {
+			return errors.New("nil is invalid value")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "rotationPool",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if s.Tags == nil {
 			return errors.New("nil is invalid value")
 		}
@@ -813,6 +824,25 @@ func (s *TaskCreate) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "assigneeIds",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if s.RotationPool == nil {
+			return nil // optional
+		}
+		if err := (validate.Array{
+			MinLength:    0,
+			MinLengthSet: false,
+			MaxLength:    100,
+			MaxLengthSet: true,
+		}).ValidateLength(len(s.RotationPool)); err != nil {
+			return errors.Wrap(err, "array")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "rotationPool",
 			Error: err,
 		})
 	}
@@ -1495,6 +1525,25 @@ func (s *TaskUpdate) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "assigneeIds",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if s.RotationPool == nil {
+			return nil // optional
+		}
+		if err := (validate.Array{
+			MinLength:    0,
+			MinLengthSet: false,
+			MaxLength:    100,
+			MaxLengthSet: true,
+		}).ValidateLength(len(s.RotationPool)); err != nil {
+			return errors.Wrap(err, "array")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "rotationPool",
 			Error: err,
 		})
 	}

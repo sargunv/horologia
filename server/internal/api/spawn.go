@@ -12,7 +12,8 @@ import (
 
 // spawnTaskFromTemplate creates a new task by copying user-settable fields from src.
 // The new task gets the provided recurrenceType, recurrenceRule, and dueAt.
-// It copies assignees, tags, and copyOnSpawn=true relations from src.
+// It copies assignees (or uses overrideAssignees if non-nil), tags, rotation pool
+// (from srcPool), and copyOnSpawn=true relations from src.
 // A "spawns" relation is created from src to the new task.
 // Must be called within a transaction.
 func (h *Handler) spawnTaskFromTemplate(
@@ -24,6 +25,8 @@ func (h *Handler) spawnTaskFromTemplate(
 	newDueAt *types.EpochSeconds,
 	initialStatus string,
 	now types.EpochSeconds,
+	overrideAssignees []int64,
+	srcPool []int64,
 ) (int64, error) {
 	newTask, err := q.CreateTask(ctx, dbgen.CreateTaskParams{
 		SpaceSlug:      src.SpaceSlug,
@@ -43,10 +46,13 @@ func (h *Handler) spawnTaskFromTemplate(
 		return 0, err
 	}
 
-	// Copy assignees.
-	assigneeIDs, err := q.ListAssigneeUserIDsByTask(ctx, src.ID)
-	if err != nil {
-		return 0, err
+	// Copy assignees, or use overrideAssignees if provided (for rotation).
+	assigneeIDs := overrideAssignees
+	if assigneeIDs == nil {
+		assigneeIDs, err = q.ListAssigneeUserIDsByTask(ctx, src.ID)
+		if err != nil {
+			return 0, err
+		}
 	}
 	for _, uid := range assigneeIDs {
 		if err := q.InsertTaskAssignee(ctx, dbgen.InsertTaskAssigneeParams{
@@ -76,6 +82,18 @@ func (h *Handler) spawnTaskFromTemplate(
 		if err := q.InsertTaskTag(ctx, dbgen.InsertTaskTagParams{
 			TaskID:    newTask.ID,
 			TagID:     tag.ID,
+			CreatedAt: now,
+		}); err != nil {
+			return 0, err
+		}
+	}
+
+	// Copy rotation pool from pre-fetched srcPool.
+	for i, uid := range srcPool {
+		if err := q.InsertRotationPoolMember(ctx, dbgen.InsertRotationPoolMemberParams{
+			TaskID:    newTask.ID,
+			UserID:    uid,
+			Position:  int64(i),
 			CreatedAt: now,
 		}); err != nil {
 			return 0, err
@@ -232,10 +250,22 @@ func (h *Handler) processAccumulatingTask(ctx context.Context, q *dbgen.Queries,
 		return nil // already converted by another path
 	}
 
-	// Spawn one_off tasks for each missed occurrence.
-	for _, dueAt := range missed {
+	// Read rotation pool and current assignees for rotation across spawns.
+	pool, err := q.ListRotationPoolByTask(ctx, task.ID)
+	if err != nil {
+		return err
+	}
+	currentAssignees, err := q.ListAssigneeUserIDsByTask(ctx, task.ID)
+	if err != nil {
+		return err
+	}
+
+	// Spawn one_off tasks for each missed occurrence, advancing rotation.
+	for i, dueAt := range missed {
+		overrideAssignees := advanceRotation(pool, currentAssignees, i)
 		if _, err := h.spawnTaskFromTemplate(ctx, q, task,
 			"one_off", nil, &dueAt, initialStatus, nowEpoch,
+			overrideAssignees, pool,
 		); err != nil {
 			return err
 		}
@@ -249,11 +279,19 @@ func (h *Handler) processAccumulatingTask(ctx context.Context, q *dbgen.Queries,
 
 	if next != nil {
 		// Spawn a new fixed_accumulating task with the next future due date.
+		// Rotation advances past all missed occurrences.
+		overrideAssignees := advanceRotation(pool, currentAssignees, len(missed))
 		if _, err := h.spawnTaskFromTemplate(ctx, q, task,
 			"fixed_accumulating", task.RecurrenceRule, next, initialStatus, nowEpoch,
+			overrideAssignees, pool,
 		); err != nil {
 			return err
 		}
+	}
+
+	// Clear the rotation pool from the now-one_off original task.
+	if err := q.DeleteRotationPool(ctx, task.ID); err != nil {
+		return err
 	}
 
 	return nil

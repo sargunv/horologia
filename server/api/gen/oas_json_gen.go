@@ -2672,6 +2672,14 @@ func (s *Task) encodeFields(e *jx.Encoder) {
 		e.ArrEnd()
 	}
 	{
+		e.FieldStart("rotationPool")
+		e.ArrStart()
+		for _, elem := range s.RotationPool {
+			e.Str(elem)
+		}
+		e.ArrEnd()
+	}
+	{
 		e.FieldStart("tags")
 		e.ArrStart()
 		for _, elem := range s.Tags {
@@ -2701,7 +2709,7 @@ func (s *Task) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfTask = [15]string{
+var jsonFieldsNameOfTask = [16]string{
 	0:  "id",
 	1:  "title",
 	2:  "description",
@@ -2712,11 +2720,12 @@ var jsonFieldsNameOfTask = [15]string{
 	7:  "recurrenceRule",
 	8:  "lastCompletedAt",
 	9:  "assigneeIds",
-	10: "tags",
-	11: "relations",
-	12: "due",
-	13: "createdAt",
-	14: "updatedAt",
+	10: "rotationPool",
+	11: "tags",
+	12: "relations",
+	13: "due",
+	14: "createdAt",
+	15: "updatedAt",
 }
 
 // Decode decodes Task from json.
@@ -2846,8 +2855,28 @@ func (s *Task) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"assigneeIds\"")
 			}
-		case "tags":
+		case "rotationPool":
 			requiredBitSet[1] |= 1 << 2
+			if err := func() error {
+				s.RotationPool = make([]string, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem string
+					v, err := d.Str()
+					elem = string(v)
+					if err != nil {
+						return err
+					}
+					s.RotationPool = append(s.RotationPool, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"rotationPool\"")
+			}
+		case "tags":
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				s.Tags = make([]string, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -2867,7 +2896,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"tags\"")
 			}
 		case "relations":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				s.Relations = make([]TaskRelation, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -2885,7 +2914,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"relations\"")
 			}
 		case "due":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				if err := s.Due.Decode(d); err != nil {
 					return err
@@ -2895,7 +2924,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"due\"")
 			}
 		case "createdAt":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -2907,7 +2936,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"createdAt\"")
 			}
 		case "updatedAt":
-			requiredBitSet[1] |= 1 << 6
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -2929,7 +2958,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b01111111,
+		0b11111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -3035,6 +3064,16 @@ func (s *TaskCreate) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.RotationPool != nil {
+			e.FieldStart("rotationPool")
+			e.ArrStart()
+			for _, elem := range s.RotationPool {
+				e.Str(elem)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
 		if s.Tags != nil {
 			e.FieldStart("tags")
 			e.ArrStart()
@@ -3052,17 +3091,18 @@ func (s *TaskCreate) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfTaskCreate = [10]string{
-	0: "title",
-	1: "description",
-	2: "status",
-	3: "effort",
-	4: "priority",
-	5: "recurrenceType",
-	6: "recurrenceRule",
-	7: "assigneeIds",
-	8: "tags",
-	9: "due",
+var jsonFieldsNameOfTaskCreate = [11]string{
+	0:  "title",
+	1:  "description",
+	2:  "status",
+	3:  "effort",
+	4:  "priority",
+	5:  "recurrenceType",
+	6:  "recurrenceRule",
+	7:  "assigneeIds",
+	8:  "rotationPool",
+	9:  "tags",
+	10: "due",
 }
 
 // Decode decodes TaskCreate from json.
@@ -3164,6 +3204,25 @@ func (s *TaskCreate) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"assigneeIds\"")
+			}
+		case "rotationPool":
+			if err := func() error {
+				s.RotationPool = make([]string, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem string
+					v, err := d.Str()
+					elem = string(v)
+					if err != nil {
+						return err
+					}
+					s.RotationPool = append(s.RotationPool, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"rotationPool\"")
 			}
 		case "tags":
 			if err := func() error {
@@ -5265,6 +5324,16 @@ func (s *TaskUpdate) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.RotationPool != nil {
+			e.FieldStart("rotationPool")
+			e.ArrStart()
+			for _, elem := range s.RotationPool {
+				e.Str(elem)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
 		if s.Tags != nil {
 			e.FieldStart("tags")
 			e.ArrStart()
@@ -5282,17 +5351,18 @@ func (s *TaskUpdate) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfTaskUpdate = [10]string{
-	0: "title",
-	1: "description",
-	2: "status",
-	3: "effort",
-	4: "priority",
-	5: "recurrenceType",
-	6: "recurrenceRule",
-	7: "assigneeIds",
-	8: "tags",
-	9: "due",
+var jsonFieldsNameOfTaskUpdate = [11]string{
+	0:  "title",
+	1:  "description",
+	2:  "status",
+	3:  "effort",
+	4:  "priority",
+	5:  "recurrenceType",
+	6:  "recurrenceRule",
+	7:  "assigneeIds",
+	8:  "rotationPool",
+	9:  "tags",
+	10: "due",
 }
 
 // Decode decodes TaskUpdate from json.
@@ -5391,6 +5461,25 @@ func (s *TaskUpdate) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"assigneeIds\"")
+			}
+		case "rotationPool":
+			if err := func() error {
+				s.RotationPool = make([]string, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem string
+					v, err := d.Str()
+					elem = string(v)
+					if err != nil {
+						return err
+					}
+					s.RotationPool = append(s.RotationPool, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"rotationPool\"")
 			}
 		case "tags":
 			if err := func() error {

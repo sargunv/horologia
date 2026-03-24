@@ -50,3 +50,5 @@ sql:
               pointer: true
           - column: "task_relations.created_at"
             go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"
+          - column: "task_rotation_pool.created_at"
+            go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"

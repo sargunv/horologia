@@ -200,10 +200,14 @@ func canonicalizeRelation(kind apigen.TaskRelationKind, sourceID, targetID int64
 	return string(kind), min(sourceID, targetID), max(sourceID, targetID)
 }
 
-func taskFromDB(task dbgen.Task, assigneeUserIDs []int64, tagNames []string, relations []taskRelationRow) (*apigen.Task, error) {
+func taskFromDB(task dbgen.Task, assigneeUserIDs []int64, tagNames []string, relations []taskRelationRow, rotationPoolUserIDs []int64) (*apigen.Task, error) {
 	assigneeIDs := make([]string, len(assigneeUserIDs))
 	for i, uid := range assigneeUserIDs {
 		assigneeIDs[i] = formatUserID(uid)
+	}
+	poolIDs := make([]string, len(rotationPoolUserIDs))
+	for i, uid := range rotationPoolUserIDs {
+		poolIDs[i] = formatUserID(uid)
 	}
 
 	apiRelations := make([]apigen.TaskRelation, 0, len(relations))
@@ -225,6 +229,7 @@ func taskFromDB(task dbgen.Task, assigneeUserIDs []int64, tagNames []string, rel
 		RecurrenceType: apigen.TaskRecurrenceType(task.RecurrenceType),
 		RecurrenceRule: nilStringFromDB(task.RecurrenceRule),
 		AssigneeIds:    assigneeIDs,
+		RotationPool:   poolIDs,
 		Tags:           tagNames,
 		Relations:      apiRelations,
 		CreatedAt:      task.CreatedAt.Time(),

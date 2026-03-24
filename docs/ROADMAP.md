@@ -17,11 +17,12 @@
   on-dependency types. RRULE (RFC 5545) schedule format. Triggers relation kind.
 - Recurrence: fixed accumulating — server-side cron job spawns one_off tasks for missed occurrences,
   completion spawns next task. Spawns/spawned_by relation kind. copyOnSpawn relation metadata.
+- Rotation pools — ordered pool of users per task, assignee advances on completion. Copied on spawn,
+  cleared when task converts to one_off. Cron multi-spawn advances rotation per occurrence.
 
 ## Core Task Features
 
 1. **Completion history / activity log** — log all task actions with user+token attribution
-2. **Rotation pools** — rotating assignees on completion
 
 ## Views & UX
 

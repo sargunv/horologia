@@ -1132,6 +1132,7 @@ type Task struct {
 	RecurrenceRule  NilString          `json:"recurrenceRule"`
 	LastCompletedAt NilDateTime        `json:"lastCompletedAt"`
 	AssigneeIds     []string           `json:"assigneeIds"`
+	RotationPool    []string           `json:"rotationPool"`
 	Tags            []string           `json:"tags"`
 	Relations       []TaskRelation     `json:"relations"`
 	Due             NilTaskDue         `json:"due"`
@@ -1187,6 +1188,11 @@ func (s *Task) GetLastCompletedAt() NilDateTime {
 // GetAssigneeIds returns the value of AssigneeIds.
 func (s *Task) GetAssigneeIds() []string {
 	return s.AssigneeIds
+}
+
+// GetRotationPool returns the value of RotationPool.
+func (s *Task) GetRotationPool() []string {
+	return s.RotationPool
 }
 
 // GetTags returns the value of Tags.
@@ -1264,6 +1270,11 @@ func (s *Task) SetAssigneeIds(val []string) {
 	s.AssigneeIds = val
 }
 
+// SetRotationPool sets the value of RotationPool.
+func (s *Task) SetRotationPool(val []string) {
+	s.RotationPool = val
+}
+
 // SetTags sets the value of Tags.
 func (s *Task) SetTags(val []string) {
 	s.Tags = val
@@ -1299,6 +1310,7 @@ type TaskCreate struct {
 	RecurrenceType OptTaskRecurrenceType `json:"recurrenceType"`
 	RecurrenceRule OptString             `json:"recurrenceRule"`
 	AssigneeIds    []string              `json:"assigneeIds"`
+	RotationPool   []string              `json:"rotationPool"`
 	Tags           []string              `json:"tags"`
 	Due            OptNilTaskDue         `json:"due"`
 }
@@ -1341,6 +1353,11 @@ func (s *TaskCreate) GetRecurrenceRule() OptString {
 // GetAssigneeIds returns the value of AssigneeIds.
 func (s *TaskCreate) GetAssigneeIds() []string {
 	return s.AssigneeIds
+}
+
+// GetRotationPool returns the value of RotationPool.
+func (s *TaskCreate) GetRotationPool() []string {
+	return s.RotationPool
 }
 
 // GetTags returns the value of Tags.
@@ -1391,6 +1408,11 @@ func (s *TaskCreate) SetRecurrenceRule(val OptString) {
 // SetAssigneeIds sets the value of AssigneeIds.
 func (s *TaskCreate) SetAssigneeIds(val []string) {
 	s.AssigneeIds = val
+}
+
+// SetRotationPool sets the value of RotationPool.
+func (s *TaskCreate) SetRotationPool(val []string) {
+	s.RotationPool = val
 }
 
 // SetTags sets the value of Tags.
@@ -2020,6 +2042,7 @@ type TaskUpdate struct {
 	RecurrenceType OptTaskRecurrenceType `json:"recurrenceType"`
 	RecurrenceRule OptNilString          `json:"recurrenceRule"`
 	AssigneeIds    []string              `json:"assigneeIds"`
+	RotationPool   []string              `json:"rotationPool"`
 	Tags           []string              `json:"tags"`
 	Due            OptNilTaskDue         `json:"due"`
 }
@@ -2062,6 +2085,11 @@ func (s *TaskUpdate) GetRecurrenceRule() OptNilString {
 // GetAssigneeIds returns the value of AssigneeIds.
 func (s *TaskUpdate) GetAssigneeIds() []string {
 	return s.AssigneeIds
+}
+
+// GetRotationPool returns the value of RotationPool.
+func (s *TaskUpdate) GetRotationPool() []string {
+	return s.RotationPool
 }
 
 // GetTags returns the value of Tags.
@@ -2112,6 +2140,11 @@ func (s *TaskUpdate) SetRecurrenceRule(val OptNilString) {
 // SetAssigneeIds sets the value of AssigneeIds.
 func (s *TaskUpdate) SetAssigneeIds(val []string) {
 	s.AssigneeIds = val
+}
+
+// SetRotationPool sets the value of RotationPool.
+func (s *TaskUpdate) SetRotationPool(val []string) {
+	s.RotationPool = val
 }
 
 // SetTags sets the value of Tags.

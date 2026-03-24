@@ -52,6 +52,7 @@ model Task {
   recurrenceRule: string | null;
   lastCompletedAt: utcDateTime | null;
   assigneeIds: string[];
+  rotationPool: string[];
   tags: string[];
   relations: TaskRelation[];
   due: TaskDue | null;
@@ -68,6 +69,7 @@ model TaskCreate {
   recurrenceType?: TaskRecurrenceType;
   @minLength(1) @maxLength(500) recurrenceRule?: string;
   @maxItems(100) assigneeIds?: string[];
+  @maxItems(100) rotationPool?: string[];
   @maxItems(100) tags?: string[];
   due?: TaskDue | null;
 }
@@ -81,6 +83,7 @@ model TaskUpdate {
   recurrenceType?: TaskRecurrenceType;
   @minLength(1) @maxLength(500) recurrenceRule?: string | null;
   @maxItems(100) assigneeIds?: string[];
+  @maxItems(100) rotationPool?: string[];
   @maxItems(100) tags?: string[];
   due?: TaskDue | null;
 }

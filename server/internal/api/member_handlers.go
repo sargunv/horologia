@@ -169,8 +169,15 @@ func (h *Handler) SpaceMembersDelete(ctx context.Context, params apigen.SpaceMem
 		return err
 	}
 
-	// Remove task assignments for this user in this space before removing membership.
+	// Remove task assignments and rotation pool entries for this user in this space
+	// before removing membership.
 	if err := q.DeleteTaskAssigneesBySpaceAndUser(ctx, dbgen.DeleteTaskAssigneesBySpaceAndUserParams{
+		UserID:    userID,
+		SpaceSlug: params.SpaceSlug,
+	}); err != nil {
+		return err
+	}
+	if err := q.DeleteRotationPoolBySpaceAndUser(ctx, dbgen.DeleteRotationPoolBySpaceAndUserParams{
 		UserID:    userID,
 		SpaceSlug: params.SpaceSlug,
 	}); err != nil {
