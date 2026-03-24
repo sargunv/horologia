@@ -56,6 +56,14 @@ type Handler interface {
 	//
 	// PATCH /spaces/{spaceSlug}/tags/{tagName}
 	SpaceTagsUpdate(ctx context.Context, req *TagUpdate, params SpaceTagsUpdateParams) (*Tag, error)
+	// SpaceTaskEffortLevelsList implements SpaceTaskEffortLevels_list operation.
+	//
+	// GET /spaces/{spaceSlug}/task-effort-levels
+	SpaceTaskEffortLevelsList(ctx context.Context, params SpaceTaskEffortLevelsListParams) (*TaskEffortLevelList, error)
+	// SpaceTaskPriorityLevelsList implements SpaceTaskPriorityLevels_list operation.
+	//
+	// GET /spaces/{spaceSlug}/task-priority-levels
+	SpaceTaskPriorityLevelsList(ctx context.Context, params SpaceTaskPriorityLevelsListParams) (*TaskPriorityLevelList, error)
 	// SpaceTaskRelationsCreate implements SpaceTaskRelations_create operation.
 	//
 	// POST /spaces/{spaceSlug}/tasks/{taskId}/relations

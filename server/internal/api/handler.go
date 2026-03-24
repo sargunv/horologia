@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -70,12 +69,21 @@ func isForeignKeyViolation(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "FOREIGN KEY constraint failed")
 }
 
+type badRequestError struct {
+	message string
+}
+
+func (e *badRequestError) Error() string {
+	return e.message
+}
+
 func isBadRequest(err error) bool {
-	return err != nil && strings.HasPrefix(err.Error(), "bad request:")
+	var bre *badRequestError
+	return errors.As(err, &bre)
 }
 
 func badRequest(msg string) error {
-	return fmt.Errorf("bad request: %s", msg)
+	return &badRequestError{message: msg}
 }
 
 func checkDeleted(result sql.Result) error {

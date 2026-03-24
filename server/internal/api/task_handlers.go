@@ -12,12 +12,18 @@ import (
 )
 
 // fetchTaskRelations fetches all relations for a task from both directions.
-func (h *Handler) fetchTaskRelations(ctx context.Context, q *dbgen.Queries, id int64) ([]taskRelationRow, error) {
-	asSource, err := q.ListRelationsByTaskAsSource(ctx, id)
+func (h *Handler) fetchTaskRelations(ctx context.Context, q *dbgen.Queries, id int64, spaceSlug string) ([]taskRelationRow, error) {
+	asSource, err := q.ListRelationsByTaskAsSource(ctx, dbgen.ListRelationsByTaskAsSourceParams{
+		SourceTaskID: id,
+		SpaceSlug:    spaceSlug,
+	})
 	if err != nil {
 		return nil, err
 	}
-	asTarget, err := q.ListRelationsByTaskAsTarget(ctx, id)
+	asTarget, err := q.ListRelationsByTaskAsTarget(ctx, dbgen.ListRelationsByTaskAsTargetParams{
+		TargetTaskID: id,
+		SpaceSlug:    spaceSlug,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +51,7 @@ func (h *Handler) fetchTask(ctx context.Context, q *dbgen.Queries, id int64, spa
 	if err != nil {
 		return nil, err
 	}
-	relations, err := h.fetchTaskRelations(ctx, q, id)
+	relations, err := h.fetchTaskRelations(ctx, q, id, spaceSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +60,7 @@ func (h *Handler) fetchTask(ctx context.Context, q *dbgen.Queries, id int64, spa
 
 // enrichTasks batch-fetches assignees, tags, and relations for a slice of tasks
 // and converts them to API types. Uses 3 queries total instead of 5N.
-func (h *Handler) enrichTasks(ctx context.Context, q *dbgen.Queries, tasks []dbgen.Task) ([]apigen.Task, error) {
+func (h *Handler) enrichTasks(ctx context.Context, q *dbgen.Queries, spaceSlug string, tasks []dbgen.Task) ([]apigen.Task, error) {
 	if len(tasks) == 0 {
 		return []apigen.Task{}, nil
 	}
@@ -75,6 +81,7 @@ func (h *Handler) enrichTasks(ctx context.Context, q *dbgen.Queries, tasks []dbg
 		return nil, err
 	}
 	relationRows, err := q.ListRelationsByTasks(ctx, dbgen.ListRelationsByTasksParams{
+		SpaceSlug:     spaceSlug,
 		SourceTaskIds: taskIDs,
 		TargetTaskIds: taskIDs,
 	})
@@ -160,15 +167,27 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 		}
 	}
 
+	effortName := optStringToDB(req.Effort)
+	if err := validateOptionalLevel(ctx, q, params.SpaceSlug, effortName, "effort"); err != nil {
+		return nil, err
+	}
+
+	priorityName := optStringToDB(req.Priority)
+	if err := validateOptionalLevel(ctx, q, params.SpaceSlug, priorityName, "priority"); err != nil {
+		return nil, err
+	}
+
 	ts := types.Now()
 	task, err := q.CreateTask(ctx, dbgen.CreateTaskParams{
-		SpaceSlug:   params.SpaceSlug,
-		Title:       req.Title,
-		Description: req.Description.Or(""),
-		StatusName:  statusName,
-		DueDate:     dueDateToDB(req.DueDate),
-		CreatedAt:   ts,
-		UpdatedAt:   ts,
+		SpaceSlug:    params.SpaceSlug,
+		Title:        req.Title,
+		Description:  req.Description.Or(""),
+		StatusName:   statusName,
+		EffortName:   effortName,
+		PriorityName: priorityName,
+		DueDate:      dueDateToDB(req.DueDate),
+		CreatedAt:    ts,
+		UpdatedAt:    ts,
 	})
 	if err != nil {
 		return nil, err
@@ -230,7 +249,7 @@ func (h *Handler) SpaceTasksList(ctx context.Context, params apigen.SpaceTasksLi
 	}
 
 	items, nextCursor, err := paginate(rows, limit, func(rows []dbgen.Task) ([]apigen.Task, error) {
-		return h.enrichTasks(ctx, q, rows)
+		return h.enrichTasks(ctx, q, params.SpaceSlug, rows)
 	}, func(t dbgen.Task) string {
 		return strconv.FormatInt(t.ID, 10)
 	})
@@ -280,14 +299,26 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 		return nil, err
 	}
 
+	effortName := optNilStringToDB(req.Effort, existing.EffortName)
+	if err := validateOptionalLevel(ctx, q, params.SpaceSlug, effortName, "effort"); err != nil {
+		return nil, err
+	}
+
+	priorityName := optNilStringToDB(req.Priority, existing.PriorityName)
+	if err := validateOptionalLevel(ctx, q, params.SpaceSlug, priorityName, "priority"); err != nil {
+		return nil, err
+	}
+
 	_, err = q.UpdateTask(ctx, dbgen.UpdateTaskParams{
-		ID:          id,
-		SpaceSlug:   params.SpaceSlug,
-		Title:       req.Title.Or(existing.Title),
-		Description: req.Description.Or(existing.Description),
-		StatusName:  req.Status.Or(existing.StatusName),
-		DueDate:     dueDateFromExisting(existing.DueDate, req.DueDate),
-		UpdatedAt:   types.Now(),
+		ID:           id,
+		SpaceSlug:    params.SpaceSlug,
+		Title:        req.Title.Or(existing.Title),
+		Description:  req.Description.Or(existing.Description),
+		StatusName:   req.Status.Or(existing.StatusName),
+		EffortName:   effortName,
+		PriorityName: priorityName,
+		DueDate:      dueDateFromExisting(existing.DueDate, req.DueDate),
+		UpdatedAt:    types.Now(),
 	})
 	if err != nil {
 		return nil, err
@@ -295,14 +326,14 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 
 	// Replace assignees if provided (nil = no change, empty = clear all).
 	if req.AssigneeIds != nil {
-		if err := h.setTaskAssignees(ctx, q, id, existing.SpaceSlug, req.AssigneeIds); err != nil {
+		if err := h.setTaskAssignees(ctx, q, id, params.SpaceSlug, req.AssigneeIds); err != nil {
 			return nil, err
 		}
 	}
 
 	// Replace tags if provided (nil = no change, empty = clear all).
 	if req.Tags != nil {
-		if err := h.setTaskTags(ctx, q, id, existing.SpaceSlug, req.Tags); err != nil {
+		if err := h.setTaskTags(ctx, q, id, params.SpaceSlug, req.Tags); err != nil {
 			return nil, err
 		}
 	}
@@ -444,4 +475,39 @@ func (h *Handler) setTaskTags(ctx context.Context, q *dbgen.Queries, taskID int6
 		}
 	}
 	return nil
+}
+
+// validateOptionalLevel checks that a non-nil level name exists in the space's
+// configured levels. The label ("effort" or "priority") is used in the error message.
+func validateOptionalLevel(ctx context.Context, q *dbgen.Queries, spaceSlug string, name *string, label string) error {
+	if name == nil {
+		return nil
+	}
+	var validNames []string
+	switch label {
+	case "effort":
+		levels, err := q.ListTaskEffortLevelsBySpace(ctx, spaceSlug)
+		if err != nil {
+			return err
+		}
+		validNames = make([]string, len(levels))
+		for i, l := range levels {
+			validNames[i] = l.Name
+		}
+	case "priority":
+		levels, err := q.ListTaskPriorityLevelsBySpace(ctx, spaceSlug)
+		if err != nil {
+			return err
+		}
+		validNames = make([]string, len(levels))
+		for i, l := range levels {
+			validNames[i] = l.Name
+		}
+	}
+	for _, v := range validNames {
+		if v == *name {
+			return nil
+		}
+	}
+	return badRequest(fmt.Sprintf("invalid %s level %q", label, *name))
 }

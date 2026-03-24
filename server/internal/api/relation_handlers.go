@@ -75,6 +75,7 @@ func (h *Handler) SpaceTaskRelationsDelete(ctx context.Context, params apigen.Sp
 		SourceTaskID: storedSource,
 		TargetTaskID: storedTarget,
 		Kind:         storedKind,
+		SpaceSlug:    params.SpaceSlug,
 	})
 	if err != nil {
 		return err

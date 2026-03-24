@@ -29,6 +29,8 @@ model Task {
   title: string;
   description: string;
   status: string;
+  effort: string | null;
+  priority: string | null;
   assigneeIds: string[];
   tags: string[];
   relations: TaskRelation[];
@@ -41,6 +43,8 @@ model TaskCreate {
   @minLength(1) @maxLength(500) title: string;
   @maxLength(10000) description?: string;
   status?: string;
+  @minLength(1) @maxLength(100) effort?: string;
+  @minLength(1) @maxLength(100) priority?: string;
   @maxItems(100) assigneeIds?: string[];
   @maxItems(100) tags?: string[];
   dueDate?: plainDate | null;
@@ -50,6 +54,8 @@ model TaskUpdate {
   @minLength(1) @maxLength(500) title?: string;
   @maxLength(10000) description?: string;
   status?: string;
+  @minLength(1) @maxLength(100) effort?: string | null;
+  @minLength(1) @maxLength(100) priority?: string | null;
   @maxItems(100) assigneeIds?: string[];
   @maxItems(100) tags?: string[];
   dueDate?: plainDate | null;

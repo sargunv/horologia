@@ -1132,6 +1132,136 @@ func decodeSpaceTagsUpdateParams(args [2]string, argsEscaped bool, r *http.Reque
 	return params, nil
 }
 
+// SpaceTaskEffortLevelsListParams is parameters of SpaceTaskEffortLevels_list operation.
+type SpaceTaskEffortLevelsListParams struct {
+	SpaceSlug string
+}
+
+func unpackSpaceTaskEffortLevelsListParams(packed middleware.Parameters) (params SpaceTaskEffortLevelsListParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "spaceSlug",
+			In:   "path",
+		}
+		params.SpaceSlug = packed[key].(string)
+	}
+	return params
+}
+
+func decodeSpaceTaskEffortLevelsListParams(args [1]string, argsEscaped bool, r *http.Request) (params SpaceTaskEffortLevelsListParams, _ error) {
+	// Decode path: spaceSlug.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "spaceSlug",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.SpaceSlug = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "spaceSlug",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// SpaceTaskPriorityLevelsListParams is parameters of SpaceTaskPriorityLevels_list operation.
+type SpaceTaskPriorityLevelsListParams struct {
+	SpaceSlug string
+}
+
+func unpackSpaceTaskPriorityLevelsListParams(packed middleware.Parameters) (params SpaceTaskPriorityLevelsListParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "spaceSlug",
+			In:   "path",
+		}
+		params.SpaceSlug = packed[key].(string)
+	}
+	return params
+}
+
+func decodeSpaceTaskPriorityLevelsListParams(args [1]string, argsEscaped bool, r *http.Request) (params SpaceTaskPriorityLevelsListParams, _ error) {
+	// Decode path: spaceSlug.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "spaceSlug",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.SpaceSlug = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "spaceSlug",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // SpaceTaskRelationsCreateParams is parameters of SpaceTaskRelations_create operation.
 type SpaceTaskRelationsCreateParams struct {
 	SpaceSlug string

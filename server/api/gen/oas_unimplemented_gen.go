@@ -97,6 +97,20 @@ func (UnimplementedHandler) SpaceTagsUpdate(ctx context.Context, req *TagUpdate,
 	return r, ht.ErrNotImplemented
 }
 
+// SpaceTaskEffortLevelsList implements SpaceTaskEffortLevels_list operation.
+//
+// GET /spaces/{spaceSlug}/task-effort-levels
+func (UnimplementedHandler) SpaceTaskEffortLevelsList(ctx context.Context, params SpaceTaskEffortLevelsListParams) (r *TaskEffortLevelList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SpaceTaskPriorityLevelsList implements SpaceTaskPriorityLevels_list operation.
+//
+// GET /spaces/{spaceSlug}/task-priority-levels
+func (UnimplementedHandler) SpaceTaskPriorityLevelsList(ctx context.Context, params SpaceTaskPriorityLevelsListParams) (r *TaskPriorityLevelList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // SpaceTaskRelationsCreate implements SpaceTaskRelations_create operation.
 //
 // POST /spaces/{spaceSlug}/tasks/{taskId}/relations

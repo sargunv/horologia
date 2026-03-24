@@ -21,7 +21,7 @@ var (
 	rn3AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 	}
-	rn25AllowedHeaders = map[string]string{
+	rn29AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
@@ -46,22 +46,28 @@ var (
 		"DELETE": "Authorization",
 		"PATCH":  "Authorization,Content-Type",
 	}
-	rn24AllowedHeaders = map[string]string{
+	rn17AllowedHeaders = map[string]string{
+		"GET": "Authorization",
+	}
+	rn19AllowedHeaders = map[string]string{
+		"GET": "Authorization",
+	}
+	rn28AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
-	rn18AllowedHeaders = map[string]string{
+	rn22AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 		"GET":    "Authorization",
 		"PATCH":  "Authorization,Content-Type",
 	}
-	rn19AllowedHeaders = map[string]string{
+	rn23AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
-	rn23AllowedHeaders = map[string]string{
+	rn27AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 	}
-	rn26AllowedHeaders = map[string]string{
+	rn30AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 )
@@ -236,7 +242,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET,POST",
-							allowedHeaders: rn25AllowedHeaders,
+							allowedHeaders: rn29AllowedHeaders,
 							acceptPost:     "application/json",
 							acceptPatch:    "",
 						})
@@ -458,128 +464,187 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									}
 								}
 
-							case 's': // Prefix: "sks"
+							case 's': // Prefix: "sk"
 
-								if l := len("sks"); len(elem) >= l && elem[0:l] == "sks" {
+								if l := len("sk"); len(elem) >= l && elem[0:l] == "sk" {
 									elem = elem[l:]
 								} else {
 									break
 								}
 
 								if len(elem) == 0 {
-									switch r.Method {
-									case "GET":
-										s.handleSpaceTasksListRequest([1]string{
-											args[0],
-										}, elemIsEscaped, w, r)
-									case "POST":
-										s.handleSpaceTasksCreateRequest([1]string{
-											args[0],
-										}, elemIsEscaped, w, r)
-									default:
-										s.notAllowed(w, r, notAllowedParams{
-											allowedMethods: "GET,POST",
-											allowedHeaders: rn24AllowedHeaders,
-											acceptPost:     "application/json",
-											acceptPatch:    "",
-										})
-									}
-
-									return
+									break
 								}
 								switch elem[0] {
-								case '/': // Prefix: "/"
+								case '-': // Prefix: "-"
 
-									if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+									if l := len("-"); len(elem) >= l && elem[0:l] == "-" {
 										elem = elem[l:]
 									} else {
 										break
 									}
 
-									// Param: "taskId"
-									// Match until "/"
-									idx := strings.IndexByte(elem, '/')
-									if idx < 0 {
-										idx = len(elem)
-									}
-									args[1] = elem[:idx]
-									elem = elem[idx:]
-
 									if len(elem) == 0 {
-										switch r.Method {
-										case "DELETE":
-											s.handleSpaceTasksDeleteRequest([2]string{
-												args[0],
-												args[1],
-											}, elemIsEscaped, w, r)
-										case "GET":
-											s.handleSpaceTasksReadRequest([2]string{
-												args[0],
-												args[1],
-											}, elemIsEscaped, w, r)
-										case "PATCH":
-											s.handleSpaceTasksUpdateRequest([2]string{
-												args[0],
-												args[1],
-											}, elemIsEscaped, w, r)
-										default:
-											s.notAllowed(w, r, notAllowedParams{
-												allowedMethods: "DELETE,GET,PATCH",
-												allowedHeaders: rn18AllowedHeaders,
-												acceptPost:     "",
-												acceptPatch:    "application/json",
-											})
-										}
-
-										return
+										break
 									}
 									switch elem[0] {
-									case '/': // Prefix: "/relations"
+									case 'e': // Prefix: "effort-levels"
 
-										if l := len("/relations"); len(elem) >= l && elem[0:l] == "/relations" {
+										if l := len("effort-levels"); len(elem) >= l && elem[0:l] == "effort-levels" {
 											elem = elem[l:]
 										} else {
 											break
 										}
 
 										if len(elem) == 0 {
+											// Leaf node.
 											switch r.Method {
-											case "POST":
-												s.handleSpaceTaskRelationsCreateRequest([2]string{
+											case "GET":
+												s.handleSpaceTaskEffortLevelsListRequest([1]string{
 													args[0],
-													args[1],
 												}, elemIsEscaped, w, r)
 											default:
 												s.notAllowed(w, r, notAllowedParams{
-													allowedMethods: "POST",
-													allowedHeaders: rn19AllowedHeaders,
-													acceptPost:     "application/json",
+													allowedMethods: "GET",
+													allowedHeaders: rn17AllowedHeaders,
+													acceptPost:     "",
 													acceptPatch:    "",
 												})
 											}
 
 											return
 										}
-										switch elem[0] {
-										case '/': // Prefix: "/"
 
-											if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+									case 'p': // Prefix: "priority-levels"
+
+										if l := len("priority-levels"); len(elem) >= l && elem[0:l] == "priority-levels" {
+											elem = elem[l:]
+										} else {
+											break
+										}
+
+										if len(elem) == 0 {
+											// Leaf node.
+											switch r.Method {
+											case "GET":
+												s.handleSpaceTaskPriorityLevelsListRequest([1]string{
+													args[0],
+												}, elemIsEscaped, w, r)
+											default:
+												s.notAllowed(w, r, notAllowedParams{
+													allowedMethods: "GET",
+													allowedHeaders: rn19AllowedHeaders,
+													acceptPost:     "",
+													acceptPatch:    "",
+												})
+											}
+
+											return
+										}
+
+									}
+
+								case 's': // Prefix: "s"
+
+									if l := len("s"); len(elem) >= l && elem[0:l] == "s" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										switch r.Method {
+										case "GET":
+											s.handleSpaceTasksListRequest([1]string{
+												args[0],
+											}, elemIsEscaped, w, r)
+										case "POST":
+											s.handleSpaceTasksCreateRequest([1]string{
+												args[0],
+											}, elemIsEscaped, w, r)
+										default:
+											s.notAllowed(w, r, notAllowedParams{
+												allowedMethods: "GET,POST",
+												allowedHeaders: rn28AllowedHeaders,
+												acceptPost:     "application/json",
+												acceptPatch:    "",
+											})
+										}
+
+										return
+									}
+									switch elem[0] {
+									case '/': // Prefix: "/"
+
+										if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+											elem = elem[l:]
+										} else {
+											break
+										}
+
+										// Param: "taskId"
+										// Match until "/"
+										idx := strings.IndexByte(elem, '/')
+										if idx < 0 {
+											idx = len(elem)
+										}
+										args[1] = elem[:idx]
+										elem = elem[idx:]
+
+										if len(elem) == 0 {
+											switch r.Method {
+											case "DELETE":
+												s.handleSpaceTasksDeleteRequest([2]string{
+													args[0],
+													args[1],
+												}, elemIsEscaped, w, r)
+											case "GET":
+												s.handleSpaceTasksReadRequest([2]string{
+													args[0],
+													args[1],
+												}, elemIsEscaped, w, r)
+											case "PATCH":
+												s.handleSpaceTasksUpdateRequest([2]string{
+													args[0],
+													args[1],
+												}, elemIsEscaped, w, r)
+											default:
+												s.notAllowed(w, r, notAllowedParams{
+													allowedMethods: "DELETE,GET,PATCH",
+													allowedHeaders: rn22AllowedHeaders,
+													acceptPost:     "",
+													acceptPatch:    "application/json",
+												})
+											}
+
+											return
+										}
+										switch elem[0] {
+										case '/': // Prefix: "/relations"
+
+											if l := len("/relations"); len(elem) >= l && elem[0:l] == "/relations" {
 												elem = elem[l:]
 											} else {
 												break
 											}
 
-											// Param: "kind"
-											// Match until "/"
-											idx := strings.IndexByte(elem, '/')
-											if idx < 0 {
-												idx = len(elem)
-											}
-											args[2] = elem[:idx]
-											elem = elem[idx:]
-
 											if len(elem) == 0 {
-												break
+												switch r.Method {
+												case "POST":
+													s.handleSpaceTaskRelationsCreateRequest([2]string{
+														args[0],
+														args[1],
+													}, elemIsEscaped, w, r)
+												default:
+													s.notAllowed(w, r, notAllowedParams{
+														allowedMethods: "POST",
+														allowedHeaders: rn23AllowedHeaders,
+														acceptPost:     "application/json",
+														acceptPatch:    "",
+													})
+												}
+
+												return
 											}
 											switch elem[0] {
 											case '/': // Prefix: "/"
@@ -590,39 +655,62 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 													break
 												}
 
-												// Param: "relatedTaskId"
-												// Leaf parameter, slashes are prohibited
+												// Param: "kind"
+												// Match until "/"
 												idx := strings.IndexByte(elem, '/')
-												if idx >= 0 {
-													break
+												if idx < 0 {
+													idx = len(elem)
 												}
-												args[3] = elem
-												elem = ""
+												args[2] = elem[:idx]
+												elem = elem[idx:]
 
 												if len(elem) == 0 {
-													// Leaf node.
-													switch r.Method {
-													case "DELETE":
-														s.handleSpaceTaskRelationsDeleteRequest([4]string{
-															args[0],
-															args[1],
-															args[2],
-															args[3],
-														}, elemIsEscaped, w, r)
-													default:
-														s.notAllowed(w, r, notAllowedParams{
-															allowedMethods: "DELETE",
-															allowedHeaders: rn23AllowedHeaders,
-															acceptPost:     "",
-															acceptPatch:    "",
-														})
+													break
+												}
+												switch elem[0] {
+												case '/': // Prefix: "/"
+
+													if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+														elem = elem[l:]
+													} else {
+														break
 													}
 
-													return
+													// Param: "relatedTaskId"
+													// Leaf parameter, slashes are prohibited
+													idx := strings.IndexByte(elem, '/')
+													if idx >= 0 {
+														break
+													}
+													args[3] = elem
+													elem = ""
+
+													if len(elem) == 0 {
+														// Leaf node.
+														switch r.Method {
+														case "DELETE":
+															s.handleSpaceTaskRelationsDeleteRequest([4]string{
+																args[0],
+																args[1],
+																args[2],
+																args[3],
+															}, elemIsEscaped, w, r)
+														default:
+															s.notAllowed(w, r, notAllowedParams{
+																allowedMethods: "DELETE",
+																allowedHeaders: rn27AllowedHeaders,
+																acceptPost:     "",
+																acceptPatch:    "",
+															})
+														}
+
+														return
+													}
 												}
 											}
 										}
 									}
+
 								}
 
 							}
@@ -647,7 +735,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET",
-							allowedHeaders: rn26AllowedHeaders,
+							allowedHeaders: rn30AllowedHeaders,
 							acceptPost:     "",
 							acceptPatch:    "",
 						})
@@ -1124,106 +1212,158 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									}
 								}
 
-							case 's': // Prefix: "sks"
+							case 's': // Prefix: "sk"
 
-								if l := len("sks"); len(elem) >= l && elem[0:l] == "sks" {
+								if l := len("sk"); len(elem) >= l && elem[0:l] == "sk" {
 									elem = elem[l:]
 								} else {
 									break
 								}
 
 								if len(elem) == 0 {
-									switch method {
-									case "GET":
-										r.name = SpaceTasksListOperation
-										r.summary = ""
-										r.operationID = "SpaceTasks_list"
-										r.operationGroup = ""
-										r.pathPattern = "/spaces/{spaceSlug}/tasks"
-										r.args = args
-										r.count = 1
-										return r, true
-									case "POST":
-										r.name = SpaceTasksCreateOperation
-										r.summary = ""
-										r.operationID = "SpaceTasks_create"
-										r.operationGroup = ""
-										r.pathPattern = "/spaces/{spaceSlug}/tasks"
-										r.args = args
-										r.count = 1
-										return r, true
-									default:
-										return
-									}
+									break
 								}
 								switch elem[0] {
-								case '/': // Prefix: "/"
+								case '-': // Prefix: "-"
 
-									if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+									if l := len("-"); len(elem) >= l && elem[0:l] == "-" {
 										elem = elem[l:]
 									} else {
 										break
 									}
 
-									// Param: "taskId"
-									// Match until "/"
-									idx := strings.IndexByte(elem, '/')
-									if idx < 0 {
-										idx = len(elem)
-									}
-									args[1] = elem[:idx]
-									elem = elem[idx:]
-
 									if len(elem) == 0 {
-										switch method {
-										case "DELETE":
-											r.name = SpaceTasksDeleteOperation
-											r.summary = ""
-											r.operationID = "SpaceTasks_delete"
-											r.operationGroup = ""
-											r.pathPattern = "/spaces/{spaceSlug}/tasks/{taskId}"
-											r.args = args
-											r.count = 2
-											return r, true
-										case "GET":
-											r.name = SpaceTasksReadOperation
-											r.summary = ""
-											r.operationID = "SpaceTasks_read"
-											r.operationGroup = ""
-											r.pathPattern = "/spaces/{spaceSlug}/tasks/{taskId}"
-											r.args = args
-											r.count = 2
-											return r, true
-										case "PATCH":
-											r.name = SpaceTasksUpdateOperation
-											r.summary = ""
-											r.operationID = "SpaceTasks_update"
-											r.operationGroup = ""
-											r.pathPattern = "/spaces/{spaceSlug}/tasks/{taskId}"
-											r.args = args
-											r.count = 2
-											return r, true
-										default:
-											return
-										}
+										break
 									}
 									switch elem[0] {
-									case '/': // Prefix: "/relations"
+									case 'e': // Prefix: "effort-levels"
 
-										if l := len("/relations"); len(elem) >= l && elem[0:l] == "/relations" {
+										if l := len("effort-levels"); len(elem) >= l && elem[0:l] == "effort-levels" {
 											elem = elem[l:]
 										} else {
 											break
 										}
 
 										if len(elem) == 0 {
+											// Leaf node.
 											switch method {
-											case "POST":
-												r.name = SpaceTaskRelationsCreateOperation
+											case "GET":
+												r.name = SpaceTaskEffortLevelsListOperation
 												r.summary = ""
-												r.operationID = "SpaceTaskRelations_create"
+												r.operationID = "SpaceTaskEffortLevels_list"
 												r.operationGroup = ""
-												r.pathPattern = "/spaces/{spaceSlug}/tasks/{taskId}/relations"
+												r.pathPattern = "/spaces/{spaceSlug}/task-effort-levels"
+												r.args = args
+												r.count = 1
+												return r, true
+											default:
+												return
+											}
+										}
+
+									case 'p': // Prefix: "priority-levels"
+
+										if l := len("priority-levels"); len(elem) >= l && elem[0:l] == "priority-levels" {
+											elem = elem[l:]
+										} else {
+											break
+										}
+
+										if len(elem) == 0 {
+											// Leaf node.
+											switch method {
+											case "GET":
+												r.name = SpaceTaskPriorityLevelsListOperation
+												r.summary = ""
+												r.operationID = "SpaceTaskPriorityLevels_list"
+												r.operationGroup = ""
+												r.pathPattern = "/spaces/{spaceSlug}/task-priority-levels"
+												r.args = args
+												r.count = 1
+												return r, true
+											default:
+												return
+											}
+										}
+
+									}
+
+								case 's': // Prefix: "s"
+
+									if l := len("s"); len(elem) >= l && elem[0:l] == "s" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										switch method {
+										case "GET":
+											r.name = SpaceTasksListOperation
+											r.summary = ""
+											r.operationID = "SpaceTasks_list"
+											r.operationGroup = ""
+											r.pathPattern = "/spaces/{spaceSlug}/tasks"
+											r.args = args
+											r.count = 1
+											return r, true
+										case "POST":
+											r.name = SpaceTasksCreateOperation
+											r.summary = ""
+											r.operationID = "SpaceTasks_create"
+											r.operationGroup = ""
+											r.pathPattern = "/spaces/{spaceSlug}/tasks"
+											r.args = args
+											r.count = 1
+											return r, true
+										default:
+											return
+										}
+									}
+									switch elem[0] {
+									case '/': // Prefix: "/"
+
+										if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+											elem = elem[l:]
+										} else {
+											break
+										}
+
+										// Param: "taskId"
+										// Match until "/"
+										idx := strings.IndexByte(elem, '/')
+										if idx < 0 {
+											idx = len(elem)
+										}
+										args[1] = elem[:idx]
+										elem = elem[idx:]
+
+										if len(elem) == 0 {
+											switch method {
+											case "DELETE":
+												r.name = SpaceTasksDeleteOperation
+												r.summary = ""
+												r.operationID = "SpaceTasks_delete"
+												r.operationGroup = ""
+												r.pathPattern = "/spaces/{spaceSlug}/tasks/{taskId}"
+												r.args = args
+												r.count = 2
+												return r, true
+											case "GET":
+												r.name = SpaceTasksReadOperation
+												r.summary = ""
+												r.operationID = "SpaceTasks_read"
+												r.operationGroup = ""
+												r.pathPattern = "/spaces/{spaceSlug}/tasks/{taskId}"
+												r.args = args
+												r.count = 2
+												return r, true
+											case "PATCH":
+												r.name = SpaceTasksUpdateOperation
+												r.summary = ""
+												r.operationID = "SpaceTasks_update"
+												r.operationGroup = ""
+												r.pathPattern = "/spaces/{spaceSlug}/tasks/{taskId}"
 												r.args = args
 												r.count = 2
 												return r, true
@@ -1232,25 +1372,28 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											}
 										}
 										switch elem[0] {
-										case '/': // Prefix: "/"
+										case '/': // Prefix: "/relations"
 
-											if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+											if l := len("/relations"); len(elem) >= l && elem[0:l] == "/relations" {
 												elem = elem[l:]
 											} else {
 												break
 											}
 
-											// Param: "kind"
-											// Match until "/"
-											idx := strings.IndexByte(elem, '/')
-											if idx < 0 {
-												idx = len(elem)
-											}
-											args[2] = elem[:idx]
-											elem = elem[idx:]
-
 											if len(elem) == 0 {
-												break
+												switch method {
+												case "POST":
+													r.name = SpaceTaskRelationsCreateOperation
+													r.summary = ""
+													r.operationID = "SpaceTaskRelations_create"
+													r.operationGroup = ""
+													r.pathPattern = "/spaces/{spaceSlug}/tasks/{taskId}/relations"
+													r.args = args
+													r.count = 2
+													return r, true
+												default:
+													return
+												}
 											}
 											switch elem[0] {
 											case '/': // Prefix: "/"
@@ -1261,34 +1404,57 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 													break
 												}
 
-												// Param: "relatedTaskId"
-												// Leaf parameter, slashes are prohibited
+												// Param: "kind"
+												// Match until "/"
 												idx := strings.IndexByte(elem, '/')
-												if idx >= 0 {
-													break
+												if idx < 0 {
+													idx = len(elem)
 												}
-												args[3] = elem
-												elem = ""
+												args[2] = elem[:idx]
+												elem = elem[idx:]
 
 												if len(elem) == 0 {
-													// Leaf node.
-													switch method {
-													case "DELETE":
-														r.name = SpaceTaskRelationsDeleteOperation
-														r.summary = ""
-														r.operationID = "SpaceTaskRelations_delete"
-														r.operationGroup = ""
-														r.pathPattern = "/spaces/{spaceSlug}/tasks/{taskId}/relations/{kind}/{relatedTaskId}"
-														r.args = args
-														r.count = 4
-														return r, true
-													default:
-														return
+													break
+												}
+												switch elem[0] {
+												case '/': // Prefix: "/"
+
+													if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+														elem = elem[l:]
+													} else {
+														break
+													}
+
+													// Param: "relatedTaskId"
+													// Leaf parameter, slashes are prohibited
+													idx := strings.IndexByte(elem, '/')
+													if idx >= 0 {
+														break
+													}
+													args[3] = elem
+													elem = ""
+
+													if len(elem) == 0 {
+														// Leaf node.
+														switch method {
+														case "DELETE":
+															r.name = SpaceTaskRelationsDeleteOperation
+															r.summary = ""
+															r.operationID = "SpaceTaskRelations_delete"
+															r.operationGroup = ""
+															r.pathPattern = "/spaces/{spaceSlug}/tasks/{taskId}/relations/{kind}/{relatedTaskId}"
+															r.args = args
+															r.count = 4
+															return r, true
+														default:
+															return
+														}
 													}
 												}
 											}
 										}
 									}
+
 								}
 
 							}

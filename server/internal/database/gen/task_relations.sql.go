@@ -15,17 +15,23 @@ import (
 
 const deleteTaskRelation = `-- name: DeleteTaskRelation :execresult
 DELETE FROM task_relations
-WHERE source_task_id = ? AND target_task_id = ? AND kind = ?
+WHERE source_task_id = ? AND target_task_id = ? AND kind = ? AND space_slug = ?
 `
 
 type DeleteTaskRelationParams struct {
 	SourceTaskID int64
 	TargetTaskID int64
 	Kind         string
+	SpaceSlug    string
 }
 
 func (q *Queries) DeleteTaskRelation(ctx context.Context, arg DeleteTaskRelationParams) (sql.Result, error) {
-	return q.db.ExecContext(ctx, deleteTaskRelation, arg.SourceTaskID, arg.TargetTaskID, arg.Kind)
+	return q.db.ExecContext(ctx, deleteTaskRelation,
+		arg.SourceTaskID,
+		arg.TargetTaskID,
+		arg.Kind,
+		arg.SpaceSlug,
+	)
 }
 
 const insertTaskRelation = `-- name: InsertTaskRelation :exec
@@ -56,9 +62,14 @@ const listRelationsByTaskAsSource = `-- name: ListRelationsByTaskAsSource :many
 
 SELECT source_task_id, target_task_id, kind, created_at
 FROM task_relations
-WHERE source_task_id = ?
+WHERE source_task_id = ? AND space_slug = ?
 ORDER BY created_at ASC
 `
+
+type ListRelationsByTaskAsSourceParams struct {
+	SourceTaskID int64
+	SpaceSlug    string
+}
 
 type ListRelationsByTaskAsSourceRow struct {
 	SourceTaskID int64
@@ -70,8 +81,8 @@ type ListRelationsByTaskAsSourceRow struct {
 // Two single-task queries instead of one with OR, so each can use its own index
 // (PK for source, idx_task_relations_target for target). Used by fetchTask for
 // single-task reads; the batch ListRelationsByTasks is used for list endpoints.
-func (q *Queries) ListRelationsByTaskAsSource(ctx context.Context, sourceTaskID int64) ([]ListRelationsByTaskAsSourceRow, error) {
-	rows, err := q.db.QueryContext(ctx, listRelationsByTaskAsSource, sourceTaskID)
+func (q *Queries) ListRelationsByTaskAsSource(ctx context.Context, arg ListRelationsByTaskAsSourceParams) ([]ListRelationsByTaskAsSourceRow, error) {
+	rows, err := q.db.QueryContext(ctx, listRelationsByTaskAsSource, arg.SourceTaskID, arg.SpaceSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -101,9 +112,14 @@ func (q *Queries) ListRelationsByTaskAsSource(ctx context.Context, sourceTaskID 
 const listRelationsByTaskAsTarget = `-- name: ListRelationsByTaskAsTarget :many
 SELECT source_task_id, target_task_id, kind, created_at
 FROM task_relations
-WHERE target_task_id = ?
+WHERE target_task_id = ? AND space_slug = ?
 ORDER BY created_at ASC
 `
+
+type ListRelationsByTaskAsTargetParams struct {
+	TargetTaskID int64
+	SpaceSlug    string
+}
 
 type ListRelationsByTaskAsTargetRow struct {
 	SourceTaskID int64
@@ -112,8 +128,8 @@ type ListRelationsByTaskAsTargetRow struct {
 	CreatedAt    types.EpochSeconds
 }
 
-func (q *Queries) ListRelationsByTaskAsTarget(ctx context.Context, targetTaskID int64) ([]ListRelationsByTaskAsTargetRow, error) {
-	rows, err := q.db.QueryContext(ctx, listRelationsByTaskAsTarget, targetTaskID)
+func (q *Queries) ListRelationsByTaskAsTarget(ctx context.Context, arg ListRelationsByTaskAsTargetParams) ([]ListRelationsByTaskAsTargetRow, error) {
+	rows, err := q.db.QueryContext(ctx, listRelationsByTaskAsTarget, arg.TargetTaskID, arg.SpaceSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -143,12 +159,14 @@ func (q *Queries) ListRelationsByTaskAsTarget(ctx context.Context, targetTaskID 
 const listRelationsByTasks = `-- name: ListRelationsByTasks :many
 SELECT source_task_id, target_task_id, kind, created_at
 FROM task_relations
-WHERE source_task_id IN (/*SLICE:source_task_ids*/?)
-   OR target_task_id IN (/*SLICE:target_task_ids*/?)
+WHERE space_slug = ?
+  AND (source_task_id IN (/*SLICE:source_task_ids*/?)
+    OR target_task_id IN (/*SLICE:target_task_ids*/?))
 ORDER BY created_at ASC
 `
 
 type ListRelationsByTasksParams struct {
+	SpaceSlug     string
 	SourceTaskIds []int64
 	TargetTaskIds []int64
 }
@@ -163,6 +181,7 @@ type ListRelationsByTasksRow struct {
 func (q *Queries) ListRelationsByTasks(ctx context.Context, arg ListRelationsByTasksParams) ([]ListRelationsByTasksRow, error) {
 	query := listRelationsByTasks
 	var queryParams []interface{}
+	queryParams = append(queryParams, arg.SpaceSlug)
 	if len(arg.SourceTaskIds) > 0 {
 		for _, v := range arg.SourceTaskIds {
 			queryParams = append(queryParams, v)

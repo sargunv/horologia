@@ -52,6 +52,14 @@ function TaskDetailPage() {
             </dd>
           </div>
           <div className="flex gap-4">
+            <dt className="text-surface-500 w-24">Effort</dt>
+            <dd>{task.effort ? <span className="badge">{task.effort}</span> : "None"}</dd>
+          </div>
+          <div className="flex gap-4">
+            <dt className="text-surface-500 w-24">Priority</dt>
+            <dd>{task.priority ? <span className="badge">{task.priority}</span> : "None"}</dd>
+          </div>
+          <div className="flex gap-4">
             <dt className="text-surface-500 w-24">Due date</dt>
             <dd>{task.dueDate ?? "None"}</dd>
           </div>

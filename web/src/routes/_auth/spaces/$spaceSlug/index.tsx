@@ -40,6 +40,8 @@ function TaskListPage() {
                 <th>ID</th>
                 <th>Title</th>
                 <th>Status</th>
+                <th>Effort</th>
+                <th>Priority</th>
                 <th>Due</th>
               </tr>
             </thead>
@@ -59,7 +61,27 @@ function TaskListPage() {
                   <td>
                     <span className="badge">{task.status}</span>
                   </td>
-                  <td className="text-sm text-surface-500">{task.dueDate ?? "\u2014"}</td>
+                  <td>
+                    {task.effort ? (
+                      <span className="badge">{task.effort}</span>
+                    ) : (
+                      <span className="text-surface-500">&mdash;</span>
+                    )}
+                  </td>
+                  <td>
+                    {task.priority ? (
+                      <span className="badge">{task.priority}</span>
+                    ) : (
+                      <span className="text-surface-500">&mdash;</span>
+                    )}
+                  </td>
+                  <td>
+                    {task.dueDate ? (
+                      <span className="text-sm">{task.dueDate}</span>
+                    ) : (
+                      <span className="text-surface-500">&mdash;</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -56,7 +56,7 @@ func decodeCursorInt64(opt apigen.OptString) (int64, error) {
 	}
 	id, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("invalid cursor")
+		return 0, fmt.Errorf("invalid cursor: %w", err)
 	}
 	return id, nil
 }
@@ -196,6 +196,8 @@ func taskFromDB(task dbgen.Task, assigneeUserIDs []int64, tagNames []string, rel
 		Title:       task.Title,
 		Description: task.Description,
 		Status:      task.StatusName,
+		Effort:      nilStringFromDB(task.EffortName),
+		Priority:    nilStringFromDB(task.PriorityName),
 		AssigneeIds: assigneeIDs,
 		Tags:        tagNames,
 		Relations:   apiRelations,
@@ -341,4 +343,46 @@ func tagFromDB(t dbgen.Tag) *apigen.Tag {
 		Name:      t.Name,
 		CreatedAt: t.CreatedAt.Time(),
 	}
+}
+
+func effortLevelFromDB(e dbgen.TaskEffortLevel) *apigen.TaskEffortLevel {
+	return &apigen.TaskEffortLevel{
+		Name:     e.Name,
+		Position: e.Position,
+	}
+}
+
+func priorityLevelFromDB(p dbgen.TaskPriorityLevel) *apigen.TaskPriorityLevel {
+	return &apigen.TaskPriorityLevel{
+		Name:     p.Name,
+		Position: p.Position,
+	}
+}
+
+func nilStringFromDB(s *string) apigen.NilString {
+	if s != nil {
+		return apigen.NewNilString(*s)
+	}
+	var ns apigen.NilString
+	ns.SetToNull()
+	return ns
+}
+
+func optStringToDB(opt apigen.OptString) *string {
+	if !opt.IsSet() {
+		return nil
+	}
+	s := opt.Value
+	return &s
+}
+
+func optNilStringToDB(opt apigen.OptNilString, existing *string) *string {
+	if !opt.IsSet() {
+		return existing
+	}
+	if opt.IsNull() {
+		return nil
+	}
+	s := opt.Value
+	return &s
 }

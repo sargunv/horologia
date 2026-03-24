@@ -13,19 +13,21 @@ import (
 )
 
 const createTask = `-- name: CreateTask :one
-INSERT INTO tasks (space_slug, title, description, status_name, due_date, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?)
-RETURNING id, space_slug, title, description, status_name, due_date, created_at, updated_at
+INSERT INTO tasks (space_slug, title, description, status_name, effort_name, priority_name, due_date, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, space_slug, title, description, status_name, effort_name, priority_name, due_date, created_at, updated_at
 `
 
 type CreateTaskParams struct {
-	SpaceSlug   string
-	Title       string
-	Description string
-	StatusName  string
-	DueDate     *string
-	CreatedAt   types.EpochSeconds
-	UpdatedAt   types.EpochSeconds
+	SpaceSlug    string
+	Title        string
+	Description  string
+	StatusName   string
+	EffortName   *string
+	PriorityName *string
+	DueDate      *string
+	CreatedAt    types.EpochSeconds
+	UpdatedAt    types.EpochSeconds
 }
 
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
@@ -34,6 +36,8 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		arg.Title,
 		arg.Description,
 		arg.StatusName,
+		arg.EffortName,
+		arg.PriorityName,
 		arg.DueDate,
 		arg.CreatedAt,
 		arg.UpdatedAt,
@@ -45,6 +49,8 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		&i.Title,
 		&i.Description,
 		&i.StatusName,
+		&i.EffortName,
+		&i.PriorityName,
 		&i.DueDate,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -66,7 +72,7 @@ func (q *Queries) DeleteTask(ctx context.Context, arg DeleteTaskParams) (sql.Res
 }
 
 const getTask = `-- name: GetTask :one
-SELECT id, space_slug, title, description, status_name, due_date, created_at, updated_at FROM tasks WHERE id = ? AND space_slug = ?
+SELECT id, space_slug, title, description, status_name, effort_name, priority_name, due_date, created_at, updated_at FROM tasks WHERE id = ? AND space_slug = ?
 `
 
 type GetTaskParams struct {
@@ -83,6 +89,8 @@ func (q *Queries) GetTask(ctx context.Context, arg GetTaskParams) (Task, error) 
 		&i.Title,
 		&i.Description,
 		&i.StatusName,
+		&i.EffortName,
+		&i.PriorityName,
 		&i.DueDate,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -91,7 +99,7 @@ func (q *Queries) GetTask(ctx context.Context, arg GetTaskParams) (Task, error) 
 }
 
 const listTasksBySpace = `-- name: ListTasksBySpace :many
-SELECT id, space_slug, title, description, status_name, due_date, created_at, updated_at FROM tasks
+SELECT id, space_slug, title, description, status_name, effort_name, priority_name, due_date, created_at, updated_at FROM tasks
 WHERE space_slug = ? AND id > ?
 ORDER BY id ASC
 LIMIT ?
@@ -118,6 +126,8 @@ func (q *Queries) ListTasksBySpace(ctx context.Context, arg ListTasksBySpacePara
 			&i.Title,
 			&i.Description,
 			&i.StatusName,
+			&i.EffortName,
+			&i.PriorityName,
 			&i.DueDate,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -137,19 +147,21 @@ func (q *Queries) ListTasksBySpace(ctx context.Context, arg ListTasksBySpacePara
 
 const updateTask = `-- name: UpdateTask :one
 UPDATE tasks
-SET title = ?, description = ?, status_name = ?, due_date = ?, updated_at = ?
+SET title = ?, description = ?, status_name = ?, effort_name = ?, priority_name = ?, due_date = ?, updated_at = ?
 WHERE id = ? AND space_slug = ?
-RETURNING id, space_slug, title, description, status_name, due_date, created_at, updated_at
+RETURNING id, space_slug, title, description, status_name, effort_name, priority_name, due_date, created_at, updated_at
 `
 
 type UpdateTaskParams struct {
-	Title       string
-	Description string
-	StatusName  string
-	DueDate     *string
-	UpdatedAt   types.EpochSeconds
-	ID          int64
-	SpaceSlug   string
+	Title        string
+	Description  string
+	StatusName   string
+	EffortName   *string
+	PriorityName *string
+	DueDate      *string
+	UpdatedAt    types.EpochSeconds
+	ID           int64
+	SpaceSlug    string
 }
 
 func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error) {
@@ -157,6 +169,8 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 		arg.Title,
 		arg.Description,
 		arg.StatusName,
+		arg.EffortName,
+		arg.PriorityName,
 		arg.DueDate,
 		arg.UpdatedAt,
 		arg.ID,
@@ -169,6 +183,8 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 		&i.Title,
 		&i.Description,
 		&i.StatusName,
+		&i.EffortName,
+		&i.PriorityName,
 		&i.DueDate,
 		&i.CreatedAt,
 		&i.UpdatedAt,

@@ -7,6 +7,8 @@ import "./src/spaces.tsp";
 import "./src/members.tsp";
 import "./src/tags.tsp";
 import "./src/tasks.tsp";
+import "./src/task_effort_levels.tsp";
+import "./src/task_priority_levels.tsp";
 
 using Http;
 

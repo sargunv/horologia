@@ -14,24 +14,23 @@
 
 ## Core Task Features
 
-1. **Tags** — CLI, web
-2. **Task relations** — CLI, web
-3. **Recurrence** — all 5 types (one-off, completion-based, fixed accumulating, fixed
+1. **Recurrence** — all 5 types (one-off, completion-based, fixed accumulating, fixed
    non-accumulating, on-dependency)
-4. **Staleness tracking** — derived calculation, urgency gradient in UI
-5. **Completion history / activity log** — log all task actions with user+token attribution
-6. **Rotation pools** — rotating assignees on completion
-7. **Space-level defaults** — default recurrence, staleness toggle, assignees for new tasks
+2. **Completion history / activity log** — log all task actions with user+token attribution
+3. **Rotation pools** — rotating assignees on completion
+4. **Space-level defaults** — default recurrence, staleness toggle, assignees for new tasks
+5. **Today view** — unified dashboard across all spaces, sorted by staleness/urgency
+6. **Search** — full-text search on title/description, filterable by space/status/assignee/tags
 
 ## Views & UX
 
-8. **Web pagination** — handle `nextCursor` in list views
-9. **Web editing** — create/edit tasks, spaces, members from the web UI
-10. **Today view** — unified dashboard across all spaces, sorted by staleness/urgency
-11. **Search** — full-text search on title/description, filterable by space/status/assignee/tags
-12. **Markdown rendering** — render descriptions as Markdown in web UI
+1. **CLI feature parity with backend**
+2. **Web feature parity with backend and CLI**
+3. **Web pagination** — handle `nextCursor` in list views
+4. **Web editing** — create/edit tasks, spaces, members from the web UI
+5. **Markdown rendering** — render descriptions as Markdown in web UI
 
 ## Infrastructure
 
-13. **MCP endpoint** — Streamable HTTP at `/mcp`
-14. **Dockerfile** — single container deployment
+1. **MCP endpoint** — Streamable HTTP at `/mcp`
+2. **Dockerfile** — single container deployment

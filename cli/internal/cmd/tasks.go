@@ -19,6 +19,8 @@ var taskSchema = map[string]any{
 		"title":       map[string]any{"type": "string"},
 		"description": map[string]any{"type": "string"},
 		"status":      map[string]any{"type": "string"},
+		"effort":      map[string]any{"type": []string{"string", "null"}},
+		"priority":    map[string]any{"type": []string{"string", "null"}},
 		"assigneeIds": map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
 		"tags":        map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
 		"relations": map[string]any{"type": "array", "items": map[string]any{
@@ -34,10 +36,10 @@ var taskSchema = map[string]any{
 		"createdAt": map[string]any{"type": "string", "format": "date-time"},
 		"updatedAt": map[string]any{"type": "string", "format": "date-time"},
 	},
-	"required": []string{"id", "title", "description", "status", "assigneeIds", "tags", "relations", "dueDate", "createdAt", "updatedAt"},
+	"required": []string{"id", "title", "description", "status", "effort", "priority", "assigneeIds", "tags", "relations", "dueDate", "createdAt", "updatedAt"},
 }
 
-var taskHeaders = []string{"ID", "Title", "Status", "Due", "Assignees", "Created"}
+var taskHeaders = []string{"ID", "Title", "Status", "Effort", "Priority", "Due", "Assignees", "Created"}
 
 func formatDue(t gen.Task, fallback string) string {
 	if d, ok := t.DueDate.Get(); ok {
@@ -74,10 +76,19 @@ func taskRow(t gen.Task) []string {
 		t.ID,
 		t.Title,
 		t.Status,
+		formatNilString(t.Effort, "-"),
+		formatNilString(t.Priority, "-"),
 		formatDue(t, "-"),
 		formatAssignees(t, "-", 3),
 		t.CreatedAt.Format(time.DateOnly),
 	}
+}
+
+func formatNilString(ns gen.NilString, fallback string) string {
+	if v, ok := ns.Get(); ok {
+		return v
+	}
+	return fallback
 }
 
 func taskKV(t gen.Task) []output.KV {
@@ -86,6 +97,8 @@ func taskKV(t gen.Task) []output.KV {
 		{Key: "Title", Value: t.Title},
 		{Key: "Description", Value: t.Description},
 		{Key: "Status", Value: t.Status},
+		{Key: "Effort", Value: formatNilString(t.Effort, "-")},
+		{Key: "Priority", Value: formatNilString(t.Priority, "-")},
 		{Key: "Due Date", Value: formatDue(t, "-")},
 		{Key: "Assignees", Value: formatAssignees(t, "-", 0)},
 		{Key: "Created", Value: t.CreatedAt.Format(time.RFC3339)},
@@ -207,7 +220,7 @@ func newTasksGetCmd() *cobra.Command {
 }
 
 func newTasksCreateCmd() *cobra.Command {
-	var space, title, description, statusName string
+	var space, title, description, statusName, effortName, priorityName string
 	var dueDate string
 	var assignees []string
 
@@ -233,6 +246,12 @@ assigns the default initial status. Status names are defined per space.`,
 			}
 			if statusName != "" {
 				req.Status = gen.NewOptString(statusName)
+			}
+			if cmd.Flags().Changed("effort") {
+				req.Effort = gen.NewOptString(effortName)
+			}
+			if cmd.Flags().Changed("priority") {
+				req.Priority = gen.NewOptString(priorityName)
 			}
 			if cmd.Flags().Changed("due") {
 				d, err := parseDueDate(dueDate)
@@ -265,6 +284,8 @@ assigns the default initial status. Status names are defined per space.`,
 	_ = cmd.MarkFlagRequired("title")
 	cmd.Flags().StringVar(&description, "description", "", "Task description")
 	cmd.Flags().StringVar(&statusName, "status", "", "Status name (as defined in the space)")
+	cmd.Flags().StringVar(&effortName, "effort", "", "Effort level (as defined in the space)")
+	cmd.Flags().StringVar(&priorityName, "priority", "", "Priority level (as defined in the space)")
 	cmd.Flags().StringVar(&dueDate, "due", "", "Due date (YYYY-MM-DD)")
 	cmd.Flags().StringArrayVar(&assignees, "assignee", nil, "Assignee user ID (can be repeated)")
 
@@ -272,10 +293,10 @@ assigns the default initial status. Status names are defined per space.`,
 }
 
 func newTasksUpdateCmd() *cobra.Command {
-	var space, title, description, statusName string
+	var space, title, description, statusName, effortName, priorityName string
 	var dueDate string
 	var assignees []string
-	var clearDue, clearAssignees bool
+	var clearDue, clearAssignees, clearEffort, clearPriority bool
 
 	cmd := &cobra.Command{
 		Use:   "update <task-id>",
@@ -297,11 +318,13 @@ to remove all assignees.`,
 			}
 
 			hasChanges := cmd.Flags().Changed("title") || cmd.Flags().Changed("description") ||
-				cmd.Flags().Changed("status") || cmd.Flags().Changed("due") ||
+				cmd.Flags().Changed("status") || cmd.Flags().Changed("effort") ||
+				cmd.Flags().Changed("clear-effort") || cmd.Flags().Changed("priority") ||
+				cmd.Flags().Changed("clear-priority") || cmd.Flags().Changed("due") ||
 				cmd.Flags().Changed("clear-due") || cmd.Flags().Changed("assignee") ||
 				cmd.Flags().Changed("clear-assignees")
 			if !hasChanges {
-				return fmt.Errorf("specify at least one of --title, --description, --status, --due, --clear-due, --assignee, or --clear-assignees")
+				return fmt.Errorf("specify at least one of --title, --description, --status, --effort, --clear-effort, --priority, --clear-priority, --due, --clear-due, --assignee, or --clear-assignees")
 			}
 
 			req := &gen.TaskUpdate{}
@@ -313,6 +336,16 @@ to remove all assignees.`,
 			}
 			if cmd.Flags().Changed("status") {
 				req.Status = gen.NewOptString(statusName)
+			}
+			if clearEffort {
+				req.Effort.SetToNull()
+			} else if cmd.Flags().Changed("effort") {
+				req.Effort = gen.NewOptNilString(effortName)
+			}
+			if clearPriority {
+				req.Priority.SetToNull()
+			} else if cmd.Flags().Changed("priority") {
+				req.Priority = gen.NewOptNilString(priorityName)
 			}
 			if clearDue {
 				req.DueDate.SetToNull()
@@ -349,10 +382,16 @@ to remove all assignees.`,
 	cmd.Flags().StringVar(&title, "title", "", "Task title")
 	cmd.Flags().StringVar(&description, "description", "", "Task description")
 	cmd.Flags().StringVar(&statusName, "status", "", "Status name (as defined in the space)")
+	cmd.Flags().StringVar(&effortName, "effort", "", "Effort level (as defined in the space)")
+	cmd.Flags().BoolVar(&clearEffort, "clear-effort", false, "Clear the effort level")
+	cmd.Flags().StringVar(&priorityName, "priority", "", "Priority level (as defined in the space)")
+	cmd.Flags().BoolVar(&clearPriority, "clear-priority", false, "Clear the priority level")
 	cmd.Flags().StringVar(&dueDate, "due", "", "Due date (YYYY-MM-DD)")
 	cmd.Flags().BoolVar(&clearDue, "clear-due", false, "Clear the due date")
 	cmd.Flags().StringArrayVar(&assignees, "assignee", nil, "Assignee user ID (can be repeated)")
 	cmd.Flags().BoolVar(&clearAssignees, "clear-assignees", false, "Remove all assignees")
+	cmd.MarkFlagsMutuallyExclusive("effort", "clear-effort")
+	cmd.MarkFlagsMutuallyExclusive("priority", "clear-priority")
 	cmd.MarkFlagsMutuallyExclusive("due", "clear-due")
 	cmd.MarkFlagsMutuallyExclusive("assignee", "clear-assignees")
 

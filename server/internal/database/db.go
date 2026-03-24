@@ -66,8 +66,20 @@ var defaultStatuses = []gen.CreateTaskStatusParams{
 	{Name: "done", Category: "completion", Position: 1},
 }
 
-// CreateSpaceWithDefaults creates a space, its default statuses ("todo" and "done"),
-// and adds the creator as an admin member, all in a single transaction.
+var defaultEffortLevels = []gen.CreateTaskEffortLevelParams{
+	{Name: "small", Position: 0},
+	{Name: "medium", Position: 1},
+	{Name: "large", Position: 2},
+}
+
+var defaultPriorityLevels = []gen.CreateTaskPriorityLevelParams{
+	{Name: "low", Position: 0},
+	{Name: "medium", Position: 1},
+	{Name: "high", Position: 2},
+}
+
+// CreateSpaceWithDefaults creates a space, its default statuses, effort levels,
+// and priority levels, and adds the creator as an admin member, all in a single transaction.
 func CreateSpaceWithDefaults(ctx context.Context, db *sql.DB, slug, name, description string, creatorUserID int64) (gen.Space, error) {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
@@ -93,6 +105,20 @@ func CreateSpaceWithDefaults(ctx context.Context, db *sql.DB, slug, name, descri
 		s.SpaceSlug = space.Slug
 		if _, err := q.CreateTaskStatus(ctx, s); err != nil {
 			return gen.Space{}, fmt.Errorf("create default status %q: %w", s.Name, err)
+		}
+	}
+
+	for _, e := range defaultEffortLevels {
+		e.SpaceSlug = space.Slug
+		if _, err := q.CreateTaskEffortLevel(ctx, e); err != nil {
+			return gen.Space{}, fmt.Errorf("create default effort level %q: %w", e.Name, err)
+		}
+	}
+
+	for _, p := range defaultPriorityLevels {
+		p.SpaceSlug = space.Slug
+		if _, err := q.CreateTaskPriorityLevel(ctx, p); err != nil {
+			return gen.Space{}, fmt.Errorf("create default priority level %q: %w", p.Name, err)
 		}
 	}
 

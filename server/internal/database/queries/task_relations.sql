@@ -4,13 +4,14 @@ VALUES (?, ?, ?, ?, ?);
 
 -- name: DeleteTaskRelation :execresult
 DELETE FROM task_relations
-WHERE source_task_id = ? AND target_task_id = ? AND kind = ?;
+WHERE source_task_id = ? AND target_task_id = ? AND kind = ? AND space_slug = ?;
 
 -- name: ListRelationsByTasks :many
 SELECT source_task_id, target_task_id, kind, created_at
 FROM task_relations
-WHERE source_task_id IN (sqlc.slice('source_task_ids'))
-   OR target_task_id IN (sqlc.slice('target_task_ids'))
+WHERE space_slug = ?
+  AND (source_task_id IN (sqlc.slice('source_task_ids'))
+    OR target_task_id IN (sqlc.slice('target_task_ids')))
 ORDER BY created_at ASC;
 
 -- Two single-task queries instead of one with OR, so each can use its own index
@@ -20,11 +21,11 @@ ORDER BY created_at ASC;
 -- name: ListRelationsByTaskAsSource :many
 SELECT source_task_id, target_task_id, kind, created_at
 FROM task_relations
-WHERE source_task_id = ?
+WHERE source_task_id = ? AND space_slug = ?
 ORDER BY created_at ASC;
 
 -- name: ListRelationsByTaskAsTarget :many
 SELECT source_task_id, target_task_id, kind, created_at
 FROM task_relations
-WHERE target_task_id = ?
+WHERE target_task_id = ? AND space_slug = ?
 ORDER BY created_at ASC;

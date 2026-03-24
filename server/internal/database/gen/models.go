@@ -42,20 +42,34 @@ type Tag struct {
 }
 
 type Task struct {
-	ID          int64
-	SpaceSlug   string
-	Title       string
-	Description string
-	StatusName  string
-	DueDate     *string
-	CreatedAt   types.EpochSeconds
-	UpdatedAt   types.EpochSeconds
+	ID           int64
+	SpaceSlug    string
+	Title        string
+	Description  string
+	StatusName   string
+	EffortName   *string
+	PriorityName *string
+	DueDate      *string
+	CreatedAt    types.EpochSeconds
+	UpdatedAt    types.EpochSeconds
 }
 
 type TaskAssignee struct {
 	TaskID    int64
 	UserID    int64
 	CreatedAt types.EpochSeconds
+}
+
+type TaskEffortLevel struct {
+	SpaceSlug string
+	Name      string
+	Position  int64
+}
+
+type TaskPriorityLevel struct {
+	SpaceSlug string
+	Name      string
+	Position  int64
 }
 
 type TaskRelation struct {

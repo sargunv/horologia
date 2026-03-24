@@ -500,6 +500,69 @@ func (o OptNilDate) Or(d time.Time) time.Time {
 	return d
 }
 
+// NewOptNilString returns new OptNilString with value set to v.
+func NewOptNilString(v string) OptNilString {
+	return OptNilString{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilString is optional nullable string.
+type OptNilString struct {
+	Value string
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilString was set.
+func (o OptNilString) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilString) Reset() {
+	var v string
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilString) SetTo(v string) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilString) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilString) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v string
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilString) Get() (v string, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilString) Or(d string) string {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptString returns new OptString with value set to v.
 func NewOptString(v string) OptString {
 	return OptString{
@@ -972,6 +1035,8 @@ type Task struct {
 	Title       string         `json:"title"`
 	Description string         `json:"description"`
 	Status      string         `json:"status"`
+	Effort      NilString      `json:"effort"`
+	Priority    NilString      `json:"priority"`
 	AssigneeIds []string       `json:"assigneeIds"`
 	Tags        []string       `json:"tags"`
 	Relations   []TaskRelation `json:"relations"`
@@ -998,6 +1063,16 @@ func (s *Task) GetDescription() string {
 // GetStatus returns the value of Status.
 func (s *Task) GetStatus() string {
 	return s.Status
+}
+
+// GetEffort returns the value of Effort.
+func (s *Task) GetEffort() NilString {
+	return s.Effort
+}
+
+// GetPriority returns the value of Priority.
+func (s *Task) GetPriority() NilString {
+	return s.Priority
 }
 
 // GetAssigneeIds returns the value of AssigneeIds.
@@ -1050,6 +1125,16 @@ func (s *Task) SetStatus(val string) {
 	s.Status = val
 }
 
+// SetEffort sets the value of Effort.
+func (s *Task) SetEffort(val NilString) {
+	s.Effort = val
+}
+
+// SetPriority sets the value of Priority.
+func (s *Task) SetPriority(val NilString) {
+	s.Priority = val
+}
+
 // SetAssigneeIds sets the value of AssigneeIds.
 func (s *Task) SetAssigneeIds(val []string) {
 	s.AssigneeIds = val
@@ -1085,6 +1170,8 @@ type TaskCreate struct {
 	Title       string     `json:"title"`
 	Description OptString  `json:"description"`
 	Status      OptString  `json:"status"`
+	Effort      OptString  `json:"effort"`
+	Priority    OptString  `json:"priority"`
 	AssigneeIds []string   `json:"assigneeIds"`
 	Tags        []string   `json:"tags"`
 	DueDate     OptNilDate `json:"dueDate"`
@@ -1103,6 +1190,16 @@ func (s *TaskCreate) GetDescription() OptString {
 // GetStatus returns the value of Status.
 func (s *TaskCreate) GetStatus() OptString {
 	return s.Status
+}
+
+// GetEffort returns the value of Effort.
+func (s *TaskCreate) GetEffort() OptString {
+	return s.Effort
+}
+
+// GetPriority returns the value of Priority.
+func (s *TaskCreate) GetPriority() OptString {
+	return s.Priority
 }
 
 // GetAssigneeIds returns the value of AssigneeIds.
@@ -1135,6 +1232,16 @@ func (s *TaskCreate) SetStatus(val OptString) {
 	s.Status = val
 }
 
+// SetEffort sets the value of Effort.
+func (s *TaskCreate) SetEffort(val OptString) {
+	s.Effort = val
+}
+
+// SetPriority sets the value of Priority.
+func (s *TaskCreate) SetPriority(val OptString) {
+	s.Priority = val
+}
+
 // SetAssigneeIds sets the value of AssigneeIds.
 func (s *TaskCreate) SetAssigneeIds(val []string) {
 	s.AssigneeIds = val
@@ -1148,6 +1255,47 @@ func (s *TaskCreate) SetTags(val []string) {
 // SetDueDate sets the value of DueDate.
 func (s *TaskCreate) SetDueDate(val OptNilDate) {
 	s.DueDate = val
+}
+
+// Ref: #/components/schemas/TaskEffortLevel
+type TaskEffortLevel struct {
+	Name     string `json:"name"`
+	Position int64  `json:"position"`
+}
+
+// GetName returns the value of Name.
+func (s *TaskEffortLevel) GetName() string {
+	return s.Name
+}
+
+// GetPosition returns the value of Position.
+func (s *TaskEffortLevel) GetPosition() int64 {
+	return s.Position
+}
+
+// SetName sets the value of Name.
+func (s *TaskEffortLevel) SetName(val string) {
+	s.Name = val
+}
+
+// SetPosition sets the value of Position.
+func (s *TaskEffortLevel) SetPosition(val int64) {
+	s.Position = val
+}
+
+// Ref: #/components/schemas/TaskEffortLevelList
+type TaskEffortLevelList struct {
+	Items []TaskEffortLevel `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *TaskEffortLevelList) GetItems() []TaskEffortLevel {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *TaskEffortLevelList) SetItems(val []TaskEffortLevel) {
+	s.Items = val
 }
 
 // Ref: #/components/schemas/TaskPage
@@ -1174,6 +1322,47 @@ func (s *TaskPage) SetItems(val []Task) {
 // SetNextCursor sets the value of NextCursor.
 func (s *TaskPage) SetNextCursor(val NilString) {
 	s.NextCursor = val
+}
+
+// Ref: #/components/schemas/TaskPriorityLevel
+type TaskPriorityLevel struct {
+	Name     string `json:"name"`
+	Position int64  `json:"position"`
+}
+
+// GetName returns the value of Name.
+func (s *TaskPriorityLevel) GetName() string {
+	return s.Name
+}
+
+// GetPosition returns the value of Position.
+func (s *TaskPriorityLevel) GetPosition() int64 {
+	return s.Position
+}
+
+// SetName sets the value of Name.
+func (s *TaskPriorityLevel) SetName(val string) {
+	s.Name = val
+}
+
+// SetPosition sets the value of Position.
+func (s *TaskPriorityLevel) SetPosition(val int64) {
+	s.Position = val
+}
+
+// Ref: #/components/schemas/TaskPriorityLevelList
+type TaskPriorityLevelList struct {
+	Items []TaskPriorityLevel `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *TaskPriorityLevelList) GetItems() []TaskPriorityLevel {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *TaskPriorityLevelList) SetItems(val []TaskPriorityLevel) {
+	s.Items = val
 }
 
 // Ref: #/components/schemas/TaskRelation
@@ -1311,12 +1500,14 @@ func (s *TaskRelationKind) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/TaskUpdate
 type TaskUpdate struct {
-	Title       OptString  `json:"title"`
-	Description OptString  `json:"description"`
-	Status      OptString  `json:"status"`
-	AssigneeIds []string   `json:"assigneeIds"`
-	Tags        []string   `json:"tags"`
-	DueDate     OptNilDate `json:"dueDate"`
+	Title       OptString    `json:"title"`
+	Description OptString    `json:"description"`
+	Status      OptString    `json:"status"`
+	Effort      OptNilString `json:"effort"`
+	Priority    OptNilString `json:"priority"`
+	AssigneeIds []string     `json:"assigneeIds"`
+	Tags        []string     `json:"tags"`
+	DueDate     OptNilDate   `json:"dueDate"`
 }
 
 // GetTitle returns the value of Title.
@@ -1332,6 +1523,16 @@ func (s *TaskUpdate) GetDescription() OptString {
 // GetStatus returns the value of Status.
 func (s *TaskUpdate) GetStatus() OptString {
 	return s.Status
+}
+
+// GetEffort returns the value of Effort.
+func (s *TaskUpdate) GetEffort() OptNilString {
+	return s.Effort
+}
+
+// GetPriority returns the value of Priority.
+func (s *TaskUpdate) GetPriority() OptNilString {
+	return s.Priority
 }
 
 // GetAssigneeIds returns the value of AssigneeIds.
@@ -1362,6 +1563,16 @@ func (s *TaskUpdate) SetDescription(val OptString) {
 // SetStatus sets the value of Status.
 func (s *TaskUpdate) SetStatus(val OptString) {
 	s.Status = val
+}
+
+// SetEffort sets the value of Effort.
+func (s *TaskUpdate) SetEffort(val OptNilString) {
+	s.Effort = val
+}
+
+// SetPriority sets the value of Priority.
+func (s *TaskUpdate) SetPriority(val OptNilString) {
+	s.Priority = val
 }
 
 // SetAssigneeIds sets the value of AssigneeIds.
