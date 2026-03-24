@@ -49,7 +49,8 @@ type Task struct {
 	StatusName      string
 	EffortName      *string
 	PriorityName    *string
-	DueDate         *string
+	DueAt           *types.EpochSeconds
+	DueTz           *string
 	RecurrenceType  string
 	RecurrenceRule  *string
 	LastCompletedAt *types.EpochSeconds

@@ -14,6 +14,11 @@ func Now() EpochSeconds {
 	return EpochSeconds(time.Now())
 }
 
+// EpochSecondsFrom converts a time.Time to EpochSeconds.
+func EpochSecondsFrom(t time.Time) EpochSeconds {
+	return EpochSeconds(t)
+}
+
 // Time returns the underlying time.Time.
 func (t EpochSeconds) Time() time.Time {
 	return time.Time(t)

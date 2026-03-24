@@ -172,6 +172,11 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 	recurrenceType := string(req.RecurrenceType.Or(apigen.TaskRecurrenceTypeOneOff))
 	recurrenceRule := optStringToDB(req.RecurrenceRule)
 
+	dueAt, dueTz, err := dueToDB(req.Due)
+	if err != nil {
+		return nil, err
+	}
+
 	ts := types.Now()
 	if err := validateRecurrence(recurrenceType, recurrenceRule, ts.Time()); err != nil {
 		return nil, err
@@ -183,7 +188,8 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 		StatusName:     statusName,
 		EffortName:     effortName,
 		PriorityName:   priorityName,
-		DueDate:        dueDateToDB(req.DueDate),
+		DueAt:          dueAt,
+		DueTz:          dueTz,
 		RecurrenceType: recurrenceType,
 		RecurrenceRule: recurrenceRule,
 		CreatedAt:      ts,
@@ -321,7 +327,10 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 	}
 
 	newStatus := req.Status.Or(existing.StatusName)
-	newDueDate := dueDateFromExisting(existing.DueDate, req.DueDate)
+	newDueAt, newDueTz, err := dueFromExisting(existing.DueAt, existing.DueTz, req.Due)
+	if err != nil {
+		return nil, err
+	}
 	lastCompletedAt := existing.LastCompletedAt
 
 	// Detect completion transition: old status is not completion, new status is.
@@ -348,14 +357,20 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 
 			switch recurrenceType {
 			case "completion_based", "fixed_non_accumulating", "fixed_accumulating":
-				next, err := computeNextDueDate(recurrenceType, recurrenceRule, existing.DueDate, now.Time())
+				next, err := computeNextDueAt(recurrenceType, recurrenceRule, existing.DueAt, existing.DueTz, now.Time())
 				if err != nil {
 					return nil, err
 				}
 				// If the rule is exhausted (no next occurrence), leave the
 				// task in the completion status instead of resetting it.
 				if next != nil {
-					newDueDate = next
+					newDueAt = next
+					// Preserve existing timezone; default to UTC if the task
+					// had no prior due date (e.g., completion_based without one).
+					if newDueTz == nil {
+						utc := "UTC"
+						newDueTz = &utc
+					}
 					initialStatus, err := initialStatusFromSlice(statuses)
 					if err != nil {
 						return nil, err
@@ -372,7 +387,8 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 		StatusName:      newStatus,
 		EffortName:      effortName,
 		PriorityName:    priorityName,
-		DueDate:         newDueDate,
+		DueAt:           newDueAt,
+		DueTz:           newDueTz,
 		RecurrenceType:  recurrenceType,
 		RecurrenceRule:  recurrenceRule,
 		LastCompletedAt: lastCompletedAt,

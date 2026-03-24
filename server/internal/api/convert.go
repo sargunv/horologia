@@ -209,14 +209,13 @@ func taskFromDB(task dbgen.Task, assigneeUserIDs []int64, tagNames []string, rel
 		UpdatedAt:      task.UpdatedAt.Time(),
 	}
 
-	if task.DueDate != nil {
-		d, err := time.Parse("2006-01-02", *task.DueDate)
-		if err != nil {
-			return nil, fmt.Errorf("parse due_date: %w", err)
-		}
-		t.DueDate.SetTo(d)
+	if task.DueAt != nil && task.DueTz != nil {
+		t.Due.SetTo(apigen.TaskDue{
+			At:       task.DueAt.Time(),
+			Timezone: *task.DueTz,
+		})
 	} else {
-		t.DueDate.SetToNull()
+		t.Due.SetToNull()
 	}
 
 	if task.LastCompletedAt != nil {
@@ -263,23 +262,27 @@ func paginate[DB any, API any](
 	return items, next, nil
 }
 
-func dueDateToDB(opt apigen.OptNilDate) *string {
+// dueToDB extracts due_at and due_tz from an OptNilTaskDue (for create/update).
+// Returns (nil, nil) if not set or null. Validates the timezone.
+func dueToDB(opt apigen.OptNilTaskDue) (*types.EpochSeconds, *string, error) {
 	if !opt.IsSet() || opt.IsNull() {
-		return nil
+		return nil, nil, nil
 	}
-	s := opt.Value.Format("2006-01-02")
-	return &s
+	if _, err := time.LoadLocation(opt.Value.Timezone); err != nil {
+		return nil, nil, badRequest(fmt.Sprintf("invalid timezone %q", opt.Value.Timezone))
+	}
+	es := types.EpochSecondsFrom(opt.Value.At)
+	tz := opt.Value.Timezone
+	return &es, &tz, nil
 }
 
-func dueDateFromExisting(existing *string, update apigen.OptNilDate) *string {
+// dueFromExisting merges the due field from a PATCH request with existing values.
+// Absent = no change, null = clear, object = set both.
+func dueFromExisting(existingAt *types.EpochSeconds, existingTz *string, update apigen.OptNilTaskDue) (*types.EpochSeconds, *string, error) {
 	if !update.IsSet() {
-		return existing
+		return existingAt, existingTz, nil
 	}
-	if update.IsNull() {
-		return nil
-	}
-	s := update.Value.Format("2006-01-02")
-	return &s
+	return dueToDB(update)
 }
 
 func formatUserID(id int64) string {

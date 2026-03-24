@@ -34,6 +34,11 @@ model TaskRelationCreate {
   taskId: string;
 }
 
+model TaskDue {
+  at: utcDateTime;
+  @minLength(1) @maxLength(100) timezone: string;
+}
+
 model Task {
   id: string;
   title: string;
@@ -47,7 +52,7 @@ model Task {
   assigneeIds: string[];
   tags: string[];
   relations: TaskRelation[];
-  dueDate: plainDate | null;
+  due: TaskDue | null;
   createdAt: utcDateTime;
   updatedAt: utcDateTime;
 }
@@ -62,7 +67,7 @@ model TaskCreate {
   @minLength(1) @maxLength(500) recurrenceRule?: string;
   @maxItems(100) assigneeIds?: string[];
   @maxItems(100) tags?: string[];
-  dueDate?: plainDate | null;
+  due?: TaskDue | null;
 }
 
 model TaskUpdate {
@@ -75,7 +80,7 @@ model TaskUpdate {
   @minLength(1) @maxLength(500) recurrenceRule?: string | null;
   @maxItems(100) assigneeIds?: string[];
   @maxItems(100) tags?: string[];
-  dueDate?: plainDate | null;
+  due?: TaskDue | null;
 }
 
 model TaskPage is Page<Task>;

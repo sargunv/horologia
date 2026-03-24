@@ -13,9 +13,9 @@ import (
 )
 
 const createTask = `-- name: CreateTask :one
-INSERT INTO tasks (space_slug, title, description, status_name, effort_name, priority_name, due_date, recurrence_type, recurrence_rule, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, space_slug, title, description, status_name, effort_name, priority_name, due_date, recurrence_type, recurrence_rule, last_completed_at, created_at, updated_at
+INSERT INTO tasks (space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, last_completed_at, created_at, updated_at
 `
 
 type CreateTaskParams struct {
@@ -25,7 +25,8 @@ type CreateTaskParams struct {
 	StatusName     string
 	EffortName     *string
 	PriorityName   *string
-	DueDate        *string
+	DueAt          *types.EpochSeconds
+	DueTz          *string
 	RecurrenceType string
 	RecurrenceRule *string
 	CreatedAt      types.EpochSeconds
@@ -40,7 +41,8 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		arg.StatusName,
 		arg.EffortName,
 		arg.PriorityName,
-		arg.DueDate,
+		arg.DueAt,
+		arg.DueTz,
 		arg.RecurrenceType,
 		arg.RecurrenceRule,
 		arg.CreatedAt,
@@ -55,7 +57,8 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		&i.StatusName,
 		&i.EffortName,
 		&i.PriorityName,
-		&i.DueDate,
+		&i.DueAt,
+		&i.DueTz,
 		&i.RecurrenceType,
 		&i.RecurrenceRule,
 		&i.LastCompletedAt,
@@ -79,7 +82,7 @@ func (q *Queries) DeleteTask(ctx context.Context, arg DeleteTaskParams) (sql.Res
 }
 
 const getTask = `-- name: GetTask :one
-SELECT id, space_slug, title, description, status_name, effort_name, priority_name, due_date, recurrence_type, recurrence_rule, last_completed_at, created_at, updated_at FROM tasks WHERE id = ? AND space_slug = ?
+SELECT id, space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, last_completed_at, created_at, updated_at FROM tasks WHERE id = ? AND space_slug = ?
 `
 
 type GetTaskParams struct {
@@ -98,7 +101,8 @@ func (q *Queries) GetTask(ctx context.Context, arg GetTaskParams) (Task, error) 
 		&i.StatusName,
 		&i.EffortName,
 		&i.PriorityName,
-		&i.DueDate,
+		&i.DueAt,
+		&i.DueTz,
 		&i.RecurrenceType,
 		&i.RecurrenceRule,
 		&i.LastCompletedAt,
@@ -109,7 +113,7 @@ func (q *Queries) GetTask(ctx context.Context, arg GetTaskParams) (Task, error) 
 }
 
 const listTasksBySpace = `-- name: ListTasksBySpace :many
-SELECT id, space_slug, title, description, status_name, effort_name, priority_name, due_date, recurrence_type, recurrence_rule, last_completed_at, created_at, updated_at FROM tasks
+SELECT id, space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, last_completed_at, created_at, updated_at FROM tasks
 WHERE space_slug = ? AND id > ?
 ORDER BY id ASC
 LIMIT ?
@@ -138,7 +142,8 @@ func (q *Queries) ListTasksBySpace(ctx context.Context, arg ListTasksBySpacePara
 			&i.StatusName,
 			&i.EffortName,
 			&i.PriorityName,
-			&i.DueDate,
+			&i.DueAt,
+			&i.DueTz,
 			&i.RecurrenceType,
 			&i.RecurrenceRule,
 			&i.LastCompletedAt,
@@ -185,10 +190,10 @@ func (q *Queries) ResetTaskToInitial(ctx context.Context, arg ResetTaskToInitial
 
 const updateTask = `-- name: UpdateTask :one
 UPDATE tasks
-SET title = ?, description = ?, status_name = ?, effort_name = ?, priority_name = ?, due_date = ?,
+SET title = ?, description = ?, status_name = ?, effort_name = ?, priority_name = ?, due_at = ?, due_tz = ?,
     recurrence_type = ?, recurrence_rule = ?, last_completed_at = ?, updated_at = ?
 WHERE id = ? AND space_slug = ?
-RETURNING id, space_slug, title, description, status_name, effort_name, priority_name, due_date, recurrence_type, recurrence_rule, last_completed_at, created_at, updated_at
+RETURNING id, space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, last_completed_at, created_at, updated_at
 `
 
 type UpdateTaskParams struct {
@@ -197,7 +202,8 @@ type UpdateTaskParams struct {
 	StatusName      string
 	EffortName      *string
 	PriorityName    *string
-	DueDate         *string
+	DueAt           *types.EpochSeconds
+	DueTz           *string
 	RecurrenceType  string
 	RecurrenceRule  *string
 	LastCompletedAt *types.EpochSeconds
@@ -213,7 +219,8 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 		arg.StatusName,
 		arg.EffortName,
 		arg.PriorityName,
-		arg.DueDate,
+		arg.DueAt,
+		arg.DueTz,
 		arg.RecurrenceType,
 		arg.RecurrenceRule,
 		arg.LastCompletedAt,
@@ -230,7 +237,8 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 		&i.StatusName,
 		&i.EffortName,
 		&i.PriorityName,
-		&i.DueDate,
+		&i.DueAt,
+		&i.DueTz,
 		&i.RecurrenceType,
 		&i.RecurrenceRule,
 		&i.LastCompletedAt,

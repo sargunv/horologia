@@ -49,9 +49,11 @@ func validateRRule(rule string, now time.Time) error {
 		return badRequest("unsupported RRULE frequency: must be DAILY, WEEKLY, MONTHLY, or YEARLY")
 	}
 
-	// Cap COUNT to prevent excessive iteration in rrule.After().
-	if opt.Count > 1000 {
-		return badRequest("RRULE COUNT must not exceed 1000")
+	// Reject COUNT — no longer needed for performance (DTSTART is updated on
+	// each completion), and its semantics are confusing when DTSTART resets.
+	// Use UNTIL for finite recurrence instead.
+	if opt.Count > 0 {
+		return badRequest("RRULE COUNT is not supported; use UNTIL for finite recurrence")
 	}
 
 	// Cap UNTIL to prevent excessive iteration.
@@ -84,41 +86,46 @@ func validateRRule(rule string, now time.Time) error {
 	return nil
 }
 
-// computeNextDueDate computes the next due date for a recurring task after a
-// completion event. Returns nil if no next occurrence exists (rule exhausted)
-// or if the recurrence type does not advance the due date on completion.
+// computeNextDueAt computes the next due epoch seconds for a recurring task
+// after a completion event. Returns nil if no next occurrence exists (rule
+// exhausted) or if the recurrence type does not advance the due date.
 //
-//   - completion_based: DTSTART is now (the completion time); next occurrence after now.
-//   - fixed_non_accumulating / fixed_accumulating: DTSTART is dueDate (the schedule
-//     anchor set by the user); next occurrence after now. Falls back to now if dueDate is nil.
+//   - completion_based: DTSTART is now (completion time) in the task's timezone.
+//   - fixed_non_accumulating / fixed_accumulating: DTSTART is the current due_at
+//     in the task's timezone; next occurrence after now.
 //
-// Precondition: validateRecurrence must have been called first to ensure
-// recurrenceRule is non-nil for types that require it.
-func computeNextDueDate(recurrenceType string, recurrenceRule *string, dueDate *string, now time.Time) (*string, error) {
+// Precondition: validateRecurrence must have been called first.
+func computeNextDueAt(recurrenceType string, recurrenceRule *string, dueAt *types.EpochSeconds, dueTz *string, now time.Time) (*types.EpochSeconds, error) {
+	loc := time.UTC
+	if dueTz != nil {
+		var err error
+		loc, err = time.LoadLocation(*dueTz)
+		if err != nil {
+			return nil, badRequest(fmt.Sprintf("invalid due_tz %q: %v", *dueTz, err))
+		}
+	}
+
+	nowInTz := now.In(loc)
+
 	switch recurrenceType {
 	case "completion_based":
-		// DTSTART = now (the completion time). Next occurrence strictly after now.
-		return nextRRuleOccurrence(*recurrenceRule, now, now)
+		// DTSTART = now in the task's timezone. Next occurrence strictly after now.
+		return nextRRuleOccurrence(*recurrenceRule, nowInTz, nowInTz)
 	case "fixed_non_accumulating", "fixed_accumulating":
-		// DTSTART = due date (the schedule anchor). Next occurrence strictly after now.
-		dtstart := now
-		if dueDate != nil {
-			d, err := time.Parse("2006-01-02", *dueDate)
-			if err == nil {
-				dtstart = d
-			}
+		// DTSTART = current due date in the task's timezone.
+		dtstart := nowInTz
+		if dueAt != nil {
+			dtstart = dueAt.Time().In(loc)
 		}
-		return nextRRuleOccurrence(*recurrenceRule, dtstart, now)
+		return nextRRuleOccurrence(*recurrenceRule, dtstart, nowInTz)
 	default:
-		// one_off, on_dependency: no auto-advance on completion.
-		// on_dependency reset is handled by applyCompletionTriggers.
 		return nil, nil
 	}
 }
 
 // nextRRuleOccurrence parses the rule, sets dtstart, and finds the first
 // occurrence strictly after `after`. Returns nil if no future occurrence exists.
-func nextRRuleOccurrence(rule string, dtstart time.Time, after time.Time) (*string, error) {
+func nextRRuleOccurrence(rule string, dtstart time.Time, after time.Time) (*types.EpochSeconds, error) {
 	opt, err := rrule.StrToROption(rule)
 	if err != nil {
 		return nil, fmt.Errorf("invalid recurrence_rule: %w", err)
@@ -135,8 +142,10 @@ func nextRRuleOccurrence(rule string, dtstart time.Time, after time.Time) (*stri
 		return nil, nil
 	}
 
-	s := next.Format("2006-01-02")
-	return &s, nil
+	// Truncate to midnight in the occurrence's timezone to keep date-level precision.
+	midnight := time.Date(next.Year(), next.Month(), next.Day(), 0, 0, 0, 0, next.Location())
+	es := types.EpochSecondsFrom(midnight)
+	return &es, nil
 }
 
 // initialStatusFromSlice returns the name of the first initial-category status

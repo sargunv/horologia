@@ -29,8 +29,8 @@ func TestTasksCreate(t *testing.T) {
 		t.Errorf("id = %v, want T-prefixed", id)
 	}
 	// Due date should be null.
-	if task["dueDate"] != nil {
-		t.Errorf("dueDate = %v, want nil", task["dueDate"])
+	if task["due"] != nil {
+		t.Errorf("dueAt = %v, want nil", task["due"])
 	}
 	// Timestamps should be set.
 	if task["createdAt"] == nil || task["createdAt"] == "" {
@@ -43,7 +43,7 @@ func TestTasksCreateWithFields(t *testing.T) {
 
 	createSpace(t, env, "home", "Home")
 
-	body := `{"title":"Clean","description":"Deep clean","status":"done","dueDate":"2025-06-15"}`
+	body := `{"title":"Clean","description":"Deep clean","status":"done","due":{"at":"2025-06-15T00:00:00Z","timezone":"UTC"}}`
 	resp := doRequest(t, env, "POST", "/spaces/home/tasks", body)
 	assertStatus(t, resp, http.StatusCreated)
 
@@ -55,8 +55,8 @@ func TestTasksCreateWithFields(t *testing.T) {
 	if task["status"] != "done" {
 		t.Errorf("status = %v, want done", task["status"])
 	}
-	if task["dueDate"] == nil {
-		t.Error("dueDate should not be nil")
+	if task["due"] == nil {
+		t.Error("dueAt should not be nil")
 	}
 }
 
@@ -234,11 +234,11 @@ func TestTasksUpdateInvalidStatus(t *testing.T) {
 	assertStatusClose(t, resp, http.StatusBadRequest)
 }
 
-func TestTasksUpdateClearDueDate(t *testing.T) {
+func TestTasksUpdateClearDue(t *testing.T) {
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
-	created := createTask(t, env, "home", `{"title":"Task","dueDate":"2025-06-15"}`)
+	created := createTask(t, env, "home", `{"title":"Task","due":{"at":"2025-06-15T00:00:00Z","timezone":"UTC"}}`)
 	id := created["id"].(string)
 
 	// Verify the due date was actually set.
@@ -246,17 +246,17 @@ func TestTasksUpdateClearDueDate(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var fetched map[string]any
 	readJSON(t, resp, &fetched)
-	if fetched["dueDate"] == nil {
-		t.Fatal("dueDate should be set after creation")
+	if fetched["due"] == nil {
+		t.Fatal("dueAt should be set after creation")
 	}
 
 	// Clear due date by sending null.
-	resp2 := doRequest(t, env, "PATCH", "/spaces/home/tasks/"+id, `{"dueDate":null}`)
+	resp2 := doRequest(t, env, "PATCH", "/spaces/home/tasks/"+id, `{"due":null}`)
 	assertStatus(t, resp2, http.StatusOK)
 	var updated map[string]any
 	readJSON(t, resp2, &updated)
-	if updated["dueDate"] != nil {
-		t.Errorf("dueDate = %v, want nil", updated["dueDate"])
+	if updated["due"] != nil {
+		t.Errorf("dueAt = %v, want nil", updated["due"])
 	}
 }
 

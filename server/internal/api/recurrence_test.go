@@ -6,6 +6,16 @@ import (
 	"time"
 )
 
+// dueAt extracts the "at" string from a task's nested "due" field.
+// Returns ("", false) if due is nil.
+func dueAtFromResponse(task map[string]any) (string, bool) {
+	due := task["due"]
+	if due == nil {
+		return "", false
+	}
+	return due.(map[string]any)["at"].(string), true
+}
+
 func TestRecurrenceOneOffDefault(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-def", "Rec Default")
@@ -78,7 +88,7 @@ func TestRecurrenceCompletionBased(t *testing.T) {
 
 	// Create a completion-based task recurring weekly.
 	task := createTask(t, env, "rec-cb",
-		`{"title":"Weekly chore","recurrenceType":"completion_based","recurrenceRule":"FREQ=WEEKLY","dueDate":"2026-03-23"}`)
+		`{"title":"Weekly chore","recurrenceType":"completion_based","recurrenceRule":"FREQ=WEEKLY","due":{"at":"2026-03-23T00:00:00Z","timezone":"UTC"}}`)
 
 	if task["recurrenceType"] != "completion_based" {
 		t.Fatalf("got recurrenceType %v, want completion_based", task["recurrenceType"])
@@ -103,18 +113,18 @@ func TestRecurrenceCompletionBased(t *testing.T) {
 		t.Fatal("expected lastCompletedAt to be set")
 	}
 	// Due date should be ~7 days from now (completion-based: DTSTART = now).
-	if updated["dueDate"] == nil {
-		t.Fatal("expected dueDate to be set after completion")
+	if updated["due"] == nil {
+		t.Fatal("expected dueAt to be set after completion")
 	}
-	newDue := updated["dueDate"].(string)
-	parsedDue, err := time.Parse("2006-01-02", newDue)
+	newDue := updated["due"].(map[string]any)["at"].(string)
+	parsedDue, err := time.Parse(time.RFC3339, newDue)
 	if err != nil {
-		t.Fatalf("parse dueDate %q: %v", newDue, err)
+		t.Fatalf("parse dueAt %q: %v", newDue, err)
 	}
 	today := time.Now().UTC().Truncate(24 * time.Hour)
 	daysUntilDue := int(parsedDue.Sub(today).Hours() / 24)
 	if daysUntilDue < 6 || daysUntilDue > 8 {
-		t.Fatalf("expected dueDate ~7 days from now, got %s (%d days)", newDue, daysUntilDue)
+		t.Fatalf("expected dueAt ~7 days from now, got %s (%d days)", newDue, daysUntilDue)
 	}
 }
 
@@ -124,7 +134,7 @@ func TestRecurrenceFixedNonAccumulating(t *testing.T) {
 
 	// Create a fixed non-accumulating task due every Saturday.
 	task := createTask(t, env, "rec-fna",
-		`{"title":"Saturday task","recurrenceType":"fixed_non_accumulating","recurrenceRule":"FREQ=WEEKLY;BYDAY=SA","dueDate":"2026-03-21"}`)
+		`{"title":"Saturday task","recurrenceType":"fixed_non_accumulating","recurrenceRule":"FREQ=WEEKLY;BYDAY=SA","due":{"at":"2026-03-21T00:00:00Z","timezone":"UTC"}}`)
 
 	taskID := task["id"].(string)
 
@@ -143,18 +153,18 @@ func TestRecurrenceFixedNonAccumulating(t *testing.T) {
 		t.Fatal("expected lastCompletedAt to be set")
 	}
 	// Due date should be the next Saturday after now.
-	if updated["dueDate"] == nil {
-		t.Fatal("expected dueDate to be set")
+	if updated["due"] == nil {
+		t.Fatal("expected dueAt to be set")
 	}
-	parsedDue, err := time.Parse("2006-01-02", updated["dueDate"].(string))
+	parsedDue, err := time.Parse(time.RFC3339, updated["due"].(map[string]any)["at"].(string))
 	if err != nil {
-		t.Fatalf("parse dueDate: %v", err)
+		t.Fatalf("parse dueAt: %v", err)
 	}
 	if parsedDue.Weekday() != time.Saturday {
-		t.Fatalf("expected dueDate to be a Saturday, got %s (%s)", updated["dueDate"], parsedDue.Weekday())
+		t.Fatalf("expected dueAt to be a Saturday, got %s (%s)", updated["due"], parsedDue.Weekday())
 	}
 	if !parsedDue.After(time.Now().Truncate(24 * time.Hour)) {
-		t.Fatalf("expected dueDate after today, got %s", updated["dueDate"])
+		t.Fatalf("expected dueAt after today, got %s", updated["due"])
 	}
 }
 
@@ -186,7 +196,7 @@ func TestRecurrenceFixedAccumulatingCompletion(t *testing.T) {
 	createSpace(t, env, "rec-fa", "Rec FA")
 
 	task := createTask(t, env, "rec-fa",
-		`{"title":"Monthly task","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=MONTHLY","dueDate":"2026-04-01"}`)
+		`{"title":"Monthly task","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=MONTHLY","due":{"at":"2026-04-01T00:00:00Z","timezone":"UTC"}}`)
 	taskID := task["id"].(string)
 
 	// Complete the task.
@@ -206,8 +216,8 @@ func TestRecurrenceFixedAccumulatingCompletion(t *testing.T) {
 		t.Fatal("expected lastCompletedAt to be set")
 	}
 	// Due date should advance to next monthly occurrence.
-	if updated["dueDate"] == nil {
-		t.Fatal("expected dueDate to be set after completion")
+	if updated["due"] == nil {
+		t.Fatal("expected dueAt to be set after completion")
 	}
 }
 
@@ -216,7 +226,7 @@ func TestRecurrenceNoRetriggerOnNonTransition(t *testing.T) {
 	createSpace(t, env, "rec-nrt", "Rec No Retrigger")
 
 	task := createTask(t, env, "rec-nrt",
-		`{"title":"Weekly chore","recurrenceType":"completion_based","recurrenceRule":"FREQ=WEEKLY","dueDate":"2026-03-23"}`)
+		`{"title":"Weekly chore","recurrenceType":"completion_based","recurrenceRule":"FREQ=WEEKLY","due":{"at":"2026-03-23T00:00:00Z","timezone":"UTC"}}`)
 	taskID := task["id"].(string)
 
 	// Complete the task.
@@ -224,7 +234,7 @@ func TestRecurrenceNoRetriggerOnNonTransition(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var first map[string]any
 	readJSON(t, resp, &first)
-	firstDue := first["dueDate"]
+	firstDueAt, _ := dueAtFromResponse(first)
 
 	// Update title while already reset to "todo" — should not change due date.
 	resp2 := doRequest(t, env, "PATCH", "/spaces/rec-nrt/tasks/"+taskID, `{"title":"Updated title"}`)
@@ -232,8 +242,9 @@ func TestRecurrenceNoRetriggerOnNonTransition(t *testing.T) {
 	var second map[string]any
 	readJSON(t, resp2, &second)
 
-	if second["dueDate"] != firstDue {
-		t.Fatalf("dueDate changed on non-status update: got %v, want %v", second["dueDate"], firstDue)
+	secondDueAt, _ := dueAtFromResponse(second)
+	if secondDueAt != firstDueAt {
+		t.Fatalf("due.at changed on non-status update: got %v, want %v", secondDueAt, firstDueAt)
 	}
 }
 
@@ -372,17 +383,17 @@ func TestRecurrenceOnDependencyRejectsRule(t *testing.T) {
 		http.StatusBadRequest)
 }
 
-func TestRecurrenceCountExhaustion(t *testing.T) {
+func TestRecurrenceUntilExhaustion(t *testing.T) {
 	env := setupTestServer(t)
-	createSpace(t, env, "rec-cnt", "Rec Count")
+	createSpace(t, env, "rec-unt", "Rec Until")
 
-	// Create a completion_based task with COUNT=1. After one completion the
-	// rule is exhausted — the task should stay at the completion status.
-	task := createTask(t, env, "rec-cnt",
-		`{"title":"Once only","recurrenceType":"completion_based","recurrenceRule":"FREQ=WEEKLY;COUNT=1","dueDate":"2026-03-23"}`)
+	// Create a completion_based task with UNTIL in the past. The rule is
+	// already exhausted — the task should stay at the completion status.
+	task := createTask(t, env, "rec-unt",
+		`{"title":"Expired","recurrenceType":"completion_based","recurrenceRule":"FREQ=WEEKLY;UNTIL=20200101T000000Z","due":{"at":"2026-03-23T00:00:00Z","timezone":"UTC"}}`)
 	taskID := task["id"].(string)
 
-	resp := doRequest(t, env, "PATCH", "/spaces/rec-cnt/tasks/"+taskID, `{"status":"done"}`)
+	resp := doRequest(t, env, "PATCH", "/spaces/rec-unt/tasks/"+taskID, `{"status":"done"}`)
 	assertStatus(t, resp, http.StatusOK)
 	var updated map[string]any
 	readJSON(t, resp, &updated)
@@ -401,7 +412,7 @@ func TestRecurrenceDoubleCompletion(t *testing.T) {
 	createSpace(t, env, "rec-dbl", "Rec Double")
 
 	task := createTask(t, env, "rec-dbl",
-		`{"title":"Every 3 days","recurrenceType":"completion_based","recurrenceRule":"FREQ=DAILY;INTERVAL=3","dueDate":"2026-03-23"}`)
+		`{"title":"Every 3 days","recurrenceType":"completion_based","recurrenceRule":"FREQ=DAILY;INTERVAL=3","due":{"at":"2026-03-23T00:00:00Z","timezone":"UTC"}}`)
 	taskID := task["id"].(string)
 
 	// First completion — should reset to todo with due date 3 days from now.
@@ -413,14 +424,14 @@ func TestRecurrenceDoubleCompletion(t *testing.T) {
 	if first["status"] != "todo" {
 		t.Fatalf("first completion: got status %v, want todo", first["status"])
 	}
-	firstDue, err := time.Parse("2006-01-02", first["dueDate"].(string))
+	firstDue, err := time.Parse(time.RFC3339, first["due"].(map[string]any)["at"].(string))
 	if err != nil {
-		t.Fatalf("parse first dueDate: %v", err)
+		t.Fatalf("parse first dueAt: %v", err)
 	}
 	today := time.Now().UTC().Truncate(24 * time.Hour)
 	daysUntil := int(firstDue.Sub(today).Hours() / 24)
 	if daysUntil < 2 || daysUntil > 4 {
-		t.Fatalf("first completion: expected dueDate ~3 days from now, got %s (%d days)", first["dueDate"], daysUntil)
+		t.Fatalf("first completion: expected dueAt ~3 days from now, got %s (%d days)", first["due"], daysUntil)
 	}
 
 	// Second completion — recurrence fires again; task should reset.
@@ -436,12 +447,13 @@ func TestRecurrenceDoubleCompletion(t *testing.T) {
 		t.Fatal("expected lastCompletedAt to be set after second completion")
 	}
 	// Both completions happen at ~same instant, so due dates should be equal.
-	secondDue, err2 := time.Parse("2006-01-02", second["dueDate"].(string))
+	secondDueStr, _ := dueAtFromResponse(second)
+	secondDue, err2 := time.Parse(time.RFC3339, secondDueStr)
 	if err2 != nil {
-		t.Fatalf("parse second dueDate: %v", err2)
+		t.Fatalf("parse second due.at: %v", err2)
 	}
 	if secondDue != firstDue {
-		t.Fatalf("second due %s should equal first due %s (same completion time)", second["dueDate"], first["dueDate"])
+		t.Fatalf("second due %s should equal first due %s (same completion time)", secondDueStr, first["due"])
 	}
 }
 
@@ -476,7 +488,7 @@ func TestRecurrenceFixedAccumulatingDueDateAdvances(t *testing.T) {
 
 	// Use a past due date so the next occurrence is clearly in the future.
 	task := createTask(t, env, "rec-fap",
-		`{"title":"Monthly","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=MONTHLY","dueDate":"2026-01-01"}`)
+		`{"title":"Monthly","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=MONTHLY","due":{"at":"2026-01-01T00:00:00Z","timezone":"UTC"}}`)
 	taskID := task["id"].(string)
 
 	resp := doRequest(t, env, "PATCH", "/spaces/rec-fap/tasks/"+taskID, `{"status":"done"}`)
@@ -486,61 +498,31 @@ func TestRecurrenceFixedAccumulatingDueDateAdvances(t *testing.T) {
 
 	// Due date should advance to the next monthly occurrence after now
 	// (from the schedule anchor of 2026-01-01).
-	if updated["dueDate"] == nil {
-		t.Fatal("expected dueDate to be set")
+	if updated["due"] == nil {
+		t.Fatal("expected dueAt to be set")
 	}
-	newDue := updated["dueDate"].(string)
-	parsedDue, err := time.Parse("2006-01-02", newDue)
+	newDue := updated["due"].(map[string]any)["at"].(string)
+	parsedDue, err := time.Parse(time.RFC3339, newDue)
 	if err != nil {
-		t.Fatalf("parse dueDate: %v", err)
+		t.Fatalf("parse dueAt: %v", err)
 	}
 	if !parsedDue.After(time.Now().Truncate(24 * time.Hour)) {
-		t.Fatalf("expected dueDate after today, got %s", newDue)
+		t.Fatalf("expected dueAt after today, got %s", newDue)
 	}
 	// Should be on the 1st of a month (FREQ=MONTHLY from Jan 1).
 	if parsedDue.Day() != 1 {
-		t.Fatalf("expected dueDate on the 1st, got day %d", parsedDue.Day())
+		t.Fatalf("expected dueAt on the 1st, got day %d", parsedDue.Day())
 	}
 }
 
-func TestRecurrenceCountNotExhausted(t *testing.T) {
+func TestRecurrenceCountRejected(t *testing.T) {
 	env := setupTestServer(t)
-	createSpace(t, env, "rec-cnt2", "Rec Count 2")
+	createSpace(t, env, "rec-cnt", "Rec Count")
 
-	// COUNT=2: first completion should reset (one occurrence remains).
-	task := createTask(t, env, "rec-cnt2",
-		`{"title":"Twice","recurrenceType":"completion_based","recurrenceRule":"FREQ=WEEKLY;COUNT=2","dueDate":"2026-03-23"}`)
-	taskID := task["id"].(string)
-
-	resp := doRequest(t, env, "PATCH", "/spaces/rec-cnt2/tasks/"+taskID, `{"status":"done"}`)
-	assertStatus(t, resp, http.StatusOK)
-	var updated map[string]any
-	readJSON(t, resp, &updated)
-
-	// COUNT=2 means two occurrences from DTSTART. The first is at DTSTART (now),
-	// excluded by After(now, false). The second is now+7 days. Task should reset.
-	if updated["status"] != "todo" {
-		t.Fatalf("got status %v, want todo (COUNT=2 not yet exhausted)", updated["status"])
-	}
-	if updated["dueDate"] == nil {
-		t.Fatal("expected dueDate to be set")
-	}
-}
-
-func TestRecurrenceCountOverLimitRejected(t *testing.T) {
-	env := setupTestServer(t)
-	createSpace(t, env, "rec-col", "Rec Count Limit")
-
-	// COUNT=1000 should be accepted.
+	// COUNT is not supported — use UNTIL instead.
 	assertStatusClose(t,
-		doRequest(t, env, "POST", "/spaces/rec-col/tasks",
-			`{"title":"OK","recurrenceType":"completion_based","recurrenceRule":"FREQ=DAILY;COUNT=1000"}`),
-		http.StatusCreated)
-
-	// COUNT=1001 should be rejected.
-	assertStatusClose(t,
-		doRequest(t, env, "POST", "/spaces/rec-col/tasks",
-			`{"title":"Bad","recurrenceType":"completion_based","recurrenceRule":"FREQ=DAILY;COUNT=1001"}`),
+		doRequest(t, env, "POST", "/spaces/rec-cnt/tasks",
+			`{"title":"Bad","recurrenceType":"completion_based","recurrenceRule":"FREQ=DAILY;COUNT=5"}`),
 		http.StatusBadRequest)
 }
 

@@ -32,18 +32,21 @@ var taskSchema = map[string]any{
 			},
 			"required": []string{"kind", "taskId", "createdAt"},
 		}},
-		"dueDate":   map[string]any{"type": []string{"string", "null"}, "format": "date"},
+		"due": map[string]any{"type": []string{"object", "null"}, "properties": map[string]any{
+			"at":       map[string]any{"type": "string", "format": "date-time"},
+			"timezone": map[string]any{"type": "string"},
+		}, "required": []string{"at", "timezone"}},
 		"createdAt": map[string]any{"type": "string", "format": "date-time"},
 		"updatedAt": map[string]any{"type": "string", "format": "date-time"},
 	},
-	"required": []string{"id", "title", "description", "status", "effort", "priority", "assigneeIds", "tags", "relations", "dueDate", "createdAt", "updatedAt"},
+	"required": []string{"id", "title", "description", "status", "effort", "priority", "assigneeIds", "tags", "relations", "due", "createdAt", "updatedAt"},
 }
 
 var taskHeaders = []string{"ID", "Title", "Status", "Effort", "Priority", "Due", "Assignees", "Created"}
 
 func formatDue(t gen.Task, fallback string) string {
-	if d, ok := t.DueDate.Get(); ok {
-		return d.Format(time.DateOnly)
+	if d, ok := t.Due.Get(); ok {
+		return d.At.Format(time.DateOnly)
 	}
 	return fallback
 }
@@ -258,7 +261,10 @@ assigns the default initial status. Status names are defined per space.`,
 				if err != nil {
 					return err
 				}
-				req.DueDate = gen.NewOptNilDate(d)
+				req.Due = gen.NewOptNilTaskDue(gen.TaskDue{
+					At:       d,
+					Timezone: "UTC", // TODO: detect from system
+				})
 			}
 			if cmd.Flags().Changed("assignee") {
 				req.AssigneeIds = assignees
@@ -348,13 +354,16 @@ to remove all assignees.`,
 				req.Priority = gen.NewOptNilString(priorityName)
 			}
 			if clearDue {
-				req.DueDate.SetToNull()
+				req.Due.SetToNull()
 			} else if cmd.Flags().Changed("due") {
 				d, err := parseDueDate(dueDate)
 				if err != nil {
 					return err
 				}
-				req.DueDate = gen.NewOptNilDate(d)
+				req.Due = gen.NewOptNilTaskDue(gen.TaskDue{
+					At:       d,
+					Timezone: "UTC", // TODO: detect from system
+				})
 			}
 			if clearAssignees {
 				req.AssigneeIds = []string{}

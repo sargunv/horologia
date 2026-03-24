@@ -119,7 +119,7 @@ func TestFormatDue(t *testing.T) {
 	t.Run("with date", func(t *testing.T) {
 		d := time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC)
 		task := gen.Task{}
-		task.DueDate.SetTo(d)
+		task.Due.SetTo(gen.TaskDue{At: d, Timezone: "UTC"})
 		got := formatDue(task, "-")
 		if got != "2026-04-01" {
 			t.Errorf("formatDue() = %q, want %q", got, "2026-04-01")
@@ -128,7 +128,7 @@ func TestFormatDue(t *testing.T) {
 
 	t.Run("without date", func(t *testing.T) {
 		task := gen.Task{}
-		task.DueDate.SetToNull()
+		task.Due.SetToNull()
 		got := formatDue(task, "n/a")
 		if got != "n/a" {
 			t.Errorf("formatDue() = %q, want %q", got, "n/a")

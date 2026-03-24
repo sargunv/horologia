@@ -20,10 +20,8 @@
 
 1. **Recurrence: fixed accumulating cron** — server-side cron job to spawn tasks for
    fixed-accumulating schedules
-2. **Recurrence: auto-advance** — auto-advance due dates for fixed non-accumulating tasks past their
-   grace period
-3. **Completion history / activity log** — log all task actions with user+token attribution
-4. **Rotation pools** — rotating assignees on completion
+2. **Completion history / activity log** — log all task actions with user+token attribution
+3. **Rotation pools** — rotating assignees on completion
 
 ## Views & UX
 

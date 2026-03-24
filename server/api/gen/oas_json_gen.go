@@ -864,52 +864,6 @@ func (s *LoginResponse) UnmarshalJSON(data []byte) error {
 }
 
 // Encode encodes time.Time as json.
-func (o NilDate) Encode(e *jx.Encoder, format func(*jx.Encoder, time.Time)) {
-	if o.Null {
-		e.Null()
-		return
-	}
-	format(e, o.Value)
-}
-
-// Decode decodes time.Time from json.
-func (o *NilDate) Decode(d *jx.Decoder, format func(*jx.Decoder) (time.Time, error)) error {
-	if o == nil {
-		return errors.New("invalid: unable to decode NilDate to nil")
-	}
-	if d.Next() == jx.Null {
-		if err := d.Null(); err != nil {
-			return err
-		}
-
-		var v time.Time
-		o.Value = v
-		o.Null = true
-		return nil
-	}
-	o.Null = false
-	v, err := format(d)
-	if err != nil {
-		return err
-	}
-	o.Value = v
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s NilDate) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e, json.EncodeDate)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *NilDate) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d, json.DecodeDate)
-}
-
-// Encode encodes time.Time as json.
 func (o NilDateTime) Encode(e *jx.Encoder, format func(*jx.Encoder, time.Time)) {
 	if o.Null {
 		e.Null()
@@ -1001,55 +955,48 @@ func (s *NilString) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
-// Encode encodes time.Time as json.
-func (o OptNilDate) Encode(e *jx.Encoder, format func(*jx.Encoder, time.Time)) {
-	if !o.Set {
-		return
-	}
+// Encode encodes TaskDue as json.
+func (o NilTaskDue) Encode(e *jx.Encoder) {
 	if o.Null {
 		e.Null()
 		return
 	}
-	format(e, o.Value)
+	o.Value.Encode(e)
 }
 
-// Decode decodes time.Time from json.
-func (o *OptNilDate) Decode(d *jx.Decoder, format func(*jx.Decoder) (time.Time, error)) error {
+// Decode decodes TaskDue from json.
+func (o *NilTaskDue) Decode(d *jx.Decoder) error {
 	if o == nil {
-		return errors.New("invalid: unable to decode OptNilDate to nil")
+		return errors.New("invalid: unable to decode NilTaskDue to nil")
 	}
 	if d.Next() == jx.Null {
 		if err := d.Null(); err != nil {
 			return err
 		}
 
-		var v time.Time
+		var v TaskDue
 		o.Value = v
-		o.Set = true
 		o.Null = true
 		return nil
 	}
-	o.Set = true
 	o.Null = false
-	v, err := format(d)
-	if err != nil {
+	if err := o.Value.Decode(d); err != nil {
 		return err
 	}
-	o.Value = v
 	return nil
 }
 
 // MarshalJSON implements stdjson.Marshaler.
-func (s OptNilDate) MarshalJSON() ([]byte, error) {
+func (s NilTaskDue) MarshalJSON() ([]byte, error) {
 	e := jx.Encoder{}
-	s.Encode(&e, json.EncodeDate)
+	s.Encode(&e)
 	return e.Bytes(), nil
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *OptNilDate) UnmarshalJSON(data []byte) error {
+func (s *NilTaskDue) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
-	return s.Decode(d, json.DecodeDate)
+	return s.Decode(d)
 }
 
 // Encode encodes string as json.
@@ -1099,6 +1046,55 @@ func (s OptNilString) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptNilString) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes TaskDue as json.
+func (o OptNilTaskDue) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	if o.Null {
+		e.Null()
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes TaskDue from json.
+func (o *OptNilTaskDue) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptNilTaskDue to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v TaskDue
+		o.Value = v
+		o.Set = true
+		o.Null = true
+		return nil
+	}
+	o.Set = true
+	o.Null = false
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptNilTaskDue) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptNilTaskDue) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -2692,8 +2688,8 @@ func (s *Task) encodeFields(e *jx.Encoder) {
 		e.ArrEnd()
 	}
 	{
-		e.FieldStart("dueDate")
-		s.DueDate.Encode(e, json.EncodeDate)
+		e.FieldStart("due")
+		s.Due.Encode(e)
 	}
 	{
 		e.FieldStart("createdAt")
@@ -2718,7 +2714,7 @@ var jsonFieldsNameOfTask = [15]string{
 	9:  "assigneeIds",
 	10: "tags",
 	11: "relations",
-	12: "dueDate",
+	12: "due",
 	13: "createdAt",
 	14: "updatedAt",
 }
@@ -2888,15 +2884,15 @@ func (s *Task) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"relations\"")
 			}
-		case "dueDate":
+		case "due":
 			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
-				if err := s.DueDate.Decode(d, json.DecodeDate); err != nil {
+				if err := s.Due.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"dueDate\"")
+				return errors.Wrap(err, "decode field \"due\"")
 			}
 		case "createdAt":
 			requiredBitSet[1] |= 1 << 5
@@ -3049,9 +3045,9 @@ func (s *TaskCreate) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.DueDate.Set {
-			e.FieldStart("dueDate")
-			s.DueDate.Encode(e, json.EncodeDate)
+		if s.Due.Set {
+			e.FieldStart("due")
+			s.Due.Encode(e)
 		}
 	}
 }
@@ -3066,7 +3062,7 @@ var jsonFieldsNameOfTaskCreate = [10]string{
 	6: "recurrenceRule",
 	7: "assigneeIds",
 	8: "tags",
-	9: "dueDate",
+	9: "due",
 }
 
 // Decode decodes TaskCreate from json.
@@ -3188,15 +3184,15 @@ func (s *TaskCreate) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"tags\"")
 			}
-		case "dueDate":
+		case "due":
 			if err := func() error {
-				s.DueDate.Reset()
-				if err := s.DueDate.Decode(d, json.DecodeDate); err != nil {
+				s.Due.Reset()
+				if err := s.Due.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"dueDate\"")
+				return errors.Wrap(err, "decode field \"due\"")
 			}
 		default:
 			return d.Skip()
@@ -3251,6 +3247,119 @@ func (s *TaskCreate) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *TaskCreate) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *TaskDue) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *TaskDue) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("at")
+		json.EncodeDateTime(e, s.At)
+	}
+	{
+		e.FieldStart("timezone")
+		e.Str(s.Timezone)
+	}
+}
+
+var jsonFieldsNameOfTaskDue = [2]string{
+	0: "at",
+	1: "timezone",
+}
+
+// Decode decodes TaskDue from json.
+func (s *TaskDue) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode TaskDue to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "at":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.At = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"at\"")
+			}
+		case "timezone":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.Timezone = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"timezone\"")
+			}
+		default:
+			return d.Skip()
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode TaskDue")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfTaskDue) {
+					name = jsonFieldsNameOfTaskDue[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *TaskDue) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *TaskDue) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -5162,9 +5271,9 @@ func (s *TaskUpdate) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.DueDate.Set {
-			e.FieldStart("dueDate")
-			s.DueDate.Encode(e, json.EncodeDate)
+		if s.Due.Set {
+			e.FieldStart("due")
+			s.Due.Encode(e)
 		}
 	}
 }
@@ -5179,7 +5288,7 @@ var jsonFieldsNameOfTaskUpdate = [10]string{
 	6: "recurrenceRule",
 	7: "assigneeIds",
 	8: "tags",
-	9: "dueDate",
+	9: "due",
 }
 
 // Decode decodes TaskUpdate from json.
@@ -5298,15 +5407,15 @@ func (s *TaskUpdate) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"tags\"")
 			}
-		case "dueDate":
+		case "due":
 			if err := func() error {
-				s.DueDate.Reset()
-				if err := s.DueDate.Decode(d, json.DecodeDate); err != nil {
+				s.Due.Reset()
+				if err := s.Due.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"dueDate\"")
+				return errors.Wrap(err, "decode field \"due\"")
 			}
 		default:
 			return d.Skip()

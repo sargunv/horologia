@@ -301,51 +301,6 @@ func (s *LoginResponse) SetUser(val User) {
 	s.User = val
 }
 
-// NewNilDate returns new NilDate with value set to v.
-func NewNilDate(v time.Time) NilDate {
-	return NilDate{
-		Value: v,
-	}
-}
-
-// NilDate is nullable time.Time.
-type NilDate struct {
-	Value time.Time
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilDate) SetTo(v time.Time) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilDate) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilDate) SetToNull() {
-	o.Null = true
-	var v time.Time
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilDate) Get() (v time.Time, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilDate) Or(d time.Time) time.Time {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewNilDateTime returns new NilDateTime with value set to v.
 func NewNilDateTime(v time.Time) NilDateTime {
 	return NilDateTime{
@@ -436,6 +391,51 @@ func (o NilString) Or(d string) string {
 	return d
 }
 
+// NewNilTaskDue returns new NilTaskDue with value set to v.
+func NewNilTaskDue(v TaskDue) NilTaskDue {
+	return NilTaskDue{
+		Value: v,
+	}
+}
+
+// NilTaskDue is nullable TaskDue.
+type NilTaskDue struct {
+	Value TaskDue
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilTaskDue) SetTo(v TaskDue) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilTaskDue) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilTaskDue) SetToNull() {
+	o.Null = true
+	var v TaskDue
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilTaskDue) Get() (v TaskDue, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilTaskDue) Or(d TaskDue) TaskDue {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptInt32 returns new OptInt32 with value set to v.
 func NewOptInt32(v int32) OptInt32 {
 	return OptInt32{
@@ -476,69 +476,6 @@ func (o OptInt32) Get() (v int32, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptInt32) Or(d int32) int32 {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptNilDate returns new OptNilDate with value set to v.
-func NewOptNilDate(v time.Time) OptNilDate {
-	return OptNilDate{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptNilDate is optional nullable time.Time.
-type OptNilDate struct {
-	Value time.Time
-	Set   bool
-	Null  bool
-}
-
-// IsSet returns true if OptNilDate was set.
-func (o OptNilDate) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptNilDate) Reset() {
-	var v time.Time
-	o.Value = v
-	o.Set = false
-	o.Null = false
-}
-
-// SetTo sets value to v.
-func (o *OptNilDate) SetTo(v time.Time) {
-	o.Set = true
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o OptNilDate) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *OptNilDate) SetToNull() {
-	o.Set = true
-	o.Null = true
-	var v time.Time
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptNilDate) Get() (v time.Time, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptNilDate) Or(d time.Time) time.Time {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -602,6 +539,69 @@ func (o OptNilString) Get() (v string, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNilString) Or(d string) string {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilTaskDue returns new OptNilTaskDue with value set to v.
+func NewOptNilTaskDue(v TaskDue) OptNilTaskDue {
+	return OptNilTaskDue{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilTaskDue is optional nullable TaskDue.
+type OptNilTaskDue struct {
+	Value TaskDue
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilTaskDue was set.
+func (o OptNilTaskDue) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilTaskDue) Reset() {
+	var v TaskDue
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilTaskDue) SetTo(v TaskDue) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilTaskDue) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilTaskDue) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v TaskDue
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilTaskDue) Get() (v TaskDue, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilTaskDue) Or(d TaskDue) TaskDue {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -1134,7 +1134,7 @@ type Task struct {
 	AssigneeIds     []string           `json:"assigneeIds"`
 	Tags            []string           `json:"tags"`
 	Relations       []TaskRelation     `json:"relations"`
-	DueDate         NilDate            `json:"dueDate"`
+	Due             NilTaskDue         `json:"due"`
 	CreatedAt       time.Time          `json:"createdAt"`
 	UpdatedAt       time.Time          `json:"updatedAt"`
 }
@@ -1199,9 +1199,9 @@ func (s *Task) GetRelations() []TaskRelation {
 	return s.Relations
 }
 
-// GetDueDate returns the value of DueDate.
-func (s *Task) GetDueDate() NilDate {
-	return s.DueDate
+// GetDue returns the value of Due.
+func (s *Task) GetDue() NilTaskDue {
+	return s.Due
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -1274,9 +1274,9 @@ func (s *Task) SetRelations(val []TaskRelation) {
 	s.Relations = val
 }
 
-// SetDueDate sets the value of DueDate.
-func (s *Task) SetDueDate(val NilDate) {
-	s.DueDate = val
+// SetDue sets the value of Due.
+func (s *Task) SetDue(val NilTaskDue) {
+	s.Due = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -1300,7 +1300,7 @@ type TaskCreate struct {
 	RecurrenceRule OptString             `json:"recurrenceRule"`
 	AssigneeIds    []string              `json:"assigneeIds"`
 	Tags           []string              `json:"tags"`
-	DueDate        OptNilDate            `json:"dueDate"`
+	Due            OptNilTaskDue         `json:"due"`
 }
 
 // GetTitle returns the value of Title.
@@ -1348,9 +1348,9 @@ func (s *TaskCreate) GetTags() []string {
 	return s.Tags
 }
 
-// GetDueDate returns the value of DueDate.
-func (s *TaskCreate) GetDueDate() OptNilDate {
-	return s.DueDate
+// GetDue returns the value of Due.
+func (s *TaskCreate) GetDue() OptNilTaskDue {
+	return s.Due
 }
 
 // SetTitle sets the value of Title.
@@ -1398,9 +1398,35 @@ func (s *TaskCreate) SetTags(val []string) {
 	s.Tags = val
 }
 
-// SetDueDate sets the value of DueDate.
-func (s *TaskCreate) SetDueDate(val OptNilDate) {
-	s.DueDate = val
+// SetDue sets the value of Due.
+func (s *TaskCreate) SetDue(val OptNilTaskDue) {
+	s.Due = val
+}
+
+// Ref: #/components/schemas/TaskDue
+type TaskDue struct {
+	At       time.Time `json:"at"`
+	Timezone string    `json:"timezone"`
+}
+
+// GetAt returns the value of At.
+func (s *TaskDue) GetAt() time.Time {
+	return s.At
+}
+
+// GetTimezone returns the value of Timezone.
+func (s *TaskDue) GetTimezone() string {
+	return s.Timezone
+}
+
+// SetAt sets the value of At.
+func (s *TaskDue) SetAt(val time.Time) {
+	s.At = val
+}
+
+// SetTimezone sets the value of Timezone.
+func (s *TaskDue) SetTimezone(val string) {
+	s.Timezone = val
 }
 
 // Ref: #/components/schemas/TaskEffortLevel
@@ -1981,7 +2007,7 @@ type TaskUpdate struct {
 	RecurrenceRule OptNilString          `json:"recurrenceRule"`
 	AssigneeIds    []string              `json:"assigneeIds"`
 	Tags           []string              `json:"tags"`
-	DueDate        OptNilDate            `json:"dueDate"`
+	Due            OptNilTaskDue         `json:"due"`
 }
 
 // GetTitle returns the value of Title.
@@ -2029,9 +2055,9 @@ func (s *TaskUpdate) GetTags() []string {
 	return s.Tags
 }
 
-// GetDueDate returns the value of DueDate.
-func (s *TaskUpdate) GetDueDate() OptNilDate {
-	return s.DueDate
+// GetDue returns the value of Due.
+func (s *TaskUpdate) GetDue() OptNilTaskDue {
+	return s.Due
 }
 
 // SetTitle sets the value of Title.
@@ -2079,9 +2105,9 @@ func (s *TaskUpdate) SetTags(val []string) {
 	s.Tags = val
 }
 
-// SetDueDate sets the value of DueDate.
-func (s *TaskUpdate) SetDueDate(val OptNilDate) {
-	s.DueDate = val
+// SetDue sets the value of Due.
+func (s *TaskUpdate) SetDue(val OptNilTaskDue) {
+	s.Due = val
 }
 
 // Ref: #/components/schemas/User
