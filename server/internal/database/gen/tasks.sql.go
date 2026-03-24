@@ -12,6 +12,22 @@ import (
 	"github.com/sargunv/tend/server/internal/types"
 )
 
+const convertAccumulatingToOneOff = `-- name: ConvertAccumulatingToOneOff :execresult
+UPDATE tasks
+SET recurrence_type = 'one_off', recurrence_rule = NULL, updated_at = ?
+WHERE id = ? AND space_slug = ? AND recurrence_type = 'fixed_accumulating'
+`
+
+type ConvertAccumulatingToOneOffParams struct {
+	UpdatedAt types.EpochSeconds
+	ID        int64
+	SpaceSlug string
+}
+
+func (q *Queries) ConvertAccumulatingToOneOff(ctx context.Context, arg ConvertAccumulatingToOneOffParams) (sql.Result, error) {
+	return q.db.ExecContext(ctx, convertAccumulatingToOneOff, arg.UpdatedAt, arg.ID, arg.SpaceSlug)
+}
+
 const createTask = `-- name: CreateTask :one
 INSERT INTO tasks (space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, created_at, updated_at)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -110,6 +126,53 @@ func (q *Queries) GetTask(ctx context.Context, arg GetTaskParams) (Task, error) 
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const listOverdueAccumulatingTasks = `-- name: ListOverdueAccumulatingTasks :many
+SELECT id, space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, last_completed_at, created_at, updated_at FROM tasks
+WHERE recurrence_type = 'fixed_accumulating'
+  AND due_at IS NOT NULL
+  AND due_at <= ?
+ORDER BY space_slug, id ASC
+LIMIT 100
+`
+
+func (q *Queries) ListOverdueAccumulatingTasks(ctx context.Context, dueAt *types.EpochSeconds) ([]Task, error) {
+	rows, err := q.db.QueryContext(ctx, listOverdueAccumulatingTasks, dueAt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Task{}
+	for rows.Next() {
+		var i Task
+		if err := rows.Scan(
+			&i.ID,
+			&i.SpaceSlug,
+			&i.Title,
+			&i.Description,
+			&i.StatusName,
+			&i.EffortName,
+			&i.PriorityName,
+			&i.DueAt,
+			&i.DueTz,
+			&i.RecurrenceType,
+			&i.RecurrenceRule,
+			&i.LastCompletedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listTasksBySpace = `-- name: ListTasksBySpace :many

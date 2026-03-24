@@ -1211,6 +1211,10 @@ func (s TaskRelationKind) Validate() error {
 		return nil
 	case "triggered_by":
 		return nil
+	case "spawns":
+		return nil
+	case "spawned_by":
+		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
 	}

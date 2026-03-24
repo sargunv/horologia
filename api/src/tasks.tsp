@@ -21,6 +21,8 @@ enum TaskRelationKind {
   duplicates,
   triggers,
   triggered_by,
+  spawns,
+  spawned_by,
 }
 
 model TaskRelation {

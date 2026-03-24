@@ -152,6 +152,31 @@ func TestConvert_formatParseUserID(t *testing.T) {
 	}
 }
 
+// TestRelationKindExhaustiveness ensures every TaskRelationKind value appears in
+// exactly one of directedKindMap or symmetricKinds. Adding a new kind without
+// updating these maps will cause this test to fail.
+func TestRelationKindExhaustiveness(t *testing.T) {
+	for _, k := range apigen.TaskRelationKind("").AllValues() {
+		_, inDirected := directedKindMap[k]
+		_, inSymmetric := symmetricKinds[string(k)]
+		if !inDirected && !inSymmetric {
+			t.Errorf("kind %q not found in directedKindMap or symmetricKinds — decide copyOnSpawn", k)
+		}
+		if inDirected && inSymmetric {
+			t.Errorf("kind %q found in both directedKindMap and symmetricKinds", k)
+		}
+	}
+
+	// Verify that directed pairs sharing a stored kind agree on copyOnSpawn.
+	storedKindSeen := make(map[string]bool)
+	for k, c := range directedKindMap {
+		if prev, seen := storedKindSeen[c.storedKind]; seen && prev != c.copyOnSpawn {
+			t.Errorf("stored kind %q has conflicting copyOnSpawn values (via %q)", c.storedKind, k)
+		}
+		storedKindSeen[c.storedKind] = c.copyOnSpawn
+	}
+}
+
 func TestConvert_canonicalizeRelation(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -209,6 +234,18 @@ func TestConvert_canonicalizeRelation(t *testing.T) {
 			kind:     apigen.TaskRelationKindDuplicates,
 			sourceID: 8, targetID: 7,
 			wantKind: "duplicates", wantSource: 7, wantTarget: 8,
+		},
+		{
+			name:     "spawns: no flip",
+			kind:     apigen.TaskRelationKindSpawns,
+			sourceID: 9, targetID: 10,
+			wantKind: "spawns", wantSource: 9, wantTarget: 10,
+		},
+		{
+			name:     "spawned_by: flips source and target",
+			kind:     apigen.TaskRelationKindSpawnedBy,
+			sourceID: 9, targetID: 10,
+			wantKind: "spawns", wantSource: 10, wantTarget: 9,
 		},
 	}
 	for _, tt := range tests {
@@ -292,6 +329,20 @@ func TestConvert_relationFromDB(t *testing.T) {
 			perspectiveID: 8,
 			wantKind:      apigen.TaskRelationKindDuplicates,
 			wantTaskID:    "T7",
+		},
+		{
+			name:          "spawns: from source perspective",
+			rel:           taskRelationRow{SourceTaskID: 9, TargetTaskID: 10, Kind: "spawns", CreatedAt: ts},
+			perspectiveID: 9,
+			wantKind:      apigen.TaskRelationKindSpawns,
+			wantTaskID:    "T10",
+		},
+		{
+			name:          "spawns: from target perspective",
+			rel:           taskRelationRow{SourceTaskID: 9, TargetTaskID: 10, Kind: "spawns", CreatedAt: ts},
+			perspectiveID: 10,
+			wantKind:      apigen.TaskRelationKindSpawnedBy,
+			wantTaskID:    "T9",
 		},
 	}
 	for _, tt := range tests {

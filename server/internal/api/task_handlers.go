@@ -356,7 +356,7 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 			lastCompletedAt = &now
 
 			switch recurrenceType {
-			case "completion_based", "fixed_non_accumulating", "fixed_accumulating":
+			case "completion_based", "fixed_non_accumulating":
 				next, err := computeNextDueAt(recurrenceType, recurrenceRule, existing.DueAt, existing.DueTz, now.Time())
 				if err != nil {
 					return nil, err
@@ -377,6 +377,27 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 					}
 					newStatus = initialStatus
 				}
+			case "fixed_accumulating":
+				// On completion: current task becomes one_off (stays completed),
+				// a new task is spawned with the recurrence config and next due date.
+				next, err := computeNextDueAt(recurrenceType, recurrenceRule, existing.DueAt, existing.DueTz, now.Time())
+				if err != nil {
+					return nil, err
+				}
+				if next != nil {
+					initialStatus, err := initialStatusFromSlice(statuses)
+					if err != nil {
+						return nil, err
+					}
+					if _, err := h.spawnTaskFromTemplate(ctx, q, existing,
+						"fixed_accumulating", recurrenceRule, next, initialStatus, now,
+					); err != nil {
+						return nil, err
+					}
+				}
+				// Convert the current task to one_off.
+				recurrenceType = "one_off"
+				recurrenceRule = nil
 			}
 		}
 	}

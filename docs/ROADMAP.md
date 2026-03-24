@@ -15,13 +15,13 @@
 - CRUD for statuses, effort levels, and priority levels (PUT replace-all API)
 - Recurrence — schema, API, completion triggers for completion-based, fixed non-accumulating, and
   on-dependency types. RRULE (RFC 5545) schedule format. Triggers relation kind.
+- Recurrence: fixed accumulating — server-side cron job spawns one_off tasks for missed occurrences,
+  completion spawns next task. Spawns/spawned_by relation kind. copyOnSpawn relation metadata.
 
 ## Core Task Features
 
-1. **Recurrence: fixed accumulating cron** — server-side cron job to spawn tasks for
-   fixed-accumulating schedules
-2. **Completion history / activity log** — log all task actions with user+token attribution
-3. **Rotation pools** — rotating assignees on completion
+1. **Completion history / activity log** — log all task actions with user+token attribution
+2. **Rotation pools** — rotating assignees on completion
 
 ## Views & UX
 

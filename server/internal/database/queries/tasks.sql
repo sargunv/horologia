@@ -26,3 +26,16 @@ DELETE FROM tasks WHERE id = ? AND space_slug = ?;
 UPDATE tasks
 SET status_name = ?, updated_at = ?
 WHERE id = ? AND space_slug = ? AND status_name != ?;
+
+-- name: ConvertAccumulatingToOneOff :execresult
+UPDATE tasks
+SET recurrence_type = 'one_off', recurrence_rule = NULL, updated_at = ?
+WHERE id = ? AND space_slug = ? AND recurrence_type = 'fixed_accumulating';
+
+-- name: ListOverdueAccumulatingTasks :many
+SELECT * FROM tasks
+WHERE recurrence_type = 'fixed_accumulating'
+  AND due_at IS NOT NULL
+  AND due_at <= ?
+ORDER BY space_slug, id ASC
+LIMIT 100;

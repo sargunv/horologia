@@ -1735,6 +1735,8 @@ const (
 	TaskRelationKindDuplicates  TaskRelationKind = "duplicates"
 	TaskRelationKindTriggers    TaskRelationKind = "triggers"
 	TaskRelationKindTriggeredBy TaskRelationKind = "triggered_by"
+	TaskRelationKindSpawns      TaskRelationKind = "spawns"
+	TaskRelationKindSpawnedBy   TaskRelationKind = "spawned_by"
 )
 
 // AllValues returns all TaskRelationKind values.
@@ -1748,6 +1750,8 @@ func (TaskRelationKind) AllValues() []TaskRelationKind {
 		TaskRelationKindDuplicates,
 		TaskRelationKindTriggers,
 		TaskRelationKindTriggeredBy,
+		TaskRelationKindSpawns,
+		TaskRelationKindSpawnedBy,
 	}
 }
 
@@ -1769,6 +1773,10 @@ func (s TaskRelationKind) MarshalText() ([]byte, error) {
 	case TaskRelationKindTriggers:
 		return []byte(s), nil
 	case TaskRelationKindTriggeredBy:
+		return []byte(s), nil
+	case TaskRelationKindSpawns:
+		return []byte(s), nil
+	case TaskRelationKindSpawnedBy:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -1801,6 +1809,12 @@ func (s *TaskRelationKind) UnmarshalText(data []byte) error {
 		return nil
 	case TaskRelationKindTriggeredBy:
 		*s = TaskRelationKindTriggeredBy
+		return nil
+	case TaskRelationKindSpawns:
+		*s = TaskRelationKindSpawns
+		return nil
+	case TaskRelationKindSpawnedBy:
+		*s = TaskRelationKindSpawnedBy
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)

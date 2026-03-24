@@ -20,9 +20,10 @@ import (
 )
 
 type testEnv struct {
-	Server *httptest.Server
-	Token  string
-	db     *sql.DB
+	Server  *httptest.Server
+	Token   string
+	Handler *api.Handler
+	db      *sql.DB
 }
 
 func setupTestServer(t *testing.T) *testEnv {
@@ -76,9 +77,10 @@ func setupTestServer(t *testing.T) *testEnv {
 	t.Cleanup(srv.Close)
 
 	return &testEnv{
-		Server: srv,
-		Token:  rawToken,
-		db:     db,
+		Server:  srv,
+		Token:   rawToken,
+		Handler: handler,
+		db:      db,
 	}
 }
 

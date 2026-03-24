@@ -4644,6 +4644,10 @@ func (s *TaskRelationKind) Decode(d *jx.Decoder) error {
 		*s = TaskRelationKindTriggers
 	case TaskRelationKindTriggeredBy:
 		*s = TaskRelationKindTriggeredBy
+	case TaskRelationKindSpawns:
+		*s = TaskRelationKindSpawns
+	case TaskRelationKindSpawnedBy:
+		*s = TaskRelationKindSpawnedBy
 	default:
 		*s = TaskRelationKind(v)
 	}

@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/pressly/goose/v3"
@@ -105,6 +106,12 @@ var serveCmd = &cobra.Command{
 		}
 
 		handler := &api.Handler{DB: db, Log: log}
+
+		// Start the fixed_accumulating cron job.
+		cronCtx, cronCancel := context.WithCancel(context.Background())
+		defer cronCancel()
+		go handler.RunAccumulatingCron(cronCtx, time.Minute)
+
 		h, err := api.NewServer(handler, log)
 		if err != nil {
 			return fmt.Errorf("create server: %w", err)

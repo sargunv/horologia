@@ -26,6 +26,12 @@ func (h *Handler) SpaceTaskRelationsCreate(ctx context.Context, req *apigen.Task
 		return nil, badRequest("a task cannot be related to itself")
 	}
 
+	// spawns/spawned_by are system-managed relations created by the recurrence
+	// engine; users cannot create or manipulate them directly.
+	if req.Kind == apigen.TaskRelationKindSpawns || req.Kind == apigen.TaskRelationKindSpawnedBy {
+		return nil, badRequest("spawns/spawned_by relations are system-managed and cannot be created manually")
+	}
+
 	q := dbgen.New(h.DB)
 
 	// Verify target task exists and is in the same space.
@@ -66,6 +72,10 @@ func (h *Handler) SpaceTaskRelationsDelete(ctx context.Context, params apigen.Sp
 	targetID, err := parseTaskID(params.RelatedTaskId)
 	if err != nil {
 		return badRequest(err.Error())
+	}
+
+	if params.Kind == apigen.TaskRelationKindSpawns || params.Kind == apigen.TaskRelationKindSpawnedBy {
+		return badRequest("spawns/spawned_by relations are system-managed and cannot be deleted manually")
 	}
 
 	storedKind, storedSource, storedTarget := canonicalizeRelation(params.Kind, sourceID, targetID)

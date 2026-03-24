@@ -95,18 +95,26 @@ type taskRelationRow struct {
 	CreatedAt    types.EpochSeconds
 }
 
-// directedKindMap maps API-facing directed relation kinds to their stored canonical kind
-// and whether source/target should be flipped.
+// directedKindMap maps API-facing directed relation kinds to their stored canonical kind,
+// whether source/target should be flipped, and whether the relation should be copied
+// when spawning a new task from a fixed_accumulating template.
+//
+// copyOnSpawn policy: true for relations that describe a task's role in a workflow
+// (parent/child, blocking, triggering); false for relations specific to a particular
+// instance (duplicates, spawn lineage).
 var directedKindMap = map[apigen.TaskRelationKind]struct {
-	storedKind string
-	flip       bool
+	storedKind  string
+	flip        bool
+	copyOnSpawn bool
 }{
-	apigen.TaskRelationKindParentOf:    {"parent", false},
-	apigen.TaskRelationKindChildOf:     {"parent", true},
-	apigen.TaskRelationKindBlocks:      {"blocks", false},
-	apigen.TaskRelationKindBlockedBy:   {"blocks", true},
-	apigen.TaskRelationKindTriggers:    {"triggers", false},
-	apigen.TaskRelationKindTriggeredBy: {"triggers", true},
+	apigen.TaskRelationKindParentOf:    {"parent", false, true},
+	apigen.TaskRelationKindChildOf:     {"parent", true, true},
+	apigen.TaskRelationKindBlocks:      {"blocks", false, true},
+	apigen.TaskRelationKindBlockedBy:   {"blocks", true, true},
+	apigen.TaskRelationKindTriggers:    {"triggers", false, true},
+	apigen.TaskRelationKindTriggeredBy: {"triggers", true, true},
+	apigen.TaskRelationKindSpawns:      {"spawns", false, false},
+	apigen.TaskRelationKindSpawnedBy:   {"spawns", true, false},
 }
 
 // inverseKindMap is derived from directedKindMap at init time. It maps
@@ -117,21 +125,35 @@ var inverseKindMap map[struct {
 }]apigen.TaskRelationKind
 
 // symmetricKinds lists stored relation kinds that are symmetric (same kind in both directions).
-var symmetricKinds = map[string]bool{
-	string(apigen.TaskRelationKindRelatesTo):  true,
-	string(apigen.TaskRelationKindDuplicates): true,
+// copyOnSpawn follows the same policy as directedKindMap (see comment above).
+var symmetricKinds = map[string]struct{ copyOnSpawn bool }{
+	string(apigen.TaskRelationKindRelatesTo):  {copyOnSpawn: true},
+	string(apigen.TaskRelationKindDuplicates): {copyOnSpawn: false},
 }
+
+// storedKindCopyOnSpawn maps stored relation kinds to whether they should be
+// copied when spawning a new task. Derived from directedKindMap and symmetricKinds
+// at init time.
+var storedKindCopyOnSpawn map[string]bool
 
 func init() {
 	inverseKindMap = make(map[struct {
 		kind string
 		flip bool
 	}]apigen.TaskRelationKind, len(directedKindMap))
+	storedKindCopyOnSpawn = make(map[string]bool)
 	for apiKind, c := range directedKindMap {
 		inverseKindMap[struct {
 			kind string
 			flip bool
 		}{c.storedKind, c.flip}] = apiKind
+		if existing, seen := storedKindCopyOnSpawn[c.storedKind]; seen && existing != c.copyOnSpawn {
+			panic(fmt.Sprintf("conflicting copyOnSpawn for stored kind %q", c.storedKind))
+		}
+		storedKindCopyOnSpawn[c.storedKind] = c.copyOnSpawn
+	}
+	for kind, s := range symmetricKinds {
+		storedKindCopyOnSpawn[kind] = s.copyOnSpawn
 	}
 }
 
@@ -154,7 +176,7 @@ func relationFromDB(rel taskRelationRow, perspectiveTaskID int64) (apigen.TaskRe
 
 	if k, ok := inverseKindMap[key]; ok {
 		kind = k
-	} else if symmetricKinds[rel.Kind] {
+	} else if _, ok := symmetricKinds[rel.Kind]; ok {
 		kind = apigen.TaskRelationKind(rel.Kind)
 	} else {
 		return apigen.TaskRelation{}, fmt.Errorf("unknown relation kind %q", rel.Kind)
