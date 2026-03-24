@@ -210,11 +210,11 @@ func TestViewerCannotWriteToSpace(t *testing.T) {
 	// Viewer can list tasks.
 	assertStatusClose(t, doRequestAs(t, env, userToken, "GET", "/spaces/home/tasks", ""), http.StatusOK)
 	// Viewer cannot create tasks.
-	assertStatusClose(t, doRequestAs(t, env, userToken, "POST", "/spaces/home/tasks", `{"title":"X"}`), http.StatusBadRequest)
+	assertStatusClose(t, doRequestAs(t, env, userToken, "POST", "/spaces/home/tasks", `{"title":"X"}`), http.StatusForbidden)
 	// Viewer cannot update space.
-	assertStatusClose(t, doRequestAs(t, env, userToken, "PATCH", "/spaces/home", `{"name":"X"}`), http.StatusBadRequest)
+	assertStatusClose(t, doRequestAs(t, env, userToken, "PATCH", "/spaces/home", `{"name":"X"}`), http.StatusForbidden)
 	// Viewer cannot delete space.
-	assertStatusClose(t, doRequestAs(t, env, userToken, "DELETE", "/spaces/home", ""), http.StatusBadRequest)
+	assertStatusClose(t, doRequestAs(t, env, userToken, "DELETE", "/spaces/home", ""), http.StatusForbidden)
 }
 
 func TestMemberCannotManageSpace(t *testing.T) {
@@ -227,11 +227,11 @@ func TestMemberCannotManageSpace(t *testing.T) {
 	resp2 := doRequestAs(t, env, userToken, "POST", "/spaces/home/tasks", `{"title":"My task"}`)
 	assertStatusClose(t, resp2, http.StatusCreated)
 	// Member cannot update space settings.
-	assertStatusClose(t, doRequestAs(t, env, userToken, "PATCH", "/spaces/home", `{"name":"X"}`), http.StatusBadRequest)
+	assertStatusClose(t, doRequestAs(t, env, userToken, "PATCH", "/spaces/home", `{"name":"X"}`), http.StatusForbidden)
 	// Member cannot delete space.
-	assertStatusClose(t, doRequestAs(t, env, userToken, "DELETE", "/spaces/home", ""), http.StatusBadRequest)
+	assertStatusClose(t, doRequestAs(t, env, userToken, "DELETE", "/spaces/home", ""), http.StatusForbidden)
 	// Member cannot manage members.
-	assertStatusClose(t, doRequestAs(t, env, userToken, "POST", "/spaces/home/members", `{"userId":"`+userID+`","role":"viewer"}`), http.StatusBadRequest)
+	assertStatusClose(t, doRequestAs(t, env, userToken, "POST", "/spaces/home/members", `{"userId":"`+userID+`","role":"viewer"}`), http.StatusForbidden)
 }
 
 func TestNonOwnerSpacesListFiltered(t *testing.T) {

@@ -42,6 +42,10 @@ func (h *Handler) NewError(ctx context.Context, err error) *apigen.ApiErrorStatu
 		code = http.StatusBadRequest
 		apiCode = "bad_request"
 		message = "referenced resource does not exist"
+	} else if isForbidden(err) {
+		code = http.StatusForbidden
+		apiCode = "forbidden"
+		message = err.Error()
 	} else if isBadRequest(err) {
 		code = http.StatusBadRequest
 		apiCode = "bad_request"
@@ -84,6 +88,23 @@ func isBadRequest(err error) bool {
 
 func badRequest(msg string) error {
 	return &badRequestError{message: msg}
+}
+
+type forbiddenError struct {
+	message string
+}
+
+func (e *forbiddenError) Error() string {
+	return e.message
+}
+
+func isForbidden(err error) bool {
+	var fe *forbiddenError
+	return errors.As(err, &fe)
+}
+
+func forbidden(msg string) error {
+	return &forbiddenError{message: msg}
 }
 
 func checkDeleted(result sql.Result) error {

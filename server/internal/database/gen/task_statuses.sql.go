@@ -7,7 +7,25 @@ package gen
 
 import (
 	"context"
+	"database/sql"
 )
+
+const countTasksByStatusName = `-- name: CountTasksByStatusName :one
+SELECT COUNT(*) FROM tasks
+WHERE space_slug = ? AND status_name = ?
+`
+
+type CountTasksByStatusNameParams struct {
+	SpaceSlug  string
+	StatusName string
+}
+
+func (q *Queries) CountTasksByStatusName(ctx context.Context, arg CountTasksByStatusNameParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countTasksByStatusName, arg.SpaceSlug, arg.StatusName)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
 
 const createTaskStatus = `-- name: CreateTaskStatus :one
 INSERT INTO task_statuses (space_slug, name, category, position)
@@ -37,6 +55,20 @@ func (q *Queries) CreateTaskStatus(ctx context.Context, arg CreateTaskStatusPara
 		&i.Position,
 	)
 	return i, err
+}
+
+const deleteTaskStatus = `-- name: DeleteTaskStatus :execresult
+DELETE FROM task_statuses
+WHERE space_slug = ? AND name = ?
+`
+
+type DeleteTaskStatusParams struct {
+	SpaceSlug string
+	Name      string
+}
+
+func (q *Queries) DeleteTaskStatus(ctx context.Context, arg DeleteTaskStatusParams) (sql.Result, error) {
+	return q.db.ExecContext(ctx, deleteTaskStatus, arg.SpaceSlug, arg.Name)
 }
 
 const listTaskStatusesBySpace = `-- name: ListTaskStatusesBySpace :many
@@ -71,4 +103,26 @@ func (q *Queries) ListTaskStatusesBySpace(ctx context.Context, spaceSlug string)
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateTaskStatus = `-- name: UpdateTaskStatus :exec
+UPDATE task_statuses SET category = ?, position = ?
+WHERE space_slug = ? AND name = ?
+`
+
+type UpdateTaskStatusParams struct {
+	Category  string
+	Position  int64
+	SpaceSlug string
+	Name      string
+}
+
+func (q *Queries) UpdateTaskStatus(ctx context.Context, arg UpdateTaskStatusParams) error {
+	_, err := q.db.ExecContext(ctx, updateTaskStatus,
+		arg.Category,
+		arg.Position,
+		arg.SpaceSlug,
+		arg.Name,
+	)
+	return err
 }

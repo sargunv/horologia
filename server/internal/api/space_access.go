@@ -35,7 +35,7 @@ func (h *Handler) requireSpaceRole(ctx context.Context, spaceSlug string, roles 
 	if slices.Contains(roles, member.Role) {
 		return nil
 	}
-	return badRequest("insufficient permissions")
+	return forbidden("insufficient permissions")
 }
 
 // requireSpaceWrite checks that the user has member or admin role.

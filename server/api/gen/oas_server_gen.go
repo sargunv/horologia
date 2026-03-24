@@ -60,10 +60,18 @@ type Handler interface {
 	//
 	// GET /spaces/{spaceSlug}/task-effort-levels
 	SpaceTaskEffortLevelsList(ctx context.Context, params SpaceTaskEffortLevelsListParams) (*TaskEffortLevelList, error)
+	// SpaceTaskEffortLevelsReplace implements SpaceTaskEffortLevels_replace operation.
+	//
+	// PUT /spaces/{spaceSlug}/task-effort-levels
+	SpaceTaskEffortLevelsReplace(ctx context.Context, req *TaskEffortLevelReplace, params SpaceTaskEffortLevelsReplaceParams) (*TaskEffortLevelList, error)
 	// SpaceTaskPriorityLevelsList implements SpaceTaskPriorityLevels_list operation.
 	//
 	// GET /spaces/{spaceSlug}/task-priority-levels
 	SpaceTaskPriorityLevelsList(ctx context.Context, params SpaceTaskPriorityLevelsListParams) (*TaskPriorityLevelList, error)
+	// SpaceTaskPriorityLevelsReplace implements SpaceTaskPriorityLevels_replace operation.
+	//
+	// PUT /spaces/{spaceSlug}/task-priority-levels
+	SpaceTaskPriorityLevelsReplace(ctx context.Context, req *TaskPriorityLevelReplace, params SpaceTaskPriorityLevelsReplaceParams) (*TaskPriorityLevelList, error)
 	// SpaceTaskRelationsCreate implements SpaceTaskRelations_create operation.
 	//
 	// POST /spaces/{spaceSlug}/tasks/{taskId}/relations
@@ -72,6 +80,14 @@ type Handler interface {
 	//
 	// DELETE /spaces/{spaceSlug}/tasks/{taskId}/relations/{kind}/{relatedTaskId}
 	SpaceTaskRelationsDelete(ctx context.Context, params SpaceTaskRelationsDeleteParams) error
+	// SpaceTaskStatusesList implements SpaceTaskStatuses_list operation.
+	//
+	// GET /spaces/{spaceSlug}/task-statuses
+	SpaceTaskStatusesList(ctx context.Context, params SpaceTaskStatusesListParams) (*TaskStatusList, error)
+	// SpaceTaskStatusesReplace implements SpaceTaskStatuses_replace operation.
+	//
+	// PUT /spaces/{spaceSlug}/task-statuses
+	SpaceTaskStatusesReplace(ctx context.Context, req *TaskStatusReplace, params SpaceTaskStatusesReplaceParams) (*TaskStatusList, error)
 	// SpaceTasksCreate implements SpaceTasks_create operation.
 	//
 	// POST /spaces/{spaceSlug}/tasks

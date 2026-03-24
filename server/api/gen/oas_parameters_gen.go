@@ -1197,6 +1197,71 @@ func decodeSpaceTaskEffortLevelsListParams(args [1]string, argsEscaped bool, r *
 	return params, nil
 }
 
+// SpaceTaskEffortLevelsReplaceParams is parameters of SpaceTaskEffortLevels_replace operation.
+type SpaceTaskEffortLevelsReplaceParams struct {
+	SpaceSlug string
+}
+
+func unpackSpaceTaskEffortLevelsReplaceParams(packed middleware.Parameters) (params SpaceTaskEffortLevelsReplaceParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "spaceSlug",
+			In:   "path",
+		}
+		params.SpaceSlug = packed[key].(string)
+	}
+	return params
+}
+
+func decodeSpaceTaskEffortLevelsReplaceParams(args [1]string, argsEscaped bool, r *http.Request) (params SpaceTaskEffortLevelsReplaceParams, _ error) {
+	// Decode path: spaceSlug.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "spaceSlug",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.SpaceSlug = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "spaceSlug",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // SpaceTaskPriorityLevelsListParams is parameters of SpaceTaskPriorityLevels_list operation.
 type SpaceTaskPriorityLevelsListParams struct {
 	SpaceSlug string
@@ -1214,6 +1279,71 @@ func unpackSpaceTaskPriorityLevelsListParams(packed middleware.Parameters) (para
 }
 
 func decodeSpaceTaskPriorityLevelsListParams(args [1]string, argsEscaped bool, r *http.Request) (params SpaceTaskPriorityLevelsListParams, _ error) {
+	// Decode path: spaceSlug.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "spaceSlug",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.SpaceSlug = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "spaceSlug",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// SpaceTaskPriorityLevelsReplaceParams is parameters of SpaceTaskPriorityLevels_replace operation.
+type SpaceTaskPriorityLevelsReplaceParams struct {
+	SpaceSlug string
+}
+
+func unpackSpaceTaskPriorityLevelsReplaceParams(packed middleware.Parameters) (params SpaceTaskPriorityLevelsReplaceParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "spaceSlug",
+			In:   "path",
+		}
+		params.SpaceSlug = packed[key].(string)
+	}
+	return params
+}
+
+func decodeSpaceTaskPriorityLevelsReplaceParams(args [1]string, argsEscaped bool, r *http.Request) (params SpaceTaskPriorityLevelsReplaceParams, _ error) {
 	// Decode path: spaceSlug.
 	if err := func() error {
 		param := args[0]
@@ -1605,6 +1735,136 @@ func decodeSpaceTaskRelationsDeleteParams(args [4]string, argsEscaped bool, r *h
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "relatedTaskId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// SpaceTaskStatusesListParams is parameters of SpaceTaskStatuses_list operation.
+type SpaceTaskStatusesListParams struct {
+	SpaceSlug string
+}
+
+func unpackSpaceTaskStatusesListParams(packed middleware.Parameters) (params SpaceTaskStatusesListParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "spaceSlug",
+			In:   "path",
+		}
+		params.SpaceSlug = packed[key].(string)
+	}
+	return params
+}
+
+func decodeSpaceTaskStatusesListParams(args [1]string, argsEscaped bool, r *http.Request) (params SpaceTaskStatusesListParams, _ error) {
+	// Decode path: spaceSlug.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "spaceSlug",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.SpaceSlug = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "spaceSlug",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// SpaceTaskStatusesReplaceParams is parameters of SpaceTaskStatuses_replace operation.
+type SpaceTaskStatusesReplaceParams struct {
+	SpaceSlug string
+}
+
+func unpackSpaceTaskStatusesReplaceParams(packed middleware.Parameters) (params SpaceTaskStatusesReplaceParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "spaceSlug",
+			In:   "path",
+		}
+		params.SpaceSlug = packed[key].(string)
+	}
+	return params
+}
+
+func decodeSpaceTaskStatusesReplaceParams(args [1]string, argsEscaped bool, r *http.Request) (params SpaceTaskStatusesReplaceParams, _ error) {
+	// Decode path: spaceSlug.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "spaceSlug",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.SpaceSlug = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "spaceSlug",
 			In:   "path",
 			Err:  err,
 		}

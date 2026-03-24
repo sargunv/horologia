@@ -7,6 +7,7 @@ package gen
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createTaskPriorityLevel = `-- name: CreateTaskPriorityLevel :one
@@ -26,6 +27,20 @@ func (q *Queries) CreateTaskPriorityLevel(ctx context.Context, arg CreateTaskPri
 	var i TaskPriorityLevel
 	err := row.Scan(&i.SpaceSlug, &i.Name, &i.Position)
 	return i, err
+}
+
+const deleteTaskPriorityLevel = `-- name: DeleteTaskPriorityLevel :execresult
+DELETE FROM task_priority_levels
+WHERE space_slug = ? AND name = ?
+`
+
+type DeleteTaskPriorityLevelParams struct {
+	SpaceSlug string
+	Name      string
+}
+
+func (q *Queries) DeleteTaskPriorityLevel(ctx context.Context, arg DeleteTaskPriorityLevelParams) (sql.Result, error) {
+	return q.db.ExecContext(ctx, deleteTaskPriorityLevel, arg.SpaceSlug, arg.Name)
 }
 
 const listTaskPriorityLevelsBySpace = `-- name: ListTaskPriorityLevelsBySpace :many
@@ -55,4 +70,20 @@ func (q *Queries) ListTaskPriorityLevelsBySpace(ctx context.Context, spaceSlug s
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateTaskPriorityLevel = `-- name: UpdateTaskPriorityLevel :exec
+UPDATE task_priority_levels SET position = ?
+WHERE space_slug = ? AND name = ?
+`
+
+type UpdateTaskPriorityLevelParams struct {
+	Position  int64
+	SpaceSlug string
+	Name      string
+}
+
+func (q *Queries) UpdateTaskPriorityLevel(ctx context.Context, arg UpdateTaskPriorityLevelParams) error {
+	_, err := q.db.ExecContext(ctx, updateTaskPriorityLevel, arg.Position, arg.SpaceSlug, arg.Name)
+	return err
 }

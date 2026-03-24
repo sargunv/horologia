@@ -7,6 +7,7 @@ package gen
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createTaskEffortLevel = `-- name: CreateTaskEffortLevel :one
@@ -26,6 +27,20 @@ func (q *Queries) CreateTaskEffortLevel(ctx context.Context, arg CreateTaskEffor
 	var i TaskEffortLevel
 	err := row.Scan(&i.SpaceSlug, &i.Name, &i.Position)
 	return i, err
+}
+
+const deleteTaskEffortLevel = `-- name: DeleteTaskEffortLevel :execresult
+DELETE FROM task_effort_levels
+WHERE space_slug = ? AND name = ?
+`
+
+type DeleteTaskEffortLevelParams struct {
+	SpaceSlug string
+	Name      string
+}
+
+func (q *Queries) DeleteTaskEffortLevel(ctx context.Context, arg DeleteTaskEffortLevelParams) (sql.Result, error) {
+	return q.db.ExecContext(ctx, deleteTaskEffortLevel, arg.SpaceSlug, arg.Name)
 }
 
 const listTaskEffortLevelsBySpace = `-- name: ListTaskEffortLevelsBySpace :many
@@ -55,4 +70,20 @@ func (q *Queries) ListTaskEffortLevelsBySpace(ctx context.Context, spaceSlug str
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateTaskEffortLevel = `-- name: UpdateTaskEffortLevel :exec
+UPDATE task_effort_levels SET position = ?
+WHERE space_slug = ? AND name = ?
+`
+
+type UpdateTaskEffortLevelParams struct {
+	Position  int64
+	SpaceSlug string
+	Name      string
+}
+
+func (q *Queries) UpdateTaskEffortLevel(ctx context.Context, arg UpdateTaskEffortLevelParams) error {
+	_, err := q.db.ExecContext(ctx, updateTaskEffortLevel, arg.Position, arg.SpaceSlug, arg.Name)
+	return err
 }

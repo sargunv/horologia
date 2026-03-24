@@ -173,7 +173,35 @@ func encodeSpaceTaskEffortLevelsListResponse(response *TaskEffortLevelList, w ht
 	return nil
 }
 
+func encodeSpaceTaskEffortLevelsReplaceResponse(response *TaskEffortLevelList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+	span.SetStatus(codes.Ok, http.StatusText(200))
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeSpaceTaskPriorityLevelsListResponse(response *TaskPriorityLevelList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+	span.SetStatus(codes.Ok, http.StatusText(200))
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeSpaceTaskPriorityLevelsReplaceResponse(response *TaskPriorityLevelList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 	span.SetStatus(codes.Ok, http.StatusText(200))
@@ -204,6 +232,34 @@ func encodeSpaceTaskRelationsCreateResponse(response *TaskRelation, w http.Respo
 func encodeSpaceTaskRelationsDeleteResponse(response *SpaceTaskRelationsDeleteNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
 	span.SetStatus(codes.Ok, http.StatusText(204))
+
+	return nil
+}
+
+func encodeSpaceTaskStatusesListResponse(response *TaskStatusList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+	span.SetStatus(codes.Ok, http.StatusText(200))
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeSpaceTaskStatusesReplaceResponse(response *TaskStatusList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+	span.SetStatus(codes.Ok, http.StatusText(200))
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
 
 	return nil
 }

@@ -5,6 +5,239 @@ import (
 	"testing"
 )
 
+// --- Task Statuses ---
+
+func TestTaskStatusesList(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "st", "Status Test")
+
+	resp := doRequest(t, env, "GET", "/spaces/st/task-statuses", "")
+	assertStatus(t, resp, http.StatusOK)
+	var body map[string]any
+	readJSON(t, resp, &body)
+	items, ok := body["items"].([]any)
+	if !ok {
+		t.Fatal("items field missing or wrong type")
+	}
+	if len(items) != 2 {
+		t.Fatalf("got %d statuses, want 2", len(items))
+	}
+	// Default statuses: todo (initial), done (completion).
+	first := items[0].(map[string]any)
+	if first["name"] != "todo" || first["category"] != "initial" {
+		t.Errorf("first status = %v, want todo/initial", first)
+	}
+	second := items[1].(map[string]any)
+	if second["name"] != "done" || second["category"] != "completion" {
+		t.Errorf("second status = %v, want done/completion", second)
+	}
+}
+
+func TestTaskStatusesReplaceBasic(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "st", "Status Test")
+
+	resp := doRequest(t, env, "PUT", "/spaces/st/task-statuses", `{
+		"items": [
+			{"name": "backlog", "category": "initial"},
+			{"name": "in-progress", "category": "intermediate"},
+			{"name": "review", "category": "intermediate"},
+			{"name": "done", "category": "completion"}
+		]
+	}`)
+	assertStatus(t, resp, http.StatusOK)
+	var body map[string]any
+	readJSON(t, resp, &body)
+	items := body["items"].([]any)
+	if len(items) != 4 {
+		t.Fatalf("got %d statuses, want 4", len(items))
+	}
+	// Verify ordering by position.
+	names := make([]string, len(items))
+	for i, item := range items {
+		names[i] = item.(map[string]any)["name"].(string)
+	}
+	if names[0] != "backlog" || names[1] != "in-progress" || names[2] != "review" || names[3] != "done" {
+		t.Errorf("statuses = %v, want [backlog in-progress review done]", names)
+	}
+}
+
+func TestTaskStatusesReplaceReorderExisting(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "st", "Status Test")
+
+	// Swap the default order: done before todo.
+	resp := doRequest(t, env, "PUT", "/spaces/st/task-statuses", `{
+		"items": [
+			{"name": "done", "category": "completion"},
+			{"name": "todo", "category": "initial"}
+		]
+	}`)
+	assertStatus(t, resp, http.StatusOK)
+	var body map[string]any
+	readJSON(t, resp, &body)
+	items := body["items"].([]any)
+	if items[0].(map[string]any)["name"] != "done" {
+		t.Errorf("first status = %v, want done", items[0])
+	}
+	if items[1].(map[string]any)["name"] != "todo" {
+		t.Errorf("second status = %v, want todo", items[1])
+	}
+}
+
+func TestTaskStatusesReplaceRejectRemoveWithTasks(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "st", "Status Test")
+
+	// Create a task (defaults to "todo" status).
+	createTask(t, env, "st", `{"title":"Blocker"}`)
+
+	// Try to remove "todo" — should fail.
+	resp := doRequest(t, env, "PUT", "/spaces/st/task-statuses", `{
+		"items": [
+			{"name": "done", "category": "completion"},
+			{"name": "new-initial", "category": "initial"}
+		]
+	}`)
+	assertStatusClose(t, resp, http.StatusBadRequest)
+}
+
+func TestTaskStatusesReplaceAllowRemoveUnusedStatus(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "st", "Status Test")
+
+	// "done" has no tasks, so removing it should succeed (as long as we add another completion).
+	resp := doRequest(t, env, "PUT", "/spaces/st/task-statuses", `{
+		"items": [
+			{"name": "todo", "category": "initial"},
+			{"name": "finished", "category": "completion"}
+		]
+	}`)
+	assertStatus(t, resp, http.StatusOK)
+	var body map[string]any
+	readJSON(t, resp, &body)
+	items := body["items"].([]any)
+	if len(items) != 2 {
+		t.Fatalf("got %d statuses, want 2", len(items))
+	}
+}
+
+func TestTaskStatusesReplaceRejectNoInitial(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "st", "Status Test")
+
+	resp := doRequest(t, env, "PUT", "/spaces/st/task-statuses", `{
+		"items": [
+			{"name": "done", "category": "completion"}
+		]
+	}`)
+	assertStatusClose(t, resp, http.StatusBadRequest)
+}
+
+func TestTaskStatusesReplaceRejectNoCompletion(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "st", "Status Test")
+
+	resp := doRequest(t, env, "PUT", "/spaces/st/task-statuses", `{
+		"items": [
+			{"name": "todo", "category": "initial"}
+		]
+	}`)
+	assertStatusClose(t, resp, http.StatusBadRequest)
+}
+
+func TestTaskStatusesReplaceRejectDuplicateNames(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "st", "Status Test")
+
+	resp := doRequest(t, env, "PUT", "/spaces/st/task-statuses", `{
+		"items": [
+			{"name": "todo", "category": "initial"},
+			{"name": "todo", "category": "completion"}
+		]
+	}`)
+	assertStatusClose(t, resp, http.StatusBadRequest)
+}
+
+func TestTaskStatusesReplaceNonAdminRejected(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "st", "Status Test")
+
+	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass123")
+	resp := doRequestAs(t, env, outsiderToken, "PUT", "/spaces/st/task-statuses", `{
+		"items": [
+			{"name": "todo", "category": "initial"},
+			{"name": "done", "category": "completion"}
+		]
+	}`)
+	assertStatusClose(t, resp, http.StatusNotFound)
+}
+
+func TestTaskStatusesReplaceUpdateCategory(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "st", "Status Test")
+
+	// Change "todo" from initial to intermediate, add a new initial.
+	resp := doRequest(t, env, "PUT", "/spaces/st/task-statuses", `{
+		"items": [
+			{"name": "backlog", "category": "initial"},
+			{"name": "todo", "category": "intermediate"},
+			{"name": "done", "category": "completion"}
+		]
+	}`)
+	assertStatus(t, resp, http.StatusOK)
+	var body map[string]any
+	readJSON(t, resp, &body)
+	items := body["items"].([]any)
+	for _, item := range items {
+		m := item.(map[string]any)
+		if m["name"] == "todo" {
+			if m["category"] != "intermediate" {
+				t.Errorf("category for todo = %v, want intermediate", m["category"])
+			}
+		}
+	}
+}
+
+func TestTaskStatusesCrossSpaceIsolation(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "iso-a", "Iso A")
+	createSpace(t, env, "iso-b", "Iso B")
+
+	// Replace space A's statuses.
+	resp := doRequest(t, env, "PUT", "/spaces/iso-a/task-statuses", `{
+		"items": [
+			{"name": "custom-initial", "category": "initial"},
+			{"name": "custom-done", "category": "completion"}
+		]
+	}`)
+	assertStatus(t, resp, http.StatusOK)
+
+	// Space B should still have its original defaults.
+	resp2 := doRequest(t, env, "GET", "/spaces/iso-b/task-statuses", "")
+	assertStatus(t, resp2, http.StatusOK)
+	var bodyB map[string]any
+	readJSON(t, resp2, &bodyB)
+	items := bodyB["items"].([]any)
+	if len(items) != 2 {
+		t.Fatalf("space B: got %d statuses, want 2", len(items))
+	}
+	first := items[0].(map[string]any)
+	if first["name"] != "todo" {
+		t.Errorf("space B first status = %v, want todo", first["name"])
+	}
+}
+
+func TestTaskStatusesListNonMemberRejected(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "st-acl", "Status ACL")
+
+	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass123")
+	assertStatusClose(t, doRequestAs(t, env, outsiderToken, "GET", "/spaces/st-acl/task-statuses", ""), http.StatusNotFound)
+}
+
+// --- Task Effort Levels ---
+
 func TestTaskEffortLevelsList(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "eff", "Effort Test")
@@ -38,6 +271,111 @@ func TestTaskEffortLevelsList(t *testing.T) {
 	}
 }
 
+func TestTaskEffortLevelsReplaceBasic(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "eff", "Effort Test")
+
+	resp := doRequest(t, env, "PUT", "/spaces/eff/task-effort-levels", `{
+		"items": [{"name": "xs"}, {"name": "s"}, {"name": "m"}, {"name": "l"}, {"name": "xl"}]
+	}`)
+	assertStatus(t, resp, http.StatusOK)
+	var body map[string]any
+	readJSON(t, resp, &body)
+	items := body["items"].([]any)
+	if len(items) != 5 {
+		t.Fatalf("got %d effort levels, want 5", len(items))
+	}
+	names := make([]string, len(items))
+	for i, item := range items {
+		names[i] = item.(map[string]any)["name"].(string)
+	}
+	if names[0] != "xs" || names[4] != "xl" {
+		t.Errorf("effort levels = %v", names)
+	}
+}
+
+func TestTaskEffortLevelsReplaceEmpty(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "eff", "Effort Test")
+
+	resp := doRequest(t, env, "PUT", "/spaces/eff/task-effort-levels", `{"items": []}`)
+	assertStatus(t, resp, http.StatusOK)
+	var body map[string]any
+	readJSON(t, resp, &body)
+	items := body["items"].([]any)
+	if len(items) != 0 {
+		t.Fatalf("got %d effort levels, want 0", len(items))
+	}
+}
+
+func TestTaskEffortLevelsReplaceNullsTasksOnRemoval(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "eff", "Effort Test")
+
+	task := createTask(t, env, "eff", `{"title":"Task","effort":"medium"}`)
+	taskID := task["id"].(string)
+
+	// Remove "medium" from the list.
+	resp := doRequest(t, env, "PUT", "/spaces/eff/task-effort-levels", `{
+		"items": [{"name": "small"}, {"name": "large"}]
+	}`)
+	assertStatus(t, resp, http.StatusOK)
+
+	// Task's effort should now be null.
+	taskResp := doRequest(t, env, "GET", "/spaces/eff/tasks/"+taskID, "")
+	assertStatus(t, taskResp, http.StatusOK)
+	var taskBody map[string]any
+	readJSON(t, taskResp, &taskBody)
+	if taskBody["effort"] != nil {
+		t.Errorf("effort = %v, want nil after level removal", taskBody["effort"])
+	}
+}
+
+func TestTaskEffortLevelsReplaceRejectDuplicateNames(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "eff", "Effort Test")
+
+	resp := doRequest(t, env, "PUT", "/spaces/eff/task-effort-levels", `{
+		"items": [{"name": "small"}, {"name": "small"}]
+	}`)
+	assertStatusClose(t, resp, http.StatusBadRequest)
+}
+
+func TestTaskEffortLevelsReplaceNonAdminRejected(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "eff", "Effort Test")
+
+	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass123")
+	resp := doRequestAs(t, env, outsiderToken, "PUT", "/spaces/eff/task-effort-levels", `{
+		"items": [{"name": "small"}]
+	}`)
+	assertStatusClose(t, resp, http.StatusNotFound)
+}
+
+func TestTaskEffortLevelsCrossSpaceIsolation(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "iso-a", "Iso A")
+	createSpace(t, env, "iso-b", "Iso B")
+
+	// Replace space A's levels.
+	resp := doRequest(t, env, "PUT", "/spaces/iso-a/task-effort-levels", `{
+		"items": [{"name": "tiny"}]
+	}`)
+	assertStatus(t, resp, http.StatusOK)
+
+	// Space B should still have defaults.
+	resp2 := doRequest(t, env, "GET", "/spaces/iso-b/task-effort-levels", "")
+	assertStatus(t, resp2, http.StatusOK)
+	var bodyB map[string]any
+	readJSON(t, resp2, &bodyB)
+	items := bodyB["items"].([]any)
+	if len(items) != 3 {
+		t.Fatalf("space B: got %d effort levels, want 3", len(items))
+	}
+}
+
+// --- Task Priority Levels ---
+
 func TestTaskPriorityLevelsList(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "pri", "Priority Test")
@@ -70,82 +408,67 @@ func TestTaskPriorityLevelsList(t *testing.T) {
 	}
 }
 
-func TestTaskEffortLevelsCrossSpaceIsolation(t *testing.T) {
+func TestTaskPriorityLevelsReplaceBasic(t *testing.T) {
 	env := setupTestServer(t)
-	createSpace(t, env, "iso-a", "Iso A")
-	createSpace(t, env, "iso-b", "Iso B")
+	createSpace(t, env, "pri", "Priority Test")
 
-	// Both spaces should have their own set of 3 default levels.
-	resp := doRequest(t, env, "GET", "/spaces/iso-a/task-effort-levels", "")
+	resp := doRequest(t, env, "PUT", "/spaces/pri/task-priority-levels", `{
+		"items": [{"name": "p0"}, {"name": "p1"}, {"name": "p2"}, {"name": "p3"}]
+	}`)
 	assertStatus(t, resp, http.StatusOK)
-	var bodyA map[string]any
-	readJSON(t, resp, &bodyA)
-	itemsA, ok := bodyA["items"].([]any)
-	if !ok {
-		t.Fatal("space A: items field missing or wrong type")
-	}
-	if len(itemsA) != 3 {
-		t.Fatalf("space A: got %d effort levels, want 3", len(itemsA))
-	}
-
-	resp2 := doRequest(t, env, "GET", "/spaces/iso-b/task-effort-levels", "")
-	assertStatus(t, resp2, http.StatusOK)
-	var bodyB map[string]any
-	readJSON(t, resp2, &bodyB)
-	itemsB, ok := bodyB["items"].([]any)
-	if !ok {
-		t.Fatal("space B: items field missing or wrong type")
-	}
-	if len(itemsB) != 3 {
-		t.Fatalf("space B: got %d effort levels, want 3", len(itemsB))
+	var body map[string]any
+	readJSON(t, resp, &body)
+	items := body["items"].([]any)
+	if len(items) != 4 {
+		t.Fatalf("got %d priority levels, want 4", len(items))
 	}
 }
 
-func TestTaskPriorityLevelsCrossSpaceIsolation(t *testing.T) {
+func TestTaskPriorityLevelsReplaceNullsTasksOnRemoval(t *testing.T) {
 	env := setupTestServer(t)
-	createSpace(t, env, "piso-a", "Piso A")
-	createSpace(t, env, "piso-b", "Piso B")
+	createSpace(t, env, "pri", "Priority Test")
 
-	resp := doRequest(t, env, "GET", "/spaces/piso-a/task-priority-levels", "")
+	task := createTask(t, env, "pri", `{"title":"Task","priority":"high"}`)
+	taskID := task["id"].(string)
+
+	// Remove "high" from the list.
+	resp := doRequest(t, env, "PUT", "/spaces/pri/task-priority-levels", `{
+		"items": [{"name": "low"}, {"name": "medium"}]
+	}`)
 	assertStatus(t, resp, http.StatusOK)
-	var bodyA map[string]any
-	readJSON(t, resp, &bodyA)
-	itemsA, ok := bodyA["items"].([]any)
-	if !ok {
-		t.Fatal("space A: items field missing or wrong type")
-	}
-	if len(itemsA) != 3 {
-		t.Fatalf("space A: got %d priority levels, want 3", len(itemsA))
-	}
 
-	resp2 := doRequest(t, env, "GET", "/spaces/piso-b/task-priority-levels", "")
-	assertStatus(t, resp2, http.StatusOK)
-	var bodyB map[string]any
-	readJSON(t, resp2, &bodyB)
-	itemsB, ok := bodyB["items"].([]any)
-	if !ok {
-		t.Fatal("space B: items field missing or wrong type")
-	}
-	if len(itemsB) != 3 {
-		t.Fatalf("space B: got %d priority levels, want 3", len(itemsB))
+	// Task's priority should now be null.
+	taskResp := doRequest(t, env, "GET", "/spaces/pri/tasks/"+taskID, "")
+	assertStatus(t, taskResp, http.StatusOK)
+	var taskBody map[string]any
+	readJSON(t, taskResp, &taskBody)
+	if taskBody["priority"] != nil {
+		t.Errorf("priority = %v, want nil after level removal", taskBody["priority"])
 	}
 }
 
-func TestTaskEffortLevelsNonMemberRejected(t *testing.T) {
+func TestTaskPriorityLevelsReplaceRejectDuplicateNames(t *testing.T) {
 	env := setupTestServer(t)
-	createSpace(t, env, "eff-acl", "Effort ACL")
+	createSpace(t, env, "pri", "Priority Test")
+
+	resp := doRequest(t, env, "PUT", "/spaces/pri/task-priority-levels", `{
+		"items": [{"name": "low"}, {"name": "low"}]
+	}`)
+	assertStatusClose(t, resp, http.StatusBadRequest)
+}
+
+func TestTaskPriorityLevelsReplaceNonAdminRejected(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "pri", "Priority Test")
 
 	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass123")
-	assertStatusClose(t, doRequestAs(t, env, outsiderToken, "GET", "/spaces/eff-acl/task-effort-levels", ""), http.StatusNotFound)
+	resp := doRequestAs(t, env, outsiderToken, "PUT", "/spaces/pri/task-priority-levels", `{
+		"items": [{"name": "low"}]
+	}`)
+	assertStatusClose(t, resp, http.StatusNotFound)
 }
 
-func TestTaskPriorityLevelsNonMemberRejected(t *testing.T) {
-	env := setupTestServer(t)
-	createSpace(t, env, "pri-acl", "Priority ACL")
-
-	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass123")
-	assertStatusClose(t, doRequestAs(t, env, outsiderToken, "GET", "/spaces/pri-acl/task-priority-levels", ""), http.StatusNotFound)
-}
+// --- Existing effort/priority tests on tasks ---
 
 func TestTaskCreateWithEffortAndPriority(t *testing.T) {
 	env := setupTestServer(t)
@@ -321,5 +644,46 @@ func TestTaskEffortInListResponse(t *testing.T) {
 				t.Errorf("task without effort: effort = %v, want nil", task["effort"])
 			}
 		}
+	}
+}
+
+func TestTaskEffortLevelsNonMemberRejected(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "eff-acl", "Effort ACL")
+
+	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass123")
+	assertStatusClose(t, doRequestAs(t, env, outsiderToken, "GET", "/spaces/eff-acl/task-effort-levels", ""), http.StatusNotFound)
+}
+
+func TestTaskPriorityLevelsNonMemberRejected(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "pri-acl", "Priority ACL")
+
+	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass123")
+	assertStatusClose(t, doRequestAs(t, env, outsiderToken, "GET", "/spaces/pri-acl/task-priority-levels", ""), http.StatusNotFound)
+}
+
+func TestTaskPriorityLevelsCrossSpaceIsolation(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "piso-a", "Piso A")
+	createSpace(t, env, "piso-b", "Piso B")
+
+	// Replace space A's priority levels.
+	resp := doRequest(t, env, "PUT", "/spaces/piso-a/task-priority-levels", `{
+		"items": [{"name": "critical"}]
+	}`)
+	assertStatus(t, resp, http.StatusOK)
+
+	// Space B should still have defaults.
+	resp2 := doRequest(t, env, "GET", "/spaces/piso-b/task-priority-levels", "")
+	assertStatus(t, resp2, http.StatusOK)
+	var bodyB map[string]any
+	readJSON(t, resp2, &bodyB)
+	itemsB, ok := bodyB["items"].([]any)
+	if !ok {
+		t.Fatal("space B: items field missing or wrong type")
+	}
+	if len(itemsB) != 3 {
+		t.Fatalf("space B: got %d priority levels, want 3", len(itemsB))
 	}
 }

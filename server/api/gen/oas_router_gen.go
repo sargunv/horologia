@@ -21,7 +21,7 @@ var (
 	rn3AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 	}
-	rn29AllowedHeaders = map[string]string{
+	rn30AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
@@ -48,11 +48,17 @@ var (
 	}
 	rn17AllowedHeaders = map[string]string{
 		"GET": "Authorization",
+		"PUT": "Authorization,Content-Type",
 	}
 	rn19AllowedHeaders = map[string]string{
 		"GET": "Authorization",
+		"PUT": "Authorization,Content-Type",
 	}
 	rn28AllowedHeaders = map[string]string{
+		"GET": "Authorization",
+		"PUT": "Authorization,Content-Type",
+	}
+	rn29AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
@@ -67,7 +73,7 @@ var (
 	rn27AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 	}
-	rn30AllowedHeaders = map[string]string{
+	rn31AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 )
@@ -242,7 +248,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET,POST",
-							allowedHeaders: rn29AllowedHeaders,
+							allowedHeaders: rn30AllowedHeaders,
 							acceptPost:     "application/json",
 							acceptPatch:    "",
 						})
@@ -503,9 +509,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 												s.handleSpaceTaskEffortLevelsListRequest([1]string{
 													args[0],
 												}, elemIsEscaped, w, r)
+											case "PUT":
+												s.handleSpaceTaskEffortLevelsReplaceRequest([1]string{
+													args[0],
+												}, elemIsEscaped, w, r)
 											default:
 												s.notAllowed(w, r, notAllowedParams{
-													allowedMethods: "GET",
+													allowedMethods: "GET,PUT",
 													allowedHeaders: rn17AllowedHeaders,
 													acceptPost:     "",
 													acceptPatch:    "",
@@ -530,10 +540,45 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 												s.handleSpaceTaskPriorityLevelsListRequest([1]string{
 													args[0],
 												}, elemIsEscaped, w, r)
+											case "PUT":
+												s.handleSpaceTaskPriorityLevelsReplaceRequest([1]string{
+													args[0],
+												}, elemIsEscaped, w, r)
 											default:
 												s.notAllowed(w, r, notAllowedParams{
-													allowedMethods: "GET",
+													allowedMethods: "GET,PUT",
 													allowedHeaders: rn19AllowedHeaders,
+													acceptPost:     "",
+													acceptPatch:    "",
+												})
+											}
+
+											return
+										}
+
+									case 's': // Prefix: "statuses"
+
+										if l := len("statuses"); len(elem) >= l && elem[0:l] == "statuses" {
+											elem = elem[l:]
+										} else {
+											break
+										}
+
+										if len(elem) == 0 {
+											// Leaf node.
+											switch r.Method {
+											case "GET":
+												s.handleSpaceTaskStatusesListRequest([1]string{
+													args[0],
+												}, elemIsEscaped, w, r)
+											case "PUT":
+												s.handleSpaceTaskStatusesReplaceRequest([1]string{
+													args[0],
+												}, elemIsEscaped, w, r)
+											default:
+												s.notAllowed(w, r, notAllowedParams{
+													allowedMethods: "GET,PUT",
+													allowedHeaders: rn28AllowedHeaders,
 													acceptPost:     "",
 													acceptPatch:    "",
 												})
@@ -565,7 +610,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 										default:
 											s.notAllowed(w, r, notAllowedParams{
 												allowedMethods: "GET,POST",
-												allowedHeaders: rn28AllowedHeaders,
+												allowedHeaders: rn29AllowedHeaders,
 												acceptPost:     "application/json",
 												acceptPatch:    "",
 											})
@@ -735,7 +780,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET",
-							allowedHeaders: rn30AllowedHeaders,
+							allowedHeaders: rn31AllowedHeaders,
 							acceptPost:     "",
 							acceptPatch:    "",
 						})
@@ -1256,6 +1301,15 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 												r.args = args
 												r.count = 1
 												return r, true
+											case "PUT":
+												r.name = SpaceTaskEffortLevelsReplaceOperation
+												r.summary = ""
+												r.operationID = "SpaceTaskEffortLevels_replace"
+												r.operationGroup = ""
+												r.pathPattern = "/spaces/{spaceSlug}/task-effort-levels"
+												r.args = args
+												r.count = 1
+												return r, true
 											default:
 												return
 											}
@@ -1278,6 +1332,49 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 												r.operationID = "SpaceTaskPriorityLevels_list"
 												r.operationGroup = ""
 												r.pathPattern = "/spaces/{spaceSlug}/task-priority-levels"
+												r.args = args
+												r.count = 1
+												return r, true
+											case "PUT":
+												r.name = SpaceTaskPriorityLevelsReplaceOperation
+												r.summary = ""
+												r.operationID = "SpaceTaskPriorityLevels_replace"
+												r.operationGroup = ""
+												r.pathPattern = "/spaces/{spaceSlug}/task-priority-levels"
+												r.args = args
+												r.count = 1
+												return r, true
+											default:
+												return
+											}
+										}
+
+									case 's': // Prefix: "statuses"
+
+										if l := len("statuses"); len(elem) >= l && elem[0:l] == "statuses" {
+											elem = elem[l:]
+										} else {
+											break
+										}
+
+										if len(elem) == 0 {
+											// Leaf node.
+											switch method {
+											case "GET":
+												r.name = SpaceTaskStatusesListOperation
+												r.summary = ""
+												r.operationID = "SpaceTaskStatuses_list"
+												r.operationGroup = ""
+												r.pathPattern = "/spaces/{spaceSlug}/task-statuses"
+												r.args = args
+												r.count = 1
+												return r, true
+											case "PUT":
+												r.name = SpaceTaskStatusesReplaceOperation
+												r.summary = ""
+												r.operationID = "SpaceTaskStatuses_replace"
+												r.operationGroup = ""
+												r.pathPattern = "/spaces/{spaceSlug}/task-statuses"
 												r.args = args
 												r.count = 1
 												return r, true

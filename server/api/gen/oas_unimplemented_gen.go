@@ -104,10 +104,24 @@ func (UnimplementedHandler) SpaceTaskEffortLevelsList(ctx context.Context, param
 	return r, ht.ErrNotImplemented
 }
 
+// SpaceTaskEffortLevelsReplace implements SpaceTaskEffortLevels_replace operation.
+//
+// PUT /spaces/{spaceSlug}/task-effort-levels
+func (UnimplementedHandler) SpaceTaskEffortLevelsReplace(ctx context.Context, req *TaskEffortLevelReplace, params SpaceTaskEffortLevelsReplaceParams) (r *TaskEffortLevelList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // SpaceTaskPriorityLevelsList implements SpaceTaskPriorityLevels_list operation.
 //
 // GET /spaces/{spaceSlug}/task-priority-levels
 func (UnimplementedHandler) SpaceTaskPriorityLevelsList(ctx context.Context, params SpaceTaskPriorityLevelsListParams) (r *TaskPriorityLevelList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SpaceTaskPriorityLevelsReplace implements SpaceTaskPriorityLevels_replace operation.
+//
+// PUT /spaces/{spaceSlug}/task-priority-levels
+func (UnimplementedHandler) SpaceTaskPriorityLevelsReplace(ctx context.Context, req *TaskPriorityLevelReplace, params SpaceTaskPriorityLevelsReplaceParams) (r *TaskPriorityLevelList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -123,6 +137,20 @@ func (UnimplementedHandler) SpaceTaskRelationsCreate(ctx context.Context, req *T
 // DELETE /spaces/{spaceSlug}/tasks/{taskId}/relations/{kind}/{relatedTaskId}
 func (UnimplementedHandler) SpaceTaskRelationsDelete(ctx context.Context, params SpaceTaskRelationsDeleteParams) error {
 	return ht.ErrNotImplemented
+}
+
+// SpaceTaskStatusesList implements SpaceTaskStatuses_list operation.
+//
+// GET /spaces/{spaceSlug}/task-statuses
+func (UnimplementedHandler) SpaceTaskStatusesList(ctx context.Context, params SpaceTaskStatusesListParams) (r *TaskStatusList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SpaceTaskStatusesReplace implements SpaceTaskStatuses_replace operation.
+//
+// PUT /spaces/{spaceSlug}/task-statuses
+func (UnimplementedHandler) SpaceTaskStatusesReplace(ctx context.Context, req *TaskStatusReplace, params SpaceTaskStatusesReplaceParams) (r *TaskStatusList, _ error) {
+	return r, ht.ErrNotImplemented
 }
 
 // SpaceTasksCreate implements SpaceTasks_create operation.

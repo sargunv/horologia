@@ -345,6 +345,14 @@ func tagFromDB(t dbgen.Tag) *apigen.Tag {
 	}
 }
 
+func statusFromDB(s dbgen.TaskStatus) *apigen.TaskStatus {
+	return &apigen.TaskStatus{
+		Name:     s.Name,
+		Category: apigen.TaskStatusCategory(s.Category),
+		Position: s.Position,
+	}
+}
+
 func effortLevelFromDB(e dbgen.TaskEffortLevel) *apigen.TaskEffortLevel {
 	return &apigen.TaskEffortLevel{
 		Name:     e.Name,

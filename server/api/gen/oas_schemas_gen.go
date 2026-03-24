@@ -1283,6 +1283,21 @@ func (s *TaskEffortLevel) SetPosition(val int64) {
 	s.Position = val
 }
 
+// Ref: #/components/schemas/TaskEffortLevelInput
+type TaskEffortLevelInput struct {
+	Name string `json:"name"`
+}
+
+// GetName returns the value of Name.
+func (s *TaskEffortLevelInput) GetName() string {
+	return s.Name
+}
+
+// SetName sets the value of Name.
+func (s *TaskEffortLevelInput) SetName(val string) {
+	s.Name = val
+}
+
 // Ref: #/components/schemas/TaskEffortLevelList
 type TaskEffortLevelList struct {
 	Items []TaskEffortLevel `json:"items"`
@@ -1295,6 +1310,21 @@ func (s *TaskEffortLevelList) GetItems() []TaskEffortLevel {
 
 // SetItems sets the value of Items.
 func (s *TaskEffortLevelList) SetItems(val []TaskEffortLevel) {
+	s.Items = val
+}
+
+// Ref: #/components/schemas/TaskEffortLevelReplace
+type TaskEffortLevelReplace struct {
+	Items []TaskEffortLevelInput `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *TaskEffortLevelReplace) GetItems() []TaskEffortLevelInput {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *TaskEffortLevelReplace) SetItems(val []TaskEffortLevelInput) {
 	s.Items = val
 }
 
@@ -1350,6 +1380,21 @@ func (s *TaskPriorityLevel) SetPosition(val int64) {
 	s.Position = val
 }
 
+// Ref: #/components/schemas/TaskPriorityLevelInput
+type TaskPriorityLevelInput struct {
+	Name string `json:"name"`
+}
+
+// GetName returns the value of Name.
+func (s *TaskPriorityLevelInput) GetName() string {
+	return s.Name
+}
+
+// SetName sets the value of Name.
+func (s *TaskPriorityLevelInput) SetName(val string) {
+	s.Name = val
+}
+
 // Ref: #/components/schemas/TaskPriorityLevelList
 type TaskPriorityLevelList struct {
 	Items []TaskPriorityLevel `json:"items"`
@@ -1362,6 +1407,21 @@ func (s *TaskPriorityLevelList) GetItems() []TaskPriorityLevel {
 
 // SetItems sets the value of Items.
 func (s *TaskPriorityLevelList) SetItems(val []TaskPriorityLevel) {
+	s.Items = val
+}
+
+// Ref: #/components/schemas/TaskPriorityLevelReplace
+type TaskPriorityLevelReplace struct {
+	Items []TaskPriorityLevelInput `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *TaskPriorityLevelReplace) GetItems() []TaskPriorityLevelInput {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *TaskPriorityLevelReplace) SetItems(val []TaskPriorityLevelInput) {
 	s.Items = val
 }
 
@@ -1496,6 +1556,195 @@ func (s *TaskRelationKind) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// Ref: #/components/schemas/TaskStatus
+type TaskStatus struct {
+	Name     string             `json:"name"`
+	Category TaskStatusCategory `json:"category"`
+	Position int64              `json:"position"`
+}
+
+// GetName returns the value of Name.
+func (s *TaskStatus) GetName() string {
+	return s.Name
+}
+
+// GetCategory returns the value of Category.
+func (s *TaskStatus) GetCategory() TaskStatusCategory {
+	return s.Category
+}
+
+// GetPosition returns the value of Position.
+func (s *TaskStatus) GetPosition() int64 {
+	return s.Position
+}
+
+// SetName sets the value of Name.
+func (s *TaskStatus) SetName(val string) {
+	s.Name = val
+}
+
+// SetCategory sets the value of Category.
+func (s *TaskStatus) SetCategory(val TaskStatusCategory) {
+	s.Category = val
+}
+
+// SetPosition sets the value of Position.
+func (s *TaskStatus) SetPosition(val int64) {
+	s.Position = val
+}
+
+type TaskStatusCategory string
+
+const (
+	TaskStatusCategoryInitial      TaskStatusCategory = "initial"
+	TaskStatusCategoryIntermediate TaskStatusCategory = "intermediate"
+	TaskStatusCategoryCompletion   TaskStatusCategory = "completion"
+)
+
+// AllValues returns all TaskStatusCategory values.
+func (TaskStatusCategory) AllValues() []TaskStatusCategory {
+	return []TaskStatusCategory{
+		TaskStatusCategoryInitial,
+		TaskStatusCategoryIntermediate,
+		TaskStatusCategoryCompletion,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TaskStatusCategory) MarshalText() ([]byte, error) {
+	switch s {
+	case TaskStatusCategoryInitial:
+		return []byte(s), nil
+	case TaskStatusCategoryIntermediate:
+		return []byte(s), nil
+	case TaskStatusCategoryCompletion:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TaskStatusCategory) UnmarshalText(data []byte) error {
+	switch TaskStatusCategory(data) {
+	case TaskStatusCategoryInitial:
+		*s = TaskStatusCategoryInitial
+		return nil
+	case TaskStatusCategoryIntermediate:
+		*s = TaskStatusCategoryIntermediate
+		return nil
+	case TaskStatusCategoryCompletion:
+		*s = TaskStatusCategoryCompletion
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/TaskStatusInput
+type TaskStatusInput struct {
+	Name     string                  `json:"name"`
+	Category TaskStatusInputCategory `json:"category"`
+}
+
+// GetName returns the value of Name.
+func (s *TaskStatusInput) GetName() string {
+	return s.Name
+}
+
+// GetCategory returns the value of Category.
+func (s *TaskStatusInput) GetCategory() TaskStatusInputCategory {
+	return s.Category
+}
+
+// SetName sets the value of Name.
+func (s *TaskStatusInput) SetName(val string) {
+	s.Name = val
+}
+
+// SetCategory sets the value of Category.
+func (s *TaskStatusInput) SetCategory(val TaskStatusInputCategory) {
+	s.Category = val
+}
+
+type TaskStatusInputCategory string
+
+const (
+	TaskStatusInputCategoryInitial      TaskStatusInputCategory = "initial"
+	TaskStatusInputCategoryIntermediate TaskStatusInputCategory = "intermediate"
+	TaskStatusInputCategoryCompletion   TaskStatusInputCategory = "completion"
+)
+
+// AllValues returns all TaskStatusInputCategory values.
+func (TaskStatusInputCategory) AllValues() []TaskStatusInputCategory {
+	return []TaskStatusInputCategory{
+		TaskStatusInputCategoryInitial,
+		TaskStatusInputCategoryIntermediate,
+		TaskStatusInputCategoryCompletion,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TaskStatusInputCategory) MarshalText() ([]byte, error) {
+	switch s {
+	case TaskStatusInputCategoryInitial:
+		return []byte(s), nil
+	case TaskStatusInputCategoryIntermediate:
+		return []byte(s), nil
+	case TaskStatusInputCategoryCompletion:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TaskStatusInputCategory) UnmarshalText(data []byte) error {
+	switch TaskStatusInputCategory(data) {
+	case TaskStatusInputCategoryInitial:
+		*s = TaskStatusInputCategoryInitial
+		return nil
+	case TaskStatusInputCategoryIntermediate:
+		*s = TaskStatusInputCategoryIntermediate
+		return nil
+	case TaskStatusInputCategoryCompletion:
+		*s = TaskStatusInputCategoryCompletion
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/TaskStatusList
+type TaskStatusList struct {
+	Items []TaskStatus `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *TaskStatusList) GetItems() []TaskStatus {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *TaskStatusList) SetItems(val []TaskStatus) {
+	s.Items = val
+}
+
+// Ref: #/components/schemas/TaskStatusReplace
+type TaskStatusReplace struct {
+	Items []TaskStatusInput `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *TaskStatusReplace) GetItems() []TaskStatusInput {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *TaskStatusReplace) SetItems(val []TaskStatusInput) {
+	s.Items = val
 }
 
 // Ref: #/components/schemas/TaskUpdate

@@ -11,6 +11,8 @@
 - Web: login, space list, task list, task detail (read-only)
 - Tags — schema, API (CLI and web remaining)
 - Task relations — schema, API (CLI and web remaining)
+- Effort and priority levels on tasks — schema, API, CLI flags, web display
+- CRUD for statuses, effort levels, and priority levels (PUT replace-all API)
 
 ## Core Task Features
 

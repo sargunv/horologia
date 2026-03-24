@@ -215,5 +215,5 @@ func TestSpaceTagsViewerCannotWrite(t *testing.T) {
 	assertStatusClose(t, doRequestAs(t, env, viewerToken, "GET", "/spaces/tag-vw/tags", ""), http.StatusOK)
 
 	// Viewer cannot create tags.
-	assertStatusClose(t, doRequestAs(t, env, viewerToken, "POST", "/spaces/tag-vw/tags", `{"name":"Bug"}`), http.StatusBadRequest)
+	assertStatusClose(t, doRequestAs(t, env, viewerToken, "POST", "/spaces/tag-vw/tags", `{"name":"Bug"}`), http.StatusForbidden)
 }

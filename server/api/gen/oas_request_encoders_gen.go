@@ -94,8 +94,50 @@ func encodeSpaceTagsUpdateRequest(
 	return nil
 }
 
+func encodeSpaceTaskEffortLevelsReplaceRequest(
+	req *TaskEffortLevelReplace,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeSpaceTaskPriorityLevelsReplaceRequest(
+	req *TaskPriorityLevelReplace,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeSpaceTaskRelationsCreateRequest(
 	req *TaskRelationCreate,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeSpaceTaskStatusesReplaceRequest(
+	req *TaskStatusReplace,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
