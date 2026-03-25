@@ -116,12 +116,15 @@ var directedKindMap = map[apigen.TaskRelationKind]struct {
 	apigen.TaskRelationKindSpawnedBy:   {"spawns", true, false},
 }
 
-// inverseKindMap is derived from directedKindMap at init time. It maps
-// (storedKind, isFlipped) to the API-facing directed kind.
-var inverseKindMap map[struct {
+// relationKey identifies a stored relation by its canonical kind and direction.
+type relationKey struct {
 	kind string
 	flip bool
-}]apigen.TaskRelationKind
+}
+
+// inverseKindMap is derived from directedKindMap at init time. It maps
+// (storedKind, isFlipped) to the API-facing directed kind.
+var inverseKindMap map[relationKey]apigen.TaskRelationKind
 
 // symmetricKinds lists stored relation kinds that are symmetric (same kind in both directions).
 // copyOnSpawn follows the same policy as directedKindMap (see comment above).
@@ -136,16 +139,10 @@ var symmetricKinds = map[string]struct{ copyOnSpawn bool }{
 var storedKindCopyOnSpawn map[string]bool
 
 func init() {
-	inverseKindMap = make(map[struct {
-		kind string
-		flip bool
-	}]apigen.TaskRelationKind, len(directedKindMap))
+	inverseKindMap = make(map[relationKey]apigen.TaskRelationKind, len(directedKindMap))
 	storedKindCopyOnSpawn = make(map[string]bool)
 	for apiKind, c := range directedKindMap {
-		inverseKindMap[struct {
-			kind string
-			flip bool
-		}{c.storedKind, c.flip}] = apiKind
+		inverseKindMap[relationKey{c.storedKind, c.flip}] = apiKind
 		if existing, seen := storedKindCopyOnSpawn[c.storedKind]; seen && existing != c.copyOnSpawn {
 			panic(fmt.Sprintf("conflicting copyOnSpawn for stored kind %q", c.storedKind))
 		}
@@ -168,10 +165,7 @@ func relationFromDB(rel taskRelationRow, perspectiveTaskID int64) (apigen.TaskRe
 		relatedID = rel.SourceTaskID
 	}
 
-	key := struct {
-		kind string
-		flip bool
-	}{rel.Kind, !isSource}
+	key := relationKey{rel.Kind, !isSource}
 
 	if k, ok := inverseKindMap[key]; ok {
 		kind = k
@@ -235,10 +229,10 @@ func taskFromDB(task dbgen.Task, assigneeUserIDs []int64, tagNames []string, rel
 		UpdatedAt:      task.UpdatedAt.Time(),
 	}
 
-	if task.DueAt != nil && task.DueTz != nil {
+	if due := types.NewDueDate(task.DueAt, task.DueTz); due != nil {
 		t.Due.SetTo(apigen.TaskDue{
-			At:       task.DueAt.Time(),
-			Timezone: *task.DueTz,
+			At:       due.At.Time(),
+			Timezone: due.Tz,
 		})
 	} else {
 		t.Due.SetToNull()
@@ -288,25 +282,26 @@ func paginate[DB any, API any](
 	return items, next, nil
 }
 
-// dueToDB extracts due_at and due_tz from an OptNilTaskDue (for create/update).
-// Returns (nil, nil) if not set or null. Validates the timezone.
-func dueToDB(opt apigen.OptNilTaskDue) (*types.EpochSeconds, *string, error) {
+// dueToDB extracts a DueDate from an OptNilTaskDue (for create/update).
+// Returns nil if not set or null. Validates the timezone.
+func dueToDB(opt apigen.OptNilTaskDue) (*types.DueDate, error) {
 	if !opt.IsSet() || opt.IsNull() {
-		return nil, nil, nil
+		return nil, nil
 	}
 	if _, err := time.LoadLocation(opt.Value.Timezone); err != nil {
-		return nil, nil, badRequest(fmt.Sprintf("invalid timezone %q", opt.Value.Timezone))
+		return nil, badRequest(fmt.Sprintf("invalid timezone %q", opt.Value.Timezone))
 	}
-	es := types.EpochSecondsFrom(opt.Value.At)
-	tz := opt.Value.Timezone
-	return &es, &tz, nil
+	return &types.DueDate{
+		At: types.EpochSecondsFrom(opt.Value.At),
+		Tz: opt.Value.Timezone,
+	}, nil
 }
 
 // dueFromExisting merges the due field from a PATCH request with existing values.
 // Absent = no change, null = clear, object = set both.
-func dueFromExisting(existingAt *types.EpochSeconds, existingTz *string, update apigen.OptNilTaskDue) (*types.EpochSeconds, *string, error) {
+func dueFromExisting(existing *types.DueDate, update apigen.OptNilTaskDue) (*types.DueDate, error) {
 	if !update.IsSet() {
-		return existingAt, existingTz, nil
+		return existing, nil
 	}
 	return dueToDB(update)
 }
@@ -339,7 +334,7 @@ func userFromDB(u dbgen.User) *apigen.User {
 		ID:        formatUserID(u.ID),
 		Email:     u.Email,
 		Name:      u.Name,
-		IsOwner:   u.IsOwner != 0,
+		IsOwner:   u.IsOwner.Bool(),
 		CreatedAt: u.CreatedAt.Time(),
 		UpdatedAt: u.UpdatedAt.Time(),
 	}

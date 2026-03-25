@@ -20,17 +20,12 @@ func CreateUserWithPassword(ctx context.Context, db *sql.DB, email, name, passwo
 	hashStr := string(hash)
 	now := types.Now()
 
-	var ownerFlag int64
-	if isOwner {
-		ownerFlag = 1
-	}
-
 	q := dbgen.New(db)
 	return q.CreateUser(ctx, dbgen.CreateUserParams{
 		Email:        email,
 		Name:         name,
 		PasswordHash: &hashStr,
-		IsOwner:      ownerFlag,
+		IsOwner:      types.BoolIntFrom(isOwner),
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	})

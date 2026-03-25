@@ -14,8 +14,7 @@ type CompletionResult struct {
 	Status          string
 	RecurrenceType  apigen.TaskRecurrenceType
 	RecurrenceRule  *string
-	DueAt           *types.EpochSeconds
-	DueTz           *string
+	Due             *types.DueDate
 	LastCompletedAt *types.EpochSeconds
 	JustCompleted   bool
 }
@@ -34,8 +33,7 @@ func (e *Engine) HandleCompletionTransition(
 	newStatus string,
 	recurrenceType apigen.TaskRecurrenceType,
 	recurrenceRule *string,
-	dueAt *types.EpochSeconds,
-	dueTz *string,
+	due *types.DueDate,
 	lastCompletedAt *types.EpochSeconds,
 	spaceSlug string,
 	taskID int64,
@@ -45,8 +43,7 @@ func (e *Engine) HandleCompletionTransition(
 		Status:          newStatus,
 		RecurrenceType:  recurrenceType,
 		RecurrenceRule:  recurrenceRule,
-		DueAt:           dueAt,
-		DueTz:           dueTz,
+		Due:             due,
 		LastCompletedAt: lastCompletedAt,
 	}
 
@@ -78,18 +75,16 @@ func (e *Engine) HandleCompletionTransition(
 	result.JustCompleted = true
 	result.LastCompletedAt = &now
 
+	existingDue := types.NewDueDate(existing.DueAt, existing.DueTz)
+
 	switch recurrenceType { //nolint:exhaustive // one_off and on_dependency have no special completion behavior
 	case apigen.TaskRecurrenceTypeCompletionBased, apigen.TaskRecurrenceTypeFixedNonAccumulating:
-		next, err := ComputeNextDueAt(recurrenceType, recurrenceRule, existing.DueAt, existing.DueTz, now.Time())
+		next, err := ComputeNextDueAt(recurrenceType, recurrenceRule, existingDue, now.Time())
 		if err != nil {
 			return nil, err
 		}
 		if next != nil {
-			result.DueAt = next
-			if result.DueTz == nil {
-				utc := "UTC"
-				result.DueTz = &utc
-			}
+			result.Due = next
 			initialStatus, err := InitialStatusFromSlice(statuses)
 			if err != nil {
 				return nil, err
@@ -98,7 +93,7 @@ func (e *Engine) HandleCompletionTransition(
 		}
 
 	case apigen.TaskRecurrenceTypeFixedAccumulating:
-		next, err := ComputeNextDueAt(recurrenceType, recurrenceRule, existing.DueAt, existing.DueTz, now.Time())
+		next, err := ComputeNextDueAt(recurrenceType, recurrenceRule, existingDue, now.Time())
 		if err != nil {
 			return nil, err
 		}

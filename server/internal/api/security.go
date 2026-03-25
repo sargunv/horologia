@@ -65,7 +65,7 @@ func (h *Handler) HandleBearerAuth(ctx context.Context, operationName apigen.Ope
 		ID:      row.UserID,
 		Email:   row.UserEmail,
 		Name:    row.UserName,
-		IsOwner: row.UserIsOwner != 0,
+		IsOwner: row.UserIsOwner.Bool(),
 	}
 	return ContextWithUser(ctx, user), nil
 }

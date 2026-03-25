@@ -15,8 +15,6 @@ common_env = {
 go_deps = [
     "server/go.mod",
     "server/go.sum",
-    "server/main.go",
-    "server/migrate.go",
     "server/tools.go",
     "server/internal",
     "server/api",
@@ -41,7 +39,7 @@ local_resource(
 
 local_resource(
     "server",
-    cmd="cd server && go build -o tmp/tend-server .",
+    cmd="cd server && go build -o tmp/tend-server ./cmd/server",
     serve_cmd="./server/tmp/tend-server serve",
     serve_env=common_env,
     deps=go_deps,

@@ -18,7 +18,7 @@ description = "Build server binary"
 depends = ["generate"]
 sources = ["**/*.go", "go.mod", "go.sum"]
 outputs = ["tend-server"]
-run = "go build -o tend-server ."
+run = "go build -o tend-server ./cmd/server"
 
 [tasks.test]
 description = "Run tests"

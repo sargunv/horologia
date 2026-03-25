@@ -21,7 +21,7 @@ type CreateUserParams struct {
 	Email        string
 	Name         string
 	PasswordHash *string
-	IsOwner      int64
+	IsOwner      types.BoolInt
 	OidcSubject  *string
 	CreatedAt    types.EpochSeconds
 	UpdatedAt    types.EpochSeconds

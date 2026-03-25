@@ -80,41 +80,50 @@ func validateRRule(rule string, now time.Time) error {
 	return nil
 }
 
-// ComputeNextDueAt computes the next due epoch seconds for a recurring task
-// after a completion event. Returns nil if no next occurrence exists (rule
-// exhausted) or if the recurrence type does not advance the due date.
+// ComputeNextDueAt computes the next DueDate for a recurring task after a
+// completion event. Returns nil if no next occurrence exists (rule exhausted)
+// or if the recurrence type does not advance the due date. The returned
+// DueDate preserves the timezone from the input (defaulting to "UTC").
 //
 //   - completion_based: DTSTART is now (completion time) in the task's timezone.
 //   - fixed_non_accumulating / fixed_accumulating: DTSTART is the current due_at
 //     in the task's timezone; next occurrence after now.
 //
 // Precondition: ValidateRecurrence must have been called first.
-func ComputeNextDueAt(recurrenceType apigen.TaskRecurrenceType, recurrenceRule *string, dueAt *types.EpochSeconds, dueTz *string, now time.Time) (*types.EpochSeconds, error) {
-	loc := time.UTC
-	if dueTz != nil {
-		var err error
-		loc, err = time.LoadLocation(*dueTz)
-		if err != nil {
-			return nil, apierrors.BadRequest(fmt.Sprintf("invalid due_tz %q: %v", *dueTz, err))
-		}
+func ComputeNextDueAt(recurrenceType apigen.TaskRecurrenceType, recurrenceRule *string, due *types.DueDate, now time.Time) (*types.DueDate, error) {
+	tz := "UTC"
+	if due != nil {
+		tz = due.Tz
+	}
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		return nil, apierrors.BadRequest(fmt.Sprintf("invalid due_tz %q: %v", tz, err))
 	}
 
 	nowInTz := now.In(loc)
 
+	var nextAt *types.EpochSeconds
 	switch recurrenceType {
 	case apigen.TaskRecurrenceTypeCompletionBased:
-		return nextRRuleOccurrence(*recurrenceRule, nowInTz, nowInTz)
+		nextAt, err = nextRRuleOccurrence(*recurrenceRule, nowInTz, nowInTz)
 	case apigen.TaskRecurrenceTypeFixedNonAccumulating, apigen.TaskRecurrenceTypeFixedAccumulating:
 		dtstart := nowInTz
-		if dueAt != nil {
-			dtstart = dueAt.Time().In(loc)
+		if due != nil {
+			dtstart = due.At.Time().In(loc)
 		}
-		return nextRRuleOccurrence(*recurrenceRule, dtstart, nowInTz)
+		nextAt, err = nextRRuleOccurrence(*recurrenceRule, dtstart, nowInTz)
 	case apigen.TaskRecurrenceTypeOneOff, apigen.TaskRecurrenceTypeOnDependency:
 		return nil, nil
 	default:
 		return nil, fmt.Errorf("unhandled recurrence type %q", recurrenceType)
 	}
+	if err != nil {
+		return nil, err
+	}
+	if nextAt == nil {
+		return nil, nil
+	}
+	return &types.DueDate{At: *nextAt, Tz: tz}, nil
 }
 
 // nextRRuleOccurrence parses the rule, sets dtstart, and finds the first

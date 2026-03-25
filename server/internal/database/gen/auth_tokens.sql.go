@@ -99,7 +99,7 @@ type GetAuthTokenByHashRow struct {
 	UserID2     int64
 	UserEmail   string
 	UserName    string
-	UserIsOwner int64
+	UserIsOwner types.BoolInt
 }
 
 func (q *Queries) GetAuthTokenByHash(ctx context.Context, tokenHash string) (GetAuthTokenByHashRow, error) {

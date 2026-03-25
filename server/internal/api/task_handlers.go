@@ -192,7 +192,7 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 	recurrenceType := req.RecurrenceType.Or(apigen.TaskRecurrenceTypeOneOff)
 	recurrenceRule := optStringToDB(req.RecurrenceRule)
 
-	dueAt, dueTz, err := dueToDB(req.Due)
+	due, err := dueToDB(req.Due)
 	if err != nil {
 		return nil, err
 	}
@@ -201,6 +201,7 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 	if err := taskengine.ValidateRecurrence(recurrenceType, recurrenceRule, ts.Time()); err != nil {
 		return nil, err
 	}
+	dueAt, dueTz := types.DecomposeDueDate(due)
 	task, err := q.CreateTask(ctx, dbgen.CreateTaskParams{
 		SpaceSlug:      params.SpaceSlug,
 		Title:          req.Title,
@@ -219,16 +220,25 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 		return nil, err
 	}
 
+	// Pre-fetch member set if both assignees and rotation pool have entries.
+	var memberSet map[int64]struct{}
+	if len(req.AssigneeIds) > 0 && len(req.RotationPool) > 0 {
+		memberSet, err = fetchMemberSet(ctx, q, params.SpaceSlug)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// Set assignees if provided.
 	if req.AssigneeIds != nil {
-		if err := h.setTaskAssignees(ctx, q, task.ID, params.SpaceSlug, req.AssigneeIds); err != nil {
+		if err := h.setTaskAssignees(ctx, q, task.ID, params.SpaceSlug, req.AssigneeIds, memberSet); err != nil {
 			return nil, err
 		}
 	}
 
 	// Set rotation pool if provided.
 	if req.RotationPool != nil {
-		if err := h.setTaskRotationPool(ctx, q, task.ID, params.SpaceSlug, req.RotationPool); err != nil {
+		if err := h.setTaskRotationPool(ctx, q, task.ID, params.SpaceSlug, req.RotationPool, memberSet); err != nil {
 			return nil, err
 		}
 	}
@@ -354,7 +364,7 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 	}
 
 	newStatus := req.Status.Or(existing.StatusName)
-	newDueAt, newDueTz, err := dueFromExisting(existing.DueAt, existing.DueTz, req.Due)
+	newDue, err := dueFromExisting(types.NewDueDate(existing.DueAt, existing.DueTz), req.Due)
 	if err != nil {
 		return nil, err
 	}
@@ -362,21 +372,22 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 	cr, err := h.Engine.HandleCompletionTransition(
 		ctx, q, existing, newStatus,
 		recurrenceType, recurrenceRule,
-		newDueAt, newDueTz, existing.LastCompletedAt,
+		newDue, existing.LastCompletedAt,
 		params.SpaceSlug, id, now,
 	)
 	if err != nil {
 		return nil, err
 	}
 
+	crDueAt, crDueTz := types.DecomposeDueDate(cr.Due)
 	_, err = q.UpdateTask(ctx, dbgen.UpdateTaskParams{
 		Title:           req.Title.Or(existing.Title),
 		Description:     req.Description.Or(existing.Description),
 		StatusName:      cr.Status,
 		EffortName:      effortName,
 		PriorityName:    priorityName,
-		DueAt:           cr.DueAt,
-		DueTz:           cr.DueTz,
+		DueAt:           crDueAt,
+		DueTz:           crDueTz,
 		RecurrenceType:  string(cr.RecurrenceType),
 		RecurrenceRule:  cr.RecurrenceRule,
 		LastCompletedAt: cr.LastCompletedAt,
@@ -395,16 +406,25 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 		}
 	}
 
+	// Pre-fetch member set if both assignees and rotation pool have entries.
+	var memberSet map[int64]struct{}
+	if len(req.AssigneeIds) > 0 && len(req.RotationPool) > 0 {
+		memberSet, err = fetchMemberSet(ctx, q, params.SpaceSlug)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// Replace assignees if provided (nil = no change, empty = clear all).
 	if req.AssigneeIds != nil {
-		if err := h.setTaskAssignees(ctx, q, id, params.SpaceSlug, req.AssigneeIds); err != nil {
+		if err := h.setTaskAssignees(ctx, q, id, params.SpaceSlug, req.AssigneeIds, memberSet); err != nil {
 			return nil, err
 		}
 	}
 
 	// Replace rotation pool if provided (nil = no change, empty = clear all).
 	if req.RotationPool != nil {
-		if err := h.setTaskRotationPool(ctx, q, id, params.SpaceSlug, req.RotationPool); err != nil {
+		if err := h.setTaskRotationPool(ctx, q, id, params.SpaceSlug, req.RotationPool, memberSet); err != nil {
 			return nil, err
 		}
 	}
@@ -445,10 +465,23 @@ func (h *Handler) SpaceTasksDelete(ctx context.Context, params apigen.SpaceTasks
 	return checkDeleted(result)
 }
 
+// fetchMemberSet returns the set of user IDs that are members of the space.
+func fetchMemberSet(ctx context.Context, q *dbgen.Queries, spaceSlug string) (map[int64]struct{}, error) {
+	memberIDs, err := q.ListSpaceMemberUserIDs(ctx, spaceSlug)
+	if err != nil {
+		return nil, err
+	}
+	memberSet := make(map[int64]struct{}, len(memberIDs))
+	for _, mid := range memberIDs {
+		memberSet[mid] = struct{}{}
+	}
+	return memberSet, nil
+}
+
 // parseAndValidateUserIDs parses string user IDs, deduplicates them (preserving
-// order), and validates that each user is a member of the space. Returns the
-// validated int64 user IDs.
-func parseAndValidateUserIDs(ctx context.Context, q *dbgen.Queries, spaceSlug string, rawIDs []string) ([]int64, error) {
+// order), and validates that each user is a member of the space. If memberSet
+// is nil, the member list is fetched from the database.
+func parseAndValidateUserIDs(ctx context.Context, q *dbgen.Queries, spaceSlug string, rawIDs []string, memberSet map[int64]struct{}) ([]int64, error) {
 	seen := make(map[int64]struct{}, len(rawIDs))
 	userIDs := make([]int64, 0, len(rawIDs))
 	for _, raw := range rawIDs {
@@ -463,13 +496,12 @@ func parseAndValidateUserIDs(ctx context.Context, q *dbgen.Queries, spaceSlug st
 		userIDs = append(userIDs, uid)
 	}
 
-	memberIDs, err := q.ListSpaceMemberUserIDs(ctx, spaceSlug)
-	if err != nil {
-		return nil, err
-	}
-	memberSet := make(map[int64]struct{}, len(memberIDs))
-	for _, mid := range memberIDs {
-		memberSet[mid] = struct{}{}
+	if memberSet == nil && len(userIDs) > 0 {
+		var err error
+		memberSet, err = fetchMemberSet(ctx, q, spaceSlug)
+		if err != nil {
+			return nil, err
+		}
 	}
 	for _, uid := range userIDs {
 		if _, ok := memberSet[uid]; !ok {
@@ -480,11 +512,12 @@ func parseAndValidateUserIDs(ctx context.Context, q *dbgen.Queries, spaceSlug st
 }
 
 // setTaskAssignees replaces all assignees for a task. It validates that each
-// user is a member of the task's space.
+// user is a member of the task's space. If memberSet is non-nil it is reused
+// instead of re-querying the database.
 // The caller must pass a transactional *dbgen.Queries to ensure atomicity.
 // Max array length is enforced by ogen's @maxItems(100) validation.
-func (h *Handler) setTaskAssignees(ctx context.Context, q *dbgen.Queries, taskID int64, spaceSlug string, assigneeIDs []string) error {
-	userIDs, err := parseAndValidateUserIDs(ctx, q, spaceSlug, assigneeIDs)
+func (h *Handler) setTaskAssignees(ctx context.Context, q *dbgen.Queries, taskID int64, spaceSlug string, assigneeIDs []string, memberSet map[int64]struct{}) error {
+	userIDs, err := parseAndValidateUserIDs(ctx, q, spaceSlug, assigneeIDs, memberSet)
 	if err != nil {
 		return err
 	}
@@ -506,10 +539,11 @@ func (h *Handler) setTaskAssignees(ctx context.Context, q *dbgen.Queries, taskID
 
 // setTaskRotationPool replaces the rotation pool for a task. It validates that
 // each user is a member of the task's space. Order is preserved via position.
+// If memberSet is non-nil it is reused instead of re-querying the database.
 // The caller must pass a transactional *dbgen.Queries to ensure atomicity.
 // Max array length is enforced by ogen's @maxItems(100) validation.
-func (h *Handler) setTaskRotationPool(ctx context.Context, q *dbgen.Queries, taskID int64, spaceSlug string, poolIDs []string) error {
-	userIDs, err := parseAndValidateUserIDs(ctx, q, spaceSlug, poolIDs)
+func (h *Handler) setTaskRotationPool(ctx context.Context, q *dbgen.Queries, taskID int64, spaceSlug string, poolIDs []string, memberSet map[int64]struct{}) error {
+	userIDs, err := parseAndValidateUserIDs(ctx, q, spaceSlug, poolIDs, memberSet)
 	if err != nil {
 		return err
 	}

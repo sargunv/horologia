@@ -23,12 +23,13 @@ func (e *Engine) SpawnTaskFromTemplate(
 	src dbgen.Task,
 	newRecurrenceType string,
 	newRecurrenceRule *string,
-	newDueAt *types.EpochSeconds,
+	newDue *types.DueDate,
 	initialStatus string,
 	now types.EpochSeconds,
 	overrideAssignees []int64,
 	srcPool []int64,
 ) (int64, error) {
+	dueAt, dueTz := types.DecomposeDueDate(newDue)
 	newTask, err := q.CreateTask(ctx, dbgen.CreateTaskParams{
 		SpaceSlug:      src.SpaceSlug,
 		Title:          src.Title,
@@ -36,8 +37,8 @@ func (e *Engine) SpawnTaskFromTemplate(
 		StatusName:     initialStatus,
 		EffortName:     src.EffortName,
 		PriorityName:   src.PriorityName,
-		DueAt:          newDueAt,
-		DueTz:          src.DueTz,
+		DueAt:          dueAt,
+		DueTz:          dueTz,
 		RecurrenceType: newRecurrenceType,
 		RecurrenceRule: newRecurrenceRule,
 		CreatedAt:      now,
@@ -195,20 +196,17 @@ func allOverdueOccurrences(rule string, dtstart time.Time, until time.Time, loc 
 // processAccumulatingTask handles one overdue fixed_accumulating task within an
 // existing transaction.
 func (e *Engine) processAccumulatingTask(ctx context.Context, q *dbgen.Queries, task dbgen.Task, now time.Time) error {
-	if task.DueAt == nil || task.RecurrenceRule == nil {
+	due := types.NewDueDate(task.DueAt, task.DueTz)
+	if due == nil || task.RecurrenceRule == nil {
 		return nil
 	}
 
-	loc := time.UTC
-	if task.DueTz != nil {
-		var err error
-		loc, err = time.LoadLocation(*task.DueTz)
-		if err != nil {
-			return err
-		}
+	loc, err := time.LoadLocation(due.Tz)
+	if err != nil {
+		return err
 	}
 
-	dtstart := task.DueAt.Time().In(loc)
+	dtstart := due.At.Time().In(loc)
 
 	missed, err := allOverdueOccurrences(*task.RecurrenceRule, dtstart, now, loc)
 	if err != nil {
@@ -247,17 +245,18 @@ func (e *Engine) processAccumulatingTask(ctx context.Context, q *dbgen.Queries, 
 		return err
 	}
 
-	for i, dueAt := range missed {
+	for i, missedAt := range missed {
+		missedDue := &types.DueDate{At: missedAt, Tz: due.Tz}
 		overrideAssignees := AdvanceRotation(pool, currentAssignees, i)
 		if _, err := e.SpawnTaskFromTemplate(ctx, q, task,
-			string(apigen.TaskRecurrenceTypeOneOff), nil, &dueAt, initialStatus, nowEpoch,
+			string(apigen.TaskRecurrenceTypeOneOff), nil, missedDue, initialStatus, nowEpoch,
 			overrideAssignees, pool,
 		); err != nil {
 			return err
 		}
 	}
 
-	next, err := ComputeNextDueAt(apigen.TaskRecurrenceTypeFixedAccumulating, task.RecurrenceRule, task.DueAt, task.DueTz, now)
+	next, err := ComputeNextDueAt(apigen.TaskRecurrenceTypeFixedAccumulating, task.RecurrenceRule, due, now)
 	if err != nil {
 		return err
 	}

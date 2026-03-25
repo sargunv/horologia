@@ -52,3 +52,5 @@ sql:
             go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"
           - column: "task_rotation_pool.created_at"
             go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"
+          - column: "users.is_owner"
+            go_type: "github.com/sargunv/tend/server/internal/types.BoolInt"
