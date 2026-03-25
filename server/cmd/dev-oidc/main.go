@@ -13,9 +13,11 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/zitadel/oidc/v3/example/server/exampleop"
 	"github.com/zitadel/oidc/v3/example/server/storage"
@@ -86,16 +88,18 @@ func main() {
 
 	// Wrap the OIDC router to replace the login form with user-picker buttons.
 	mux := http.NewServeMux()
+	loginTmpl := template.Must(template.New("login").Parse(loginPage))
 	mux.HandleFunc("GET /login/username", func(w http.ResponseWriter, r *http.Request) {
 		authRequestID := r.URL.Query().Get("authRequestID")
 		w.Header().Set("Content-Type", "text/html")
-		_, _ = fmt.Fprintf(w, loginPage, authRequestID)
+		_ = loginTmpl.Execute(w, authRequestID)
 	})
 	mux.Handle("/", oidcRouter)
 
 	server := &http.Server{
-		Addr:    ":" + port,
-		Handler: mux,
+		Addr:              ":" + port,
+		Handler:           mux,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 
 	logger.Info("dev OIDC provider listening", "issuer", issuer, "users", "admin@localhost/password, test@localhost/password")
@@ -115,7 +119,7 @@ const loginPage = `<!DOCTYPE html>
 <main class="container" style="max-width:24rem;padding-top:20vh">
 <h2>Pick a dev user</h2>
 <form method="POST" action="/login/username">
-<input type="hidden" name="id" value="%s">
+<input type="hidden" name="id" value="{{.}}">
 <input type="hidden" name="password" value="password">
 <button type="submit" name="username" value="admin@localhost" class="outline" style="width:100%%">admin@localhost</button>
 <button type="submit" name="username" value="test@localhost" class="outline" style="width:100%%">test@localhost</button>

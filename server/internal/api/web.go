@@ -168,8 +168,10 @@ func httpStatusToCode(status int) string {
 func writeJSONError(w http.ResponseWriter, status int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(map[string]string{
+	if err := json.NewEncoder(w).Encode(map[string]string{
 		"code":    httpStatusToCode(status),
 		"message": message,
-	})
+	}); err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+	}
 }

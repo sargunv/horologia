@@ -2,6 +2,7 @@ package types
 
 import (
 	"database/sql/driver"
+	"errors"
 	"fmt"
 	"time"
 )
@@ -31,7 +32,7 @@ func (t *EpochSeconds) Scan(v any) error {
 		*t = EpochSeconds(time.Unix(v, 0).UTC())
 		return nil
 	case nil:
-		return fmt.Errorf("cannot scan NULL into EpochSeconds")
+		return errors.New("cannot scan NULL into EpochSeconds")
 	default:
 		return fmt.Errorf("cannot scan %T into EpochSeconds", v)
 	}

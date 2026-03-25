@@ -10,7 +10,7 @@ func TestWebErrorCodeIsSnakeCase(t *testing.T) {
 	env := setupTestServer(t)
 
 	// Hit the web login endpoint with bad credentials to trigger writeJSONError.
-	req, _ := http.NewRequestWithContext(t.Context(), "POST", env.Server.URL+"/auth/login",
+	req, _ := http.NewRequestWithContext(t.Context(), http.MethodPost, env.Server.URL+"/auth/login",
 		strings.NewReader(`{"email":"test@example.com","password":"wrong"}`))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)

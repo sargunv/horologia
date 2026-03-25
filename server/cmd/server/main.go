@@ -146,7 +146,7 @@ var serveCmd = &cobra.Command{
 			return fmt.Errorf("listen: %w", err)
 		}
 
-		srv := &http.Server{Handler: finalHandler}
+		srv := &http.Server{Handler: finalHandler, ReadHeaderTimeout: 10 * time.Second}
 
 		errCh := make(chan error, 1)
 		go func() { errCh <- srv.Serve(ln) }()

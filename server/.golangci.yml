@@ -3,10 +3,15 @@ version: "2"
 linters:
   default: standard
   enable:
-    - forbidigo
+    - errchkjson
     - exhaustive
-    - unconvert
-    - noctx
-    - modernize
-    - gocritic
+    - forbidigo
     - forcetypeassert
+    - gocritic
+    - gosec
+    - modernize
+    - noctx
+    - perfsprint
+    - sloglint
+    - unconvert
+    - usestdlibvars

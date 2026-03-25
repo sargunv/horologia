@@ -2,6 +2,7 @@ package types
 
 import (
 	"database/sql/driver"
+	"errors"
 	"fmt"
 )
 
@@ -25,7 +26,7 @@ func (b *BoolInt) Scan(v any) error {
 		*b = v != 0
 		return nil
 	case nil:
-		return fmt.Errorf("cannot scan NULL into BoolInt")
+		return errors.New("cannot scan NULL into BoolInt")
 	default:
 		return fmt.Errorf("cannot scan %T into BoolInt", v)
 	}

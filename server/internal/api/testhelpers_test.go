@@ -67,7 +67,7 @@ func setupTestServer(t *testing.T) *testEnv {
 		t.Fatalf("create token: %v", err)
 	}
 
-	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+	log := slog.New(slog.DiscardHandler)
 	engine := &taskengine.Engine{
 		DB:               db,
 		Log:              log,

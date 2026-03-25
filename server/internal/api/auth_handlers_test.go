@@ -16,7 +16,7 @@ func TestAuthLoginSuccess(t *testing.T) {
 	env := setupTestServer(t)
 
 	// Login doesn't need auth header, but doRequest always adds one. Use a raw request.
-	req, _ := http.NewRequestWithContext(t.Context(), "POST", env.Server.URL+"/auth/login", strings.NewReader(`{"email":"test@example.com","password":"password"}`))
+	req, _ := http.NewRequestWithContext(t.Context(), http.MethodPost, env.Server.URL+"/auth/login", strings.NewReader(`{"email":"test@example.com","password":"password"}`))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -38,7 +38,7 @@ func TestAuthLoginSuccess(t *testing.T) {
 func TestAuthLoginBadPassword(t *testing.T) {
 	env := setupTestServer(t)
 
-	req, _ := http.NewRequestWithContext(t.Context(), "POST", env.Server.URL+"/auth/login", strings.NewReader(`{"email":"test@example.com","password":"wrong"}`))
+	req, _ := http.NewRequestWithContext(t.Context(), http.MethodPost, env.Server.URL+"/auth/login", strings.NewReader(`{"email":"test@example.com","password":"wrong"}`))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -51,7 +51,7 @@ func TestUnauthenticatedRequest(t *testing.T) {
 	env := setupTestServer(t)
 
 	// Request without auth header.
-	req, _ := http.NewRequestWithContext(t.Context(), "GET", env.Server.URL+"/spaces", nil)
+	req, _ := http.NewRequestWithContext(t.Context(), http.MethodGet, env.Server.URL+"/spaces", nil)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("do request: %v", err)
