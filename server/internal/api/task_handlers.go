@@ -189,7 +189,7 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 		return nil, err
 	}
 
-	recurrenceType := string(req.RecurrenceType.Or(apigen.TaskRecurrenceTypeOneOff))
+	recurrenceType := req.RecurrenceType.Or(apigen.TaskRecurrenceTypeOneOff)
 	recurrenceRule := optStringToDB(req.RecurrenceRule)
 
 	dueAt, dueTz, err := dueToDB(req.Due)
@@ -210,7 +210,7 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 		PriorityName:   priorityName,
 		DueAt:          dueAt,
 		DueTz:          dueTz,
-		RecurrenceType: recurrenceType,
+		RecurrenceType: string(recurrenceType),
 		RecurrenceRule: recurrenceRule,
 		CreatedAt:      ts,
 		UpdatedAt:      ts,
@@ -343,9 +343,9 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 	}
 
 	// Merge recurrence fields. Auto-clear rule when switching to a no-rule type.
-	recurrenceType := string(req.RecurrenceType.Or(apigen.TaskRecurrenceType(existing.RecurrenceType)))
+	recurrenceType := req.RecurrenceType.Or(apigen.TaskRecurrenceType(existing.RecurrenceType))
 	recurrenceRule := optNilStringToDB(req.RecurrenceRule, existing.RecurrenceRule)
-	if recurrenceType == "one_off" || recurrenceType == "on_dependency" {
+	if recurrenceType == apigen.TaskRecurrenceTypeOneOff || recurrenceType == apigen.TaskRecurrenceTypeOnDependency {
 		recurrenceRule = nil
 	}
 	now := types.Now()
@@ -377,7 +377,7 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 		PriorityName:    priorityName,
 		DueAt:           cr.DueAt,
 		DueTz:           cr.DueTz,
-		RecurrenceType:  cr.RecurrenceType,
+		RecurrenceType:  string(cr.RecurrenceType),
 		RecurrenceRule:  cr.RecurrenceRule,
 		LastCompletedAt: cr.LastCompletedAt,
 		UpdatedAt:       now,

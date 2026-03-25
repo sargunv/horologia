@@ -32,7 +32,7 @@ func (h *Handler) SpaceTaskStatusesList(ctx context.Context, params apigen.Space
 }
 
 func (h *Handler) SpaceTaskStatusesReplace(ctx context.Context, req *apigen.TaskStatusReplace, params apigen.SpaceTaskStatusesReplaceParams) (*apigen.TaskStatusList, error) {
-	if err := h.requireSpaceRole(ctx, params.SpaceSlug, "admin"); err != nil {
+	if err := h.requireSpaceRole(ctx, params.SpaceSlug, apigen.SpaceRoleAdmin); err != nil {
 		return nil, err
 	}
 
@@ -175,7 +175,7 @@ func (h *Handler) SpaceTaskEffortLevelsList(ctx context.Context, params apigen.S
 }
 
 func (h *Handler) SpaceTaskEffortLevelsReplace(ctx context.Context, req *apigen.TaskEffortLevelReplace, params apigen.SpaceTaskEffortLevelsReplaceParams) (*apigen.TaskEffortLevelList, error) {
-	if err := h.requireSpaceRole(ctx, params.SpaceSlug, "admin"); err != nil {
+	if err := h.requireSpaceRole(ctx, params.SpaceSlug, apigen.SpaceRoleAdmin); err != nil {
 		return nil, err
 	}
 
@@ -280,7 +280,7 @@ func (h *Handler) SpaceTaskPriorityLevelsList(ctx context.Context, params apigen
 }
 
 func (h *Handler) SpaceTaskPriorityLevelsReplace(ctx context.Context, req *apigen.TaskPriorityLevelReplace, params apigen.SpaceTaskPriorityLevelsReplaceParams) (*apigen.TaskPriorityLevelList, error) {
-	if err := h.requireSpaceRole(ctx, params.SpaceSlug, "admin"); err != nil {
+	if err := h.requireSpaceRole(ctx, params.SpaceSlug, apigen.SpaceRoleAdmin); err != nil {
 		return nil, err
 	}
 

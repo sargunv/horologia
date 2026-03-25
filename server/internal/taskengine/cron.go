@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
 )
@@ -67,7 +68,7 @@ func (e *Engine) processOneOverdueTask(ctx context.Context, task dbgen.Task, now
 		return err
 	}
 
-	if existing.RecurrenceType != "fixed_accumulating" || existing.DueAt == nil || existing.DueAt.Time().After(now) {
+	if apigen.TaskRecurrenceType(existing.RecurrenceType) != apigen.TaskRecurrenceTypeFixedAccumulating || existing.DueAt == nil || existing.DueAt.Time().After(now) {
 		return nil
 	}
 

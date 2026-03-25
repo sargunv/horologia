@@ -3,6 +3,7 @@ package taskengine
 import (
 	"context"
 
+	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
 )
@@ -11,7 +12,7 @@ import (
 // status transition for completion logic.
 type CompletionResult struct {
 	Status          string
-	RecurrenceType  string
+	RecurrenceType  apigen.TaskRecurrenceType
 	RecurrenceRule  *string
 	DueAt           *types.EpochSeconds
 	DueTz           *string
@@ -31,7 +32,7 @@ func (e *Engine) HandleCompletionTransition(
 	q *dbgen.Queries,
 	existing dbgen.Task,
 	newStatus string,
-	recurrenceType string,
+	recurrenceType apigen.TaskRecurrenceType,
 	recurrenceRule *string,
 	dueAt *types.EpochSeconds,
 	dueTz *string,
@@ -67,8 +68,8 @@ func (e *Engine) HandleCompletionTransition(
 		return ""
 	}
 
-	oldIsCompletion := categoryOf(existing.StatusName) == "completion"
-	newIsCompletion := categoryOf(newStatus) == "completion"
+	oldIsCompletion := categoryOf(existing.StatusName) == string(apigen.TaskStatusCategoryCompletion)
+	newIsCompletion := categoryOf(newStatus) == string(apigen.TaskStatusCategoryCompletion)
 
 	if oldIsCompletion || !newIsCompletion {
 		return result, nil
@@ -77,8 +78,8 @@ func (e *Engine) HandleCompletionTransition(
 	result.JustCompleted = true
 	result.LastCompletedAt = &now
 
-	switch recurrenceType {
-	case "completion_based", "fixed_non_accumulating":
+	switch recurrenceType { //nolint:exhaustive // one_off and on_dependency have no special completion behavior
+	case apigen.TaskRecurrenceTypeCompletionBased, apigen.TaskRecurrenceTypeFixedNonAccumulating:
 		next, err := ComputeNextDueAt(recurrenceType, recurrenceRule, existing.DueAt, existing.DueTz, now.Time())
 		if err != nil {
 			return nil, err
@@ -96,7 +97,7 @@ func (e *Engine) HandleCompletionTransition(
 			result.Status = initialStatus
 		}
 
-	case "fixed_accumulating":
+	case apigen.TaskRecurrenceTypeFixedAccumulating:
 		next, err := ComputeNextDueAt(recurrenceType, recurrenceRule, existing.DueAt, existing.DueTz, now.Time())
 		if err != nil {
 			return nil, err
@@ -116,13 +117,13 @@ func (e *Engine) HandleCompletionTransition(
 			}
 			overrideAssignees := AdvanceRotation(pool, currentAssignees, 0)
 			if _, err := e.SpawnTaskFromTemplate(ctx, q, existing,
-				"fixed_accumulating", recurrenceRule, next, initialStatus, now,
+				string(apigen.TaskRecurrenceTypeFixedAccumulating), recurrenceRule, next, initialStatus, now,
 				overrideAssignees, pool,
 			); err != nil {
 				return nil, err
 			}
 		}
-		result.RecurrenceType = "one_off"
+		result.RecurrenceType = apigen.TaskRecurrenceTypeOneOff
 		result.RecurrenceRule = nil
 		if err := q.DeleteRotationPool(ctx, taskID); err != nil {
 			return nil, err
@@ -131,7 +132,7 @@ func (e *Engine) HandleCompletionTransition(
 
 	// Apply pool rotation for recurrence types that reset in place.
 	// fixed_accumulating is handled above (rotation passed to spawned task).
-	if result.RecurrenceType == "completion_based" || result.RecurrenceType == "fixed_non_accumulating" {
+	if result.RecurrenceType == apigen.TaskRecurrenceTypeCompletionBased || result.RecurrenceType == apigen.TaskRecurrenceTypeFixedNonAccumulating {
 		if err := ApplyPoolRotation(ctx, q, taskID, now); err != nil {
 			return nil, err
 		}

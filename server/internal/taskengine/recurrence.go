@@ -7,6 +7,7 @@ import (
 
 	"github.com/teambition/rrule-go"
 
+	apigen "github.com/sargunv/tend/server/api/gen"
 	"github.com/sargunv/tend/server/internal/apierrors"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
@@ -15,13 +16,13 @@ import (
 // ValidateRecurrence checks that the recurrence_type and recurrence_rule
 // combination is valid. Call this on both create and update paths.
 // The now parameter is used for time-dependent validation (e.g., UNTIL cap).
-func ValidateRecurrence(recurrenceType string, recurrenceRule *string, now time.Time) error {
+func ValidateRecurrence(recurrenceType apigen.TaskRecurrenceType, recurrenceRule *string, now time.Time) error {
 	switch recurrenceType {
-	case "one_off", "on_dependency":
+	case apigen.TaskRecurrenceTypeOneOff, apigen.TaskRecurrenceTypeOnDependency:
 		if recurrenceRule != nil {
 			return apierrors.BadRequest(fmt.Sprintf("recurrence_rule must not be set for %s tasks", recurrenceType))
 		}
-	case "completion_based", "fixed_non_accumulating", "fixed_accumulating":
+	case apigen.TaskRecurrenceTypeCompletionBased, apigen.TaskRecurrenceTypeFixedNonAccumulating, apigen.TaskRecurrenceTypeFixedAccumulating:
 		if recurrenceRule == nil {
 			return apierrors.BadRequest(fmt.Sprintf("recurrence_rule is required for %s tasks", recurrenceType))
 		}
@@ -88,7 +89,7 @@ func validateRRule(rule string, now time.Time) error {
 //     in the task's timezone; next occurrence after now.
 //
 // Precondition: ValidateRecurrence must have been called first.
-func ComputeNextDueAt(recurrenceType string, recurrenceRule *string, dueAt *types.EpochSeconds, dueTz *string, now time.Time) (*types.EpochSeconds, error) {
+func ComputeNextDueAt(recurrenceType apigen.TaskRecurrenceType, recurrenceRule *string, dueAt *types.EpochSeconds, dueTz *string, now time.Time) (*types.EpochSeconds, error) {
 	loc := time.UTC
 	if dueTz != nil {
 		var err error
@@ -101,17 +102,18 @@ func ComputeNextDueAt(recurrenceType string, recurrenceRule *string, dueAt *type
 	nowInTz := now.In(loc)
 
 	switch recurrenceType {
-	case "completion_based":
+	case apigen.TaskRecurrenceTypeCompletionBased:
 		return nextRRuleOccurrence(*recurrenceRule, nowInTz, nowInTz)
-	case "fixed_non_accumulating", "fixed_accumulating":
+	case apigen.TaskRecurrenceTypeFixedNonAccumulating, apigen.TaskRecurrenceTypeFixedAccumulating:
 		dtstart := nowInTz
 		if dueAt != nil {
 			dtstart = dueAt.Time().In(loc)
 		}
 		return nextRRuleOccurrence(*recurrenceRule, dtstart, nowInTz)
-	default:
+	case apigen.TaskRecurrenceTypeOneOff, apigen.TaskRecurrenceTypeOnDependency:
 		return nil, nil
 	}
+	return nil, nil
 }
 
 // nextRRuleOccurrence parses the rule, sets dtstart, and finds the first
@@ -142,7 +144,7 @@ func nextRRuleOccurrence(rule string, dtstart time.Time, after time.Time) (*type
 // from a pre-fetched slice. Returns a bad request error if none exists.
 func InitialStatusFromSlice(statuses []dbgen.TaskStatus) (string, error) {
 	for _, s := range statuses {
-		if s.Category == "initial" {
+		if s.Category == string(apigen.TaskStatusCategoryInitial) {
 			return s.Name, nil
 		}
 	}
@@ -186,7 +188,7 @@ func ApplyCompletionTriggers(ctx context.Context, q *dbgen.Queries, completedTas
 		if err != nil {
 			return err
 		}
-		if target.RecurrenceType != "on_dependency" {
+		if apigen.TaskRecurrenceType(target.RecurrenceType) != apigen.TaskRecurrenceTypeOnDependency {
 			continue
 		}
 		if err := q.ResetTaskToInitial(ctx, dbgen.ResetTaskToInitialParams{

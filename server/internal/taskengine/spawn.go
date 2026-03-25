@@ -6,6 +6,7 @@ import (
 
 	"github.com/teambition/rrule-go"
 
+	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
 )
@@ -249,14 +250,14 @@ func (e *Engine) processAccumulatingTask(ctx context.Context, q *dbgen.Queries, 
 	for i, dueAt := range missed {
 		overrideAssignees := AdvanceRotation(pool, currentAssignees, i)
 		if _, err := e.SpawnTaskFromTemplate(ctx, q, task,
-			"one_off", nil, &dueAt, initialStatus, nowEpoch,
+			string(apigen.TaskRecurrenceTypeOneOff), nil, &dueAt, initialStatus, nowEpoch,
 			overrideAssignees, pool,
 		); err != nil {
 			return err
 		}
 	}
 
-	next, err := ComputeNextDueAt("fixed_accumulating", task.RecurrenceRule, task.DueAt, task.DueTz, now)
+	next, err := ComputeNextDueAt(apigen.TaskRecurrenceTypeFixedAccumulating, task.RecurrenceRule, task.DueAt, task.DueTz, now)
 	if err != nil {
 		return err
 	}
@@ -264,7 +265,7 @@ func (e *Engine) processAccumulatingTask(ctx context.Context, q *dbgen.Queries, 
 	if next != nil {
 		overrideAssignees := AdvanceRotation(pool, currentAssignees, len(missed))
 		if _, err := e.SpawnTaskFromTemplate(ctx, q, task,
-			"fixed_accumulating", task.RecurrenceRule, next, initialStatus, nowEpoch,
+			string(apigen.TaskRecurrenceTypeFixedAccumulating), task.RecurrenceRule, next, initialStatus, nowEpoch,
 			overrideAssignees, pool,
 		); err != nil {
 			return err

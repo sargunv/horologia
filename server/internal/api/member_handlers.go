@@ -57,7 +57,7 @@ func (h *Handler) SpaceMembersList(ctx context.Context, params apigen.SpaceMembe
 }
 
 func (h *Handler) SpaceMembersCreate(ctx context.Context, req *apigen.SpaceMemberCreate, params apigen.SpaceMembersCreateParams) (*apigen.SpaceMember, error) {
-	if err := h.requireSpaceRole(ctx, params.SpaceSlug, "admin"); err != nil {
+	if err := h.requireSpaceRole(ctx, params.SpaceSlug, apigen.SpaceRoleAdmin); err != nil {
 		return nil, err
 	}
 
@@ -101,7 +101,7 @@ func (h *Handler) SpaceMembersCreate(ctx context.Context, req *apigen.SpaceMembe
 }
 
 func (h *Handler) SpaceMembersUpdate(ctx context.Context, req *apigen.SpaceMemberUpdate, params apigen.SpaceMembersUpdateParams) (*apigen.SpaceMember, error) {
-	if err := h.requireSpaceRole(ctx, params.SpaceSlug, "admin"); err != nil {
+	if err := h.requireSpaceRole(ctx, params.SpaceSlug, apigen.SpaceRoleAdmin); err != nil {
 		return nil, err
 	}
 
@@ -147,7 +147,7 @@ func (h *Handler) SpaceMembersUpdate(ctx context.Context, req *apigen.SpaceMembe
 }
 
 func (h *Handler) SpaceMembersDelete(ctx context.Context, params apigen.SpaceMembersDeleteParams) error {
-	if err := h.requireSpaceRole(ctx, params.SpaceSlug, "admin"); err != nil {
+	if err := h.requireSpaceRole(ctx, params.SpaceSlug, apigen.SpaceRoleAdmin); err != nil {
 		return err
 	}
 

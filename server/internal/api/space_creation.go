@@ -5,13 +5,14 @@ import (
 	"database/sql"
 	"fmt"
 
+	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
 )
 
 var defaultStatuses = []dbgen.CreateTaskStatusParams{
-	{Name: "todo", Category: "initial", Position: 0},
-	{Name: "done", Category: "completion", Position: 1},
+	{Name: "todo", Category: string(apigen.TaskStatusCategoryInitial), Position: 0},
+	{Name: "done", Category: string(apigen.TaskStatusCategoryCompletion), Position: 1},
 }
 
 var defaultEffortLevels = []dbgen.CreateTaskEffortLevelParams{
