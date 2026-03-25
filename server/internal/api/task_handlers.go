@@ -8,6 +8,7 @@ import (
 
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/tend/server/internal/taskengine"
 	"github.com/sargunv/tend/server/internal/types"
 )
 
@@ -172,7 +173,7 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 	statusName := req.Status.Or("")
 	if statusName == "" {
 		var err error
-		statusName, err = findInitialStatus(ctx, q, params.SpaceSlug)
+		statusName, err = taskengine.FindInitialStatus(ctx, q, params.SpaceSlug)
 		if err != nil {
 			return nil, err
 		}
@@ -197,7 +198,7 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 	}
 
 	ts := types.Now()
-	if err := validateRecurrence(recurrenceType, recurrenceRule, ts.Time()); err != nil {
+	if err := taskengine.ValidateRecurrence(recurrenceType, recurrenceRule, ts.Time()); err != nil {
 		return nil, err
 	}
 	task, err := q.CreateTask(ctx, dbgen.CreateTaskParams{
@@ -348,7 +349,7 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 		recurrenceRule = nil
 	}
 	now := types.Now()
-	if err := validateRecurrence(recurrenceType, recurrenceRule, now.Time()); err != nil {
+	if err := taskengine.ValidateRecurrence(recurrenceType, recurrenceRule, now.Time()); err != nil {
 		return nil, err
 	}
 
@@ -357,111 +358,28 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 	if err != nil {
 		return nil, err
 	}
-	lastCompletedAt := existing.LastCompletedAt
 
-	// Detect completion transition: old status is not completion, new status is.
-	justCompleted := false
-	if newStatus != existing.StatusName {
-		statuses, err := q.ListTaskStatusesBySpace(ctx, params.SpaceSlug)
-		if err != nil {
-			return nil, err
-		}
-		categoryOf := func(name string) string {
-			for _, s := range statuses {
-				if s.Name == name {
-					return s.Category
-				}
-			}
-			return ""
-		}
-		oldIsCompletion := categoryOf(existing.StatusName) == "completion"
-		newIsCompletion := categoryOf(newStatus) == "completion"
-
-		if !oldIsCompletion && newIsCompletion {
-			justCompleted = true
-			lastCompletedAt = &now
-
-			switch recurrenceType {
-			case "completion_based", "fixed_non_accumulating":
-				next, err := computeNextDueAt(recurrenceType, recurrenceRule, existing.DueAt, existing.DueTz, now.Time())
-				if err != nil {
-					return nil, err
-				}
-				// If the rule is exhausted (no next occurrence), leave the
-				// task in the completion status instead of resetting it.
-				if next != nil {
-					newDueAt = next
-					// Preserve existing timezone; default to UTC if the task
-					// had no prior due date (e.g., completion_based without one).
-					if newDueTz == nil {
-						utc := "UTC"
-						newDueTz = &utc
-					}
-					initialStatus, err := initialStatusFromSlice(statuses)
-					if err != nil {
-						return nil, err
-					}
-					newStatus = initialStatus
-				}
-			case "fixed_accumulating":
-				// On completion: current task becomes one_off (stays completed),
-				// a new task is spawned with the recurrence config and next due date.
-				next, err := computeNextDueAt(recurrenceType, recurrenceRule, existing.DueAt, existing.DueTz, now.Time())
-				if err != nil {
-					return nil, err
-				}
-				if next != nil {
-					initialStatus, err := initialStatusFromSlice(statuses)
-					if err != nil {
-						return nil, err
-					}
-					// Compute rotated assignee for the spawned task.
-					pool, err := q.ListRotationPoolByTask(ctx, id)
-					if err != nil {
-						return nil, err
-					}
-					currentAssignees, err := q.ListAssigneeUserIDsByTask(ctx, id)
-					if err != nil {
-						return nil, err
-					}
-					overrideAssignees := advanceRotation(pool, currentAssignees, 0)
-					if _, err := h.spawnTaskFromTemplate(ctx, q, existing,
-						"fixed_accumulating", recurrenceRule, next, initialStatus, now,
-						overrideAssignees, pool,
-					); err != nil {
-						return nil, err
-					}
-				}
-				// Convert the current task to one_off and clear its rotation pool.
-				recurrenceType = "one_off"
-				recurrenceRule = nil
-				if err := q.DeleteRotationPool(ctx, id); err != nil {
-					return nil, err
-				}
-			}
-
-			// Apply pool rotation for recurrence types that reset in place.
-			// fixed_accumulating is handled above (rotation passed to spawned task).
-			// Explicit req.AssigneeIds (below) will override this if present.
-			if recurrenceType == "completion_based" || recurrenceType == "fixed_non_accumulating" {
-				if err := h.applyPoolRotation(ctx, q, id, now); err != nil {
-					return nil, err
-				}
-			}
-		}
+	cr, err := h.Engine.HandleCompletionTransition(
+		ctx, q, existing, newStatus,
+		recurrenceType, recurrenceRule,
+		newDueAt, newDueTz, existing.LastCompletedAt,
+		params.SpaceSlug, id, now,
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	_, err = q.UpdateTask(ctx, dbgen.UpdateTaskParams{
 		Title:           req.Title.Or(existing.Title),
 		Description:     req.Description.Or(existing.Description),
-		StatusName:      newStatus,
+		StatusName:      cr.Status,
 		EffortName:      effortName,
 		PriorityName:    priorityName,
-		DueAt:           newDueAt,
-		DueTz:           newDueTz,
-		RecurrenceType:  recurrenceType,
-		RecurrenceRule:  recurrenceRule,
-		LastCompletedAt: lastCompletedAt,
+		DueAt:           cr.DueAt,
+		DueTz:           cr.DueTz,
+		RecurrenceType:  cr.RecurrenceType,
+		RecurrenceRule:  cr.RecurrenceRule,
+		LastCompletedAt: cr.LastCompletedAt,
 		UpdatedAt:       now,
 		ID:              id,
 		SpaceSlug:       params.SpaceSlug,
@@ -471,8 +389,8 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 	}
 
 	// Trigger dependents when a task is completed.
-	if justCompleted {
-		if err := h.applyCompletionTriggers(ctx, q, id, params.SpaceSlug, now); err != nil {
+	if cr.JustCompleted {
+		if err := taskengine.ApplyCompletionTriggers(ctx, q, id, params.SpaceSlug, now); err != nil {
 			return nil, err
 		}
 	}
@@ -636,7 +554,7 @@ func (h *Handler) setTaskTags(ctx context.Context, q *dbgen.Queries, taskID int6
 		if err := validateTagName(name); err != nil {
 			return err
 		}
-		folded := foldTagName(name)
+		folded := taskengine.FoldTagName(name)
 		if _, ok := seen[folded]; ok {
 			continue
 		}

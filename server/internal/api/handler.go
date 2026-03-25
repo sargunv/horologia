@@ -11,13 +11,16 @@ import (
 	"github.com/ogen-go/ogen/ogenerrors"
 
 	apigen "github.com/sargunv/tend/server/api/gen"
+	"github.com/sargunv/tend/server/internal/apierrors"
+	"github.com/sargunv/tend/server/internal/taskengine"
 )
 
 // Handler implements the generated API interface.
 type Handler struct {
 	apigen.UnimplementedHandler
-	DB  *sql.DB
-	Log *slog.Logger
+	DB     *sql.DB
+	Log    *slog.Logger
+	Engine *taskengine.Engine
 }
 
 func (h *Handler) NewError(ctx context.Context, err error) *apigen.ApiErrorStatusCode {
@@ -73,39 +76,12 @@ func isForeignKeyViolation(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "FOREIGN KEY constraint failed")
 }
 
-type badRequestError struct {
-	message string
-}
-
-func (e *badRequestError) Error() string {
-	return e.message
-}
-
-func isBadRequest(err error) bool {
-	var bre *badRequestError
-	return errors.As(err, &bre)
-}
-
-func badRequest(msg string) error {
-	return &badRequestError{message: msg}
-}
-
-type forbiddenError struct {
-	message string
-}
-
-func (e *forbiddenError) Error() string {
-	return e.message
-}
-
-func isForbidden(err error) bool {
-	var fe *forbiddenError
-	return errors.As(err, &fe)
-}
-
-func forbidden(msg string) error {
-	return &forbiddenError{message: msg}
-}
+var (
+	badRequest   = apierrors.BadRequest
+	isBadRequest = apierrors.IsBadRequest
+	forbidden    = apierrors.Forbidden
+	isForbidden  = apierrors.IsForbidden
+)
 
 func checkDeleted(result sql.Result) error {
 	n, err := result.RowsAffected()

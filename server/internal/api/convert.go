@@ -10,7 +10,6 @@ import (
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
-	"golang.org/x/text/cases"
 )
 
 const (
@@ -365,10 +364,14 @@ func memberToAPI(userID int64, userName, userEmail, role string, createdAt types
 	}
 }
 
-var caseFolder = cases.Fold(cases.HandleFinalSigma(false))
-
-func foldTagName(name string) string {
-	return caseFolder.String(name)
+// StoredKindCopyOnSpawn returns the map of stored relation kinds to whether
+// they should be copied when spawning a new task. Used to configure Engine.
+func StoredKindCopyOnSpawn() map[string]bool {
+	m := make(map[string]bool, len(storedKindCopyOnSpawn))
+	for k, v := range storedKindCopyOnSpawn {
+		m[k] = v
+	}
+	return m
 }
 
 func validateTagName(name string) error {

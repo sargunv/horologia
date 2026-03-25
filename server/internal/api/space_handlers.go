@@ -4,7 +4,6 @@ import (
 	"context"
 
 	apigen "github.com/sargunv/tend/server/api/gen"
-	"github.com/sargunv/tend/server/internal/database"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
 )
@@ -13,7 +12,7 @@ import (
 
 func (h *Handler) SpacesCreate(ctx context.Context, req *apigen.SpaceCreate) (*apigen.Space, error) {
 	user := UserFromContext(ctx)
-	space, err := database.CreateSpaceWithDefaults(
+	space, err := CreateSpaceWithDefaults(
 		ctx, h.DB,
 		req.Slug,
 		req.Name,

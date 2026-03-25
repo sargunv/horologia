@@ -19,6 +19,7 @@ import (
 
 	"github.com/sargunv/tend/server/internal/api"
 	"github.com/sargunv/tend/server/internal/database"
+	"github.com/sargunv/tend/server/internal/taskengine"
 )
 
 type config struct {
@@ -105,12 +106,17 @@ var serveCmd = &cobra.Command{
 			return fmt.Errorf("auto-migrate: %w", err)
 		}
 
-		handler := &api.Handler{DB: db, Log: log}
+		engine := &taskengine.Engine{
+			DB:               db,
+			Log:              log,
+			CopyOnSpawnKinds: api.StoredKindCopyOnSpawn(),
+		}
+		handler := &api.Handler{DB: db, Log: log, Engine: engine}
 
 		// Start the fixed_accumulating cron job.
 		cronCtx, cronCancel := context.WithCancel(context.Background())
 		defer cronCancel()
-		go handler.RunAccumulatingCron(cronCtx, time.Minute)
+		go engine.RunAccumulatingCron(cronCtx, time.Minute)
 
 		h, err := api.NewServer(handler, log)
 		if err != nil {
@@ -198,7 +204,7 @@ var createAdminCmd = &cobra.Command{
 		name, _ := cmd.Flags().GetString("name")
 		password, _ := cmd.Flags().GetString("password")
 
-		user, err := database.CreateUserWithPassword(context.Background(), db, email, name, password, true)
+		user, err := api.CreateUserWithPassword(context.Background(), db, email, name, password, true)
 		if err != nil {
 			return fmt.Errorf("create admin: %w", err)
 		}

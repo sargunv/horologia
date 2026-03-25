@@ -1,4 +1,4 @@
-package api
+package taskengine
 
 import "testing"
 
@@ -98,7 +98,7 @@ func TestAdvanceRotation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := advanceRotation(tt.pool, tt.currentAssignees, tt.step)
+			got := AdvanceRotation(tt.pool, tt.currentAssignees, tt.step)
 			if tt.want == nil {
 				if got != nil {
 					t.Fatalf("got %v, want nil", got)

@@ -16,6 +16,7 @@ import (
 	"github.com/sargunv/tend/server/internal/api"
 	"github.com/sargunv/tend/server/internal/database"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/tend/server/internal/taskengine"
 	"github.com/sargunv/tend/server/internal/types"
 )
 
@@ -44,7 +45,7 @@ func setupTestServer(t *testing.T) *testEnv {
 	}
 
 	// Create a test owner user.
-	user, err := database.CreateUserWithPassword(context.Background(), db, "test@example.com", "Test User", "password", true)
+	user, err := api.CreateUserWithPassword(context.Background(), db, "test@example.com", "Test User", "password", true)
 	if err != nil {
 		t.Fatalf("create user: %v", err)
 	}
@@ -67,7 +68,12 @@ func setupTestServer(t *testing.T) *testEnv {
 	}
 
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
-	handler := &api.Handler{DB: db, Log: log}
+	engine := &taskengine.Engine{
+		DB:               db,
+		Log:              log,
+		CopyOnSpawnKinds: api.StoredKindCopyOnSpawn(),
+	}
+	handler := &api.Handler{DB: db, Log: log, Engine: engine}
 	h, err := api.NewServer(handler, log)
 	if err != nil {
 		t.Fatalf("new server: %v", err)
@@ -115,7 +121,7 @@ func doRequest(t *testing.T, env *testEnv, method, path, body string) *http.Resp
 // createTestUser creates a non-owner user via the DB and logs them in to get a token.
 func createTestUser(t *testing.T, env *testEnv, email, name, password string) string {
 	t.Helper()
-	_, err := database.CreateUserWithPassword(context.Background(), env.db, email, name, password, false)
+	_, err := api.CreateUserWithPassword(context.Background(), env.db, email, name, password, false)
 	if err != nil {
 		t.Fatalf("create test user: %v", err)
 	}

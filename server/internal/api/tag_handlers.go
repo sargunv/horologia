@@ -7,6 +7,7 @@ import (
 
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/tend/server/internal/taskengine"
 	"github.com/sargunv/tend/server/internal/types"
 )
 
@@ -68,7 +69,7 @@ func (h *Handler) SpaceTagsCreate(ctx context.Context, req *apigen.TagCreate, pa
 	tag, err := q.CreateTag(ctx, dbgen.CreateTagParams{
 		SpaceSlug:  params.SpaceSlug,
 		Name:       name,
-		NameFolded: foldTagName(name),
+		NameFolded: taskengine.FoldTagName(name),
 		CreatedAt:  types.Now(),
 	})
 	if err != nil {
@@ -101,7 +102,7 @@ func (h *Handler) SpaceTagsUpdate(ctx context.Context, req *apigen.TagUpdate, pa
 	q := dbgen.New(tx)
 	existing, err := q.GetTagByFoldedName(ctx, dbgen.GetTagByFoldedNameParams{
 		SpaceSlug:  params.SpaceSlug,
-		NameFolded: foldTagName(params.TagName),
+		NameFolded: taskengine.FoldTagName(params.TagName),
 	})
 	if err != nil {
 		return nil, err
@@ -109,7 +110,7 @@ func (h *Handler) SpaceTagsUpdate(ctx context.Context, req *apigen.TagUpdate, pa
 
 	tag, err := q.UpdateTag(ctx, dbgen.UpdateTagParams{
 		Name:       newName,
-		NameFolded: foldTagName(newName),
+		NameFolded: taskengine.FoldTagName(newName),
 		ID:         existing.ID,
 		SpaceSlug:  params.SpaceSlug,
 	})
@@ -132,7 +133,7 @@ func (h *Handler) SpaceTagsDelete(ctx context.Context, params apigen.SpaceTagsDe
 	q := dbgen.New(h.DB)
 	result, err := q.DeleteTag(ctx, dbgen.DeleteTagParams{
 		SpaceSlug:  params.SpaceSlug,
-		NameFolded: foldTagName(params.TagName),
+		NameFolded: taskengine.FoldTagName(params.TagName),
 	})
 	if err != nil {
 		return err

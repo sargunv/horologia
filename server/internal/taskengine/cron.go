@@ -1,4 +1,4 @@
-package api
+package taskengine
 
 import (
 	"context"
@@ -11,9 +11,8 @@ import (
 // RunAccumulatingCron ticks every interval and processes overdue
 // fixed_accumulating tasks. It fires immediately on start to handle
 // any backlog from server downtime. Returns when ctx is cancelled.
-func (h *Handler) RunAccumulatingCron(ctx context.Context, interval time.Duration) {
-	// Process immediately on startup.
-	h.processOverdueTasks(ctx)
+func (e *Engine) RunAccumulatingCron(ctx context.Context, interval time.Duration) {
+	e.ProcessOverdueTasks(ctx)
 
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
@@ -23,27 +22,27 @@ func (h *Handler) RunAccumulatingCron(ctx context.Context, interval time.Duratio
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			h.processOverdueTasks(ctx)
+			e.ProcessOverdueTasks(ctx)
 		}
 	}
 }
 
-// processOverdueTasks finds all fixed_accumulating tasks with due_at <= now
+// ProcessOverdueTasks finds all fixed_accumulating tasks with due_at <= now
 // and processes each one in its own transaction.
-func (h *Handler) processOverdueTasks(ctx context.Context) {
+func (e *Engine) ProcessOverdueTasks(ctx context.Context) {
 	now := time.Now()
 	nowEpoch := types.EpochSecondsFrom(now)
 
-	q := dbgen.New(h.DB)
+	q := dbgen.New(e.DB)
 	tasks, err := q.ListOverdueAccumulatingTasks(ctx, &nowEpoch)
 	if err != nil {
-		h.Log.ErrorContext(ctx, "cron: list overdue accumulating tasks", "error", err)
+		e.Log.ErrorContext(ctx, "cron: list overdue accumulating tasks", "error", err)
 		return
 	}
 
 	for _, task := range tasks {
-		if err := h.processOneOverdueTask(ctx, task, now); err != nil {
-			h.Log.ErrorContext(ctx, "cron: process overdue task",
+		if err := e.processOneOverdueTask(ctx, task, now); err != nil {
+			e.Log.ErrorContext(ctx, "cron: process overdue task",
 				"task_id", task.ID,
 				"space", task.SpaceSlug,
 				"error", err,
@@ -53,10 +52,9 @@ func (h *Handler) processOverdueTasks(ctx context.Context) {
 }
 
 // processOneOverdueTask processes a single overdue fixed_accumulating task
-// in its own transaction. Re-fetches the task inside the transaction to
-// avoid TOCTOU races with concurrent HTTP requests.
-func (h *Handler) processOneOverdueTask(ctx context.Context, task dbgen.Task, now time.Time) error {
-	tx, err := h.DB.BeginTx(ctx, nil)
+// in its own transaction.
+func (e *Engine) processOneOverdueTask(ctx context.Context, task dbgen.Task, now time.Time) error {
+	tx, err := e.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -64,18 +62,16 @@ func (h *Handler) processOneOverdueTask(ctx context.Context, task dbgen.Task, no
 
 	q := dbgen.New(tx)
 
-	// Re-fetch inside transaction to verify the task is still overdue and
-	// still fixed_accumulating (could have been completed or changed).
 	existing, err := q.GetTask(ctx, dbgen.GetTaskParams{ID: task.ID, SpaceSlug: task.SpaceSlug})
 	if err != nil {
 		return err
 	}
 
 	if existing.RecurrenceType != "fixed_accumulating" || existing.DueAt == nil || existing.DueAt.Time().After(now) {
-		return nil // stale, skip
+		return nil
 	}
 
-	if err := h.processAccumulatingTask(ctx, q, existing, now); err != nil {
+	if err := e.processAccumulatingTask(ctx, q, existing, now); err != nil {
 		return err
 	}
 

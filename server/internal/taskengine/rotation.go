@@ -1,4 +1,4 @@
-package api
+package taskengine
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"github.com/sargunv/tend/server/internal/types"
 )
 
-// advanceRotation derives the next assignee from the rotation pool.
+// AdvanceRotation derives the next assignee from the rotation pool.
 //
 // It finds the first element of currentAssignees that appears in pool,
 // then advances by (1 + step) positions (wrapping). If no current assignee
@@ -16,7 +16,7 @@ import (
 // step is 0 for normal completion or a single spawn, and N for the Nth
 // successive spawn in the same operation (e.g. missed cron occurrences).
 // Returns nil if the pool is empty.
-func advanceRotation(pool []int64, currentAssignees []int64, step int) []int64 {
+func AdvanceRotation(pool []int64, currentAssignees []int64, step int) []int64 {
 	if len(pool) == 0 {
 		return nil
 	}
@@ -40,10 +40,10 @@ func advanceRotation(pool []int64, currentAssignees []int64, step int) []int64 {
 	return []int64{pool[next]}
 }
 
-// applyPoolRotation reads the rotation pool and current assignees for a task,
+// ApplyPoolRotation reads the rotation pool and current assignees for a task,
 // computes the next assignee, and writes it. No-op if the pool is empty.
 // Must be called within a transaction.
-func (h *Handler) applyPoolRotation(ctx context.Context, q *dbgen.Queries, taskID int64, now types.EpochSeconds) error {
+func ApplyPoolRotation(ctx context.Context, q *dbgen.Queries, taskID int64, now types.EpochSeconds) error {
 	pool, err := q.ListRotationPoolByTask(ctx, taskID)
 	if err != nil {
 		return err
@@ -55,7 +55,7 @@ func (h *Handler) applyPoolRotation(ctx context.Context, q *dbgen.Queries, taskI
 	if err != nil {
 		return err
 	}
-	nextAssignees := advanceRotation(pool, currentAssignees, 0)
+	nextAssignees := AdvanceRotation(pool, currentAssignees, 0)
 	if err := q.DeleteTaskAssignees(ctx, taskID); err != nil {
 		return err
 	}
