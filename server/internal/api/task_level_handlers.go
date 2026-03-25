@@ -9,6 +9,82 @@ import (
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 )
 
+// replaceLevelsOps defines the operations needed by replaceLevels for a
+// particular level type.
+type replaceLevelsOps[Item any] struct {
+	label          string
+	itemName       func(Item) string
+	listNames      func(ctx context.Context, q *dbgen.Queries, spaceSlug string) ([]string, error)
+	create         func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item Item, pos int64) error
+	update         func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item Item, pos int64) error
+	delete         func(ctx context.Context, q *dbgen.Queries, spaceSlug, name string) error
+	validateRemove func(ctx context.Context, q *dbgen.Queries, spaceSlug, name string) error // nil = skip
+}
+
+// replaceLevels implements the shared diff-and-sync logic for status, effort,
+// and priority level replacement.
+func replaceLevels[Item any](ctx context.Context, q *dbgen.Queries, spaceSlug string, items []Item, ops replaceLevelsOps[Item]) error {
+	// Check for duplicate names.
+	names := make(map[string]struct{}, len(items))
+	for _, item := range items {
+		n := ops.itemName(item)
+		if _, ok := names[n]; ok {
+			return badRequest(fmt.Sprintf("duplicate %s name %q", ops.label, n))
+		}
+		names[n] = struct{}{}
+	}
+
+	// List current names.
+	currentNamesList, err := ops.listNames(ctx, q, spaceSlug)
+	if err != nil {
+		return err
+	}
+	currentNames := make(map[string]struct{}, len(currentNamesList))
+	for _, n := range currentNamesList {
+		currentNames[n] = struct{}{}
+	}
+
+	// Compute removed names in stable order.
+	var toRemove []string
+	for _, n := range currentNamesList {
+		if _, kept := names[n]; !kept {
+			toRemove = append(toRemove, n)
+		}
+	}
+	sort.Strings(toRemove)
+
+	// Validate removals if a hook is provided.
+	if ops.validateRemove != nil {
+		for _, name := range toRemove {
+			if err := ops.validateRemove(ctx, q, spaceSlug, name); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Delete removed levels.
+	for _, name := range toRemove {
+		if err := ops.delete(ctx, q, spaceSlug, name); err != nil {
+			return err
+		}
+	}
+
+	// Insert new and update existing.
+	for i, item := range items {
+		if _, exists := currentNames[ops.itemName(item)]; exists {
+			if err := ops.update(ctx, q, spaceSlug, item, int64(i)); err != nil {
+				return err
+			}
+		} else {
+			if err := ops.create(ctx, q, spaceSlug, item, int64(i)); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 // --- Task Statuses ---
 
 func (h *Handler) SpaceTaskStatusesList(ctx context.Context, params apigen.SpaceTaskStatusesListParams) (*apigen.TaskStatusList, error) {
@@ -36,14 +112,9 @@ func (h *Handler) SpaceTaskStatusesReplace(ctx context.Context, req *apigen.Task
 		return nil, err
 	}
 
-	// Validate: no duplicate names, at least 1 initial and 1 completion.
-	names := make(map[string]struct{}, len(req.Items))
+	// Status-specific validation: at least 1 initial and 1 completion.
 	var hasInitial, hasCompletion bool
 	for _, item := range req.Items {
-		if _, ok := names[item.Name]; ok {
-			return nil, badRequest(fmt.Sprintf("duplicate status name %q", item.Name))
-		}
-		names[item.Name] = struct{}{}
 		switch item.Category {
 		case apigen.TaskStatusInputCategoryInitial:
 			hasInitial = true
@@ -68,70 +139,59 @@ func (h *Handler) SpaceTaskStatusesReplace(ctx context.Context, req *apigen.Task
 
 	q := dbgen.New(tx)
 
-	current, err := q.ListTaskStatusesBySpace(ctx, params.SpaceSlug)
-	if err != nil {
+	if err := replaceLevels(ctx, q, params.SpaceSlug, req.Items, replaceLevelsOps[apigen.TaskStatusInput]{
+		label:    "status",
+		itemName: func(s apigen.TaskStatusInput) string { return s.Name },
+		listNames: func(ctx context.Context, q *dbgen.Queries, spaceSlug string) ([]string, error) {
+			rows, err := q.ListTaskStatusesBySpace(ctx, spaceSlug)
+			if err != nil {
+				return nil, err
+			}
+			names := make([]string, len(rows))
+			for i, r := range rows {
+				names[i] = r.Name
+			}
+			return names, nil
+		},
+		create: func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item apigen.TaskStatusInput, pos int64) error {
+			_, err := q.CreateTaskStatus(ctx, dbgen.CreateTaskStatusParams{
+				SpaceSlug: spaceSlug,
+				Name:      item.Name,
+				Category:  string(item.Category),
+				Position:  pos,
+			})
+			return err
+		},
+		update: func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item apigen.TaskStatusInput, pos int64) error {
+			return q.UpdateTaskStatus(ctx, dbgen.UpdateTaskStatusParams{
+				Category:  string(item.Category),
+				Position:  pos,
+				SpaceSlug: spaceSlug,
+				Name:      item.Name,
+			})
+		},
+		delete: func(ctx context.Context, q *dbgen.Queries, spaceSlug, name string) error {
+			_, err := q.DeleteTaskStatus(ctx, dbgen.DeleteTaskStatusParams{
+				SpaceSlug: spaceSlug,
+				Name:      name,
+			})
+			return err
+		},
+		validateRemove: func(ctx context.Context, q *dbgen.Queries, spaceSlug, name string) error {
+			count, err := q.CountTasksByStatusName(ctx, dbgen.CountTasksByStatusNameParams{
+				SpaceSlug:  spaceSlug,
+				StatusName: name,
+			})
+			if err != nil {
+				return err
+			}
+			if count > 0 {
+				return badRequest(fmt.Sprintf("cannot remove status %q: %d task(s) still reference it", name, count))
+			}
+			return nil
+		},
+	}); err != nil {
 		return nil, err
-	}
-
-	// Compute removed names in stable order.
-	currentNames := make(map[string]struct{}, len(current))
-	for _, s := range current {
-		currentNames[s.Name] = struct{}{}
-	}
-
-	var toRemove []string
-	for name := range currentNames {
-		if _, kept := names[name]; !kept {
-			toRemove = append(toRemove, name)
-		}
-	}
-	sort.Strings(toRemove)
-
-	// Validate all removals before deleting any.
-	for _, name := range toRemove {
-		count, err := q.CountTasksByStatusName(ctx, dbgen.CountTasksByStatusNameParams{
-			SpaceSlug:  params.SpaceSlug,
-			StatusName: name,
-		})
-		if err != nil {
-			return nil, err
-		}
-		if count > 0 {
-			return nil, badRequest(fmt.Sprintf("cannot remove status %q: %d task(s) still reference it", name, count))
-		}
-	}
-
-	// Delete removed statuses.
-	for _, name := range toRemove {
-		if _, err := q.DeleteTaskStatus(ctx, dbgen.DeleteTaskStatusParams{
-			SpaceSlug: params.SpaceSlug,
-			Name:      name,
-		}); err != nil {
-			return nil, err
-		}
-	}
-
-	// Insert new and update existing.
-	for i, item := range req.Items {
-		if _, exists := currentNames[item.Name]; exists {
-			if err := q.UpdateTaskStatus(ctx, dbgen.UpdateTaskStatusParams{
-				Category:  string(item.Category),
-				Position:  int64(i),
-				SpaceSlug: params.SpaceSlug,
-				Name:      item.Name,
-			}); err != nil {
-				return nil, err
-			}
-		} else {
-			if _, err := q.CreateTaskStatus(ctx, dbgen.CreateTaskStatusParams{
-				SpaceSlug: params.SpaceSlug,
-				Name:      item.Name,
-				Category:  string(item.Category),
-				Position:  int64(i),
-			}); err != nil {
-				return nil, err
-			}
-		}
 	}
 
 	// Re-fetch and return.
@@ -179,15 +239,6 @@ func (h *Handler) SpaceTaskEffortLevelsReplace(ctx context.Context, req *apigen.
 		return nil, err
 	}
 
-	// Validate: no duplicate names.
-	names := make(map[string]struct{}, len(req.Items))
-	for _, item := range req.Items {
-		if _, ok := names[item.Name]; ok {
-			return nil, badRequest(fmt.Sprintf("duplicate effort level name %q", item.Name))
-		}
-		names[item.Name] = struct{}{}
-	}
-
 	tx, err := h.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -196,47 +247,44 @@ func (h *Handler) SpaceTaskEffortLevelsReplace(ctx context.Context, req *apigen.
 
 	q := dbgen.New(tx)
 
-	current, err := q.ListTaskEffortLevelsBySpace(ctx, params.SpaceSlug)
-	if err != nil {
+	if err := replaceLevels(ctx, q, params.SpaceSlug, req.Items, replaceLevelsOps[apigen.TaskEffortLevelInput]{
+		label:    "effort level",
+		itemName: func(e apigen.TaskEffortLevelInput) string { return e.Name },
+		listNames: func(ctx context.Context, q *dbgen.Queries, spaceSlug string) ([]string, error) {
+			rows, err := q.ListTaskEffortLevelsBySpace(ctx, spaceSlug)
+			if err != nil {
+				return nil, err
+			}
+			names := make([]string, len(rows))
+			for i, r := range rows {
+				names[i] = r.Name
+			}
+			return names, nil
+		},
+		create: func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item apigen.TaskEffortLevelInput, pos int64) error {
+			_, err := q.CreateTaskEffortLevel(ctx, dbgen.CreateTaskEffortLevelParams{
+				SpaceSlug: spaceSlug,
+				Name:      item.Name,
+				Position:  pos,
+			})
+			return err
+		},
+		update: func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item apigen.TaskEffortLevelInput, pos int64) error {
+			return q.UpdateTaskEffortLevel(ctx, dbgen.UpdateTaskEffortLevelParams{
+				Position:  pos,
+				SpaceSlug: spaceSlug,
+				Name:      item.Name,
+			})
+		},
+		delete: func(ctx context.Context, q *dbgen.Queries, spaceSlug, name string) error {
+			_, err := q.DeleteTaskEffortLevel(ctx, dbgen.DeleteTaskEffortLevelParams{
+				SpaceSlug: spaceSlug,
+				Name:      name,
+			})
+			return err
+		},
+	}); err != nil {
 		return nil, err
-	}
-
-	currentNames := make(map[string]struct{}, len(current))
-	for _, e := range current {
-		currentNames[e.Name] = struct{}{}
-	}
-
-	// Delete removed levels (triggers null out task references).
-	for _, e := range current {
-		if _, kept := names[e.Name]; !kept {
-			if _, err := q.DeleteTaskEffortLevel(ctx, dbgen.DeleteTaskEffortLevelParams{
-				SpaceSlug: params.SpaceSlug,
-				Name:      e.Name,
-			}); err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	// Insert new and update existing.
-	for i, item := range req.Items {
-		if _, exists := currentNames[item.Name]; exists {
-			if err := q.UpdateTaskEffortLevel(ctx, dbgen.UpdateTaskEffortLevelParams{
-				Position:  int64(i),
-				SpaceSlug: params.SpaceSlug,
-				Name:      item.Name,
-			}); err != nil {
-				return nil, err
-			}
-		} else {
-			if _, err := q.CreateTaskEffortLevel(ctx, dbgen.CreateTaskEffortLevelParams{
-				SpaceSlug: params.SpaceSlug,
-				Name:      item.Name,
-				Position:  int64(i),
-			}); err != nil {
-				return nil, err
-			}
-		}
 	}
 
 	// Re-fetch and return.
@@ -284,15 +332,6 @@ func (h *Handler) SpaceTaskPriorityLevelsReplace(ctx context.Context, req *apige
 		return nil, err
 	}
 
-	// Validate: no duplicate names.
-	names := make(map[string]struct{}, len(req.Items))
-	for _, item := range req.Items {
-		if _, ok := names[item.Name]; ok {
-			return nil, badRequest(fmt.Sprintf("duplicate priority level name %q", item.Name))
-		}
-		names[item.Name] = struct{}{}
-	}
-
 	tx, err := h.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -301,47 +340,44 @@ func (h *Handler) SpaceTaskPriorityLevelsReplace(ctx context.Context, req *apige
 
 	q := dbgen.New(tx)
 
-	current, err := q.ListTaskPriorityLevelsBySpace(ctx, params.SpaceSlug)
-	if err != nil {
+	if err := replaceLevels(ctx, q, params.SpaceSlug, req.Items, replaceLevelsOps[apigen.TaskPriorityLevelInput]{
+		label:    "priority level",
+		itemName: func(p apigen.TaskPriorityLevelInput) string { return p.Name },
+		listNames: func(ctx context.Context, q *dbgen.Queries, spaceSlug string) ([]string, error) {
+			rows, err := q.ListTaskPriorityLevelsBySpace(ctx, spaceSlug)
+			if err != nil {
+				return nil, err
+			}
+			names := make([]string, len(rows))
+			for i, r := range rows {
+				names[i] = r.Name
+			}
+			return names, nil
+		},
+		create: func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item apigen.TaskPriorityLevelInput, pos int64) error {
+			_, err := q.CreateTaskPriorityLevel(ctx, dbgen.CreateTaskPriorityLevelParams{
+				SpaceSlug: spaceSlug,
+				Name:      item.Name,
+				Position:  pos,
+			})
+			return err
+		},
+		update: func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item apigen.TaskPriorityLevelInput, pos int64) error {
+			return q.UpdateTaskPriorityLevel(ctx, dbgen.UpdateTaskPriorityLevelParams{
+				Position:  pos,
+				SpaceSlug: spaceSlug,
+				Name:      item.Name,
+			})
+		},
+		delete: func(ctx context.Context, q *dbgen.Queries, spaceSlug, name string) error {
+			_, err := q.DeleteTaskPriorityLevel(ctx, dbgen.DeleteTaskPriorityLevelParams{
+				SpaceSlug: spaceSlug,
+				Name:      name,
+			})
+			return err
+		},
+	}); err != nil {
 		return nil, err
-	}
-
-	currentNames := make(map[string]struct{}, len(current))
-	for _, p := range current {
-		currentNames[p.Name] = struct{}{}
-	}
-
-	// Delete removed levels (triggers null out task references).
-	for _, p := range current {
-		if _, kept := names[p.Name]; !kept {
-			if _, err := q.DeleteTaskPriorityLevel(ctx, dbgen.DeleteTaskPriorityLevelParams{
-				SpaceSlug: params.SpaceSlug,
-				Name:      p.Name,
-			}); err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	// Insert new and update existing.
-	for i, item := range req.Items {
-		if _, exists := currentNames[item.Name]; exists {
-			if err := q.UpdateTaskPriorityLevel(ctx, dbgen.UpdateTaskPriorityLevelParams{
-				Position:  int64(i),
-				SpaceSlug: params.SpaceSlug,
-				Name:      item.Name,
-			}); err != nil {
-				return nil, err
-			}
-		} else {
-			if _, err := q.CreateTaskPriorityLevel(ctx, dbgen.CreateTaskPriorityLevelParams{
-				SpaceSlug: params.SpaceSlug,
-				Name:      item.Name,
-				Position:  int64(i),
-			}); err != nil {
-				return nil, err
-			}
-		}
 	}
 
 	// Re-fetch and return.

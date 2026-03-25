@@ -6,9 +6,10 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"github.com/ogen-go/ogen/ogenerrors"
+	sqlite "modernc.org/sqlite"
+	sqlite3 "modernc.org/sqlite/lib"
 
 	apigen "github.com/sargunv/tend/server/api/gen"
 	"github.com/sargunv/tend/server/internal/apierrors"
@@ -68,12 +69,18 @@ func (h *Handler) NewError(ctx context.Context, err error) *apigen.ApiErrorStatu
 	}
 }
 
+func isSQLiteCode(err error, code int) bool {
+	var sqliteErr *sqlite.Error
+	return errors.As(err, &sqliteErr) && sqliteErr.Code() == code
+}
+
 func isUniqueViolation(err error) bool {
-	return err != nil && strings.Contains(err.Error(), "UNIQUE constraint failed")
+	return isSQLiteCode(err, sqlite3.SQLITE_CONSTRAINT_UNIQUE) ||
+		isSQLiteCode(err, sqlite3.SQLITE_CONSTRAINT_PRIMARYKEY)
 }
 
 func isForeignKeyViolation(err error) bool {
-	return err != nil && strings.Contains(err.Error(), "FOREIGN KEY constraint failed")
+	return isSQLiteCode(err, sqlite3.SQLITE_CONSTRAINT_FOREIGNKEY)
 }
 
 var (
