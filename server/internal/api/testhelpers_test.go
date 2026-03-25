@@ -96,7 +96,7 @@ func doRequestAs(t *testing.T, env *testEnv, token, method, path, body string) *
 	if body != "" {
 		bodyReader = strings.NewReader(body)
 	}
-	req, err := http.NewRequest(method, env.Server.URL+path, bodyReader)
+	req, err := http.NewRequestWithContext(t.Context(), method, env.Server.URL+path, bodyReader)
 	if err != nil {
 		t.Fatalf("new request: %v", err)
 	}

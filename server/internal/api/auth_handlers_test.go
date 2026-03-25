@@ -1,7 +1,6 @@
 package api_test
 
 import (
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"net/http"
@@ -17,7 +16,7 @@ func TestAuthLoginSuccess(t *testing.T) {
 	env := setupTestServer(t)
 
 	// Login doesn't need auth header, but doRequest always adds one. Use a raw request.
-	req, _ := http.NewRequest("POST", env.Server.URL+"/auth/login", strings.NewReader(`{"email":"test@example.com","password":"password"}`))
+	req, _ := http.NewRequestWithContext(t.Context(), "POST", env.Server.URL+"/auth/login", strings.NewReader(`{"email":"test@example.com","password":"password"}`))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -39,7 +38,7 @@ func TestAuthLoginSuccess(t *testing.T) {
 func TestAuthLoginBadPassword(t *testing.T) {
 	env := setupTestServer(t)
 
-	req, _ := http.NewRequest("POST", env.Server.URL+"/auth/login", strings.NewReader(`{"email":"test@example.com","password":"wrong"}`))
+	req, _ := http.NewRequestWithContext(t.Context(), "POST", env.Server.URL+"/auth/login", strings.NewReader(`{"email":"test@example.com","password":"wrong"}`))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -52,7 +51,7 @@ func TestUnauthenticatedRequest(t *testing.T) {
 	env := setupTestServer(t)
 
 	// Request without auth header.
-	req, _ := http.NewRequest("GET", env.Server.URL+"/spaces", nil)
+	req, _ := http.NewRequestWithContext(t.Context(), "GET", env.Server.URL+"/spaces", nil)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("do request: %v", err)
@@ -174,7 +173,7 @@ func TestExpiredTokenRejected(t *testing.T) {
 	pastTime := types.EpochSeconds(time.Now().Add(-1 * time.Hour))
 
 	q := dbgen.New(env.db)
-	_, err := q.CreateAuthToken(context.Background(), dbgen.CreateAuthTokenParams{
+	_, err := q.CreateAuthToken(t.Context(), dbgen.CreateAuthTokenParams{
 		UserID:    1, // owner user
 		TokenHash: tokenHash,
 		Name:      "expired",
