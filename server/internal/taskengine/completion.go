@@ -77,7 +77,10 @@ func (e *Engine) HandleCompletionTransition(
 
 	existingDue := types.NewDueDate(existing.DueAt, existing.DueTz)
 
-	switch recurrenceType { //nolint:exhaustive // one_off and on_dependency have no special completion behavior
+	switch recurrenceType {
+	case apigen.TaskRecurrenceTypeOneOff, apigen.TaskRecurrenceTypeOnDependency:
+		// no special completion behavior
+
 	case apigen.TaskRecurrenceTypeCompletionBased, apigen.TaskRecurrenceTypeFixedNonAccumulating:
 		next, err := ComputeNextDueAt(recurrenceType, recurrenceRule, existingDue, now.Time())
 		if err != nil {

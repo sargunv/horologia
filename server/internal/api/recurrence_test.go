@@ -10,21 +10,23 @@ import (
 // dueAtFromResponse extracts the "at" string from a task's nested "due" field.
 // Returns ("", false) if due is nil.
 func dueAtFromResponse(task map[string]any) (string, bool) {
-	due := task["due"]
-	if due == nil {
+	due, ok := task["due"].(map[string]any)
+	if !ok {
 		return "", false
 	}
-	return due.(map[string]any)["at"].(string), true //nolint:forcetypeassert // helper with known shape
+	at, ok := due["at"].(string)
+	return at, ok
 }
 
 // dueTzFromResponse extracts the "timezone" string from a task's nested "due" field.
 // Returns ("", false) if due is nil.
 func dueTzFromResponse(task map[string]any) (string, bool) {
-	due := task["due"]
-	if due == nil {
+	due, ok := task["due"].(map[string]any)
+	if !ok {
 		return "", false
 	}
-	return due.(map[string]any)["timezone"].(string), true //nolint:forcetypeassert // helper with known shape
+	tz, ok := due["timezone"].(string)
+	return tz, ok
 }
 
 func TestRecurrenceOneOffDefault(t *testing.T) {
