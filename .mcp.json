@@ -1,5 +1,12 @@
 {
   "mcpServers": {
+    "mise": {
+      "command": "mise",
+      "args": ["mcp"],
+      "env": {
+        "MISE_EXPERIMENTAL": "1"
+      }
+    },
     "tilt": {
       "command": "npx",
       "args": ["-y", "mcp-server-tilt"]

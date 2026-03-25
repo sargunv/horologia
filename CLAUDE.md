@@ -21,3 +21,7 @@ tasks. Key commands:
 
 Packages (`api`, `cli`, `server`, `web`) have their own tasks scoped by name, e.g.
 `mise run server:generate`, `mise run server:build`, `mise run server:test`.
+
+## Documentation
+
+- [Skeleton design system](https://www.skeleton.dev/llms-react.txt)
