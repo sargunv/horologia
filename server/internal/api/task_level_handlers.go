@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"fmt"
-	"sort"
 
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
@@ -44,14 +43,13 @@ func replaceLevels[Item any](ctx context.Context, q *dbgen.Queries, spaceSlug st
 		currentNames[n] = struct{}{}
 	}
 
-	// Compute removed names in stable order.
+	// Compute removed names in position order.
 	var toRemove []string
 	for _, n := range currentNamesList {
 		if _, kept := names[n]; !kept {
 			toRemove = append(toRemove, n)
 		}
 	}
-	sort.Strings(toRemove)
 
 	// Validate removals if a hook is provided.
 	if ops.validateRemove != nil {
