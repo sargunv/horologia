@@ -180,12 +180,16 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 	}
 
 	effortName := optStringToDB(req.Effort)
-	if err := validateEffortLevel(ctx, q, params.SpaceSlug, effortName); err != nil {
+	if err := validateLevel(ctx, effortName, "effort level", func(ctx context.Context) ([]dbgen.TaskEffortLevel, error) {
+		return q.ListTaskEffortLevelsBySpace(ctx, params.SpaceSlug)
+	}, func(l dbgen.TaskEffortLevel) string { return l.Name }); err != nil {
 		return nil, err
 	}
 
 	priorityName := optStringToDB(req.Priority)
-	if err := validatePriorityLevel(ctx, q, params.SpaceSlug, priorityName); err != nil {
+	if err := validateLevel(ctx, priorityName, "priority level", func(ctx context.Context) ([]dbgen.TaskPriorityLevel, error) {
+		return q.ListTaskPriorityLevelsBySpace(ctx, params.SpaceSlug)
+	}, func(l dbgen.TaskPriorityLevel) string { return l.Name }); err != nil {
 		return nil, err
 	}
 
@@ -343,12 +347,16 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 	}
 
 	effortName := optNilStringToDB(req.Effort, existing.EffortName)
-	if err := validateEffortLevel(ctx, q, params.SpaceSlug, effortName); err != nil {
+	if err := validateLevel(ctx, effortName, "effort level", func(ctx context.Context) ([]dbgen.TaskEffortLevel, error) {
+		return q.ListTaskEffortLevelsBySpace(ctx, params.SpaceSlug)
+	}, func(l dbgen.TaskEffortLevel) string { return l.Name }); err != nil {
 		return nil, err
 	}
 
 	priorityName := optNilStringToDB(req.Priority, existing.PriorityName)
-	if err := validatePriorityLevel(ctx, q, params.SpaceSlug, priorityName); err != nil {
+	if err := validateLevel(ctx, priorityName, "priority level", func(ctx context.Context) ([]dbgen.TaskPriorityLevel, error) {
+		return q.ListTaskPriorityLevelsBySpace(ctx, params.SpaceSlug)
+	}, func(l dbgen.TaskPriorityLevel) string { return l.Name }); err != nil {
 		return nil, err
 	}
 
@@ -620,34 +628,18 @@ func (h *Handler) setTaskTags(ctx context.Context, q *dbgen.Queries, taskID int6
 	return nil
 }
 
-func validateEffortLevel(ctx context.Context, q *dbgen.Queries, spaceSlug string, name *string) error {
+func validateLevel[T any](ctx context.Context, name *string, label string, fetch func(context.Context) ([]T, error), getName func(T) string) error {
 	if name == nil {
 		return nil
 	}
-	levels, err := q.ListTaskEffortLevelsBySpace(ctx, spaceSlug)
+	levels, err := fetch(ctx)
 	if err != nil {
 		return err
 	}
 	for _, l := range levels {
-		if l.Name == *name {
+		if getName(l) == *name {
 			return nil
 		}
 	}
-	return badRequest(fmt.Sprintf("invalid effort level %q", *name))
-}
-
-func validatePriorityLevel(ctx context.Context, q *dbgen.Queries, spaceSlug string, name *string) error {
-	if name == nil {
-		return nil
-	}
-	levels, err := q.ListTaskPriorityLevelsBySpace(ctx, spaceSlug)
-	if err != nil {
-		return err
-	}
-	for _, l := range levels {
-		if l.Name == *name {
-			return nil
-		}
-	}
-	return badRequest(fmt.Sprintf("invalid priority level %q", *name))
+	return badRequest(fmt.Sprintf("invalid %s %q", label, *name))
 }

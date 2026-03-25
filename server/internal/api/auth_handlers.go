@@ -77,7 +77,7 @@ func (h *Handler) AuthCreateToken(ctx context.Context, req *apigen.AuthTokenCrea
 		UserID:    user.ID,
 		TokenHash: hash,
 		Name:      req.Name,
-		Kind:      "api",
+		Kind:      string(apigen.AuthTokenKindAPI),
 		CreatedAt: types.Now(),
 	})
 	if err != nil {

@@ -8,6 +8,15 @@ import (
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 )
 
+// extractNames maps a slice of rows to a slice of name strings.
+func extractNames[T any](rows []T, name func(T) string) []string {
+	names := make([]string, len(rows))
+	for i, r := range rows {
+		names[i] = name(r)
+	}
+	return names
+}
+
 // replaceLevelsOps defines the operations needed by replaceLevels for a
 // particular level type.
 type replaceLevelsOps[Item any] struct {
@@ -145,11 +154,7 @@ func (h *Handler) SpaceTaskStatusesReplace(ctx context.Context, req *apigen.Task
 			if err != nil {
 				return nil, err
 			}
-			names := make([]string, len(rows))
-			for i, r := range rows {
-				names[i] = r.Name
-			}
-			return names, nil
+			return extractNames(rows, func(r dbgen.TaskStatus) string { return r.Name }), nil
 		},
 		create: func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item apigen.TaskStatusInput, pos int64) error {
 			_, err := q.CreateTaskStatus(ctx, dbgen.CreateTaskStatusParams{
@@ -253,11 +258,7 @@ func (h *Handler) SpaceTaskEffortLevelsReplace(ctx context.Context, req *apigen.
 			if err != nil {
 				return nil, err
 			}
-			names := make([]string, len(rows))
-			for i, r := range rows {
-				names[i] = r.Name
-			}
-			return names, nil
+			return extractNames(rows, func(r dbgen.TaskEffortLevel) string { return r.Name }), nil
 		},
 		create: func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item apigen.TaskEffortLevelInput, pos int64) error {
 			_, err := q.CreateTaskEffortLevel(ctx, dbgen.CreateTaskEffortLevelParams{
@@ -346,11 +347,7 @@ func (h *Handler) SpaceTaskPriorityLevelsReplace(ctx context.Context, req *apige
 			if err != nil {
 				return nil, err
 			}
-			names := make([]string, len(rows))
-			for i, r := range rows {
-				names[i] = r.Name
-			}
-			return names, nil
+			return extractNames(rows, func(r dbgen.TaskPriorityLevel) string { return r.Name }), nil
 		},
 		create: func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item apigen.TaskPriorityLevelInput, pos int64) error {
 			_, err := q.CreateTaskPriorityLevel(ctx, dbgen.CreateTaskPriorityLevelParams{

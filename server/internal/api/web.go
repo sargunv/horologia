@@ -16,7 +16,15 @@ import (
 // sentinelHash is a pre-computed bcrypt hash used to prevent timing-based
 // email enumeration. When the email is not found or has no password, we still
 // run a bcrypt comparison against this hash so the response time is constant.
-var sentinelHash, _ = bcrypt.GenerateFromPassword([]byte("sentinel"), bcrypt.DefaultCost)
+var sentinelHash []byte
+
+func init() {
+	var err error
+	sentinelHash, err = bcrypt.GenerateFromPassword([]byte("sentinel"), bcrypt.DefaultCost)
+	if err != nil {
+		panic("bcrypt: generate sentinel hash: " + err.Error())
+	}
+}
 
 const (
 	sessionCookieName = "tend_session"

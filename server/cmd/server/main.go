@@ -163,7 +163,9 @@ var serveCmd = &cobra.Command{
 			log.Info("shutting down", "signal", sig.String())
 		}
 
-		if err := srv.Shutdown(context.Background()); err != nil {
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer shutdownCancel()
+		if err := srv.Shutdown(shutdownCtx); err != nil {
 			return fmt.Errorf("shutdown: %w", err)
 		}
 

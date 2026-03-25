@@ -64,6 +64,9 @@ func NewOIDCHandler(ctx context.Context, cfg OIDCConfig, handler *Handler) (http
 	mux := http.NewServeMux()
 
 	// GET /auth/oidc → redirect to IdP.
+	// The AuthURLHandler callback only returns a string, so there's no way to
+	// propagate an error. rand.Read failing indicates a broken OS RNG, which is
+	// a fatal condition — panic is appropriate here.
 	mux.Handle("GET /auth/oidc", rp.AuthURLHandler(func() string {
 		b := make([]byte, 16)
 		if _, err := rand.Read(b); err != nil {
@@ -181,8 +184,8 @@ func MountOIDC(base http.Handler, oidcHandler http.Handler, log *slog.Logger) ht
 		return base
 	}
 	mux := http.NewServeMux()
-	mux.Handle("GET /auth/oidc", oidcHandler)
-	mux.Handle("GET /auth/oidc/callback", oidcHandler)
+	mux.Handle("/auth/oidc", oidcHandler)
+	mux.Handle("/auth/oidc/", oidcHandler)
 	mux.Handle("/", base)
 	log.Info("OIDC enabled")
 	return mux

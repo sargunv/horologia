@@ -97,7 +97,7 @@ func createSessionToken(ctx context.Context, q *dbgen.Queries, userID int64) (st
 		UserID:    userID,
 		TokenHash: hash,
 		Name:      "",
-		Kind:      "session",
+		Kind:      string(apigen.AuthTokenKindSession),
 		CreatedAt: types.Now(),
 	})
 	return raw, err
