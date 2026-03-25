@@ -1,8 +1,12 @@
 package api
 
-import "context"
+import (
+	"context"
 
-// ProcessOverdueTasksForTest exposes processOverdueTasks for integration tests.
+	"github.com/sargunv/tend/server/internal/cron"
+)
+
+// ProcessOverdueTasksForTest exposes ProcessOverdueTasks for integration tests.
 func (h *Handler) ProcessOverdueTasksForTest(ctx context.Context) {
-	h.Engine.ProcessOverdueTasks(ctx)
+	cron.ProcessOverdueTasks(ctx, h.DB, h.Engine, h.Log)
 }

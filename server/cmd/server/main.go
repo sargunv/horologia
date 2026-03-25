@@ -18,6 +18,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/sargunv/tend/server/internal/api"
+	"github.com/sargunv/tend/server/internal/cron"
 	"github.com/sargunv/tend/server/internal/database"
 	"github.com/sargunv/tend/server/internal/taskengine"
 )
@@ -107,8 +108,6 @@ var serveCmd = &cobra.Command{
 		}
 
 		engine := &taskengine.Engine{
-			DB:               db,
-			Log:              log,
 			CopyOnSpawnKinds: api.StoredKindCopyOnSpawn(),
 		}
 		handler := &api.Handler{DB: db, Log: log, Engine: engine}
@@ -116,7 +115,7 @@ var serveCmd = &cobra.Command{
 		// Start the fixed_accumulating cron job.
 		cronCtx, cronCancel := context.WithCancel(context.Background())
 		defer cronCancel()
-		go engine.RunAccumulatingCron(cronCtx, time.Minute)
+		go cron.RunAccumulatingCron(cronCtx, db, engine, log, time.Minute)
 
 		h, err := api.NewServer(handler, log)
 		if err != nil {
@@ -206,7 +205,7 @@ var createAdminCmd = &cobra.Command{
 		name, _ := cmd.Flags().GetString("name")
 		password, _ := cmd.Flags().GetString("password")
 
-		user, err := api.CreateUserWithPassword(context.Background(), db, email, name, password, true)
+		user, err := taskengine.CreateUserWithPassword(context.Background(), db, email, name, password, true)
 		if err != nil {
 			return fmt.Errorf("create admin: %w", err)
 		}

@@ -1,19 +1,22 @@
-package taskengine
+package cron
 
 import (
 	"context"
+	"database/sql"
+	"log/slog"
 	"time"
 
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/tend/server/internal/taskengine"
 	"github.com/sargunv/tend/server/internal/types"
 )
 
 // RunAccumulatingCron ticks every interval and processes overdue
 // fixed_accumulating tasks. It fires immediately on start to handle
 // any backlog from server downtime. Returns when ctx is cancelled.
-func (e *Engine) RunAccumulatingCron(ctx context.Context, interval time.Duration) {
-	e.ProcessOverdueTasks(ctx)
+func RunAccumulatingCron(ctx context.Context, db *sql.DB, engine *taskengine.Engine, log *slog.Logger, interval time.Duration) {
+	processOverdueTasks(ctx, db, engine, log)
 
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
@@ -23,27 +26,31 @@ func (e *Engine) RunAccumulatingCron(ctx context.Context, interval time.Duration
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			e.ProcessOverdueTasks(ctx)
+			processOverdueTasks(ctx, db, engine, log)
 		}
 	}
 }
 
 // ProcessOverdueTasks finds all fixed_accumulating tasks with due_at <= now
-// and processes each one in its own transaction.
-func (e *Engine) ProcessOverdueTasks(ctx context.Context) {
+// and processes each one in its own transaction. Exported for testing.
+func ProcessOverdueTasks(ctx context.Context, db *sql.DB, engine *taskengine.Engine, log *slog.Logger) {
+	processOverdueTasks(ctx, db, engine, log)
+}
+
+func processOverdueTasks(ctx context.Context, db *sql.DB, engine *taskengine.Engine, log *slog.Logger) {
 	now := time.Now()
 	nowEpoch := types.EpochSecondsFrom(now)
 
-	q := dbgen.New(e.DB)
+	q := dbgen.New(db)
 	tasks, err := q.ListOverdueAccumulatingTasks(ctx, &nowEpoch)
 	if err != nil {
-		e.Log.ErrorContext(ctx, "cron: list overdue accumulating tasks", "error", err)
+		log.ErrorContext(ctx, "cron: list overdue accumulating tasks", "error", err)
 		return
 	}
 
 	for _, task := range tasks {
-		if err := e.processOneOverdueTask(ctx, task, now); err != nil {
-			e.Log.ErrorContext(ctx, "cron: process overdue task",
+		if err := processOneOverdueTask(ctx, db, engine, task, now); err != nil {
+			log.ErrorContext(ctx, "cron: process overdue task",
 				"task_id", task.ID,
 				"space", task.SpaceSlug,
 				"error", err,
@@ -54,8 +61,8 @@ func (e *Engine) ProcessOverdueTasks(ctx context.Context) {
 
 // processOneOverdueTask processes a single overdue fixed_accumulating task
 // in its own transaction.
-func (e *Engine) processOneOverdueTask(ctx context.Context, task dbgen.Task, now time.Time) error {
-	tx, err := e.DB.BeginTx(ctx, nil)
+func processOneOverdueTask(ctx context.Context, db *sql.DB, engine *taskengine.Engine, task dbgen.Task, now time.Time) error {
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -72,7 +79,7 @@ func (e *Engine) processOneOverdueTask(ctx context.Context, task dbgen.Task, now
 		return nil
 	}
 
-	if err := e.processAccumulatingTask(ctx, q, existing, now); err != nil {
+	if err := engine.ProcessAccumulatingTask(ctx, q, existing, now); err != nil {
 		return err
 	}
 

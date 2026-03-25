@@ -193,9 +193,9 @@ func allOverdueOccurrences(rule string, dtstart time.Time, until time.Time, loc 
 	return result, nil
 }
 
-// processAccumulatingTask handles one overdue fixed_accumulating task within an
+// ProcessAccumulatingTask handles one overdue fixed_accumulating task within an
 // existing transaction.
-func (e *Engine) processAccumulatingTask(ctx context.Context, q *dbgen.Queries, task dbgen.Task, now time.Time) error {
+func (e *Engine) ProcessAccumulatingTask(ctx context.Context, q *dbgen.Queries, task dbgen.Task, now time.Time) error {
 	due := types.NewDueDate(task.DueAt, task.DueTz)
 	if due == nil || task.RecurrenceRule == nil {
 		return nil
