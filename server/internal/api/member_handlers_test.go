@@ -50,13 +50,13 @@ func TestSpaceMembersList(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var page map[string]any
 	readJSON(t, resp, &page)
-	items := page["items"].([]any)
+	items := jsonAs[[]any](t, page["items"])
 	// Creator is auto-added as admin.
 	if len(items) != 1 {
 		t.Fatalf("got %d members, want 1", len(items))
 	}
-	if items[0].(map[string]any)["role"] != "admin" {
-		t.Errorf("role = %v, want admin", items[0].(map[string]any)["role"])
+	if jsonAs[map[string]any](t, items[0])["role"] != "admin" {
+		t.Errorf("role = %v, want admin", jsonAs[map[string]any](t, items[0])["role"])
 	}
 }
 
@@ -75,7 +75,7 @@ func TestSpaceMembersListPagination(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var page1 map[string]any
 	readJSON(t, resp, &page1)
-	items1 := page1["items"].([]any)
+	items1 := jsonAs[[]any](t, page1["items"])
 	if len(items1) != 2 {
 		t.Fatalf("page 1: got %d items, want 2", len(items1))
 	}
@@ -85,11 +85,11 @@ func TestSpaceMembersListPagination(t *testing.T) {
 	}
 
 	// Page 2: should return remaining 2 items with null cursor.
-	resp2 := doRequest(t, env, "GET", "/spaces/home/members?limit=2&cursor="+cursor.(string), "")
+	resp2 := doRequest(t, env, "GET", "/spaces/home/members?limit=2&cursor="+jsonAs[string](t, cursor), "")
 	assertStatus(t, resp2, http.StatusOK)
 	var page2 map[string]any
 	readJSON(t, resp2, &page2)
-	items2 := page2["items"].([]any)
+	items2 := jsonAs[[]any](t, page2["items"])
 	if len(items2) != 2 {
 		t.Fatalf("page 2: got %d items, want 2", len(items2))
 	}
@@ -159,14 +159,14 @@ func TestMemberRemovalClearsAssignments(t *testing.T) {
 
 	// Assign bob to a task.
 	task := createTask(t, env, "home", `{"title":"Bob's task","assigneeIds":["`+bobID+`"]}`)
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// Verify bob is assigned.
 	resp2 := doRequest(t, env, "GET", "/spaces/home/tasks/"+taskID, "")
 	assertStatus(t, resp2, http.StatusOK)
 	var before map[string]any
 	readJSON(t, resp2, &before)
-	if len(before["assigneeIds"].([]any)) != 1 {
+	if len(jsonAs[[]any](t, before["assigneeIds"])) != 1 {
 		t.Fatalf("expected 1 assignee before removal")
 	}
 
@@ -178,8 +178,8 @@ func TestMemberRemovalClearsAssignments(t *testing.T) {
 	assertStatus(t, resp3, http.StatusOK)
 	var after map[string]any
 	readJSON(t, resp3, &after)
-	if len(after["assigneeIds"].([]any)) != 0 {
-		t.Fatalf("expected 0 assignees after member removal, got %d", len(after["assigneeIds"].([]any)))
+	if len(jsonAs[[]any](t, after["assigneeIds"])) != 0 {
+		t.Fatalf("expected 0 assignees after member removal, got %d", len(jsonAs[[]any](t, after["assigneeIds"])))
 	}
 }
 
@@ -203,20 +203,20 @@ func TestMemberRemovalIsolation(t *testing.T) {
 	assertStatusClose(t, doRequest(t, env, "DELETE", "/spaces/alpha/members/"+bobID, ""), http.StatusNoContent)
 
 	// Alpha task should have no assignees.
-	resp2 := doRequest(t, env, "GET", "/spaces/alpha/tasks/"+taskAlpha["id"].(string), "")
+	resp2 := doRequest(t, env, "GET", "/spaces/alpha/tasks/"+jsonAs[string](t, taskAlpha["id"]), "")
 	assertStatus(t, resp2, http.StatusOK)
 	var alpha map[string]any
 	readJSON(t, resp2, &alpha)
-	if len(alpha["assigneeIds"].([]any)) != 0 {
-		t.Fatalf("alpha task: expected 0 assignees, got %d", len(alpha["assigneeIds"].([]any)))
+	if len(jsonAs[[]any](t, alpha["assigneeIds"])) != 0 {
+		t.Fatalf("alpha task: expected 0 assignees, got %d", len(jsonAs[[]any](t, alpha["assigneeIds"])))
 	}
 
 	// Beta task should still have bob assigned.
-	resp3 := doRequest(t, env, "GET", "/spaces/beta/tasks/"+taskBeta["id"].(string), "")
+	resp3 := doRequest(t, env, "GET", "/spaces/beta/tasks/"+jsonAs[string](t, taskBeta["id"]), "")
 	assertStatus(t, resp3, http.StatusOK)
 	var beta map[string]any
 	readJSON(t, resp3, &beta)
-	if len(beta["assigneeIds"].([]any)) != 1 {
-		t.Fatalf("beta task: expected 1 assignee, got %d", len(beta["assigneeIds"].([]any)))
+	if len(jsonAs[[]any](t, beta["assigneeIds"])) != 1 {
+		t.Fatalf("beta task: expected 1 assignee, got %d", len(jsonAs[[]any](t, beta["assigneeIds"])))
 	}
 }

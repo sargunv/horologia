@@ -69,7 +69,7 @@ func TestSpacesListEmpty(t *testing.T) {
 
 	var page map[string]any
 	readJSON(t, resp, &page)
-	items := page["items"].([]any)
+	items := jsonAs[[]any](t, page["items"])
 	if len(items) != 0 {
 		t.Fatalf("got %d items, want 0", len(items))
 	}
@@ -91,10 +91,10 @@ func TestSpacesList(t *testing.T) {
 
 	var page map[string]any
 	readJSON(t, resp, &page)
-	items := page["items"].([]any)
+	items := jsonAs[[]any](t, page["items"])
 	slugs := make([]string, len(items))
 	for i, item := range items {
-		slugs[i] = item.(map[string]any)["slug"].(string)
+		slugs[i] = jsonAs[string](t, jsonAs[map[string]any](t, item)["slug"])
 	}
 	if slugs[0] != "alpha" || slugs[1] != "beta" || slugs[2] != "gamma" {
 		t.Errorf("slugs = %v, want [alpha beta gamma]", slugs)
@@ -115,13 +115,13 @@ func TestSpacesListPagination(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var page1 map[string]any
 	readJSON(t, resp, &page1)
-	items1 := page1["items"].([]any)
+	items1 := jsonAs[[]any](t, page1["items"])
 	if len(items1) != 2 {
 		t.Fatalf("page 1: got %d items, want 2", len(items1))
 	}
-	if items1[0].(map[string]any)["slug"] != "a" || items1[1].(map[string]any)["slug"] != "b" {
+	if jsonAs[map[string]any](t, items1[0])["slug"] != "a" || jsonAs[map[string]any](t, items1[1])["slug"] != "b" {
 		t.Errorf("page 1: got slugs %v/%v, want a/b",
-			items1[0].(map[string]any)["slug"], items1[1].(map[string]any)["slug"])
+			jsonAs[map[string]any](t, items1[0])["slug"], jsonAs[map[string]any](t, items1[1])["slug"])
 	}
 	cursor := page1["nextCursor"]
 	if cursor == nil {
@@ -129,17 +129,17 @@ func TestSpacesListPagination(t *testing.T) {
 	}
 
 	// Page 2: should return "c" and "d" with null cursor (exact boundary).
-	resp2 := doRequest(t, env, "GET", "/spaces?limit=2&cursor="+cursor.(string), "")
+	resp2 := doRequest(t, env, "GET", "/spaces?limit=2&cursor="+jsonAs[string](t, cursor), "")
 	assertStatus(t, resp2, http.StatusOK)
 	var page2 map[string]any
 	readJSON(t, resp2, &page2)
-	items2 := page2["items"].([]any)
+	items2 := jsonAs[[]any](t, page2["items"])
 	if len(items2) != 2 {
 		t.Fatalf("page 2: got %d items, want 2", len(items2))
 	}
-	if items2[0].(map[string]any)["slug"] != "c" || items2[1].(map[string]any)["slug"] != "d" {
+	if jsonAs[map[string]any](t, items2[0])["slug"] != "c" || jsonAs[map[string]any](t, items2[1])["slug"] != "d" {
 		t.Errorf("page 2: got slugs %v/%v, want c/d",
-			items2[0].(map[string]any)["slug"], items2[1].(map[string]any)["slug"])
+			jsonAs[map[string]any](t, items2[0])["slug"], jsonAs[map[string]any](t, items2[1])["slug"])
 	}
 	if page2["nextCursor"] != nil {
 		t.Error("page 2: expected null nextCursor")
@@ -248,11 +248,11 @@ func TestNonOwnerSpacesListFiltered(t *testing.T) {
 	assertStatus(t, resp2, http.StatusOK)
 	var page map[string]any
 	readJSON(t, resp2, &page)
-	items := page["items"].([]any)
+	items := jsonAs[[]any](t, page["items"])
 	if len(items) != 1 {
 		t.Fatalf("got %d items, want 1", len(items))
 	}
-	if items[0].(map[string]any)["slug"] != "beta" {
-		t.Errorf("slug = %v, want beta", items[0].(map[string]any)["slug"])
+	if jsonAs[map[string]any](t, items[0])["slug"] != "beta" {
+		t.Errorf("slug = %v, want beta", jsonAs[map[string]any](t, items[0])["slug"])
 	}
 }

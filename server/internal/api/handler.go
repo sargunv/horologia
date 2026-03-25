@@ -30,27 +30,28 @@ func (h *Handler) NewError(ctx context.Context, err error) *apigen.ApiErrorStatu
 	message := "an internal error occurred"
 
 	var secErr *ogenerrors.SecurityError
-	if errors.As(err, &secErr) {
+	switch {
+	case errors.As(err, &secErr):
 		code = http.StatusUnauthorized
 		apiCode = "unauthorized"
 		message = "authentication required"
-	} else if errors.Is(err, sql.ErrNoRows) {
+	case errors.Is(err, sql.ErrNoRows):
 		code = http.StatusNotFound
 		apiCode = "not_found"
 		message = "resource not found"
-	} else if isUniqueViolation(err) {
+	case isUniqueViolation(err):
 		code = http.StatusConflict
 		apiCode = "conflict"
 		message = "resource already exists"
-	} else if isForeignKeyViolation(err) {
+	case isForeignKeyViolation(err):
 		code = http.StatusBadRequest
 		apiCode = "bad_request"
 		message = "referenced resource does not exist"
-	} else if isForbidden(err) {
+	case isForbidden(err):
 		code = http.StatusForbidden
 		apiCode = "forbidden"
 		message = err.Error()
-	} else if isBadRequest(err) {
+	case isBadRequest(err):
 		code = http.StatusBadRequest
 		apiCode = "bad_request"
 		message = err.Error()

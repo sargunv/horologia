@@ -59,7 +59,7 @@ func TestSpaceTagsList(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var page map[string]any
 	readJSON(t, resp, &page)
-	items := page["items"].([]any)
+	items := jsonAs[[]any](t, page["items"])
 	if len(items) != 2 {
 		t.Fatalf("got %d tags, want 2", len(items))
 	}
@@ -79,7 +79,7 @@ func TestSpaceTagsListPagination(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var page1 map[string]any
 	readJSON(t, resp, &page1)
-	items1 := page1["items"].([]any)
+	items1 := jsonAs[[]any](t, page1["items"])
 	if len(items1) != 2 {
 		t.Fatalf("page 1: got %d items, want 2", len(items1))
 	}
@@ -89,11 +89,11 @@ func TestSpaceTagsListPagination(t *testing.T) {
 	}
 
 	// Page 2: should return remaining 2 with null cursor.
-	resp2 := doRequest(t, env, "GET", "/spaces/tag-page/tags?limit=2&cursor="+cursor.(string), "")
+	resp2 := doRequest(t, env, "GET", "/spaces/tag-page/tags?limit=2&cursor="+jsonAs[string](t, cursor), "")
 	assertStatus(t, resp2, http.StatusOK)
 	var page2 map[string]any
 	readJSON(t, resp2, &page2)
-	items2 := page2["items"].([]any)
+	items2 := jsonAs[[]any](t, page2["items"])
 	if len(items2) != 2 {
 		t.Fatalf("page 2: got %d items, want 2", len(items2))
 	}
@@ -110,7 +110,7 @@ func TestSpaceTagsListEmpty(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var page map[string]any
 	readJSON(t, resp, &page)
-	items := page["items"].([]any)
+	items := jsonAs[[]any](t, page["items"])
 	if len(items) != 0 {
 		t.Fatalf("got %d tags, want 0", len(items))
 	}
@@ -162,7 +162,7 @@ func TestSpaceTagsDelete(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var page map[string]any
 	readJSON(t, resp, &page)
-	if len(page["items"].([]any)) != 0 {
+	if len(jsonAs[[]any](t, page["items"])) != 0 {
 		t.Fatal("expected no tags after delete")
 	}
 }
@@ -186,7 +186,7 @@ func TestSpaceTagsCrossSpaceIsolation(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var page map[string]any
 	readJSON(t, resp, &page)
-	if len(page["items"].([]any)) != 0 {
+	if len(jsonAs[[]any](t, page["items"])) != 0 {
 		t.Fatal("space B should have no tags")
 	}
 }

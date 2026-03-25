@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/base64"
 	"fmt"
+	"maps"
 	"strconv"
 	"strings"
 	"time"
@@ -363,9 +364,7 @@ func memberToAPI(userID int64, userName, userEmail, role string, createdAt types
 // they should be copied when spawning a new task. Used to configure Engine.
 func StoredKindCopyOnSpawn() map[string]bool {
 	m := make(map[string]bool, len(storedKindCopyOnSpawn))
-	for k, v := range storedKindCopyOnSpawn {
-		m[k] = v
-	}
+	maps.Copy(m, storedKindCopyOnSpawn)
 	return m
 }
 

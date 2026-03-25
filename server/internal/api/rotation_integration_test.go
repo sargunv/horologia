@@ -29,13 +29,13 @@ func TestRotationPoolRoundTrip(t *testing.T) {
 	}
 
 	// Update pool to reorder.
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 	resp := doRequest(t, env, "PATCH", "/spaces/alpha/tasks/"+taskID,
 		fmt.Sprintf(`{"rotationPool":[%q,%q]}`, bobID, ownerID))
 	assertStatus(t, resp, http.StatusOK)
 	var updated map[string]any
 	readJSON(t, resp, &updated)
-	pool2 := updated["rotationPool"].([]any)
+	pool2 := jsonAs[[]any](t, updated["rotationPool"])
 	if pool2[0] != bobID || pool2[1] != ownerID {
 		t.Fatalf("got reordered pool %v, want [%s, %s]", pool2, bobID, ownerID)
 	}
@@ -46,7 +46,7 @@ func TestRotationPoolRoundTrip(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var cleared map[string]any
 	readJSON(t, resp, &cleared)
-	pool3 := cleared["rotationPool"].([]any)
+	pool3 := jsonAs[[]any](t, cleared["rotationPool"])
 	if len(pool3) != 0 {
 		t.Fatalf("got pool %v after clear, want empty", pool3)
 	}
@@ -57,7 +57,7 @@ func TestRotationPoolDefaultEmpty(t *testing.T) {
 	createSpace(t, env, "alpha", "Alpha")
 
 	task := createTask(t, env, "alpha", `{"title":"No pool"}`)
-	pool := task["rotationPool"].([]any)
+	pool := jsonAs[[]any](t, task["rotationPool"])
 	if len(pool) != 0 {
 		t.Fatalf("default pool should be empty, got %v", pool)
 	}
@@ -70,7 +70,7 @@ func TestRotationPoolPreservedOnUnrelatedUpdate(t *testing.T) {
 
 	task := createTask(t, env, "alpha",
 		fmt.Sprintf(`{"title":"Chore","rotationPool":[%q]}`, ownerID))
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// PATCH only the title.
 	resp := doRequest(t, env, "PATCH", "/spaces/alpha/tasks/"+taskID,
@@ -78,7 +78,7 @@ func TestRotationPoolPreservedOnUnrelatedUpdate(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var updated map[string]any
 	readJSON(t, resp, &updated)
-	pool := updated["rotationPool"].([]any)
+	pool := jsonAs[[]any](t, updated["rotationPool"])
 	if len(pool) != 1 || pool[0] != ownerID {
 		t.Fatalf("pool should be preserved, got %v", pool)
 	}
@@ -96,7 +96,7 @@ func TestRotationOnCompletionBased(t *testing.T) {
 		`{"title":"Chore","recurrenceType":"completion_based","recurrenceRule":"RRULE:FREQ=DAILY;INTERVAL=7","assigneeIds":[%q],"rotationPool":[%q,%q,%q]}`,
 		ownerID, ownerID, bobID, charlieID,
 	))
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// Complete: assignee should rotate owner → bob.
 	resp := doRequest(t, env, "PATCH", "/spaces/alpha/tasks/"+taskID,
@@ -104,7 +104,7 @@ func TestRotationOnCompletionBased(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var after1 map[string]any
 	readJSON(t, resp, &after1)
-	assignees1 := after1["assigneeIds"].([]any)
+	assignees1 := jsonAs[[]any](t, after1["assigneeIds"])
 	if len(assignees1) != 1 || assignees1[0] != bobID {
 		t.Fatalf("after 1st completion: got assignees %v, want [%s]", assignees1, bobID)
 	}
@@ -115,7 +115,7 @@ func TestRotationOnCompletionBased(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var after2 map[string]any
 	readJSON(t, resp, &after2)
-	assignees2 := after2["assigneeIds"].([]any)
+	assignees2 := jsonAs[[]any](t, after2["assigneeIds"])
 	if len(assignees2) != 1 || assignees2[0] != charlieID {
 		t.Fatalf("after 2nd completion: got assignees %v, want [%s]", assignees2, charlieID)
 	}
@@ -126,7 +126,7 @@ func TestRotationOnCompletionBased(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var after3 map[string]any
 	readJSON(t, resp, &after3)
-	assignees3 := after3["assigneeIds"].([]any)
+	assignees3 := jsonAs[[]any](t, after3["assigneeIds"])
 	if len(assignees3) != 1 || assignees3[0] != ownerID {
 		t.Fatalf("after 3rd completion (wrap): got assignees %v, want [%s]", assignees3, ownerID)
 	}
@@ -142,7 +142,7 @@ func TestRotationNoOpWithEmptyPool(t *testing.T) {
 		`{"title":"Chore","recurrenceType":"completion_based","recurrenceRule":"RRULE:FREQ=DAILY;INTERVAL=7","assigneeIds":[%q]}`,
 		ownerID,
 	))
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// Complete: assignee should stay the same (no pool).
 	resp := doRequest(t, env, "PATCH", "/spaces/alpha/tasks/"+taskID,
@@ -150,7 +150,7 @@ func TestRotationNoOpWithEmptyPool(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var after map[string]any
 	readJSON(t, resp, &after)
-	assignees := after["assigneeIds"].([]any)
+	assignees := jsonAs[[]any](t, after["assigneeIds"])
 	if len(assignees) != 1 || assignees[0] != ownerID {
 		t.Fatalf("got assignees %v, want [%s] (unchanged with empty pool)", assignees, ownerID)
 	}
@@ -168,7 +168,7 @@ func TestRotationCurrentAssigneeNotInPool(t *testing.T) {
 		`{"title":"Chore","recurrenceType":"completion_based","recurrenceRule":"RRULE:FREQ=DAILY;INTERVAL=7","assigneeIds":[%q],"rotationPool":[%q,%q]}`,
 		ownerID, bobID, charlieID,
 	))
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// Complete: should use first pool member (bob) since owner is not in pool.
 	resp := doRequest(t, env, "PATCH", "/spaces/alpha/tasks/"+taskID,
@@ -176,7 +176,7 @@ func TestRotationCurrentAssigneeNotInPool(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var after map[string]any
 	readJSON(t, resp, &after)
-	assignees := after["assigneeIds"].([]any)
+	assignees := jsonAs[[]any](t, after["assigneeIds"])
 	if len(assignees) != 1 || assignees[0] != bobID {
 		t.Fatalf("got assignees %v, want [%s] (first in pool)", assignees, bobID)
 	}
@@ -193,7 +193,7 @@ func TestRotationOneOffNoRotation(t *testing.T) {
 		`{"title":"One-off","assigneeIds":[%q],"rotationPool":[%q,%q]}`,
 		ownerID, ownerID, bobID,
 	))
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// Complete: one_off stays completed, no rotation.
 	resp := doRequest(t, env, "PATCH", "/spaces/alpha/tasks/"+taskID,
@@ -201,7 +201,7 @@ func TestRotationOneOffNoRotation(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var after map[string]any
 	readJSON(t, resp, &after)
-	assignees := after["assigneeIds"].([]any)
+	assignees := jsonAs[[]any](t, after["assigneeIds"])
 	if len(assignees) != 1 || assignees[0] != ownerID {
 		t.Fatalf("one_off should not rotate: got assignees %v, want [%s]", assignees, ownerID)
 	}
@@ -218,7 +218,7 @@ func TestRotationFixedAccumulating(t *testing.T) {
 		`{"title":"Accumulating","recurrenceType":"fixed_accumulating","recurrenceRule":"RRULE:FREQ=WEEKLY;BYDAY=SA","due":{"at":"2020-01-04T00:00:00Z","timezone":"UTC"},"assigneeIds":[%q],"rotationPool":[%q,%q]}`,
 		ownerID, ownerID, bobID,
 	))
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// Complete: old task → one_off with pool cleared, spawned task gets rotated assignee.
 	resp := doRequest(t, env, "PATCH", "/spaces/alpha/tasks/"+taskID,
@@ -231,18 +231,18 @@ func TestRotationFixedAccumulating(t *testing.T) {
 	if completed["recurrenceType"] != "one_off" {
 		t.Fatalf("completed task should be one_off, got %v", completed["recurrenceType"])
 	}
-	completedPool := completed["rotationPool"].([]any)
+	completedPool := jsonAs[[]any](t, completed["rotationPool"])
 	if len(completedPool) != 0 {
 		t.Fatalf("completed task pool should be empty, got %v", completedPool)
 	}
 
 	// Find spawned task via relations.
-	rels := completed["relations"].([]any)
+	rels := jsonAs[[]any](t, completed["relations"])
 	var spawnedID string
 	for _, r := range rels {
-		rel := r.(map[string]any)
+		rel := jsonAs[map[string]any](t, r)
 		if rel["kind"] == "spawns" {
-			spawnedID = rel["taskId"].(string)
+			spawnedID = jsonAs[string](t, rel["taskId"])
 		}
 	}
 	if spawnedID == "" {
@@ -255,11 +255,11 @@ func TestRotationFixedAccumulating(t *testing.T) {
 	var spawned map[string]any
 	readJSON(t, resp, &spawned)
 
-	spawnedAssignees := spawned["assigneeIds"].([]any)
+	spawnedAssignees := jsonAs[[]any](t, spawned["assigneeIds"])
 	if len(spawnedAssignees) != 1 || spawnedAssignees[0] != bobID {
 		t.Fatalf("spawned task assignees should be [%s], got %v", bobID, spawnedAssignees)
 	}
-	spawnedPool := spawned["rotationPool"].([]any)
+	spawnedPool := jsonAs[[]any](t, spawned["rotationPool"])
 	if len(spawnedPool) != 2 {
 		t.Fatalf("spawned task pool should have 2 members, got %v", spawnedPool)
 	}
@@ -281,7 +281,7 @@ func TestRotationCronMultiSpawn(t *testing.T) {
 		`{"title":"Weekly","recurrenceType":"fixed_accumulating","recurrenceRule":"RRULE:FREQ=WEEKLY","due":{"at":"2026-03-03T00:00:00Z","timezone":"UTC"},"assigneeIds":[%q],"rotationPool":[%q,%q,%q]}`,
 		ownerID, ownerID, bobID, charlieID,
 	))
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// Run cron to process overdue tasks.
 	env.Handler.ProcessOverdueTasksForTest(context.Background())
@@ -294,7 +294,7 @@ func TestRotationCronMultiSpawn(t *testing.T) {
 	if original["recurrenceType"] != "one_off" {
 		t.Fatalf("original should be one_off, got %v", original["recurrenceType"])
 	}
-	originalPool := original["rotationPool"].([]any)
+	originalPool := jsonAs[[]any](t, original["rotationPool"])
 	if len(originalPool) != 0 {
 		t.Fatalf("original pool should be empty, got %v", originalPool)
 	}
@@ -304,19 +304,19 @@ func TestRotationCronMultiSpawn(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var page map[string]any
 	readJSON(t, resp, &page)
-	items := page["items"].([]any)
+	items := jsonAs[[]any](t, page["items"])
 
 	// Collect spawned tasks (not the original).
 	var spawnedAssignees []string
 	var continuationTask map[string]any
 	for _, item := range items {
-		task := item.(map[string]any)
+		task := jsonAs[map[string]any](t, item)
 		if task["id"] == taskID {
 			continue
 		}
-		assignees := task["assigneeIds"].([]any)
+		assignees := jsonAs[[]any](t, task["assigneeIds"])
 		if len(assignees) == 1 {
-			spawnedAssignees = append(spawnedAssignees, assignees[0].(string))
+			spawnedAssignees = append(spawnedAssignees, jsonAs[string](t, assignees[0]))
 		}
 		if task["recurrenceType"] == "fixed_accumulating" {
 			continuationTask = task
@@ -327,7 +327,7 @@ func TestRotationCronMultiSpawn(t *testing.T) {
 	if continuationTask == nil {
 		t.Fatal("no continuation fixed_accumulating task found")
 	}
-	contPool := continuationTask["rotationPool"].([]any)
+	contPool := jsonAs[[]any](t, continuationTask["rotationPool"])
 	if len(contPool) != 3 {
 		t.Fatalf("continuation pool should have 3 members, got %v", contPool)
 	}
@@ -347,7 +347,7 @@ func TestRotationCronMultiSpawn(t *testing.T) {
 
 	// Verify the continuation task's assignee is advanced past all missed occurrences.
 	// step=len(missed)=3 → (0+1+3) % 3 = 1 → bob.
-	contAssignees := continuationTask["assigneeIds"].([]any)
+	contAssignees := jsonAs[[]any](t, continuationTask["assigneeIds"])
 	if len(contAssignees) != 1 || contAssignees[0] != bobID {
 		t.Fatalf("continuation task assignee: got %v, want [%s]", contAssignees, bobID)
 	}
@@ -371,7 +371,7 @@ func TestRotationPoolDeduplication(t *testing.T) {
 	// Send duplicate IDs in pool.
 	task := createTask(t, env, "alpha", fmt.Sprintf(
 		`{"title":"Dedup","rotationPool":[%q,%q]}`, ownerID, ownerID))
-	pool := task["rotationPool"].([]any)
+	pool := jsonAs[[]any](t, task["rotationPool"])
 	if len(pool) != 1 {
 		t.Fatalf("pool should deduplicate, got %v", pool)
 	}
@@ -390,14 +390,14 @@ func TestRotationPoolInListResponse(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var page map[string]any
 	readJSON(t, resp, &page)
-	items := page["items"].([]any)
+	items := jsonAs[[]any](t, page["items"])
 	if len(items) != 2 {
 		t.Fatalf("expected 2 tasks, got %d", len(items))
 	}
 	for _, item := range items {
-		task := item.(map[string]any)
-		pool := task["rotationPool"].([]any)
-		title := task["title"].(string)
+		task := jsonAs[map[string]any](t, item)
+		pool := jsonAs[[]any](t, task["rotationPool"])
+		title := jsonAs[string](t, task["title"])
 		if title == "With pool" && len(pool) != 1 {
 			t.Fatalf("'With pool' task should have 1 pool member, got %v", pool)
 		}
@@ -419,7 +419,7 @@ func TestRotationOnFixedNonAccumulating(t *testing.T) {
 		`{"title":"Weekly","recurrenceType":"fixed_non_accumulating","recurrenceRule":"RRULE:FREQ=WEEKLY;BYDAY=SA","due":{"at":"2026-03-21T00:00:00Z","timezone":"UTC"},"assigneeIds":[%q],"rotationPool":[%q,%q,%q]}`,
 		ownerID, ownerID, bobID, charlieID,
 	))
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// Complete: assignee should rotate owner → bob, task resets in place.
 	resp := doRequest(t, env, "PATCH", "/spaces/alpha/tasks/"+taskID,
@@ -433,12 +433,12 @@ func TestRotationOnFixedNonAccumulating(t *testing.T) {
 		t.Fatal("fixed_non_accumulating should reset to initial status on completion")
 	}
 	// Assignee should have rotated.
-	assignees1 := after1["assigneeIds"].([]any)
+	assignees1 := jsonAs[[]any](t, after1["assigneeIds"])
 	if len(assignees1) != 1 || assignees1[0] != bobID {
 		t.Fatalf("after completion: got assignees %v, want [%s]", assignees1, bobID)
 	}
 	// Pool should be preserved (not cleared like fixed_accumulating).
-	pool1 := after1["rotationPool"].([]any)
+	pool1 := jsonAs[[]any](t, after1["rotationPool"])
 	if len(pool1) != 3 {
 		t.Fatalf("pool should be preserved, got %v", pool1)
 	}
@@ -456,7 +456,7 @@ func TestRotationExplicitAssigneesOverrideRotation(t *testing.T) {
 		`{"title":"Chore","recurrenceType":"completion_based","recurrenceRule":"RRULE:FREQ=DAILY;INTERVAL=7","assigneeIds":[%q],"rotationPool":[%q,%q,%q]}`,
 		ownerID, ownerID, bobID, charlieID,
 	))
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// Complete with explicit assigneeIds in the same request.
 	resp := doRequest(t, env, "PATCH", "/spaces/alpha/tasks/"+taskID,
@@ -464,7 +464,7 @@ func TestRotationExplicitAssigneesOverrideRotation(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var after map[string]any
 	readJSON(t, resp, &after)
-	assignees := after["assigneeIds"].([]any)
+	assignees := jsonAs[[]any](t, after["assigneeIds"])
 	// Explicit assigneeIds should override rotation.
 	if len(assignees) != 1 || assignees[0] != charlieID {
 		t.Fatalf("explicit assignees should override rotation: got %v, want [%s]", assignees, charlieID)

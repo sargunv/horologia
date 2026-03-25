@@ -23,11 +23,11 @@ func TestTaskStatusesList(t *testing.T) {
 		t.Fatalf("got %d statuses, want 2", len(items))
 	}
 	// Default statuses: todo (initial), done (completion).
-	first := items[0].(map[string]any)
+	first := jsonAs[map[string]any](t, items[0])
 	if first["name"] != "todo" || first["category"] != "initial" {
 		t.Errorf("first status = %v, want todo/initial", first)
 	}
-	second := items[1].(map[string]any)
+	second := jsonAs[map[string]any](t, items[1])
 	if second["name"] != "done" || second["category"] != "completion" {
 		t.Errorf("second status = %v, want done/completion", second)
 	}
@@ -48,14 +48,14 @@ func TestTaskStatusesReplaceBasic(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var body map[string]any
 	readJSON(t, resp, &body)
-	items := body["items"].([]any)
+	items := jsonAs[[]any](t, body["items"])
 	if len(items) != 4 {
 		t.Fatalf("got %d statuses, want 4", len(items))
 	}
 	// Verify ordering by position.
 	names := make([]string, len(items))
 	for i, item := range items {
-		names[i] = item.(map[string]any)["name"].(string)
+		names[i] = jsonAs[string](t, jsonAs[map[string]any](t, item)["name"])
 	}
 	if names[0] != "backlog" || names[1] != "in-progress" || names[2] != "review" || names[3] != "done" {
 		t.Errorf("statuses = %v, want [backlog in-progress review done]", names)
@@ -76,11 +76,11 @@ func TestTaskStatusesReplaceReorderExisting(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var body map[string]any
 	readJSON(t, resp, &body)
-	items := body["items"].([]any)
-	if items[0].(map[string]any)["name"] != "done" {
+	items := jsonAs[[]any](t, body["items"])
+	if jsonAs[map[string]any](t, items[0])["name"] != "done" {
 		t.Errorf("first status = %v, want done", items[0])
 	}
-	if items[1].(map[string]any)["name"] != "todo" {
+	if jsonAs[map[string]any](t, items[1])["name"] != "todo" {
 		t.Errorf("second status = %v, want todo", items[1])
 	}
 }
@@ -116,7 +116,7 @@ func TestTaskStatusesReplaceAllowRemoveUnusedStatus(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var body map[string]any
 	readJSON(t, resp, &body)
-	items := body["items"].([]any)
+	items := jsonAs[[]any](t, body["items"])
 	if len(items) != 2 {
 		t.Fatalf("got %d statuses, want 2", len(items))
 	}
@@ -188,9 +188,9 @@ func TestTaskStatusesReplaceUpdateCategory(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var body map[string]any
 	readJSON(t, resp, &body)
-	items := body["items"].([]any)
+	items := jsonAs[[]any](t, body["items"])
 	for _, item := range items {
-		m := item.(map[string]any)
+		m := jsonAs[map[string]any](t, item)
 		if m["name"] == "todo" {
 			if m["category"] != "intermediate" {
 				t.Errorf("category for todo = %v, want intermediate", m["category"])
@@ -218,11 +218,11 @@ func TestTaskStatusesCrossSpaceIsolation(t *testing.T) {
 	assertStatus(t, resp2, http.StatusOK)
 	var bodyB map[string]any
 	readJSON(t, resp2, &bodyB)
-	items := bodyB["items"].([]any)
+	items := jsonAs[[]any](t, bodyB["items"])
 	if len(items) != 2 {
 		t.Fatalf("space B: got %d statuses, want 2", len(items))
 	}
-	first := items[0].(map[string]any)
+	first := jsonAs[map[string]any](t, items[0])
 	if first["name"] != "todo" {
 		t.Errorf("space B first status = %v, want todo", first["name"])
 	}
@@ -281,13 +281,13 @@ func TestTaskEffortLevelsReplaceBasic(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var body map[string]any
 	readJSON(t, resp, &body)
-	items := body["items"].([]any)
+	items := jsonAs[[]any](t, body["items"])
 	if len(items) != 5 {
 		t.Fatalf("got %d effort levels, want 5", len(items))
 	}
 	names := make([]string, len(items))
 	for i, item := range items {
-		names[i] = item.(map[string]any)["name"].(string)
+		names[i] = jsonAs[string](t, jsonAs[map[string]any](t, item)["name"])
 	}
 	if names[0] != "xs" || names[4] != "xl" {
 		t.Errorf("effort levels = %v", names)
@@ -302,7 +302,7 @@ func TestTaskEffortLevelsReplaceEmpty(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var body map[string]any
 	readJSON(t, resp, &body)
-	items := body["items"].([]any)
+	items := jsonAs[[]any](t, body["items"])
 	if len(items) != 0 {
 		t.Fatalf("got %d effort levels, want 0", len(items))
 	}
@@ -313,7 +313,7 @@ func TestTaskEffortLevelsReplaceNullsTasksOnRemoval(t *testing.T) {
 	createSpace(t, env, "eff", "Effort Test")
 
 	task := createTask(t, env, "eff", `{"title":"Task","effort":"medium"}`)
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// Remove "medium" from the list.
 	resp := doRequest(t, env, "PUT", "/spaces/eff/task-effort-levels", `{
@@ -368,7 +368,7 @@ func TestTaskEffortLevelsCrossSpaceIsolation(t *testing.T) {
 	assertStatus(t, resp2, http.StatusOK)
 	var bodyB map[string]any
 	readJSON(t, resp2, &bodyB)
-	items := bodyB["items"].([]any)
+	items := jsonAs[[]any](t, bodyB["items"])
 	if len(items) != 3 {
 		t.Fatalf("space B: got %d effort levels, want 3", len(items))
 	}
@@ -418,7 +418,7 @@ func TestTaskPriorityLevelsReplaceBasic(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var body map[string]any
 	readJSON(t, resp, &body)
-	items := body["items"].([]any)
+	items := jsonAs[[]any](t, body["items"])
 	if len(items) != 4 {
 		t.Fatalf("got %d priority levels, want 4", len(items))
 	}
@@ -429,7 +429,7 @@ func TestTaskPriorityLevelsReplaceNullsTasksOnRemoval(t *testing.T) {
 	createSpace(t, env, "pri", "Priority Test")
 
 	task := createTask(t, env, "pri", `{"title":"Task","priority":"high"}`)
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// Remove "high" from the list.
 	resp := doRequest(t, env, "PUT", "/spaces/pri/task-priority-levels", `{
@@ -634,7 +634,7 @@ func TestTaskEffortInListResponse(t *testing.T) {
 		if !ok {
 			t.Fatal("task item wrong type")
 		}
-		title, _ := task["title"].(string)
+		title := jsonAs[string](t, task["title"])
 		if title == "With effort" {
 			if task["effort"] != "large" {
 				t.Errorf("task with effort: effort = %v, want large", task["effort"])

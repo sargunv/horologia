@@ -29,7 +29,7 @@ func TestAuthLoginSuccess(t *testing.T) {
 	if result["token"] == nil || result["token"] == "" {
 		t.Error("expected a token in response")
 	}
-	user := result["user"].(map[string]any)
+	user := jsonAs[map[string]any](t, result["user"])
 	if user["email"] != "test@example.com" {
 		t.Errorf("email = %v, want test@example.com", user["email"])
 	}
@@ -77,7 +77,7 @@ func TestAuthTokenCreate(t *testing.T) {
 	if result["token"] == nil || result["token"] == "" {
 		t.Error("expected token in response")
 	}
-	authToken := result["authToken"].(map[string]any)
+	authToken := jsonAs[map[string]any](t, result["authToken"])
 	if authToken["name"] != "my-token" {
 		t.Errorf("name = %v, want my-token", authToken["name"])
 	}
@@ -96,7 +96,7 @@ func TestAuthTokenList(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var page map[string]any
 	readJSON(t, resp, &page)
-	items := page["items"].([]any)
+	items := jsonAs[[]any](t, page["items"])
 	// Should include the setup session token + 2 API tokens = 3.
 	if len(items) != 3 {
 		t.Fatalf("got %d items, want 3", len(items))
@@ -111,8 +111,8 @@ func TestAuthTokenDelete(t *testing.T) {
 	assertStatus(t, resp, http.StatusCreated)
 	var result map[string]any
 	readJSON(t, resp, &result)
-	rawToken := result["token"].(string)
-	tokenID := result["authToken"].(map[string]any)["id"].(string)
+	rawToken := jsonAs[string](t, result["token"])
+	tokenID := jsonAs[string](t, jsonAs[map[string]any](t, result["authToken"])["id"])
 
 	// Verify the new token works.
 	assertStatusClose(t, doRequestAs(t, env, rawToken, "GET", "/users/me", ""), http.StatusOK)
@@ -132,7 +132,7 @@ func TestAuthTokenDeleteOtherUser(t *testing.T) {
 	assertStatus(t, resp, http.StatusCreated)
 	var result map[string]any
 	readJSON(t, resp, &result)
-	tokenID := result["authToken"].(map[string]any)["id"].(string)
+	tokenID := jsonAs[string](t, jsonAs[map[string]any](t, result["authToken"])["id"])
 
 	// Second user tries to delete owner's token.
 	userToken := createTestUser(t, env, "other@example.com", "Other", "pass123")
@@ -154,9 +154,9 @@ func TestAuthTokenListIsolation(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var page map[string]any
 	readJSON(t, resp, &page)
-	items := page["items"].([]any)
+	items := jsonAs[[]any](t, page["items"])
 	for _, item := range items {
-		tok := item.(map[string]any)
+		tok := jsonAs[map[string]any](t, item)
 		if tok["name"] == "owner-token" {
 			t.Fatal("second user can see owner's token")
 		}

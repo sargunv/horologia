@@ -136,7 +136,7 @@ func createTestUser(t *testing.T, env *testEnv, email, name, password string) st
 	}
 	var result map[string]any
 	readJSON(t, resp, &result)
-	return result["token"].(string)
+	return jsonAs[string](t, result["token"])
 }
 
 // getUserID calls GET /users/me with the given token and returns the user ID.
@@ -146,7 +146,7 @@ func getUserID(t *testing.T, env *testEnv, token string) string {
 	assertStatus(t, resp, http.StatusOK)
 	var me map[string]any
 	readJSON(t, resp, &me)
-	return me["id"].(string)
+	return jsonAs[string](t, me["id"])
 }
 
 // createAndAddMember creates a test user, resolves their ID, and adds them to
@@ -158,6 +158,16 @@ func createAndAddMember(t *testing.T, env *testEnv, spaceSlug, email, name, pass
 	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/"+spaceSlug+"/members",
 		`{"userId":"`+userID+`","role":"`+role+`"}`), http.StatusCreated)
 	return token, userID
+}
+
+// jsonAs is a generic helper that performs a checked type assertion in tests.
+func jsonAs[T any](t *testing.T, v any) T {
+	t.Helper()
+	result, ok := v.(T)
+	if !ok {
+		t.Fatalf("expected %T, got %T", result, v)
+	}
+	return result
 }
 
 func readJSON(t *testing.T, resp *http.Response, v any) {

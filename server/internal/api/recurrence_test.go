@@ -14,7 +14,7 @@ func dueAtFromResponse(task map[string]any) (string, bool) {
 	if due == nil {
 		return "", false
 	}
-	return due.(map[string]any)["at"].(string), true
+	return due.(map[string]any)["at"].(string), true //nolint:forcetypeassert // helper with known shape
 }
 
 // dueTzFromResponse extracts the "timezone" string from a task's nested "due" field.
@@ -24,7 +24,7 @@ func dueTzFromResponse(task map[string]any) (string, bool) {
 	if due == nil {
 		return "", false
 	}
-	return due.(map[string]any)["timezone"].(string), true
+	return due.(map[string]any)["timezone"].(string), true //nolint:forcetypeassert // helper with known shape
 }
 
 func TestRecurrenceOneOffDefault(t *testing.T) {
@@ -107,7 +107,7 @@ func TestRecurrenceCompletionBased(t *testing.T) {
 	if task["recurrenceRule"] != "FREQ=WEEKLY" {
 		t.Fatalf("got recurrenceRule %v, want FREQ=WEEKLY", task["recurrenceRule"])
 	}
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// Complete the task by setting status to "done".
 	resp := doRequest(t, env, "PATCH", "/spaces/rec-cb/tasks/"+taskID, `{"status":"done"}`)
@@ -127,7 +127,7 @@ func TestRecurrenceCompletionBased(t *testing.T) {
 	if updated["due"] == nil {
 		t.Fatal("expected dueAt to be set after completion")
 	}
-	newDue := updated["due"].(map[string]any)["at"].(string)
+	newDue := jsonAs[string](t, jsonAs[map[string]any](t, updated["due"])["at"])
 	parsedDue, err := time.Parse(time.RFC3339, newDue)
 	if err != nil {
 		t.Fatalf("parse dueAt %q: %v", newDue, err)
@@ -147,7 +147,7 @@ func TestRecurrenceFixedNonAccumulating(t *testing.T) {
 	task := createTask(t, env, "rec-fna",
 		`{"title":"Saturday task","recurrenceType":"fixed_non_accumulating","recurrenceRule":"FREQ=WEEKLY;BYDAY=SA","due":{"at":"2026-03-21T00:00:00Z","timezone":"UTC"}}`)
 
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// Complete the task.
 	resp := doRequest(t, env, "PATCH", "/spaces/rec-fna/tasks/"+taskID, `{"status":"done"}`)
@@ -167,7 +167,7 @@ func TestRecurrenceFixedNonAccumulating(t *testing.T) {
 	if updated["due"] == nil {
 		t.Fatal("expected dueAt to be set")
 	}
-	parsedDue, err := time.Parse(time.RFC3339, updated["due"].(map[string]any)["at"].(string))
+	parsedDue, err := time.Parse(time.RFC3339, jsonAs[string](t, jsonAs[map[string]any](t, updated["due"])["at"]))
 	if err != nil {
 		t.Fatalf("parse dueAt: %v", err)
 	}
@@ -184,7 +184,7 @@ func TestRecurrenceOneOffCompletion(t *testing.T) {
 	createSpace(t, env, "rec-oc", "Rec One Off Complete")
 
 	task := createTask(t, env, "rec-oc", `{"title":"One-off task"}`)
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// Complete the task.
 	resp := doRequest(t, env, "PATCH", "/spaces/rec-oc/tasks/"+taskID, `{"status":"done"}`)
@@ -208,7 +208,7 @@ func TestRecurrenceFixedAccumulatingCompletion(t *testing.T) {
 
 	task := createTask(t, env, "rec-fa",
 		`{"title":"Monthly task","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=MONTHLY","due":{"at":"2026-04-01T00:00:00Z","timezone":"UTC"}}`)
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// Complete the task.
 	resp := doRequest(t, env, "PATCH", "/spaces/rec-fa/tasks/"+taskID, `{"status":"done"}`)
@@ -233,8 +233,8 @@ func TestRecurrenceFixedAccumulatingCompletion(t *testing.T) {
 	// A new fixed_accumulating task should have been spawned.
 	// Check via the spawns relation on the completed task.
 	var spawnsRelation map[string]any
-	for _, rel := range updated["relations"].([]any) {
-		r := rel.(map[string]any)
+	for _, rel := range jsonAs[[]any](t, updated["relations"]) {
+		r := jsonAs[map[string]any](t, rel)
 		if r["kind"] == "spawns" {
 			spawnsRelation = r
 			break
@@ -245,7 +245,7 @@ func TestRecurrenceFixedAccumulatingCompletion(t *testing.T) {
 	}
 
 	// Fetch the spawned task.
-	spawnedID := spawnsRelation["taskId"].(string)
+	spawnedID := jsonAs[string](t, spawnsRelation["taskId"])
 	resp2 := doRequest(t, env, "GET", "/spaces/rec-fa/tasks/"+spawnedID, "")
 	assertStatus(t, resp2, http.StatusOK)
 	var spawned map[string]any
@@ -268,7 +268,7 @@ func TestRecurrenceNoRetriggerOnNonTransition(t *testing.T) {
 
 	task := createTask(t, env, "rec-nrt",
 		`{"title":"Weekly chore","recurrenceType":"completion_based","recurrenceRule":"FREQ=WEEKLY","due":{"at":"2026-03-23T00:00:00Z","timezone":"UTC"}}`)
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// Complete the task.
 	resp := doRequest(t, env, "PATCH", "/spaces/rec-nrt/tasks/"+taskID, `{"status":"done"}`)
@@ -296,8 +296,8 @@ func TestRecurrenceOnDependencyTrigger(t *testing.T) {
 	// Create task A (one_off) and task B (on_dependency).
 	taskA := createTask(t, env, "rec-dep", `{"title":"Load dishwasher"}`)
 	taskB := createTask(t, env, "rec-dep", `{"title":"Unload dishwasher","recurrenceType":"on_dependency"}`)
-	taskAID := taskA["id"].(string)
-	taskBID := taskB["id"].(string)
+	taskAID := jsonAs[string](t, taskA["id"])
+	taskBID := jsonAs[string](t, taskB["id"])
 
 	// Complete B first so it's in "done" state.
 	assertStatusClose(t, doRequest(t, env, "PATCH", "/spaces/rec-dep/tasks/"+taskBID, `{"status":"done"}`), http.StatusOK)
@@ -325,8 +325,8 @@ func TestRecurrenceTriggersRelationKind(t *testing.T) {
 
 	taskA := createTask(t, env, "rec-trk", `{"title":"Task A"}`)
 	taskB := createTask(t, env, "rec-trk", `{"title":"Task B"}`)
-	taskAID := taskA["id"].(string)
-	taskBID := taskB["id"].(string)
+	taskAID := jsonAs[string](t, taskA["id"])
+	taskBID := jsonAs[string](t, taskB["id"])
 
 	// Create triggers relation.
 	createRelation(t, env, "rec-trk", taskAID, "triggers", taskBID)
@@ -345,7 +345,7 @@ func TestRecurrenceUpdateTypeFromOneOff(t *testing.T) {
 	createSpace(t, env, "rec-upd", "Rec Update")
 
 	task := createTask(t, env, "rec-upd", `{"title":"Was one-off"}`)
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// Update to completion_based with a rule.
 	resp := doRequest(t, env, "PATCH", "/spaces/rec-upd/tasks/"+taskID,
@@ -367,7 +367,7 @@ func TestRecurrenceUpdateTypeRequiresRule(t *testing.T) {
 	createSpace(t, env, "rec-ur", "Rec Update Req")
 
 	task := createTask(t, env, "rec-ur", `{"title":"Was one-off"}`)
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// Changing to completion_based without a rule should fail.
 	assertStatusClose(t,
@@ -385,7 +385,7 @@ func TestRecurrenceCrossSpaceIsolation(t *testing.T) {
 		`{"title":"Recurring","recurrenceType":"completion_based","recurrenceRule":"FREQ=WEEKLY"}`)
 
 	// Task in space A should not be accessible from space B.
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 	assertStatusClose(t,
 		doRequest(t, env, "GET", "/spaces/rec-iso-b/tasks/"+taskID, ""),
 		http.StatusNotFound)
@@ -399,7 +399,7 @@ func TestRecurrenceOnDependencyDirectCompletion(t *testing.T) {
 	// It should stay at "done" — on_dependency reset only happens when
 	// the trigger source completes, not when the task itself is completed.
 	task := createTask(t, env, "rec-odc", `{"title":"Dependent task","recurrenceType":"on_dependency"}`)
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	resp := doRequest(t, env, "PATCH", "/spaces/rec-odc/tasks/"+taskID, `{"status":"done"}`)
 	assertStatus(t, resp, http.StatusOK)
@@ -432,7 +432,7 @@ func TestRecurrenceUntilExhaustion(t *testing.T) {
 	// already exhausted — the task should stay at the completion status.
 	task := createTask(t, env, "rec-unt",
 		`{"title":"Expired","recurrenceType":"completion_based","recurrenceRule":"FREQ=WEEKLY;UNTIL=20200101T000000Z","due":{"at":"2026-03-23T00:00:00Z","timezone":"UTC"}}`)
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	resp := doRequest(t, env, "PATCH", "/spaces/rec-unt/tasks/"+taskID, `{"status":"done"}`)
 	assertStatus(t, resp, http.StatusOK)
@@ -454,7 +454,7 @@ func TestRecurrenceDoubleCompletion(t *testing.T) {
 
 	task := createTask(t, env, "rec-dbl",
 		`{"title":"Every 3 days","recurrenceType":"completion_based","recurrenceRule":"FREQ=DAILY;INTERVAL=3","due":{"at":"2026-03-23T00:00:00Z","timezone":"UTC"}}`)
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// First completion — should reset to todo with due date 3 days from now.
 	resp1 := doRequest(t, env, "PATCH", "/spaces/rec-dbl/tasks/"+taskID, `{"status":"done"}`)
@@ -465,7 +465,7 @@ func TestRecurrenceDoubleCompletion(t *testing.T) {
 	if first["status"] != "todo" {
 		t.Fatalf("first completion: got status %v, want todo", first["status"])
 	}
-	firstDue, err := time.Parse(time.RFC3339, first["due"].(map[string]any)["at"].(string))
+	firstDue, err := time.Parse(time.RFC3339, jsonAs[string](t, jsonAs[map[string]any](t, first["due"])["at"]))
 	if err != nil {
 		t.Fatalf("parse first dueAt: %v", err)
 	}
@@ -505,7 +505,7 @@ func TestRecurrenceAutoCleanRuleOnTypeChange(t *testing.T) {
 	// Create a completion_based task with a rule.
 	task := createTask(t, env, "rec-acr",
 		`{"title":"Was recurring","recurrenceType":"completion_based","recurrenceRule":"FREQ=WEEKLY"}`)
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// Change type to one_off WITHOUT explicitly nulling recurrenceRule.
 	// The server should auto-clear the rule.
@@ -530,7 +530,7 @@ func TestRecurrenceFixedAccumulatingDueDateAdvances(t *testing.T) {
 	// Use a past due date so the next occurrence is clearly in the future.
 	task := createTask(t, env, "rec-fap",
 		`{"title":"Monthly","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=MONTHLY","due":{"at":"2026-01-01T00:00:00Z","timezone":"UTC"}}`)
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	resp := doRequest(t, env, "PATCH", "/spaces/rec-fap/tasks/"+taskID, `{"status":"done"}`)
 	assertStatus(t, resp, http.StatusOK)
@@ -544,10 +544,10 @@ func TestRecurrenceFixedAccumulatingDueDateAdvances(t *testing.T) {
 
 	// Find the spawned task via the spawns relation.
 	var spawnedID string
-	for _, rel := range updated["relations"].([]any) {
-		r := rel.(map[string]any)
+	for _, rel := range jsonAs[[]any](t, updated["relations"]) {
+		r := jsonAs[map[string]any](t, rel)
 		if r["kind"] == "spawns" {
-			spawnedID = r["taskId"].(string)
+			spawnedID = jsonAs[string](t, r["taskId"])
 			break
 		}
 	}
@@ -564,7 +564,7 @@ func TestRecurrenceFixedAccumulatingDueDateAdvances(t *testing.T) {
 	if spawned["due"] == nil {
 		t.Fatal("spawned task should have a due date")
 	}
-	newDue := spawned["due"].(map[string]any)["at"].(string)
+	newDue := jsonAs[string](t, jsonAs[map[string]any](t, spawned["due"])["at"])
 	parsedDue, err := time.Parse(time.RFC3339, newDue)
 	if err != nil {
 		t.Fatalf("parse dueAt: %v", err)
@@ -598,7 +598,7 @@ func TestRecurrenceSameStatusNoRetrigger(t *testing.T) {
 	// Complete a one_off task, then PATCH status "done" again.
 	// The second PATCH should not update lastCompletedAt.
 	task := createTask(t, env, "rec-snr", `{"title":"One-off"}`)
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	resp := doRequest(t, env, "PATCH", "/spaces/rec-snr/tasks/"+taskID, `{"status":"done"}`)
 	assertStatus(t, resp, http.StatusOK)
@@ -625,7 +625,7 @@ func TestRecurrenceCompletionBasedNonUTCTimezone(t *testing.T) {
 	// Due at midnight Eastern (which is 05:00 UTC during EST).
 	task := createTask(t, env, "rec-tz",
 		`{"title":"Weekly chore","recurrenceType":"completion_based","recurrenceRule":"FREQ=WEEKLY","due":{"at":"2026-03-23T05:00:00Z","timezone":"America/New_York"}}`)
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// Verify timezone is stored and returned.
 	tz, ok := dueTzFromResponse(task)
@@ -676,7 +676,7 @@ func TestRecurrenceFixedNonAccumulatingNonUTCTimezone(t *testing.T) {
 	// Due at midnight Pacific (08:00 UTC during PST).
 	task := createTask(t, env, "rec-ftz",
 		`{"title":"Saturday task","recurrenceType":"fixed_non_accumulating","recurrenceRule":"FREQ=WEEKLY;BYDAY=SA","due":{"at":"2026-03-21T08:00:00Z","timezone":"America/Los_Angeles"}}`)
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// Complete the task.
 	resp := doRequest(t, env, "PATCH", "/spaces/rec-ftz/tasks/"+taskID, `{"status":"done"}`)
@@ -730,7 +730,7 @@ func TestDueTimezoneRoundTrip(t *testing.T) {
 	}
 
 	// Update to a different timezone.
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 	resp := doRequest(t, env, "PATCH", "/spaces/due-rt/tasks/"+taskID,
 		`{"due":{"at":"2026-06-15T07:00:00Z","timezone":"America/Los_Angeles"}}`)
 	assertStatus(t, resp, http.StatusOK)
@@ -770,7 +770,7 @@ func TestFixedAccumulatingCompletionCopiesFields(t *testing.T) {
 	// Create task with all user-settable fields.
 	task := createTask(t, env, "fa-copy",
 		`{"title":"Chore","description":"Do the thing","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY","due":{"at":"2026-04-01T00:00:00Z","timezone":"UTC"},"tags":["weekly"]}`)
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// Complete it.
 	resp := doRequest(t, env, "PATCH", "/spaces/fa-copy/tasks/"+taskID, `{"status":"done"}`)
@@ -780,10 +780,10 @@ func TestFixedAccumulatingCompletionCopiesFields(t *testing.T) {
 
 	// Find spawned task.
 	var spawnedID string
-	for _, rel := range updated["relations"].([]any) {
-		r := rel.(map[string]any)
+	for _, rel := range jsonAs[[]any](t, updated["relations"]) {
+		r := jsonAs[map[string]any](t, rel)
 		if r["kind"] == "spawns" {
-			spawnedID = r["taskId"].(string)
+			spawnedID = jsonAs[string](t, r["taskId"])
 			break
 		}
 	}
@@ -803,7 +803,7 @@ func TestFixedAccumulatingCompletionCopiesFields(t *testing.T) {
 	if spawned["description"] != "Do the thing" {
 		t.Errorf("description = %v, want Do the thing", spawned["description"])
 	}
-	tags := spawned["tags"].([]any)
+	tags := jsonAs[[]any](t, spawned["tags"])
 	if len(tags) != 1 || tags[0] != "weekly" {
 		t.Errorf("tags = %v, want [weekly]", tags)
 	}
@@ -813,8 +813,8 @@ func TestFixedAccumulatingCompletionCopiesFields(t *testing.T) {
 
 	// Spawned task should have a spawned_by relation back.
 	var hasSpawnedBy bool
-	for _, rel := range spawned["relations"].([]any) {
-		r := rel.(map[string]any)
+	for _, rel := range jsonAs[[]any](t, spawned["relations"]) {
+		r := jsonAs[map[string]any](t, rel)
 		if r["kind"] == "spawned_by" && r["taskId"] == taskID {
 			hasSpawnedBy = true
 			break
@@ -831,12 +831,12 @@ func TestFixedAccumulatingCompletionCopiesRelations(t *testing.T) {
 
 	// Create a parent task.
 	parent := createTask(t, env, "fa-rel", `{"title":"Parent"}`)
-	parentID := parent["id"].(string)
+	parentID := jsonAs[string](t, parent["id"])
 
 	// Create the accumulating task.
 	task := createTask(t, env, "fa-rel",
 		`{"title":"Child","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY","due":{"at":"2026-04-01T00:00:00Z","timezone":"UTC"}}`)
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// Create a parent_of relation: parent -> task.
 	resp := doRequest(t, env, "POST", "/spaces/fa-rel/tasks/"+parentID+"/relations",
@@ -845,7 +845,7 @@ func TestFixedAccumulatingCompletionCopiesRelations(t *testing.T) {
 
 	// Create a duplicates relation (should NOT be copied).
 	other := createTask(t, env, "fa-rel", `{"title":"Other"}`)
-	otherID := other["id"].(string)
+	otherID := jsonAs[string](t, other["id"])
 	resp = doRequest(t, env, "POST", "/spaces/fa-rel/tasks/"+taskID+"/relations",
 		`{"kind":"duplicates","taskId":"`+otherID+`"}`)
 	assertStatus(t, resp, http.StatusCreated)
@@ -858,10 +858,10 @@ func TestFixedAccumulatingCompletionCopiesRelations(t *testing.T) {
 
 	// Find spawned task.
 	var spawnedID string
-	for _, rel := range updated["relations"].([]any) {
-		r := rel.(map[string]any)
+	for _, rel := range jsonAs[[]any](t, updated["relations"]) {
+		r := jsonAs[map[string]any](t, rel)
 		if r["kind"] == "spawns" {
-			spawnedID = r["taskId"].(string)
+			spawnedID = jsonAs[string](t, r["taskId"])
 			break
 		}
 	}
@@ -876,8 +876,8 @@ func TestFixedAccumulatingCompletionCopiesRelations(t *testing.T) {
 
 	// Check relations on spawned task.
 	var hasParent, hasDuplicates, hasSpawnedBy bool
-	for _, rel := range spawned["relations"].([]any) {
-		r := rel.(map[string]any)
+	for _, rel := range jsonAs[[]any](t, spawned["relations"]) {
+		r := jsonAs[map[string]any](t, rel)
 		switch r["kind"] {
 		case "child_of":
 			if r["taskId"] == parentID {
@@ -908,7 +908,7 @@ func TestFixedAccumulatingCronBackfill(t *testing.T) {
 	// Create a weekly task with due date 3 weeks in the past.
 	task := createTask(t, env, "fa-cron",
 		`{"title":"Weekly","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY","due":{"at":"2026-03-03T00:00:00Z","timezone":"UTC"}}`)
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// Directly call processOverdueTasks to simulate the cron.
 	env.Handler.ProcessOverdueTasksForTest(context.Background())
@@ -928,7 +928,7 @@ func TestFixedAccumulatingCronBackfill(t *testing.T) {
 	assertStatus(t, resp2, http.StatusOK)
 	var page map[string]any
 	readJSON(t, resp2, &page)
-	items := page["items"].([]any)
+	items := jsonAs[[]any](t, page["items"])
 
 	// Due 2026-03-03, missed: 2026-03-10, 2026-03-17, 2026-03-24.
 	// Continuation: next week after now (2026-03-31).
@@ -940,7 +940,7 @@ func TestFixedAccumulatingCronBackfill(t *testing.T) {
 	// Find the continuing fixed_accumulating task.
 	var continuation map[string]any
 	for _, item := range items {
-		task := item.(map[string]any)
+		task := jsonAs[map[string]any](t, item)
 		if task["recurrenceType"] == "fixed_accumulating" {
 			continuation = task
 			break
@@ -981,12 +981,12 @@ func TestFixedAccumulatingCronIdempotent(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 	var page map[string]any
 	readJSON(t, resp, &page)
-	items := page["items"].([]any)
+	items := jsonAs[[]any](t, page["items"])
 
 	// Count fixed_accumulating tasks — should be exactly 1.
 	var accumulatingCount int
 	for _, item := range items {
-		task := item.(map[string]any)
+		task := jsonAs[map[string]any](t, item)
 		if task["recurrenceType"] == "fixed_accumulating" {
 			accumulatingCount++
 		}
@@ -1003,7 +1003,7 @@ func TestFixedAccumulatingCronExhaustedRule(t *testing.T) {
 	// Create a task with UNTIL in the past — rule is already exhausted.
 	task := createTask(t, env, "fa-exh",
 		`{"title":"Expired","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY;UNTIL=20260310T000000Z","due":{"at":"2026-03-03T00:00:00Z","timezone":"UTC"}}`)
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	env.Handler.ProcessOverdueTasksForTest(context.Background())
 
@@ -1026,7 +1026,7 @@ func TestFixedAccumulatingCronNonUTCTimezone(t *testing.T) {
 	// Due date is 2 weeks in the past.
 	task := createTask(t, env, "fa-tz",
 		`{"title":"Weekly Eastern","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY","due":{"at":"2026-03-09T05:00:00Z","timezone":"America/New_York"}}`)
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	env.Handler.ProcessOverdueTasksForTest(context.Background())
 
@@ -1046,8 +1046,8 @@ func TestFixedAccumulatingCronNonUTCTimezone(t *testing.T) {
 	readJSON(t, resp2, &page)
 
 	var continuation map[string]any
-	for _, item := range page["items"].([]any) {
-		task := item.(map[string]any)
+	for _, item := range jsonAs[[]any](t, page["items"]) {
+		task := jsonAs[map[string]any](t, item)
 		if task["recurrenceType"] == "fixed_accumulating" {
 			continuation = task
 			break
@@ -1086,7 +1086,7 @@ func TestFixedAccumulatingCronAfterCompletion(t *testing.T) {
 	// Create a task with due date in the past.
 	task := createTask(t, env, "fa-race",
 		`{"title":"Weekly","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY","due":{"at":"2026-03-17T00:00:00Z","timezone":"UTC"}}`)
-	taskID := task["id"].(string)
+	taskID := jsonAs[string](t, task["id"])
 
 	// Complete the task via HTTP — this converts it to one_off and spawns a new task.
 	resp := doRequest(t, env, "PATCH", "/spaces/fa-race/tasks/"+taskID, `{"status":"done"}`)
@@ -1100,12 +1100,12 @@ func TestFixedAccumulatingCronAfterCompletion(t *testing.T) {
 	assertStatus(t, resp2, http.StatusOK)
 	var page map[string]any
 	readJSON(t, resp2, &page)
-	items := page["items"].([]any)
+	items := jsonAs[[]any](t, page["items"])
 
 	// Count fixed_accumulating tasks — should be exactly 1 (the one spawned by completion).
 	var accumulatingCount int
 	for _, item := range items {
-		task := item.(map[string]any)
+		task := jsonAs[map[string]any](t, item)
 		if task["recurrenceType"] == "fixed_accumulating" {
 			accumulatingCount++
 		}
