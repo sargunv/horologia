@@ -112,8 +112,9 @@ func ComputeNextDueAt(recurrenceType apigen.TaskRecurrenceType, recurrenceRule *
 		return nextRRuleOccurrence(*recurrenceRule, dtstart, nowInTz)
 	case apigen.TaskRecurrenceTypeOneOff, apigen.TaskRecurrenceTypeOnDependency:
 		return nil, nil
+	default:
+		return nil, fmt.Errorf("unhandled recurrence type %q", recurrenceType)
 	}
-	return nil, nil
 }
 
 // nextRRuleOccurrence parses the rule, sets dtstart, and finds the first

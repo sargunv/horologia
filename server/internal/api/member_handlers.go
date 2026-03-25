@@ -207,7 +207,7 @@ func (h *Handler) ensureNotLastAdmin(ctx context.Context, q *dbgen.Queries, spac
 	if err != nil {
 		return err
 	}
-	if member.Role != "admin" {
+	if apigen.SpaceRole(member.Role) != apigen.SpaceRoleAdmin {
 		return nil // not an admin, no risk
 	}
 	count, err := q.CountSpaceAdmins(ctx, spaceSlug)

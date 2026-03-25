@@ -75,7 +75,7 @@ func CreateSpaceWithDefaults(ctx context.Context, db *sql.DB, slug, name, descri
 	if _, err := q.CreateSpaceMember(ctx, dbgen.CreateSpaceMemberParams{
 		SpaceSlug: space.Slug,
 		UserID:    creatorUserID,
-		Role:      "admin",
+		Role:      string(apigen.SpaceRoleAdmin),
 		CreatedAt: now,
 	}); err != nil {
 		return dbgen.Space{}, fmt.Errorf("create admin member: %w", err)
