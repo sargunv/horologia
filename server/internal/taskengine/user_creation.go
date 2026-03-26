@@ -10,6 +10,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 // CreateUserWithPassword creates a user with a bcrypt-hashed password.
@@ -18,7 +19,7 @@ func CreateUserWithPassword(ctx context.Context, pool *pgxpool.Pool, email, name
 	if err != nil {
 		return dbgen.User{}, fmt.Errorf("hash password: %w", err)
 	}
-	now := pgtype.Timestamptz{Time: time.Now(), Valid: true}
+	now := types.Timestamptz(time.Now())
 
 	q := dbgen.New(pool)
 	return q.CreateUser(ctx, dbgen.CreateUserParams{

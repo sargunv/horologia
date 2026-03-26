@@ -4,9 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgtype"
-
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 // AdvanceRotation derives the next assignee from the rotation pool.
@@ -57,7 +56,7 @@ func ApplyPoolRotation(ctx context.Context, q *dbgen.Queries, taskID int64, now 
 	if err != nil {
 		return err
 	}
-	nowTz := pgtype.Timestamptz{Time: now, Valid: true}
+	nowTz := types.Timestamptz(now)
 	nextAssignees := AdvanceRotation(pool, currentAssignees, 0)
 	if err := q.DeleteTaskAssignees(ctx, taskID); err != nil {
 		return err

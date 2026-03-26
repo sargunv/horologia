@@ -76,7 +76,7 @@ func HandleCompletionTransition(
 	}
 
 	result.JustCompleted = true
-	result.LastCompletedAt = pgtype.Timestamptz{Time: now, Valid: true}
+	result.LastCompletedAt = types.Timestamptz(now)
 
 	existingDue := types.NewDueDate(existing.DueAt, existing.DueTz)
 

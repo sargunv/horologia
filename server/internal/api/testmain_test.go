@@ -30,6 +30,8 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
+	testDSN = "postgres://postgres:postgres@localhost:15432/tend_test?sslmode=disable" //nolint:gosec // test credentials for embedded postgres
+
 	// Create and migrate the template database once.
 	if err := setupTemplate(); err != nil {
 		fmt.Fprintf(os.Stderr, "setup template: %v\n", err)
@@ -62,7 +64,7 @@ func setupTemplate() error {
 	}
 
 	templateDSN := fmt.Sprintf("postgres://postgres:postgres@localhost:15432/%s?sslmode=disable", testTemplateName)
-	sqlDB, err := database.OpenSQL(templateDSN)
+	sqlDB, err := database.OpenSQL(ctx, templateDSN)
 	if err != nil {
 		return fmt.Errorf("open template sql: %w", err)
 	}

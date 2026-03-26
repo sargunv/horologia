@@ -22,13 +22,7 @@ func (h *Handler) SpaceTagsList(ctx context.Context, params apigen.SpaceTagsList
 
 	limit := clampLimit(params.Limit)
 
-	tx, err := h.Pool.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-
-	q := dbgen.New(tx)
+	q := dbgen.New(h.Pool)
 
 	rows, err := q.ListTagsBySpace(ctx, dbgen.ListTagsBySpaceParams{
 		SpaceSlug: params.SpaceSlug,

@@ -30,7 +30,7 @@ func (h *Handler) requireSpaceRole(ctx context.Context, spaceSlug string, roles 
 		UserID:    user.ID,
 	})
 	if err != nil {
-		return err // sql.ErrNoRows -> 404 via NewError
+		return err // pgx.ErrNoRows -> 404 via NewError
 	}
 	if slices.Contains(roles, member.Role) {
 		return nil

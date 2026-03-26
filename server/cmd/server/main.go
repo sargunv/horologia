@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/caarlos0/env/v11"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pressly/goose/v3"
 	"github.com/spf13/cobra"
 
@@ -61,8 +62,8 @@ func newLogger(cfg config) (*slog.Logger, error) {
 	return slog.New(handler), nil
 }
 
-func openMigrationDB(cfg config) (*sql.DB, *goose.Provider, error) {
-	db, err := database.OpenSQL(cfg.DB)
+func openMigrationDB(ctx context.Context, cfg config) (*sql.DB, *goose.Provider, error) {
+	db, err := database.OpenSQL(ctx, cfg.DB)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -74,6 +75,25 @@ func openMigrationDB(cfg config) (*sql.DB, *goose.Provider, error) {
 	}
 
 	return db, migrator, nil
+}
+
+// migrateAndOpenPool runs database migrations and returns an application pool.
+func migrateAndOpenPool(ctx context.Context, cfg config) (*pgxpool.Pool, error) {
+	migrationDB, migrator, err := openMigrationDB(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := migrator.Up(ctx); err != nil {
+		_ = migrationDB.Close()
+		return nil, fmt.Errorf("auto-migrate: %w", err)
+	}
+	_ = migrationDB.Close()
+
+	pool, err := database.OpenPool(ctx, cfg.DB)
+	if err != nil {
+		return nil, err
+	}
+	return pool, nil
 }
 
 var rootCmd = &cobra.Command{
@@ -97,19 +117,7 @@ var serveCmd = &cobra.Command{
 			return err
 		}
 
-		// Run migrations via database/sql.
-		migrationDB, migrator, err := openMigrationDB(cfg)
-		if err != nil {
-			return err
-		}
-		if _, err := migrator.Up(context.Background()); err != nil {
-			_ = migrationDB.Close()
-			return fmt.Errorf("auto-migrate: %w", err)
-		}
-		_ = migrationDB.Close()
-
-		// Open pgx pool for the application.
-		pool, err := database.OpenPool(context.Background(), cfg.DB)
+		pool, err := migrateAndOpenPool(context.Background(), cfg)
 		if err != nil {
 			return err
 		}
@@ -196,19 +204,7 @@ var createAdminCmd = &cobra.Command{
 			return err
 		}
 
-		// Run migrations.
-		migrationDB, migrator, err := openMigrationDB(cfg)
-		if err != nil {
-			return err
-		}
-		if _, err := migrator.Up(context.Background()); err != nil {
-			_ = migrationDB.Close()
-			return fmt.Errorf("auto-migrate: %w", err)
-		}
-		_ = migrationDB.Close()
-
-		// Open pool for the operation.
-		pool, err := database.OpenPool(context.Background(), cfg.DB)
+		pool, err := migrateAndOpenPool(context.Background(), cfg)
 		if err != nil {
 			return err
 		}

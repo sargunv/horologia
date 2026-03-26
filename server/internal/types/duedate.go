@@ -25,8 +25,7 @@ func NewDueDate(date pgtype.Date, tz pgtype.Text) *DueDate {
 	}
 	loc, err := time.LoadLocation(tz.String)
 	if err != nil {
-		// Fallback: treat as UTC if the timezone is invalid.
-		return &DueDate{Date: date.Time, Tz: tz.String}
+		return nil
 	}
 	d := date.Time
 	midnight := time.Date(d.Year(), d.Month(), d.Day(), 0, 0, 0, 0, loc)
@@ -43,7 +42,7 @@ func DecomposeDueDate(d *DueDate) (date pgtype.Date, tz pgtype.Text) {
 	// Interpret the date in the task's timezone to get the correct calendar date.
 	loc, err := time.LoadLocation(d.Tz)
 	if err != nil {
-		loc = time.UTC
+		return pgtype.Date{}, pgtype.Text{}
 	}
 	local := d.Date.In(loc)
 	bare := time.Date(local.Year(), local.Month(), local.Day(), 0, 0, 0, 0, time.UTC)

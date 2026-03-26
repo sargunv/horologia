@@ -77,7 +77,12 @@ func parseTaskID(s string) (int64, error) {
 	return id, nil
 }
 
+// tsToTime converts a NOT NULL pgtype.Timestamptz to time.Time.
+// It panics if ts is not valid, indicating a bug (nullable column passed to a NOT NULL helper).
 func tsToTime(ts pgtype.Timestamptz) time.Time {
+	if !ts.Valid {
+		panic("tsToTime called with invalid (NULL) Timestamptz; use only for NOT NULL columns")
+	}
 	return ts.Time
 }
 
@@ -272,11 +277,9 @@ func paginate[DB any, API any](
 	if err != nil {
 		return nil, apigen.NilString{}, err
 	}
-	var next apigen.NilString
+	next := apigen.NilString{Null: true}
 	if hasMore {
 		next = encodeCursor(cursorOf(rows[len(rows)-1]))
-	} else {
-		next.SetToNull()
 	}
 	return items, next, nil
 }
@@ -398,9 +401,7 @@ func nilStringFromDB(s pgtype.Text) apigen.NilString {
 	if s.Valid {
 		return apigen.NewNilString(s.String)
 	}
-	var ns apigen.NilString
-	ns.SetToNull()
-	return ns
+	return apigen.NilString{Null: true}
 }
 
 func optStringToDB(opt apigen.OptString) pgtype.Text {

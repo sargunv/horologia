@@ -17,6 +17,8 @@ func ProcessOverdueTasks(ctx context.Context, pool *pgxpool.Pool, onError func(t
 	now := time.Now()
 
 	q := dbgen.New(pool)
+	// The query caps results at 100 rows per tick for backpressure;
+	// remaining overdue tasks will be picked up in subsequent cron ticks.
 	tasks, err := q.ListOverdueAccumulatingTasks(ctx, pgtype.Date{Time: now, Valid: true})
 	if err != nil {
 		return err

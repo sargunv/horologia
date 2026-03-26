@@ -42,7 +42,7 @@ func SpawnTaskFromTemplate(
 	srcPool []int64,
 ) (int64, error) {
 	dueAt, dueTz := types.DecomposeDueDate(newDue)
-	nowTz := pgtype.Timestamptz{Time: now, Valid: true}
+	nowTz := types.Timestamptz(now)
 	newTask, err := q.CreateTask(ctx, dbgen.CreateTaskParams{
 		SpaceSlug:      src.SpaceSlug,
 		Title:          src.Title,
@@ -231,7 +231,7 @@ func ProcessAccumulatingTask(ctx context.Context, q *dbgen.Queries, task dbgen.T
 		return err
 	}
 
-	nowTz := pgtype.Timestamptz{Time: now, Valid: true}
+	nowTz := types.Timestamptz(now)
 	result, err := q.ConvertAccumulatingToOneOff(ctx, dbgen.ConvertAccumulatingToOneOffParams{
 		UpdatedAt: nowTz,
 		ID:        task.ID,
@@ -279,9 +279,5 @@ func ProcessAccumulatingTask(ctx context.Context, q *dbgen.Queries, task dbgen.T
 		}
 	}
 
-	if err := q.DeleteRotationPool(ctx, task.ID); err != nil {
-		return err
-	}
-
-	return nil
+	return q.DeleteRotationPool(ctx, task.ID)
 }

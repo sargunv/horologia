@@ -31,10 +31,14 @@ func OpenPool(ctx context.Context, connStr string) (*pgxpool.Pool, error) {
 
 // OpenSQL opens a database/sql connection for use with goose migrations.
 // The connStr should be a PostgreSQL URI, e.g. "postgres://user:pass@host/dbname".
-func OpenSQL(connStr string) (*sql.DB, error) {
+func OpenSQL(ctx context.Context, connStr string) (*sql.DB, error) {
 	db, err := sql.Open("pgx", connStr)
 	if err != nil {
 		return nil, fmt.Errorf("open sql: %w", err)
+	}
+	if err := db.PingContext(ctx); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("ping sql: %w", err)
 	}
 	return db, nil
 }

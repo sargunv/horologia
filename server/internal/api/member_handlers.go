@@ -24,13 +24,7 @@ func (h *Handler) SpaceMembersList(ctx context.Context, params apigen.SpaceMembe
 
 	limit := clampLimit(params.Limit)
 
-	tx, err := h.Pool.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-
-	q := dbgen.New(tx)
+	q := dbgen.New(h.Pool)
 
 	rows, err := q.ListSpaceMembersBySpace(ctx, dbgen.ListSpaceMembersBySpaceParams{
 		SpaceSlug: params.SpaceSlug,

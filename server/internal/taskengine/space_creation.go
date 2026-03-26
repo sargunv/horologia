@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 var defaultStatuses = []dbgen.CreateTaskStatusParams{
@@ -38,7 +38,7 @@ func CreateSpaceWithDefaults(ctx context.Context, pool *pgxpool.Pool, slug, name
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := dbgen.New(tx)
-	now := pgtype.Timestamptz{Time: time.Now(), Valid: true}
+	now := types.Timestamptz(time.Now())
 
 	space, err := q.CreateSpace(ctx, dbgen.CreateSpaceParams{
 		Slug:        slug,

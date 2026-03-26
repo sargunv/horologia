@@ -54,10 +54,8 @@ func (h *Handler) HandleBearerAuth(ctx context.Context, operationName apigen.Ope
 	}
 
 	// Check expiration.
-	if row.ExpiresAt.Valid {
-		if time.Now().After(row.ExpiresAt.Time) {
-			return ctx, ogenerrors.ErrSkipServerSecurity
-		}
+	if row.ExpiresAt.Valid && time.Now().After(row.ExpiresAt.Time) {
+		return ctx, ogenerrors.ErrSkipServerSecurity
 	}
 
 	user := &AuthUser{

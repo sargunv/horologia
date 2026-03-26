@@ -27,7 +27,7 @@ var migrateUpCmd = &cobra.Command{
 			return err
 		}
 
-		db, err := database.OpenSQL(cfg.DB)
+		db, err := database.OpenSQL(context.Background(), cfg.DB)
 		if err != nil {
 			return err
 		}
@@ -69,7 +69,7 @@ var migrateStatusCmd = &cobra.Command{
 			return err
 		}
 
-		db, err := database.OpenSQL(cfg.DB)
+		db, err := database.OpenSQL(context.Background(), cfg.DB)
 		if err != nil {
 			return err
 		}

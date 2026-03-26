@@ -227,34 +227,8 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 		return nil, err
 	}
 
-	// Pre-fetch member set if both assignees and rotation pool have entries.
-	var memberSet map[int64]struct{}
-	if len(req.AssigneeIds) > 0 && len(req.RotationPool) > 0 {
-		memberSet, err = fetchMemberSet(ctx, q, params.SpaceSlug)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Set assignees if provided.
-	if req.AssigneeIds != nil {
-		if err := h.setTaskAssignees(ctx, q, task.ID, params.SpaceSlug, req.AssigneeIds, memberSet); err != nil {
-			return nil, err
-		}
-	}
-
-	// Set rotation pool if provided.
-	if req.RotationPool != nil {
-		if err := h.setTaskRotationPool(ctx, q, task.ID, params.SpaceSlug, req.RotationPool, memberSet); err != nil {
-			return nil, err
-		}
-	}
-
-	// Set tags if provided.
-	if req.Tags != nil {
-		if err := h.setTaskTags(ctx, q, task.ID, params.SpaceSlug, req.Tags); err != nil {
-			return nil, err
-		}
+	if err := h.applyTaskCollections(ctx, q, task.ID, params.SpaceSlug, req.AssigneeIds, req.RotationPool, req.Tags); err != nil {
+		return nil, err
 	}
 
 	// Re-fetch with assignees, tags, relations, and rotation pool.
@@ -417,34 +391,8 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 		}
 	}
 
-	// Pre-fetch member set if both assignees and rotation pool have entries.
-	var memberSet map[int64]struct{}
-	if len(req.AssigneeIds) > 0 && len(req.RotationPool) > 0 {
-		memberSet, err = fetchMemberSet(ctx, q, params.SpaceSlug)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Replace assignees if provided (nil = no change, empty = clear all).
-	if req.AssigneeIds != nil {
-		if err := h.setTaskAssignees(ctx, q, id, params.SpaceSlug, req.AssigneeIds, memberSet); err != nil {
-			return nil, err
-		}
-	}
-
-	// Replace rotation pool if provided (nil = no change, empty = clear all).
-	if req.RotationPool != nil {
-		if err := h.setTaskRotationPool(ctx, q, id, params.SpaceSlug, req.RotationPool, memberSet); err != nil {
-			return nil, err
-		}
-	}
-
-	// Replace tags if provided (nil = no change, empty = clear all).
-	if req.Tags != nil {
-		if err := h.setTaskTags(ctx, q, id, params.SpaceSlug, req.Tags); err != nil {
-			return nil, err
-		}
+	if err := h.applyTaskCollections(ctx, q, id, params.SpaceSlug, req.AssigneeIds, req.RotationPool, req.Tags); err != nil {
+		return nil, err
 	}
 
 	// Re-fetch with assignees, tags, relations, and rotation pool.
@@ -474,6 +422,36 @@ func (h *Handler) SpaceTasksDelete(ctx context.Context, params apigen.SpaceTasks
 		return err
 	}
 	return checkDeleted(result)
+}
+
+// applyTaskCollections replaces assignees, rotation pool, and tags for a task
+// when the corresponding slices are non-nil. It pre-fetches the member set once
+// if both assignees and rotation pool are provided.
+func (h *Handler) applyTaskCollections(ctx context.Context, q *dbgen.Queries, taskID int64, spaceSlug string, assigneeIDs, poolIDs, tagNames []string) error {
+	var memberSet map[int64]struct{}
+	var err error
+	if len(assigneeIDs) > 0 && len(poolIDs) > 0 {
+		memberSet, err = fetchMemberSet(ctx, q, spaceSlug)
+		if err != nil {
+			return err
+		}
+	}
+	if assigneeIDs != nil {
+		if err := h.setTaskAssignees(ctx, q, taskID, spaceSlug, assigneeIDs, memberSet); err != nil {
+			return err
+		}
+	}
+	if poolIDs != nil {
+		if err := h.setTaskRotationPool(ctx, q, taskID, spaceSlug, poolIDs, memberSet); err != nil {
+			return err
+		}
+	}
+	if tagNames != nil {
+		if err := h.setTaskTags(ctx, q, taskID, spaceSlug, tagNames); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // fetchMemberSet returns the set of user IDs that are members of the space.

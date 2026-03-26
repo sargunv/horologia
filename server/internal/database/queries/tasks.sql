@@ -33,6 +33,9 @@ SET recurrence_type = 'one_off', recurrence_rule = NULL, updated_at = $1
 WHERE id = $2 AND space_slug = $3 AND recurrence_type = 'fixed_accumulating';
 
 -- name: ListOverdueAccumulatingTasks :many
+-- Cap at 100 rows per tick to provide backpressure on the cron job.
+-- The cron runs frequently enough that any remaining overdue tasks will
+-- be picked up in subsequent ticks, so the backlog drains gradually.
 SELECT * FROM tasks
 WHERE recurrence_type = 'fixed_accumulating'
   AND due_at IS NOT NULL

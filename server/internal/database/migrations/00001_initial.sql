@@ -22,7 +22,8 @@ CREATE TABLE task_statuses (
     name       TEXT            NOT NULL,
     category   status_category NOT NULL,
     position   INTEGER         NOT NULL,
-    PRIMARY KEY (space_slug, name)
+    PRIMARY KEY (space_slug, name),
+    UNIQUE (space_slug, position) DEFERRABLE INITIALLY DEFERRED
 );
 
 -- Task effort levels
@@ -30,7 +31,8 @@ CREATE TABLE task_effort_levels (
     space_slug TEXT    NOT NULL REFERENCES spaces (slug) ON DELETE CASCADE,
     name       TEXT    NOT NULL,
     position   INTEGER NOT NULL,
-    PRIMARY KEY (space_slug, name)
+    PRIMARY KEY (space_slug, name),
+    UNIQUE (space_slug, position) DEFERRABLE INITIALLY DEFERRED
 );
 
 -- Task priority levels
@@ -38,7 +40,8 @@ CREATE TABLE task_priority_levels (
     space_slug TEXT    NOT NULL REFERENCES spaces (slug) ON DELETE CASCADE,
     name       TEXT    NOT NULL,
     position   INTEGER NOT NULL,
-    PRIMARY KEY (space_slug, name)
+    PRIMARY KEY (space_slug, name),
+    UNIQUE (space_slug, position) DEFERRABLE INITIALLY DEFERRED
 );
 
 -- Tasks
@@ -66,12 +69,12 @@ CREATE TABLE tasks (
         OR
         (recurrence_type IN ('completion_based', 'fixed_non_accumulating', 'fixed_accumulating') AND recurrence_rule IS NOT NULL)
     ),
-    CHECK ((due_at IS NULL AND due_tz IS NULL) OR (due_at IS NOT NULL AND due_tz IS NOT NULL))
+    CHECK ((due_at IS NULL AND due_tz IS NULL) OR (due_at IS NOT NULL AND due_tz IS NOT NULL)),
+    UNIQUE (id, space_slug)
 );
 
 CREATE INDEX idx_tasks_space ON tasks (space_slug);
 CREATE INDEX idx_tasks_status ON tasks (space_slug, status_name);
-CREATE UNIQUE INDEX idx_tasks_id_space ON tasks (id, space_slug);
 CREATE INDEX idx_tasks_effort ON tasks (space_slug, effort_name)
     WHERE effort_name IS NOT NULL;
 CREATE INDEX idx_tasks_priority ON tasks (space_slug, priority_name)
@@ -186,8 +189,10 @@ CREATE INDEX idx_task_rotation_pool_user ON task_rotation_pool (user_id);
 CREATE OR REPLACE FUNCTION fn_prevent_status_delete_if_tasks_exist()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- If the space no longer exists, this is a cascaded delete; allow it.
-    IF NOT EXISTS (SELECT 1 FROM spaces WHERE slug = OLD.space_slug) THEN
+    -- If this delete was triggered by a cascade (e.g. space deletion), allow it.
+    -- pg_trigger_depth() > 1 means we're inside a nested trigger: the FK cascade
+    -- internal trigger (depth 1) invoked this BEFORE DELETE trigger (depth 2).
+    IF pg_trigger_depth() > 1 THEN
         RETURN OLD;
     END IF;
     IF EXISTS (SELECT 1 FROM tasks WHERE space_slug = OLD.space_slug AND status_name = OLD.name) THEN
