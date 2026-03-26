@@ -214,12 +214,12 @@ func ProcessAccumulatingTask(ctx context.Context, q *dbgen.Queries, task dbgen.T
 		return nil
 	}
 
-	loc, err := time.LoadLocation(due.Tz)
+	dtstart, err := due.MidnightInTz()
 	if err != nil {
 		return err
 	}
 
-	dtstart := due.Date.In(loc)
+	loc := dtstart.Location()
 
 	missed, err := allOverdueOccurrences(task.RecurrenceRule.String, dtstart, now, loc)
 	if err != nil {
@@ -254,7 +254,7 @@ func ProcessAccumulatingTask(ctx context.Context, q *dbgen.Queries, task dbgen.T
 	}
 
 	for i, missedAt := range missed {
-		missedDue := &types.DueDate{Date: missedAt, Tz: due.Tz}
+		missedDue := types.DueDateFromLocal(missedAt, due.Tz)
 		overrideAssignees := AdvanceRotation(pool, currentAssignees, i)
 		if _, err := SpawnTaskFromTemplate(ctx, q, task,
 			dbgen.RecurrenceTypeOneOff, pgtype.Text{}, missedDue, initialStatus, now,

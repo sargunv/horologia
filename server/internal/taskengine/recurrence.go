@@ -108,7 +108,10 @@ func ComputeNextDueAt(recurrenceType dbgen.RecurrenceType, recurrenceRule pgtype
 	case dbgen.RecurrenceTypeFixedNonAccumulating, dbgen.RecurrenceTypeFixedAccumulating:
 		dtstart := nowInTz
 		if due != nil {
-			dtstart = due.Date.In(loc)
+			dtstart, err = due.MidnightInTz()
+			if err != nil {
+				return nil, err
+			}
 		}
 		nextDate, err = nextRRuleOccurrence(recurrenceRule.String, dtstart, nowInTz)
 	case dbgen.RecurrenceTypeOneOff, dbgen.RecurrenceTypeOnDependency:
@@ -122,7 +125,7 @@ func ComputeNextDueAt(recurrenceType dbgen.RecurrenceType, recurrenceRule pgtype
 	if nextDate == nil {
 		return nil, nil
 	}
-	return &types.DueDate{Date: *nextDate, Tz: tz}, nil
+	return types.DueDateFromLocal(*nextDate, tz), nil
 }
 
 // nextRRuleOccurrence parses the rule, sets dtstart, and finds the first

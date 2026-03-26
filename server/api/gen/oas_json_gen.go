@@ -3321,7 +3321,7 @@ func (s *TaskDue) Encode(e *jx.Encoder) {
 func (s *TaskDue) encodeFields(e *jx.Encoder) {
 	{
 		e.FieldStart("at")
-		json.EncodeDateTime(e, s.At)
+		json.EncodeDate(e, s.At)
 	}
 	{
 		e.FieldStart("timezone")
@@ -3346,7 +3346,7 @@ func (s *TaskDue) Decode(d *jx.Decoder) error {
 		case "at":
 			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				v, err := json.DecodeDateTime(d)
+				v, err := json.DecodeDate(d)
 				s.At = v
 				if err != nil {
 					return err

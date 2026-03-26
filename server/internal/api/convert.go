@@ -235,7 +235,7 @@ func taskFromDB(task dbgen.Task, assigneeUserIDs []int64, tagNames []string, rel
 
 	if due := types.NewDueDate(task.DueAt, task.DueTz); due != nil {
 		t.Due.SetTo(apigen.TaskDue{
-			At:       due.Date,
+			At:       due.Date.Time,
 			Timezone: due.Tz,
 		})
 	} else {
@@ -294,7 +294,7 @@ func dueToDB(opt apigen.OptNilTaskDue) (*types.DueDate, error) {
 		return nil, badRequest(fmt.Sprintf("invalid timezone %q", opt.Value.Timezone))
 	}
 	return &types.DueDate{
-		Date: opt.Value.At,
+		Date: pgtype.Date{Time: opt.Value.At, Valid: true},
 		Tz:   opt.Value.Timezone,
 	}, nil
 }

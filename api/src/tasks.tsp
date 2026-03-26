@@ -37,7 +37,7 @@ model TaskRelationCreate {
 }
 
 model TaskDue {
-  at: utcDateTime;
+  at: plainDate;
   @minLength(1) @maxLength(100) timezone: string;
 }
 

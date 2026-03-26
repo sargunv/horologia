@@ -6,45 +6,50 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-// DueDate pairs a due date with its IANA timezone.
+// DueDate pairs a calendar date with its IANA timezone.
 // Use *DueDate throughout internal code; nil means no due date.
 type DueDate struct {
-	Date time.Time
+	Date pgtype.Date
 	Tz   string
 }
 
 // NewDueDate creates a *DueDate from nullable DB columns.
 // Returns nil if either field is not valid.
-//
-// pgtype.Date stores the date as midnight UTC. We reinterpret it as midnight
-// in the task's timezone so that the resulting time.Time represents the correct
-// instant (e.g. 2026-06-15 midnight America/New_York = 2026-06-15T04:00:00Z).
 func NewDueDate(date pgtype.Date, tz pgtype.Text) *DueDate {
 	if !date.Valid || !tz.Valid {
 		return nil
 	}
-	loc, err := time.LoadLocation(tz.String)
-	if err != nil {
-		return nil
+	return &DueDate{Date: date, Tz: tz.String}
+}
+
+// DueDateFromLocal creates a *DueDate from a time in a local timezone,
+// extracting just the calendar date. Used when RRULE computation returns
+// a midnight-in-timezone value that needs to be stored as a plain date.
+func DueDateFromLocal(local time.Time, tz string) *DueDate {
+	return &DueDate{
+		Date: pgtype.Date{
+			Time:  time.Date(local.Year(), local.Month(), local.Day(), 0, 0, 0, 0, time.UTC),
+			Valid: true,
+		},
+		Tz: tz,
 	}
-	d := date.Time
-	midnight := time.Date(d.Year(), d.Month(), d.Day(), 0, 0, 0, 0, loc)
-	return &DueDate{Date: midnight.UTC(), Tz: tz.String}
+}
+
+// MidnightInTz returns the date as midnight in the task's timezone.
+// Used when RRULE or overdue logic needs a timezone-aware instant.
+func (d *DueDate) MidnightInTz() (time.Time, error) {
+	loc, err := time.LoadLocation(d.Tz)
+	if err != nil {
+		return time.Time{}, err
+	}
+	t := d.Date.Time
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, loc), nil
 }
 
 // DecomposeDueDate returns the separate DB columns for a *DueDate.
-// The Date field may carry timezone information (midnight in the task's tz),
-// so we extract year/month/day and store as a bare UTC date for pgtype.Date.
 func DecomposeDueDate(d *DueDate) (date pgtype.Date, tz pgtype.Text) {
 	if d == nil {
 		return pgtype.Date{}, pgtype.Text{}
 	}
-	// Interpret the date in the task's timezone to get the correct calendar date.
-	loc, err := time.LoadLocation(d.Tz)
-	if err != nil {
-		return pgtype.Date{}, pgtype.Text{}
-	}
-	local := d.Date.In(loc)
-	bare := time.Date(local.Year(), local.Month(), local.Day(), 0, 0, 0, 0, time.UTC)
-	return pgtype.Date{Time: bare, Valid: true}, pgtype.Text{String: d.Tz, Valid: true}
+	return d.Date, pgtype.Text{String: d.Tz, Valid: true}
 }

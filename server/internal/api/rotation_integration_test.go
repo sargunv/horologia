@@ -216,7 +216,7 @@ func TestRotationFixedAccumulating(t *testing.T) {
 
 	// Create fixed_accumulating task.
 	task := createTask(t, env, "alpha", fmt.Sprintf(
-		`{"title":"Accumulating","recurrenceType":"fixed_accumulating","recurrenceRule":"RRULE:FREQ=WEEKLY;BYDAY=SA","due":{"at":"2020-01-04T00:00:00Z","timezone":"UTC"},"assigneeIds":[%q],"rotationPool":[%q,%q]}`,
+		`{"title":"Accumulating","recurrenceType":"fixed_accumulating","recurrenceRule":"RRULE:FREQ=WEEKLY;BYDAY=SA","due":{"at":"2020-01-04","timezone":"UTC"},"assigneeIds":[%q],"rotationPool":[%q,%q]}`,
 		ownerID, ownerID, bobID,
 	))
 	taskID := jsonAs[string](t, task["id"])
@@ -279,7 +279,7 @@ func TestRotationCronMultiSpawn(t *testing.T) {
 	// Create fixed_accumulating task with weekly recurrence, due 3 weeks ago.
 	// This should produce 3 missed occurrences + 1 continuation.
 	task := createTask(t, env, "alpha", fmt.Sprintf(
-		`{"title":"Weekly","recurrenceType":"fixed_accumulating","recurrenceRule":"RRULE:FREQ=WEEKLY","due":{"at":"2026-03-03T00:00:00Z","timezone":"UTC"},"assigneeIds":[%q],"rotationPool":[%q,%q,%q]}`,
+		`{"title":"Weekly","recurrenceType":"fixed_accumulating","recurrenceRule":"RRULE:FREQ=WEEKLY","due":{"at":"2026-03-03","timezone":"UTC"},"assigneeIds":[%q],"rotationPool":[%q,%q,%q]}`,
 		ownerID, ownerID, bobID, charlieID,
 	))
 	taskID := jsonAs[string](t, task["id"])
@@ -417,7 +417,7 @@ func TestRotationOnFixedNonAccumulating(t *testing.T) {
 
 	// Create fixed_non_accumulating task: pool=[owner, bob, charlie], assignee=[owner].
 	task := createTask(t, env, "alpha", fmt.Sprintf(
-		`{"title":"Weekly","recurrenceType":"fixed_non_accumulating","recurrenceRule":"RRULE:FREQ=WEEKLY;BYDAY=SA","due":{"at":"2026-03-21T00:00:00Z","timezone":"UTC"},"assigneeIds":[%q],"rotationPool":[%q,%q,%q]}`,
+		`{"title":"Weekly","recurrenceType":"fixed_non_accumulating","recurrenceRule":"RRULE:FREQ=WEEKLY;BYDAY=SA","due":{"at":"2026-03-21","timezone":"UTC"},"assigneeIds":[%q],"rotationPool":[%q,%q,%q]}`,
 		ownerID, ownerID, bobID, charlieID,
 	))
 	taskID := jsonAs[string](t, task["id"])

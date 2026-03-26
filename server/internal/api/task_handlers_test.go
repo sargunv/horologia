@@ -43,7 +43,7 @@ func TestTasksCreateWithFields(t *testing.T) {
 
 	createSpace(t, env, "home", "Home")
 
-	body := `{"title":"Clean","description":"Deep clean","status":"done","due":{"at":"2025-06-15T00:00:00Z","timezone":"UTC"}}`
+	body := `{"title":"Clean","description":"Deep clean","status":"done","due":{"at":"2025-06-15","timezone":"UTC"}}`
 	resp := doRequest(t, env, "POST", "/spaces/home/tasks", body)
 	assertStatus(t, resp, http.StatusCreated)
 
@@ -242,7 +242,7 @@ func TestTasksUpdateClearDue(t *testing.T) {
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
-	created := createTask(t, env, "home", `{"title":"Task","due":{"at":"2025-06-15T00:00:00Z","timezone":"UTC"}}`)
+	created := createTask(t, env, "home", `{"title":"Task","due":{"at":"2025-06-15","timezone":"UTC"}}`)
 	id := jsonAs[string](t, created["id"])
 
 	// Verify the due date was actually set.
