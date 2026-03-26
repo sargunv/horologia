@@ -107,15 +107,12 @@ var serveCmd = &cobra.Command{
 			return fmt.Errorf("auto-migrate: %w", err)
 		}
 
-		engine := &taskengine.Engine{
-			CopyOnSpawnKinds: api.StoredKindCopyOnSpawn(),
-		}
-		handler := &api.Handler{DB: db, Log: log, Engine: engine}
+		handler := &api.Handler{DB: db, Log: log}
 
 		// Start the fixed_accumulating cron job.
 		cronCtx, cronCancel := context.WithCancel(context.Background())
 		defer cronCancel()
-		go cron.RunAccumulatingCron(cronCtx, db, engine, log, time.Minute)
+		go cron.RunAccumulatingCron(cronCtx, db, log, time.Minute)
 
 		h, err := api.NewServer(handler, log)
 		if err != nil {

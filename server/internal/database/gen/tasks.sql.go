@@ -43,7 +43,7 @@ type CreateTaskParams struct {
 	PriorityName   *string
 	DueAt          *types.EpochSeconds
 	DueTz          *string
-	RecurrenceType string
+	RecurrenceType types.RecurrenceType
 	RecurrenceRule *string
 	CreatedAt      types.EpochSeconds
 	UpdatedAt      types.EpochSeconds
@@ -267,7 +267,7 @@ type UpdateTaskParams struct {
 	PriorityName    *string
 	DueAt           *types.EpochSeconds
 	DueTz           *string
-	RecurrenceType  string
+	RecurrenceType  types.RecurrenceType
 	RecurrenceRule  *string
 	LastCompletedAt *types.EpochSeconds
 	UpdatedAt       types.EpochSeconds

@@ -21,7 +21,7 @@ WHERE source_task_id = ? AND target_task_id = ? AND kind = ? AND space_slug = ?
 type DeleteTaskRelationParams struct {
 	SourceTaskID int64
 	TargetTaskID int64
-	Kind         string
+	Kind         types.StoredRelationKind
 	SpaceSlug    string
 }
 
@@ -43,7 +43,7 @@ type InsertTaskRelationParams struct {
 	SourceTaskID int64
 	TargetTaskID int64
 	SpaceSlug    string
-	Kind         string
+	Kind         types.StoredRelationKind
 	CreatedAt    types.EpochSeconds
 }
 
@@ -74,7 +74,7 @@ type ListRelationsByTaskAsSourceParams struct {
 type ListRelationsByTaskAsSourceRow struct {
 	SourceTaskID int64
 	TargetTaskID int64
-	Kind         string
+	Kind         types.StoredRelationKind
 	CreatedAt    types.EpochSeconds
 }
 
@@ -124,7 +124,7 @@ type ListRelationsByTaskAsTargetParams struct {
 type ListRelationsByTaskAsTargetRow struct {
 	SourceTaskID int64
 	TargetTaskID int64
-	Kind         string
+	Kind         types.StoredRelationKind
 	CreatedAt    types.EpochSeconds
 }
 
@@ -174,7 +174,7 @@ type ListRelationsByTasksParams struct {
 type ListRelationsByTasksRow struct {
 	SourceTaskID int64
 	TargetTaskID int64
-	Kind         string
+	Kind         types.StoredRelationKind
 	CreatedAt    types.EpochSeconds
 }
 

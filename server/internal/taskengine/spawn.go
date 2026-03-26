@@ -6,7 +6,6 @@ import (
 
 	"github.com/teambition/rrule-go"
 
-	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
 )
@@ -17,11 +16,11 @@ import (
 // (from srcPool), and copyOnSpawn=true relations from src.
 // A "spawns" relation is created from src to the new task.
 // Must be called within a transaction.
-func (e *Engine) SpawnTaskFromTemplate(
+func SpawnTaskFromTemplate(
 	ctx context.Context,
 	q *dbgen.Queries,
 	src dbgen.Task,
-	newRecurrenceType string,
+	newRecurrenceType types.RecurrenceType,
 	newRecurrenceRule *string,
 	newDue *types.DueDate,
 	initialStatus string,
@@ -111,7 +110,7 @@ func (e *Engine) SpawnTaskFromTemplate(
 		return 0, err
 	}
 	for _, r := range asSource {
-		if !e.CopyOnSpawnKinds[r.Kind] {
+		if !r.Kind.CopyOnSpawn() {
 			continue
 		}
 		if err := q.InsertTaskRelation(ctx, dbgen.InsertTaskRelationParams{
@@ -133,7 +132,7 @@ func (e *Engine) SpawnTaskFromTemplate(
 		return 0, err
 	}
 	for _, r := range asTarget {
-		if !e.CopyOnSpawnKinds[r.Kind] {
+		if !r.Kind.CopyOnSpawn() {
 			continue
 		}
 		if err := q.InsertTaskRelation(ctx, dbgen.InsertTaskRelationParams{
@@ -152,7 +151,7 @@ func (e *Engine) SpawnTaskFromTemplate(
 		SourceTaskID: src.ID,
 		TargetTaskID: newTask.ID,
 		SpaceSlug:    src.SpaceSlug,
-		Kind:         "spawns",
+		Kind:         types.RelationKindSpawns,
 		CreatedAt:    now,
 	}); err != nil {
 		return 0, err
@@ -195,7 +194,7 @@ func allOverdueOccurrences(rule string, dtstart time.Time, until time.Time, loc 
 
 // ProcessAccumulatingTask handles one overdue fixed_accumulating task within an
 // existing transaction.
-func (e *Engine) ProcessAccumulatingTask(ctx context.Context, q *dbgen.Queries, task dbgen.Task, now time.Time) error {
+func ProcessAccumulatingTask(ctx context.Context, q *dbgen.Queries, task dbgen.Task, now time.Time) error {
 	due := types.NewDueDate(task.DueAt, task.DueTz)
 	if due == nil || task.RecurrenceRule == nil {
 		return nil
@@ -248,23 +247,23 @@ func (e *Engine) ProcessAccumulatingTask(ctx context.Context, q *dbgen.Queries, 
 	for i, missedAt := range missed {
 		missedDue := &types.DueDate{At: missedAt, Tz: due.Tz}
 		overrideAssignees := AdvanceRotation(pool, currentAssignees, i)
-		if _, err := e.SpawnTaskFromTemplate(ctx, q, task,
-			string(apigen.TaskRecurrenceTypeOneOff), nil, missedDue, initialStatus, nowEpoch,
+		if _, err := SpawnTaskFromTemplate(ctx, q, task,
+			types.RecurrenceTypeOneOff, nil, missedDue, initialStatus, nowEpoch,
 			overrideAssignees, pool,
 		); err != nil {
 			return err
 		}
 	}
 
-	next, err := ComputeNextDueAt(apigen.TaskRecurrenceTypeFixedAccumulating, task.RecurrenceRule, due, now)
+	next, err := ComputeNextDueAt(types.RecurrenceTypeFixedAccumulating, task.RecurrenceRule, due, now)
 	if err != nil {
 		return err
 	}
 
 	if next != nil {
 		overrideAssignees := AdvanceRotation(pool, currentAssignees, len(missed))
-		if _, err := e.SpawnTaskFromTemplate(ctx, q, task,
-			string(apigen.TaskRecurrenceTypeFixedAccumulating), task.RecurrenceRule, next, initialStatus, nowEpoch,
+		if _, err := SpawnTaskFromTemplate(ctx, q, task,
+			types.RecurrenceTypeFixedAccumulating, task.RecurrenceRule, next, initialStatus, nowEpoch,
 			overrideAssignees, pool,
 		); err != nil {
 			return err

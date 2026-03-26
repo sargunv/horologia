@@ -33,7 +33,7 @@ RETURNING space_slug, user_id, role, created_at
 type CreateSpaceMemberParams struct {
 	SpaceSlug string
 	UserID    int64
-	Role      string
+	Role      types.SpaceRole
 	CreatedAt types.EpochSeconds
 }
 
@@ -142,7 +142,7 @@ type ListSpaceMembersBySpaceParams struct {
 type ListSpaceMembersBySpaceRow struct {
 	SpaceSlug string
 	UserID    int64
-	Role      string
+	Role      types.SpaceRole
 	CreatedAt types.EpochSeconds
 	UserName  string
 	UserEmail string
@@ -229,7 +229,7 @@ RETURNING space_slug, user_id, role, created_at
 `
 
 type UpdateSpaceMemberRoleParams struct {
-	Role      string
+	Role      types.SpaceRole
 	SpaceSlug string
 	UserID    int64
 }

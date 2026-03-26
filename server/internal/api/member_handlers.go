@@ -57,7 +57,7 @@ func (h *Handler) SpaceMembersList(ctx context.Context, params apigen.SpaceMembe
 }
 
 func (h *Handler) SpaceMembersCreate(ctx context.Context, req *apigen.SpaceMemberCreate, params apigen.SpaceMembersCreateParams) (*apigen.SpaceMember, error) {
-	if err := h.requireSpaceRole(ctx, params.SpaceSlug, apigen.SpaceRoleAdmin); err != nil {
+	if err := h.requireSpaceRole(ctx, params.SpaceSlug, types.SpaceRoleAdmin); err != nil {
 		return nil, err
 	}
 
@@ -86,7 +86,7 @@ func (h *Handler) SpaceMembersCreate(ctx context.Context, req *apigen.SpaceMembe
 	member, err := q.CreateSpaceMember(ctx, dbgen.CreateSpaceMemberParams{
 		SpaceSlug: params.SpaceSlug,
 		UserID:    userID,
-		Role:      string(req.Role),
+		Role:      types.SpaceRole(req.Role),
 		CreatedAt: types.Now(),
 	})
 	if err != nil {
@@ -101,7 +101,7 @@ func (h *Handler) SpaceMembersCreate(ctx context.Context, req *apigen.SpaceMembe
 }
 
 func (h *Handler) SpaceMembersUpdate(ctx context.Context, req *apigen.SpaceMemberUpdate, params apigen.SpaceMembersUpdateParams) (*apigen.SpaceMember, error) {
-	if err := h.requireSpaceRole(ctx, params.SpaceSlug, apigen.SpaceRoleAdmin); err != nil {
+	if err := h.requireSpaceRole(ctx, params.SpaceSlug, types.SpaceRoleAdmin); err != nil {
 		return nil, err
 	}
 
@@ -119,14 +119,14 @@ func (h *Handler) SpaceMembersUpdate(ctx context.Context, req *apigen.SpaceMembe
 	q := dbgen.New(tx)
 
 	// Guard against removing the last admin.
-	if req.Role != apigen.SpaceRoleAdmin {
+	if types.SpaceRole(req.Role) != types.SpaceRoleAdmin {
 		if err := h.ensureNotLastAdmin(ctx, q, params.SpaceSlug, userID); err != nil {
 			return nil, err
 		}
 	}
 
 	member, err := q.UpdateSpaceMemberRole(ctx, dbgen.UpdateSpaceMemberRoleParams{
-		Role:      string(req.Role),
+		Role:      types.SpaceRole(req.Role),
 		SpaceSlug: params.SpaceSlug,
 		UserID:    userID,
 	})
@@ -147,7 +147,7 @@ func (h *Handler) SpaceMembersUpdate(ctx context.Context, req *apigen.SpaceMembe
 }
 
 func (h *Handler) SpaceMembersDelete(ctx context.Context, params apigen.SpaceMembersDeleteParams) error {
-	if err := h.requireSpaceRole(ctx, params.SpaceSlug, apigen.SpaceRoleAdmin); err != nil {
+	if err := h.requireSpaceRole(ctx, params.SpaceSlug, types.SpaceRoleAdmin); err != nil {
 		return err
 	}
 
@@ -207,7 +207,7 @@ func (h *Handler) ensureNotLastAdmin(ctx context.Context, q *dbgen.Queries, spac
 	if err != nil {
 		return err
 	}
-	if apigen.SpaceRole(member.Role) != apigen.SpaceRoleAdmin {
+	if member.Role != types.SpaceRoleAdmin {
 		return nil // not an admin, no risk
 	}
 	count, err := q.CountSpaceAdmins(ctx, spaceSlug)

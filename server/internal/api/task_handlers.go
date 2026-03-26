@@ -193,7 +193,7 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 		return nil, err
 	}
 
-	recurrenceType := req.RecurrenceType.Or(apigen.TaskRecurrenceTypeOneOff)
+	recurrenceType := types.RecurrenceType(req.RecurrenceType.Or(apigen.TaskRecurrenceTypeOneOff))
 	recurrenceRule := optStringToDB(req.RecurrenceRule)
 
 	due, err := dueToDB(req.Due)
@@ -215,7 +215,7 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 		PriorityName:   priorityName,
 		DueAt:          dueAt,
 		DueTz:          dueTz,
-		RecurrenceType: string(recurrenceType),
+		RecurrenceType: recurrenceType,
 		RecurrenceRule: recurrenceRule,
 		CreatedAt:      ts,
 		UpdatedAt:      ts,
@@ -361,9 +361,9 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 	}
 
 	// Merge recurrence fields. Auto-clear rule when switching to a no-rule type.
-	recurrenceType := req.RecurrenceType.Or(apigen.TaskRecurrenceType(existing.RecurrenceType))
+	recurrenceType := types.RecurrenceType(req.RecurrenceType.Or(apigen.TaskRecurrenceType(existing.RecurrenceType)))
 	recurrenceRule := optNilStringToDB(req.RecurrenceRule, existing.RecurrenceRule)
-	if recurrenceType == apigen.TaskRecurrenceTypeOneOff || recurrenceType == apigen.TaskRecurrenceTypeOnDependency {
+	if recurrenceType == types.RecurrenceTypeOneOff || recurrenceType == types.RecurrenceTypeOnDependency {
 		recurrenceRule = nil
 	}
 	now := types.Now()
@@ -377,7 +377,7 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 		return nil, err
 	}
 
-	cr, err := h.Engine.HandleCompletionTransition(
+	cr, err := taskengine.HandleCompletionTransition(
 		ctx, q, existing, newStatus,
 		recurrenceType, recurrenceRule,
 		newDue, existing.LastCompletedAt,
@@ -396,7 +396,7 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 		PriorityName:    priorityName,
 		DueAt:           crDueAt,
 		DueTz:           crDueTz,
-		RecurrenceType:  string(cr.RecurrenceType),
+		RecurrenceType:  cr.RecurrenceType,
 		RecurrenceRule:  cr.RecurrenceRule,
 		LastCompletedAt: cr.LastCompletedAt,
 		UpdatedAt:       now,

@@ -40,7 +40,10 @@ func (h *Handler) SpaceTaskRelationsCreate(ctx context.Context, req *apigen.Task
 		return nil, err
 	}
 
-	storedKind, storedSource, storedTarget := canonicalizeRelation(req.Kind, sourceID, targetID)
+	storedKind, storedSource, storedTarget, err := canonicalizeRelation(req.Kind, sourceID, targetID)
+	if err != nil {
+		return nil, badRequest(err.Error())
+	}
 
 	ts := types.Now()
 	if err := q.InsertTaskRelation(ctx, dbgen.InsertTaskRelationParams{
@@ -78,7 +81,10 @@ func (h *Handler) SpaceTaskRelationsDelete(ctx context.Context, params apigen.Sp
 		return badRequest("spawns/spawned_by relations are system-managed and cannot be deleted manually")
 	}
 
-	storedKind, storedSource, storedTarget := canonicalizeRelation(params.Kind, sourceID, targetID)
+	storedKind, storedSource, storedTarget, err := canonicalizeRelation(params.Kind, sourceID, targetID)
+	if err != nil {
+		return badRequest(err.Error())
+	}
 
 	q := dbgen.New(h.DB)
 	result, err := q.DeleteTaskRelation(ctx, dbgen.DeleteTaskRelationParams{

@@ -5,14 +5,13 @@ import (
 	"database/sql"
 	"fmt"
 
-	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
 )
 
 var defaultStatuses = []dbgen.CreateTaskStatusParams{
-	{Name: "todo", Category: string(apigen.TaskStatusCategoryInitial), Position: 0},
-	{Name: "done", Category: string(apigen.TaskStatusCategoryCompletion), Position: 1},
+	{Name: "todo", Category: types.StatusCategoryInitial, Position: 0},
+	{Name: "done", Category: types.StatusCategoryCompletion, Position: 1},
 }
 
 var defaultEffortLevels = []dbgen.CreateTaskEffortLevelParams{
@@ -75,7 +74,7 @@ func CreateSpaceWithDefaults(ctx context.Context, db *sql.DB, slug, name, descri
 	if _, err := q.CreateSpaceMember(ctx, dbgen.CreateSpaceMemberParams{
 		SpaceSlug: space.Slug,
 		UserID:    creatorUserID,
-		Role:      string(apigen.SpaceRoleAdmin),
+		Role:      types.SpaceRoleAdmin,
 		CreatedAt: now,
 	}); err != nil {
 		return dbgen.Space{}, fmt.Errorf("create admin member: %w", err)

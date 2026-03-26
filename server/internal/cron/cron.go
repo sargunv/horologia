@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"time"
 
-	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/taskengine"
 	"github.com/sargunv/tend/server/internal/types"
@@ -15,8 +14,8 @@ import (
 // RunAccumulatingCron ticks every interval and processes overdue
 // fixed_accumulating tasks. It fires immediately on start to handle
 // any backlog from server downtime. Returns when ctx is cancelled.
-func RunAccumulatingCron(ctx context.Context, db *sql.DB, engine *taskengine.Engine, log *slog.Logger, interval time.Duration) {
-	processOverdueTasks(ctx, db, engine, log)
+func RunAccumulatingCron(ctx context.Context, db *sql.DB, log *slog.Logger, interval time.Duration) {
+	processOverdueTasks(ctx, db, log)
 
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
@@ -26,18 +25,18 @@ func RunAccumulatingCron(ctx context.Context, db *sql.DB, engine *taskengine.Eng
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			processOverdueTasks(ctx, db, engine, log)
+			processOverdueTasks(ctx, db, log)
 		}
 	}
 }
 
 // ProcessOverdueTasks finds all fixed_accumulating tasks with due_at <= now
 // and processes each one in its own transaction. Exported for testing.
-func ProcessOverdueTasks(ctx context.Context, db *sql.DB, engine *taskengine.Engine, log *slog.Logger) {
-	processOverdueTasks(ctx, db, engine, log)
+func ProcessOverdueTasks(ctx context.Context, db *sql.DB, log *slog.Logger) {
+	processOverdueTasks(ctx, db, log)
 }
 
-func processOverdueTasks(ctx context.Context, db *sql.DB, engine *taskengine.Engine, log *slog.Logger) {
+func processOverdueTasks(ctx context.Context, db *sql.DB, log *slog.Logger) {
 	now := time.Now()
 	nowEpoch := types.EpochSecondsFrom(now)
 
@@ -49,7 +48,7 @@ func processOverdueTasks(ctx context.Context, db *sql.DB, engine *taskengine.Eng
 	}
 
 	for _, task := range tasks {
-		if err := processOneOverdueTask(ctx, db, engine, task, now); err != nil {
+		if err := processOneOverdueTask(ctx, db, task, now); err != nil {
 			log.ErrorContext(ctx, "cron: process overdue task",
 				"task_id", task.ID,
 				"space", task.SpaceSlug,
@@ -61,7 +60,7 @@ func processOverdueTasks(ctx context.Context, db *sql.DB, engine *taskengine.Eng
 
 // processOneOverdueTask processes a single overdue fixed_accumulating task
 // in its own transaction.
-func processOneOverdueTask(ctx context.Context, db *sql.DB, engine *taskengine.Engine, task dbgen.Task, now time.Time) error {
+func processOneOverdueTask(ctx context.Context, db *sql.DB, task dbgen.Task, now time.Time) error {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -75,11 +74,11 @@ func processOneOverdueTask(ctx context.Context, db *sql.DB, engine *taskengine.E
 		return err
 	}
 
-	if apigen.TaskRecurrenceType(existing.RecurrenceType) != apigen.TaskRecurrenceTypeFixedAccumulating || existing.DueAt == nil || existing.DueAt.Time().After(now) {
+	if existing.RecurrenceType != types.RecurrenceTypeFixedAccumulating || existing.DueAt == nil || existing.DueAt.Time().After(now) {
 		return nil
 	}
 
-	if err := engine.ProcessAccumulatingTask(ctx, q, existing, now); err != nil {
+	if err := taskengine.ProcessAccumulatingTask(ctx, q, existing, now); err != nil {
 		return err
 	}
 

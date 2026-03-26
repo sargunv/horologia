@@ -76,7 +76,7 @@ func (h *Handler) SpacesRead(ctx context.Context, params apigen.SpacesReadParams
 }
 
 func (h *Handler) SpacesUpdate(ctx context.Context, req *apigen.SpaceUpdate, params apigen.SpacesUpdateParams) (*apigen.Space, error) {
-	if err := h.requireSpaceRole(ctx, params.SpaceSlug, apigen.SpaceRoleAdmin); err != nil {
+	if err := h.requireSpaceRole(ctx, params.SpaceSlug, types.SpaceRoleAdmin); err != nil {
 		return nil, err
 	}
 	tx, err := h.DB.BeginTx(ctx, nil)
@@ -109,7 +109,7 @@ func (h *Handler) SpacesUpdate(ctx context.Context, req *apigen.SpaceUpdate, par
 }
 
 func (h *Handler) SpacesDelete(ctx context.Context, params apigen.SpacesDeleteParams) error {
-	if err := h.requireSpaceRole(ctx, params.SpaceSlug, apigen.SpaceRoleAdmin); err != nil {
+	if err := h.requireSpaceRole(ctx, params.SpaceSlug, types.SpaceRoleAdmin); err != nil {
 		return err
 	}
 	q := dbgen.New(h.DB)

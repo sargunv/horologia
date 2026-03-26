@@ -8,6 +8,8 @@ package gen
 import (
 	"context"
 	"database/sql"
+
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 const countTasksByStatusName = `-- name: CountTasksByStatusName :one
@@ -36,7 +38,7 @@ RETURNING space_slug, name, category, position
 type CreateTaskStatusParams struct {
 	SpaceSlug string
 	Name      string
-	Category  string
+	Category  types.StatusCategory
 	Position  int64
 }
 
@@ -111,7 +113,7 @@ WHERE space_slug = ? AND name = ?
 `
 
 type UpdateTaskStatusParams struct {
-	Category  string
+	Category  types.StatusCategory
 	Position  int64
 	SpaceSlug string
 	Name      string

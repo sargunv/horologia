@@ -7,8 +7,6 @@ import (
 
 	"github.com/teambition/rrule-go"
 
-	apigen "github.com/sargunv/tend/server/api/gen"
-	"github.com/sargunv/tend/server/internal/apierrors"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
 )
@@ -16,21 +14,21 @@ import (
 // ValidateRecurrence checks that the recurrence_type and recurrence_rule
 // combination is valid. Call this on both create and update paths.
 // The now parameter is used for time-dependent validation (e.g., UNTIL cap).
-func ValidateRecurrence(recurrenceType apigen.TaskRecurrenceType, recurrenceRule *string, now time.Time) error {
+func ValidateRecurrence(recurrenceType types.RecurrenceType, recurrenceRule *string, now time.Time) error {
 	switch recurrenceType {
-	case apigen.TaskRecurrenceTypeOneOff, apigen.TaskRecurrenceTypeOnDependency:
+	case types.RecurrenceTypeOneOff, types.RecurrenceTypeOnDependency:
 		if recurrenceRule != nil {
-			return apierrors.BadRequest(fmt.Sprintf("recurrence_rule must not be set for %s tasks", recurrenceType))
+			return types.ValidationError(fmt.Sprintf("recurrence_rule must not be set for %s tasks", recurrenceType))
 		}
-	case apigen.TaskRecurrenceTypeCompletionBased, apigen.TaskRecurrenceTypeFixedNonAccumulating, apigen.TaskRecurrenceTypeFixedAccumulating:
+	case types.RecurrenceTypeCompletionBased, types.RecurrenceTypeFixedNonAccumulating, types.RecurrenceTypeFixedAccumulating:
 		if recurrenceRule == nil {
-			return apierrors.BadRequest(fmt.Sprintf("recurrence_rule is required for %s tasks", recurrenceType))
+			return types.ValidationError(fmt.Sprintf("recurrence_rule is required for %s tasks", recurrenceType))
 		}
 		if err := validateRRule(*recurrenceRule, now); err != nil {
 			return err
 		}
 	default:
-		return apierrors.BadRequest(fmt.Sprintf("invalid recurrence_type %q", recurrenceType))
+		return types.ValidationError(fmt.Sprintf("invalid recurrence_type %q", recurrenceType))
 	}
 	return nil
 }
@@ -39,42 +37,42 @@ func ValidateRecurrence(recurrenceType apigen.TaskRecurrenceType, recurrenceRule
 func validateRRule(rule string, now time.Time) error {
 	opt, err := rrule.StrToROption(rule)
 	if err != nil {
-		return apierrors.BadRequest(fmt.Sprintf("invalid recurrence_rule: %v", err))
+		return types.ValidationError(fmt.Sprintf("invalid recurrence_rule: %v", err))
 	}
 
 	switch opt.Freq {
 	case rrule.YEARLY, rrule.MONTHLY, rrule.WEEKLY, rrule.DAILY:
 		// supported
 	case rrule.HOURLY, rrule.MINUTELY, rrule.SECONDLY:
-		return apierrors.BadRequest("unsupported RRULE frequency: must be DAILY, WEEKLY, MONTHLY, or YEARLY")
+		return types.ValidationError("unsupported RRULE frequency: must be DAILY, WEEKLY, MONTHLY, or YEARLY")
 	}
 
 	if opt.Count > 0 {
-		return apierrors.BadRequest("RRULE COUNT is not supported; use UNTIL for finite recurrence")
+		return types.ValidationError("RRULE COUNT is not supported; use UNTIL for finite recurrence")
 	}
 
 	if !opt.Until.IsZero() && opt.Until.After(now.AddDate(10, 0, 0)) {
-		return apierrors.BadRequest("RRULE UNTIL must not exceed 10 years in the future")
+		return types.ValidationError("RRULE UNTIL must not exceed 10 years in the future")
 	}
 
 	if len(opt.Byhour) > 0 {
-		return apierrors.BadRequest("unsupported RRULE property: BYHOUR")
+		return types.ValidationError("unsupported RRULE property: BYHOUR")
 	}
 	if len(opt.Byminute) > 0 {
-		return apierrors.BadRequest("unsupported RRULE property: BYMINUTE")
+		return types.ValidationError("unsupported RRULE property: BYMINUTE")
 	}
 	if len(opt.Bysecond) > 0 {
-		return apierrors.BadRequest("unsupported RRULE property: BYSECOND")
+		return types.ValidationError("unsupported RRULE property: BYSECOND")
 	}
 
 	if len(opt.Bysetpos) > 0 {
-		return apierrors.BadRequest("unsupported RRULE property: BYSETPOS")
+		return types.ValidationError("unsupported RRULE property: BYSETPOS")
 	}
 	if len(opt.Byyearday) > 0 {
-		return apierrors.BadRequest("unsupported RRULE property: BYYEARDAY")
+		return types.ValidationError("unsupported RRULE property: BYYEARDAY")
 	}
 	if len(opt.Byweekno) > 0 {
-		return apierrors.BadRequest("unsupported RRULE property: BYWEEKNO")
+		return types.ValidationError("unsupported RRULE property: BYWEEKNO")
 	}
 
 	return nil
@@ -90,29 +88,29 @@ func validateRRule(rule string, now time.Time) error {
 //     in the task's timezone; next occurrence after now.
 //
 // Precondition: ValidateRecurrence must have been called first.
-func ComputeNextDueAt(recurrenceType apigen.TaskRecurrenceType, recurrenceRule *string, due *types.DueDate, now time.Time) (*types.DueDate, error) {
+func ComputeNextDueAt(recurrenceType types.RecurrenceType, recurrenceRule *string, due *types.DueDate, now time.Time) (*types.DueDate, error) {
 	tz := "UTC"
 	if due != nil {
 		tz = due.Tz
 	}
 	loc, err := time.LoadLocation(tz)
 	if err != nil {
-		return nil, apierrors.BadRequest(fmt.Sprintf("invalid due_tz %q: %v", tz, err))
+		return nil, types.ValidationError(fmt.Sprintf("invalid due_tz %q: %v", tz, err))
 	}
 
 	nowInTz := now.In(loc)
 
 	var nextAt *types.EpochSeconds
 	switch recurrenceType {
-	case apigen.TaskRecurrenceTypeCompletionBased:
+	case types.RecurrenceTypeCompletionBased:
 		nextAt, err = nextRRuleOccurrence(*recurrenceRule, nowInTz, nowInTz)
-	case apigen.TaskRecurrenceTypeFixedNonAccumulating, apigen.TaskRecurrenceTypeFixedAccumulating:
+	case types.RecurrenceTypeFixedNonAccumulating, types.RecurrenceTypeFixedAccumulating:
 		dtstart := nowInTz
 		if due != nil {
 			dtstart = due.At.Time().In(loc)
 		}
 		nextAt, err = nextRRuleOccurrence(*recurrenceRule, dtstart, nowInTz)
-	case apigen.TaskRecurrenceTypeOneOff, apigen.TaskRecurrenceTypeOnDependency:
+	case types.RecurrenceTypeOneOff, types.RecurrenceTypeOnDependency:
 		return nil, nil
 	default:
 		return nil, fmt.Errorf("unhandled recurrence type %q", recurrenceType)
@@ -151,18 +149,18 @@ func nextRRuleOccurrence(rule string, dtstart time.Time, after time.Time) (*type
 }
 
 // InitialStatusFromSlice returns the name of the first initial-category status
-// from a pre-fetched slice. Returns a bad request error if none exists.
+// from a pre-fetched slice. Returns a validation error if none exists.
 func InitialStatusFromSlice(statuses []dbgen.TaskStatus) (string, error) {
 	for _, s := range statuses {
-		if s.Category == string(apigen.TaskStatusCategoryInitial) {
+		if s.Category == types.StatusCategoryInitial {
 			return s.Name, nil
 		}
 	}
-	return "", apierrors.BadRequest("space has no initial status")
+	return "", types.ValidationError("space has no initial status")
 }
 
 // FindInitialStatus returns the name of the first initial-category status in
-// the space. Returns a bad request error if no initial status exists.
+// the space. Returns a validation error if no initial status exists.
 func FindInitialStatus(ctx context.Context, q *dbgen.Queries, spaceSlug string) (string, error) {
 	statuses, err := q.ListTaskStatusesBySpace(ctx, spaceSlug)
 	if err != nil {
@@ -198,7 +196,7 @@ func ApplyCompletionTriggers(ctx context.Context, q *dbgen.Queries, completedTas
 		if err != nil {
 			return err
 		}
-		if apigen.TaskRecurrenceType(target.RecurrenceType) != apigen.TaskRecurrenceTypeOnDependency {
+		if target.RecurrenceType != types.RecurrenceTypeOnDependency {
 			continue
 		}
 		if err := q.ResetTaskToInitial(ctx, dbgen.ResetTaskToInitialParams{

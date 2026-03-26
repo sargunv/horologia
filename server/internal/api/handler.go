@@ -12,16 +12,14 @@ import (
 	sqlite3 "modernc.org/sqlite/lib"
 
 	apigen "github.com/sargunv/tend/server/api/gen"
-	"github.com/sargunv/tend/server/internal/apierrors"
-	"github.com/sargunv/tend/server/internal/taskengine"
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 // Handler implements the generated API interface.
 type Handler struct {
 	apigen.UnimplementedHandler
-	DB     *sql.DB
-	Log    *slog.Logger
-	Engine *taskengine.Engine
+	DB  *sql.DB
+	Log *slog.Logger
 }
 
 func (h *Handler) NewError(ctx context.Context, err error) *apigen.ApiErrorStatusCode {
@@ -47,11 +45,11 @@ func (h *Handler) NewError(ctx context.Context, err error) *apigen.ApiErrorStatu
 		code = http.StatusBadRequest
 		apiCode = "bad_request"
 		message = "referenced resource does not exist"
-	case isForbidden(err):
+	case types.IsForbiddenError(err):
 		code = http.StatusForbidden
 		apiCode = "forbidden"
 		message = err.Error()
-	case isBadRequest(err):
+	case types.IsValidationError(err):
 		code = http.StatusBadRequest
 		apiCode = "bad_request"
 		message = err.Error()
@@ -85,10 +83,8 @@ func isForeignKeyViolation(err error) bool {
 }
 
 var (
-	badRequest   = apierrors.BadRequest
-	isBadRequest = apierrors.IsBadRequest
-	forbidden    = apierrors.Forbidden
-	isForbidden  = apierrors.IsForbidden
+	badRequest = types.ValidationError
+	forbidden  = types.ForbiddenError
 )
 
 func checkDeleted(result sql.Result) error {

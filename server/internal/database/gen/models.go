@@ -13,7 +13,7 @@ type AuthToken struct {
 	UserID    int64
 	TokenHash string
 	Name      string
-	Kind      string
+	Kind      types.AuthTokenKind
 	ExpiresAt *types.EpochSeconds
 	CreatedAt types.EpochSeconds
 }
@@ -29,7 +29,7 @@ type Space struct {
 type SpaceMember struct {
 	SpaceSlug string
 	UserID    int64
-	Role      string
+	Role      types.SpaceRole
 	CreatedAt types.EpochSeconds
 }
 
@@ -51,7 +51,7 @@ type Task struct {
 	PriorityName    *string
 	DueAt           *types.EpochSeconds
 	DueTz           *string
-	RecurrenceType  string
+	RecurrenceType  types.RecurrenceType
 	RecurrenceRule  *string
 	LastCompletedAt *types.EpochSeconds
 	CreatedAt       types.EpochSeconds
@@ -80,7 +80,7 @@ type TaskRelation struct {
 	SourceTaskID int64
 	TargetTaskID int64
 	SpaceSlug    string
-	Kind         string
+	Kind         types.StoredRelationKind
 	CreatedAt    types.EpochSeconds
 }
 
@@ -94,7 +94,7 @@ type TaskRotationPool struct {
 type TaskStatus struct {
 	SpaceSlug string
 	Name      string
-	Category  string
+	Category  types.StatusCategory
 	Position  int64
 }
 

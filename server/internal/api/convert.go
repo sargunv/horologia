@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/base64"
 	"fmt"
-	"maps"
 	"strconv"
 	"strings"
 	"time"
@@ -91,7 +90,7 @@ func spaceFromDB(s dbgen.Space) *apigen.Space {
 type taskRelationRow struct {
 	SourceTaskID int64
 	TargetTaskID int64
-	Kind         string
+	Kind         types.StoredRelationKind
 	CreatedAt    types.EpochSeconds
 }
 
@@ -103,23 +102,22 @@ type taskRelationRow struct {
 // (parent/child, blocking, triggering); false for relations specific to a particular
 // instance (duplicates, spawn lineage).
 var directedKindMap = map[apigen.TaskRelationKind]struct {
-	storedKind  string
-	flip        bool
-	copyOnSpawn bool
+	storedKind types.StoredRelationKind
+	flip       bool
 }{
-	apigen.TaskRelationKindParentOf:    {"parent", false, true},
-	apigen.TaskRelationKindChildOf:     {"parent", true, true},
-	apigen.TaskRelationKindBlocks:      {"blocks", false, true},
-	apigen.TaskRelationKindBlockedBy:   {"blocks", true, true},
-	apigen.TaskRelationKindTriggers:    {"triggers", false, true},
-	apigen.TaskRelationKindTriggeredBy: {"triggers", true, true},
-	apigen.TaskRelationKindSpawns:      {"spawns", false, false},
-	apigen.TaskRelationKindSpawnedBy:   {"spawns", true, false},
+	apigen.TaskRelationKindParentOf:    {types.RelationKindParent, false},
+	apigen.TaskRelationKindChildOf:     {types.RelationKindParent, true},
+	apigen.TaskRelationKindBlocks:      {types.RelationKindBlocks, false},
+	apigen.TaskRelationKindBlockedBy:   {types.RelationKindBlocks, true},
+	apigen.TaskRelationKindTriggers:    {types.RelationKindTriggers, false},
+	apigen.TaskRelationKindTriggeredBy: {types.RelationKindTriggers, true},
+	apigen.TaskRelationKindSpawns:      {types.RelationKindSpawns, false},
+	apigen.TaskRelationKindSpawnedBy:   {types.RelationKindSpawns, true},
 }
 
 // relationKey identifies a stored relation by its canonical kind and direction.
 type relationKey struct {
-	kind string
+	kind types.StoredRelationKind
 	flip bool
 }
 
@@ -128,29 +126,15 @@ type relationKey struct {
 var inverseKindMap map[relationKey]apigen.TaskRelationKind
 
 // symmetricKinds lists stored relation kinds that are symmetric (same kind in both directions).
-// copyOnSpawn follows the same policy as directedKindMap (see comment above).
-var symmetricKinds = map[string]struct{ copyOnSpawn bool }{
-	string(apigen.TaskRelationKindRelatesTo):  {copyOnSpawn: true},
-	string(apigen.TaskRelationKindDuplicates): {copyOnSpawn: false},
+var symmetricKinds = map[types.StoredRelationKind]struct{}{
+	types.RelationKindRelatesTo:  {},
+	types.RelationKindDuplicates: {},
 }
-
-// storedKindCopyOnSpawn maps stored relation kinds to whether they should be
-// copied when spawning a new task. Derived from directedKindMap and symmetricKinds
-// at init time.
-var storedKindCopyOnSpawn map[string]bool
 
 func init() {
 	inverseKindMap = make(map[relationKey]apigen.TaskRelationKind, len(directedKindMap))
-	storedKindCopyOnSpawn = make(map[string]bool)
 	for apiKind, c := range directedKindMap {
 		inverseKindMap[relationKey{c.storedKind, c.flip}] = apiKind
-		if existing, seen := storedKindCopyOnSpawn[c.storedKind]; seen && existing != c.copyOnSpawn {
-			panic(fmt.Sprintf("conflicting copyOnSpawn for stored kind %q", c.storedKind))
-		}
-		storedKindCopyOnSpawn[c.storedKind] = c.copyOnSpawn
-	}
-	for kind, s := range symmetricKinds {
-		storedKindCopyOnSpawn[kind] = s.copyOnSpawn
 	}
 }
 
@@ -183,15 +167,19 @@ func relationFromDB(rel taskRelationRow, perspectiveTaskID int64) (apigen.TaskRe
 	}, nil
 }
 
-func canonicalizeRelation(kind apigen.TaskRelationKind, sourceID, targetID int64) (storedKind string, storedSource, storedTarget int64) {
+func canonicalizeRelation(kind apigen.TaskRelationKind, sourceID, targetID int64) (storedKind types.StoredRelationKind, storedSource, storedTarget int64, err error) {
 	if c, ok := directedKindMap[kind]; ok {
 		if c.flip {
 			sourceID, targetID = targetID, sourceID
 		}
-		return c.storedKind, sourceID, targetID
+		return c.storedKind, sourceID, targetID, nil
 	}
 	// Symmetric kinds: normalize order so the lower ID is always source.
-	return string(kind), min(sourceID, targetID), max(sourceID, targetID)
+	sk := types.StoredRelationKind(kind)
+	if _, ok := symmetricKinds[sk]; !ok {
+		return "", 0, 0, fmt.Errorf("unknown relation kind %q", kind)
+	}
+	return sk, min(sourceID, targetID), max(sourceID, targetID), nil
 }
 
 func taskFromDB(task dbgen.Task, assigneeUserIDs []int64, tagNames []string, relations []taskRelationRow, rotationPoolUserIDs []int64) (*apigen.Task, error) {
@@ -350,7 +338,7 @@ func authTokenFromDB(t dbgen.AuthToken) *apigen.AuthToken {
 	}
 }
 
-func memberToAPI(userID int64, userName, userEmail, role string, createdAt types.EpochSeconds) *apigen.SpaceMember {
+func memberToAPI(userID int64, userName, userEmail string, role types.SpaceRole, createdAt types.EpochSeconds) *apigen.SpaceMember {
 	return &apigen.SpaceMember{
 		UserId:    formatUserID(userID),
 		UserName:  userName,
@@ -358,14 +346,6 @@ func memberToAPI(userID int64, userName, userEmail, role string, createdAt types
 		Role:      apigen.SpaceRole(role),
 		CreatedAt: createdAt.Time(),
 	}
-}
-
-// StoredKindCopyOnSpawn returns the map of stored relation kinds to whether
-// they should be copied when spawning a new task. Used to configure Engine.
-func StoredKindCopyOnSpawn() map[string]bool {
-	m := make(map[string]bool, len(storedKindCopyOnSpawn))
-	maps.Copy(m, storedKindCopyOnSpawn)
-	return m
 }
 
 func validateTagName(name string) error {

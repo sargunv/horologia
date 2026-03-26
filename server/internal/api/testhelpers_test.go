@@ -60,7 +60,7 @@ func setupTestServer(t *testing.T) *testEnv {
 		UserID:    user.ID,
 		TokenHash: tokenHash,
 		Name:      "test",
-		Kind:      "session",
+		Kind:      types.AuthTokenKindSession,
 		CreatedAt: types.Now(),
 	})
 	if err != nil {
@@ -68,10 +68,7 @@ func setupTestServer(t *testing.T) *testEnv {
 	}
 
 	log := slog.New(slog.DiscardHandler)
-	engine := &taskengine.Engine{
-		CopyOnSpawnKinds: api.StoredKindCopyOnSpawn(),
-	}
-	handler := &api.Handler{DB: db, Log: log, Engine: engine}
+	handler := &api.Handler{DB: db, Log: log}
 	h, err := api.NewServer(handler, log)
 	if err != nil {
 		t.Fatalf("new server: %v", err)

@@ -6,6 +6,7 @@ import (
 
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 // extractNames maps a slice of rows to a slice of name strings.
@@ -115,7 +116,7 @@ func (h *Handler) SpaceTaskStatusesList(ctx context.Context, params apigen.Space
 }
 
 func (h *Handler) SpaceTaskStatusesReplace(ctx context.Context, req *apigen.TaskStatusReplace, params apigen.SpaceTaskStatusesReplaceParams) (*apigen.TaskStatusList, error) {
-	if err := h.requireSpaceRole(ctx, params.SpaceSlug, apigen.SpaceRoleAdmin); err != nil {
+	if err := h.requireSpaceRole(ctx, params.SpaceSlug, types.SpaceRoleAdmin); err != nil {
 		return nil, err
 	}
 
@@ -160,14 +161,14 @@ func (h *Handler) SpaceTaskStatusesReplace(ctx context.Context, req *apigen.Task
 			_, err := q.CreateTaskStatus(ctx, dbgen.CreateTaskStatusParams{
 				SpaceSlug: spaceSlug,
 				Name:      item.Name,
-				Category:  string(item.Category),
+				Category:  types.StatusCategory(item.Category),
 				Position:  pos,
 			})
 			return err
 		},
 		update: func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item apigen.TaskStatusInput, pos int64) error {
 			return q.UpdateTaskStatus(ctx, dbgen.UpdateTaskStatusParams{
-				Category:  string(item.Category),
+				Category:  types.StatusCategory(item.Category),
 				Position:  pos,
 				SpaceSlug: spaceSlug,
 				Name:      item.Name,
@@ -238,7 +239,7 @@ func (h *Handler) SpaceTaskEffortLevelsList(ctx context.Context, params apigen.S
 }
 
 func (h *Handler) SpaceTaskEffortLevelsReplace(ctx context.Context, req *apigen.TaskEffortLevelReplace, params apigen.SpaceTaskEffortLevelsReplaceParams) (*apigen.TaskEffortLevelList, error) {
-	if err := h.requireSpaceRole(ctx, params.SpaceSlug, apigen.SpaceRoleAdmin); err != nil {
+	if err := h.requireSpaceRole(ctx, params.SpaceSlug, types.SpaceRoleAdmin); err != nil {
 		return nil, err
 	}
 
@@ -327,7 +328,7 @@ func (h *Handler) SpaceTaskPriorityLevelsList(ctx context.Context, params apigen
 }
 
 func (h *Handler) SpaceTaskPriorityLevelsReplace(ctx context.Context, req *apigen.TaskPriorityLevelReplace, params apigen.SpaceTaskPriorityLevelsReplaceParams) (*apigen.TaskPriorityLevelList, error) {
-	if err := h.requireSpaceRole(ctx, params.SpaceSlug, apigen.SpaceRoleAdmin); err != nil {
+	if err := h.requireSpaceRole(ctx, params.SpaceSlug, types.SpaceRoleAdmin); err != nil {
 		return nil, err
 	}
 

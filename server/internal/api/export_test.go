@@ -8,5 +8,5 @@ import (
 
 // ProcessOverdueTasksForTest exposes ProcessOverdueTasks for integration tests.
 func (h *Handler) ProcessOverdueTasksForTest(ctx context.Context) {
-	cron.ProcessOverdueTasks(ctx, h.DB, h.Engine, h.Log)
+	cron.ProcessOverdueTasks(ctx, h.DB, h.Log)
 }

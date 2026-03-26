@@ -22,7 +22,7 @@ type CreateAuthTokenParams struct {
 	UserID    int64
 	TokenHash string
 	Name      string
-	Kind      string
+	Kind      types.AuthTokenKind
 	ExpiresAt *types.EpochSeconds
 	CreatedAt types.EpochSeconds
 }
@@ -93,7 +93,7 @@ type GetAuthTokenByHashRow struct {
 	UserID      int64
 	TokenHash   string
 	Name        string
-	Kind        string
+	Kind        types.AuthTokenKind
 	ExpiresAt   *types.EpochSeconds
 	CreatedAt   types.EpochSeconds
 	UserID2     int64
