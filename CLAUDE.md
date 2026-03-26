@@ -22,6 +22,13 @@ tasks. Key commands:
 Packages (`api`, `cli`, `server`, `web`) have their own tasks scoped by name, e.g.
 `mise run server:generate`, `mise run server:build`, `mise run server:test`.
 
+## Architecture
+
+- ./api - TypeSpec definition for API.
+- ./server - Golang backend service and API implementation.
+- ./web - TODOL: React SPA served by the backend
+- ./cli - TODO: Golang CLI client
+
 ## Documentation
 
 - [Skeleton design system](https://www.skeleton.dev/llms-react.txt)
