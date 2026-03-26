@@ -235,7 +235,7 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 	if err := activitylog.Log(ctx, tx, activitylog.Entry{
 		SpaceSlug:  params.SpaceSlug,
 		EntityType: activitylog.EntityTask,
-		EntityID:   formatTaskID(task.ID),
+		EntityID:   types.FormatTaskID(task.ID),
 		Action:     activitylog.ActionCreated,
 		Details: []activitylog.Detail{
 			{Field: "title", To: new(task.Title)},
@@ -296,7 +296,7 @@ func (h *Handler) SpaceTasksRead(ctx context.Context, params apigen.SpaceTasksRe
 	if err := h.requireSpaceRead(ctx, params.SpaceSlug); err != nil {
 		return nil, err
 	}
-	id, err := parseTaskID(params.TaskId)
+	id, err := types.ParseTaskID(params.TaskId)
 	if err != nil {
 		return nil, badRequest(err.Error())
 	}
@@ -308,7 +308,7 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 	if err := h.requireSpaceWrite(ctx, params.SpaceSlug); err != nil {
 		return nil, err
 	}
-	id, err := parseTaskID(params.TaskId)
+	id, err := types.ParseTaskID(params.TaskId)
 	if err != nil {
 		return nil, badRequest(err.Error())
 	}
@@ -387,7 +387,7 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 	}
 
 	// Log task update with field-level diffs.
-	taskEntityID := formatTaskID(id)
+	taskEntityID := types.FormatTaskID(id)
 	newTitle := req.Title.Or(existing.Title)
 	newDescription := req.Description.Or(existing.Description)
 	var details []activitylog.Detail
@@ -401,10 +401,24 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 		details = append(details, activitylog.Detail{Field: "status", From: new(existing.StatusName), To: new(cr.Status)})
 	}
 	if effortName != existing.EffortName {
-		details = append(details, activitylog.Detail{Field: "effort", From: new(existing.EffortName.String), To: new(effortName.String)})
+		var from, to *string
+		if existing.EffortName.Valid {
+			from = &existing.EffortName.String
+		}
+		if effortName.Valid {
+			to = &effortName.String
+		}
+		details = append(details, activitylog.Detail{Field: "effort", From: from, To: to})
 	}
 	if priorityName != existing.PriorityName {
-		details = append(details, activitylog.Detail{Field: "priority", From: new(existing.PriorityName.String), To: new(priorityName.String)})
+		var from, to *string
+		if existing.PriorityName.Valid {
+			from = &existing.PriorityName.String
+		}
+		if priorityName.Valid {
+			to = &priorityName.String
+		}
+		details = append(details, activitylog.Detail{Field: "priority", From: from, To: to})
 	}
 	if string(cr.RecurrenceType) != string(existing.RecurrenceType) {
 		details = append(details, activitylog.Detail{Field: "recurrence_type", From: new(string(existing.RecurrenceType)), To: new(string(cr.RecurrenceType))})
@@ -422,21 +436,38 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 		if err != nil {
 			return nil, err
 		}
-		details = append(details, diffIDList("assignee", oldIDs, req.AssigneeIds, formatUserID, parseUserID)...)
+		assigneeDiffs, err := diffIDList("assignee", oldIDs, req.AssigneeIds, types.FormatUserID, types.ParseUserID)
+		if err != nil {
+			return nil, badRequest(err.Error())
+		}
+		details = append(details, assigneeDiffs...)
 	}
 	if req.RotationPool != nil {
 		oldIDs, err := q.ListRotationPoolByTask(ctx, id)
 		if err != nil {
 			return nil, err
 		}
-		details = append(details, diffIDList("rotation_pool", oldIDs, req.RotationPool, formatUserID, parseUserID)...)
+		poolDiffs, err := diffIDList("rotation_pool", oldIDs, req.RotationPool, types.FormatUserID, types.ParseUserID)
+		if err != nil {
+			return nil, badRequest(err.Error())
+		}
+		details = append(details, poolDiffs...)
 	}
 	if req.Tags != nil {
 		oldNames, err := q.ListTagNamesByTask(ctx, id)
 		if err != nil {
 			return nil, err
 		}
-		details = append(details, diffStringList("tag", oldNames, req.Tags)...)
+		// Fold tag names before diffing so case-only changes don't produce spurious diffs.
+		foldedOld := make([]string, len(oldNames))
+		for i, n := range oldNames {
+			foldedOld[i] = taskengine.FoldTagName(n)
+		}
+		foldedNew := make([]string, len(req.Tags))
+		for i, n := range req.Tags {
+			foldedNew[i] = taskengine.FoldTagName(n)
+		}
+		details = append(details, diffStringList("tag", foldedOld, foldedNew)...)
 	}
 
 	// Intentionally after HandleCompletionTransition: if the user provides
@@ -475,7 +506,7 @@ func (h *Handler) SpaceTasksDelete(ctx context.Context, params apigen.SpaceTasks
 	if err := h.requireSpaceWrite(ctx, params.SpaceSlug); err != nil {
 		return err
 	}
-	id, err := parseTaskID(params.TaskId)
+	id, err := types.ParseTaskID(params.TaskId)
 	if err != nil {
 		return badRequest(err.Error())
 	}
@@ -504,7 +535,7 @@ func (h *Handler) SpaceTasksDelete(ctx context.Context, params apigen.SpaceTasks
 	if err := activitylog.Log(ctx, tx, activitylog.Entry{
 		SpaceSlug:  params.SpaceSlug,
 		EntityType: activitylog.EntityTask,
-		EntityID:   formatTaskID(id),
+		EntityID:   types.FormatTaskID(id),
 		Action:     activitylog.ActionDeleted,
 		Details: []activitylog.Detail{
 			{Field: "title", From: new(existing.Title)},
@@ -566,7 +597,7 @@ func parseAndValidateUserIDs(ctx context.Context, q *dbgen.Queries, spaceSlug st
 	seen := make(map[int64]struct{}, len(rawIDs))
 	userIDs := make([]int64, 0, len(rawIDs))
 	for _, raw := range rawIDs {
-		uid, err := parseUserID(raw)
+		uid, err := types.ParseUserID(raw)
 		if err != nil {
 			return nil, badRequest(err.Error())
 		}
@@ -586,7 +617,7 @@ func parseAndValidateUserIDs(ctx context.Context, q *dbgen.Queries, spaceSlug st
 	}
 	for _, uid := range userIDs {
 		if _, ok := memberSet[uid]; !ok {
-			return nil, badRequest(fmt.Sprintf("user %s is not a member of this space", formatUserID(uid)))
+			return nil, badRequest(fmt.Sprintf("user %s is not a member of this space", types.FormatUserID(uid)))
 		}
 	}
 	return userIDs, nil
@@ -703,16 +734,18 @@ func (h *Handler) setTaskTags(ctx context.Context, q *dbgen.Queries, taskID int6
 
 // diffIDList computes added/removed entries between old numeric IDs and new
 // string-formatted IDs, returning activity log details for each change.
-func diffIDList(field string, oldIDs []int64, newRaw []string, format func(int64) string, parse func(string) (int64, error)) []activitylog.Detail {
+func diffIDList(field string, oldIDs []int64, newRaw []string, format func(int64) string, parse func(string) (int64, error)) ([]activitylog.Detail, error) {
 	oldSet := make(map[int64]struct{}, len(oldIDs))
 	for _, id := range oldIDs {
 		oldSet[id] = struct{}{}
 	}
 	newSet := make(map[int64]struct{}, len(newRaw))
 	for _, raw := range newRaw {
-		if id, err := parse(raw); err == nil {
-			newSet[id] = struct{}{}
+		id, err := parse(raw)
+		if err != nil {
+			return nil, err
 		}
+		newSet[id] = struct{}{}
 	}
 	var details []activitylog.Detail
 	for id := range newSet {
@@ -725,29 +758,18 @@ func diffIDList(field string, oldIDs []int64, newRaw []string, format func(int64
 			details = append(details, activitylog.Detail{Field: field, From: new(format(id))})
 		}
 	}
-	return details
+	return details, nil
 }
 
 // diffStringList computes added/removed entries between two string slices.
 func diffStringList(field string, oldNames, newNames []string) []activitylog.Detail {
-	oldSet := make(map[string]struct{}, len(oldNames))
-	for _, n := range oldNames {
-		oldSet[n] = struct{}{}
-	}
-	newSet := make(map[string]struct{}, len(newNames))
-	for _, n := range newNames {
-		newSet[n] = struct{}{}
-	}
+	added, removed := computeBulkDiff(oldNames, newNames)
 	var details []activitylog.Detail
-	for _, n := range newNames {
-		if _, ok := oldSet[n]; !ok {
-			details = append(details, activitylog.Detail{Field: field, To: new(n)})
-		}
+	for _, n := range added {
+		details = append(details, activitylog.Detail{Field: field, To: new(n)})
 	}
-	for _, n := range oldNames {
-		if _, ok := newSet[n]; !ok {
-			details = append(details, activitylog.Detail{Field: field, From: new(n)})
-		}
+	for _, n := range removed {
+		details = append(details, activitylog.Detail{Field: field, From: new(n)})
 	}
 	return details
 }

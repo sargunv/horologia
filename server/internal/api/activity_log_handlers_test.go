@@ -8,6 +8,7 @@ import (
 
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/taskengine"
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 // activityItems returns the items array from a GET activity log response.
@@ -53,7 +54,7 @@ func findDetail(t *testing.T, details []map[string]any, field string) map[string
 
 func mustParseTaskID(t *testing.T, s string) int64 {
 	t.Helper()
-	id, err := strconv.ParseInt(s[1:], 10, 64)
+	id, err := types.ParseTaskID(s)
 	if err != nil {
 		t.Fatalf("parse task ID %q: %v", s, err)
 	}
@@ -211,6 +212,9 @@ func TestTaskActivityLog_SurvivesTaskDeletion(t *testing.T) {
 				if titleDetail["from"] != "Temporary" {
 					t.Errorf("delete title.from = %v, want Temporary", titleDetail["from"])
 				}
+				if titleDetail["to"] != nil {
+					t.Errorf("delete title.to = %v, want nil", titleDetail["to"])
+				}
 			}
 		}
 	}
@@ -295,10 +299,14 @@ func TestUserActivityList_CrossSpaceFiltering(t *testing.T) {
 
 	// Fabricate an activity entry for Alice in the hidden space (simulates a
 	// hypothetical cross-space leak).
-	_, err := env.pool.Exec(t.Context(),
+	aliceNumericID, err := types.ParseUserID(aliceID)
+	if err != nil {
+		t.Fatalf("parse alice user ID %q: %v", aliceID, err)
+	}
+	_, err = env.pool.Exec(t.Context(),
 		`INSERT INTO activity_log (space_slug, actor_id, entity_type, entity_id, action, created_at)
 		 VALUES ('hidden', $1, 'task', 'T999', 'created', now())`,
-		aliceID[1:]) // strip 'U' prefix for the numeric ID
+		aliceNumericID)
 	if err != nil {
 		t.Fatalf("insert fabricated entry: %v", err)
 	}
@@ -317,12 +325,38 @@ func TestUserActivityList_CrossSpaceFiltering(t *testing.T) {
 func TestUserActivityList_OwnerSeesAllSpaces(t *testing.T) {
 	env := setupTestServer(t)
 	ownerID := getUserID(t, env, env.Token)
-	createSpace(t, env, "ws", "WS")
-	createTask(t, env, "ws", `{"title":"Owner task"}`)
+
+	// Alice creates a space where the owner is NOT a member.
+	aliceToken := createTestUser(t, env, "alice@test.com", "Alice", "pass123")
+	resp := doRequestAs(t, env, aliceToken, "POST", "/spaces",
+		`{"slug":"alice-only","name":"Alice Only"}`)
+	assertStatusClose(t, resp, http.StatusCreated)
+
+	// Fabricate an activity entry attributed to the owner in Alice's space.
+	// The owner has no membership in "alice-only", so only the IsOwner bypass
+	// in the SQL query should make this entry visible.
+	ownerNumericID, err := types.ParseUserID(ownerID)
+	if err != nil {
+		t.Fatalf("parse owner user ID %q: %v", ownerID, err)
+	}
+	_, err = env.pool.Exec(t.Context(),
+		`INSERT INTO activity_log (space_slug, actor_id, entity_type, entity_id, action, created_at)
+		 VALUES ('alice-only', $1, 'task', 'T888', 'created', now())`,
+		ownerNumericID)
+	if err != nil {
+		t.Fatalf("insert fabricated entry: %v", err)
+	}
 
 	items := activityItems(t, env, "/users/"+ownerID+"/activity")
-	if len(items) == 0 {
-		t.Fatal("expected owner to see their own activity")
+	var foundAliceOnly bool
+	for _, item := range items {
+		e := entryMap(t, item)
+		if e["spaceSlug"] == "alice-only" {
+			foundAliceOnly = true
+		}
+	}
+	if !foundAliceOnly {
+		t.Error("owner should see activity from spaces they are not a member of via the IsOwner bypass")
 	}
 }
 
@@ -350,11 +384,19 @@ func TestSpaceActivityLog_Pagination(t *testing.T) {
 		t.Fatal("page 1: expected nextCursor")
 	}
 
-	// Verify descending order.
-	id0 := jsonAs[string](t, entryMap(t, items1[0])["id"])
-	id1 := jsonAs[string](t, entryMap(t, items1[1])["id"])
+	// Verify descending order (compare numerically, not lexicographically).
+	id0str := jsonAs[string](t, entryMap(t, items1[0])["id"])
+	id1str := jsonAs[string](t, entryMap(t, items1[1])["id"])
+	id0, err := strconv.ParseInt(id0str, 10, 64)
+	if err != nil {
+		t.Fatalf("parse id0 %q: %v", id0str, err)
+	}
+	id1, err := strconv.ParseInt(id1str, 10, 64)
+	if err != nil {
+		t.Fatalf("parse id1 %q: %v", id1str, err)
+	}
 	if id0 <= id1 {
-		t.Errorf("page 1: expected descending IDs, got %s <= %s", id0, id1)
+		t.Errorf("page 1: expected descending IDs, got %d <= %d", id0, id1)
 	}
 
 	// Page 2.
@@ -368,9 +410,13 @@ func TestSpaceActivityLog_Pagination(t *testing.T) {
 	}
 
 	// Page 2 IDs should be less than page 1's smallest.
-	id2 := jsonAs[string](t, entryMap(t, items2[0])["id"])
+	id2str := jsonAs[string](t, entryMap(t, items2[0])["id"])
+	id2, err := strconv.ParseInt(id2str, 10, 64)
+	if err != nil {
+		t.Fatalf("parse id2 %q: %v", id2str, err)
+	}
 	if id2 >= id1 {
-		t.Errorf("page 2 ID %s should be less than page 1 last ID %s", id2, id1)
+		t.Errorf("page 2 ID %d should be less than page 1 last ID %d", id2, id1)
 	}
 }
 

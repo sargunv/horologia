@@ -24,11 +24,11 @@ func (h *Handler) SpaceTaskRelationsCreate(ctx context.Context, req *apigen.Task
 		return nil, err
 	}
 
-	sourceID, err := parseTaskID(params.TaskId)
+	sourceID, err := types.ParseTaskID(params.TaskId)
 	if err != nil {
 		return nil, badRequest(err.Error())
 	}
-	targetID, err := parseTaskID(req.TaskId)
+	targetID, err := types.ParseTaskID(req.TaskId)
 	if err != nil {
 		return nil, badRequest(err.Error())
 	}
@@ -74,11 +74,11 @@ func (h *Handler) SpaceTaskRelationsCreate(ctx context.Context, req *apigen.Task
 	if err := activitylog.Log(ctx, tx, activitylog.Entry{
 		SpaceSlug:  params.SpaceSlug,
 		EntityType: activitylog.EntityRelation,
-		EntityID:   formatTaskID(sourceID),
+		EntityID:   types.FormatTaskID(sourceID),
 		Action:     activitylog.ActionCreated,
 		Details: []activitylog.Detail{
 			{Field: "kind", To: new(string(req.Kind))},
-			{Field: "related_task", To: new(formatTaskID(targetID))},
+			{Field: "related_task", To: new(types.FormatTaskID(targetID))},
 		},
 	}, ts); err != nil {
 		return nil, err
@@ -90,7 +90,7 @@ func (h *Handler) SpaceTaskRelationsCreate(ctx context.Context, req *apigen.Task
 
 	return &apigen.TaskRelation{
 		Kind:      req.Kind,
-		TaskId:    formatTaskID(targetID),
+		TaskId:    types.FormatTaskID(targetID),
 		CreatedAt: ts,
 	}, nil
 }
@@ -100,11 +100,11 @@ func (h *Handler) SpaceTaskRelationsDelete(ctx context.Context, params apigen.Sp
 		return err
 	}
 
-	sourceID, err := parseTaskID(params.TaskId)
+	sourceID, err := types.ParseTaskID(params.TaskId)
 	if err != nil {
 		return badRequest(err.Error())
 	}
-	targetID, err := parseTaskID(params.RelatedTaskId)
+	targetID, err := types.ParseTaskID(params.RelatedTaskId)
 	if err != nil {
 		return badRequest(err.Error())
 	}
@@ -142,11 +142,11 @@ func (h *Handler) SpaceTaskRelationsDelete(ctx context.Context, params apigen.Sp
 	if err := activitylog.Log(ctx, tx, activitylog.Entry{
 		SpaceSlug:  params.SpaceSlug,
 		EntityType: activitylog.EntityRelation,
-		EntityID:   formatTaskID(sourceID),
+		EntityID:   types.FormatTaskID(sourceID),
 		Action:     activitylog.ActionDeleted,
 		Details: []activitylog.Detail{
 			{Field: "kind", From: new(string(params.Kind))},
-			{Field: "related_task", From: new(formatTaskID(targetID))},
+			{Field: "related_task", From: new(types.FormatTaskID(targetID))},
 		},
 	}, now); err != nil {
 		return err

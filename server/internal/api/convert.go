@@ -61,9 +61,6 @@ func decodeCursorInt64(opt apigen.OptString) (int64, error) {
 	return id, nil
 }
 
-func formatTaskID(id int64) string        { return types.FormatTaskID(id) }
-func parseTaskID(s string) (int64, error) { return types.ParseTaskID(s) }
-
 // tsToTime converts a NOT NULL pgtype.Timestamptz to time.Time.
 // It panics if ts is not valid, indicating a bug (nullable column passed to a NOT NULL helper).
 func tsToTime(ts pgtype.Timestamptz) time.Time {
@@ -154,7 +151,7 @@ func relationFromDB(rel taskRelationRow, perspectiveTaskID int64) (apigen.TaskRe
 
 	return apigen.TaskRelation{
 		Kind:      kind,
-		TaskId:    formatTaskID(relatedID),
+		TaskId:    types.FormatTaskID(relatedID),
 		CreatedAt: tsToTime(rel.CreatedAt),
 	}, nil
 }
@@ -177,11 +174,11 @@ func canonicalizeRelation(kind apigen.TaskRelationKind, sourceID, targetID int64
 func taskFromDB(task dbgen.Task, assigneeUserIDs []int64, tagNames []string, relations []taskRelationRow, rotationPoolUserIDs []int64) (*apigen.Task, error) {
 	assigneeIDs := make([]string, len(assigneeUserIDs))
 	for i, uid := range assigneeUserIDs {
-		assigneeIDs[i] = formatUserID(uid)
+		assigneeIDs[i] = types.FormatUserID(uid)
 	}
 	poolIDs := make([]string, len(rotationPoolUserIDs))
 	for i, uid := range rotationPoolUserIDs {
-		poolIDs[i] = formatUserID(uid)
+		poolIDs[i] = types.FormatUserID(uid)
 	}
 
 	apiRelations := make([]apigen.TaskRelation, 0, len(relations))
@@ -194,7 +191,7 @@ func taskFromDB(task dbgen.Task, assigneeUserIDs []int64, tagNames []string, rel
 	}
 
 	t := &apigen.Task{
-		ID:             formatTaskID(task.ID),
+		ID:             types.FormatTaskID(task.ID),
 		Title:          task.Title,
 		Description:    task.Description,
 		Status:         task.StatusName,
@@ -290,9 +287,6 @@ func dueFromExisting(existing *types.DueDate, update apigen.OptNilTaskDue) (*typ
 	return dueToDB(update)
 }
 
-func formatUserID(id int64) string        { return types.FormatUserID(id) }
-func parseUserID(s string) (int64, error) { return types.ParseUserID(s) }
-
 func parseTokenID(s string) (int64, error) {
 	id, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
@@ -303,7 +297,7 @@ func parseTokenID(s string) (int64, error) {
 
 func userFromDB(u dbgen.User) *apigen.User {
 	return &apigen.User{
-		ID:        formatUserID(u.ID),
+		ID:        types.FormatUserID(u.ID),
 		Email:     u.Email,
 		Name:      u.Name,
 		IsOwner:   u.IsOwner,
@@ -323,7 +317,7 @@ func authTokenFromDB(t dbgen.AuthToken) *apigen.AuthToken {
 
 func memberToAPI(userID int64, userName, userEmail string, role dbgen.SpaceRole, createdAt pgtype.Timestamptz) *apigen.SpaceMember {
 	return &apigen.SpaceMember{
-		UserId:    formatUserID(userID),
+		UserId:    types.FormatUserID(userID),
 		UserName:  userName,
 		UserEmail: userEmail,
 		Role:      apigen.SpaceRole(role),

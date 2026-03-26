@@ -28,7 +28,7 @@ CREATE TABLE activity_log (
 CREATE INDEX idx_activity_log_space ON activity_log (space_slug, id);
 CREATE INDEX idx_activity_log_task  ON activity_log (entity_type, entity_id, space_slug, id)
     WHERE entity_type = 'task';
-CREATE INDEX idx_activity_log_actor ON activity_log (actor_id, id)
+CREATE INDEX idx_activity_log_actor ON activity_log (actor_id, id, space_slug)
     WHERE actor_id IS NOT NULL;
 
 CREATE TABLE activity_log_details (

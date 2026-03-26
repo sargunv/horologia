@@ -76,16 +76,16 @@ func TestConvert_formatParseTaskID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			formatted := formatTaskID(tt.id)
+			formatted := types.FormatTaskID(tt.id)
 			if formatted != tt.str {
-				t.Errorf("formatTaskID(%d) = %q, want %q", tt.id, formatted, tt.str)
+				t.Errorf("types.FormatTaskID(%d) = %q, want %q", tt.id, formatted, tt.str)
 			}
-			parsed, err := parseTaskID(formatted)
+			parsed, err := types.ParseTaskID(formatted)
 			if err != nil {
-				t.Fatalf("parseTaskID(%q) unexpected error: %v", formatted, err)
+				t.Fatalf("types.ParseTaskID(%q) unexpected error: %v", formatted, err)
 			}
 			if parsed != tt.id {
-				t.Errorf("parseTaskID(%q) = %d, want %d", formatted, parsed, tt.id)
+				t.Errorf("types.ParseTaskID(%q) = %d, want %d", formatted, parsed, tt.id)
 			}
 		})
 	}
@@ -101,9 +101,9 @@ func TestConvert_formatParseTaskID(t *testing.T) {
 	}
 	for _, tt := range errorTests {
 		t.Run("error/"+tt.name, func(t *testing.T) {
-			_, err := parseTaskID(tt.str)
+			_, err := types.ParseTaskID(tt.str)
 			if err == nil {
-				t.Errorf("parseTaskID(%q) expected error, got nil", tt.str)
+				t.Errorf("types.ParseTaskID(%q) expected error, got nil", tt.str)
 			}
 		})
 	}
@@ -120,16 +120,16 @@ func TestConvert_formatParseUserID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			formatted := formatUserID(tt.id)
+			formatted := types.FormatUserID(tt.id)
 			if formatted != tt.str {
-				t.Errorf("formatUserID(%d) = %q, want %q", tt.id, formatted, tt.str)
+				t.Errorf("types.FormatUserID(%d) = %q, want %q", tt.id, formatted, tt.str)
 			}
-			parsed, err := parseUserID(formatted)
+			parsed, err := types.ParseUserID(formatted)
 			if err != nil {
-				t.Fatalf("parseUserID(%q) unexpected error: %v", formatted, err)
+				t.Fatalf("types.ParseUserID(%q) unexpected error: %v", formatted, err)
 			}
 			if parsed != tt.id {
-				t.Errorf("parseUserID(%q) = %d, want %d", formatted, parsed, tt.id)
+				t.Errorf("types.ParseUserID(%q) = %d, want %d", formatted, parsed, tt.id)
 			}
 		})
 	}
@@ -145,9 +145,9 @@ func TestConvert_formatParseUserID(t *testing.T) {
 	}
 	for _, tt := range errorTests {
 		t.Run("error/"+tt.name, func(t *testing.T) {
-			_, err := parseUserID(tt.str)
+			_, err := types.ParseUserID(tt.str)
 			if err == nil {
-				t.Errorf("parseUserID(%q) expected error, got nil", tt.str)
+				t.Errorf("types.ParseUserID(%q) expected error, got nil", tt.str)
 			}
 		})
 	}

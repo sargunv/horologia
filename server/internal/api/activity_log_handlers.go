@@ -9,6 +9,7 @@ import (
 	apigen "github.com/sargunv/tend/server/internal/api/gen"
 	"github.com/sargunv/tend/server/internal/auth"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 func (h *Handler) SpaceActivityList(ctx context.Context, params apigen.SpaceActivityListParams) (*apigen.ActivityLogPage, error) {
@@ -41,6 +42,10 @@ func (h *Handler) SpaceTaskActivityList(ctx context.Context, params apigen.Space
 		return nil, err
 	}
 
+	if _, err := types.ParseTaskID(params.TaskId); err != nil {
+		return nil, badRequest(err.Error())
+	}
+
 	cursorID, err := decodeCursorInt64(params.Cursor)
 	if err != nil {
 		return nil, badRequest(err.Error())
@@ -68,7 +73,7 @@ func (h *Handler) UserActivityList(ctx context.Context, params apigen.UserActivi
 		return nil, forbidden("authentication required")
 	}
 
-	requestedID, err := parseUserID(params.UserId)
+	requestedID, err := types.ParseUserID(params.UserId)
 	if err != nil {
 		return nil, badRequest(err.Error())
 	}
@@ -155,7 +160,7 @@ func (h *Handler) enrichActivityLog(ctx context.Context, q *dbgen.Queries, rows 
 		}
 
 		if r.ActorID.Valid {
-			entry.ActorId.SetTo(formatUserID(r.ActorID.Int64))
+			entry.ActorId.SetTo(types.FormatUserID(r.ActorID.Int64))
 		} else {
 			entry.ActorId.SetToNull()
 		}

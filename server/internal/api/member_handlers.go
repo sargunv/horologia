@@ -58,7 +58,7 @@ func (h *Handler) SpaceMembersCreate(ctx context.Context, req *apigen.SpaceMembe
 		return nil, err
 	}
 
-	userID, err := parseUserID(req.UserId)
+	userID, err := types.ParseUserID(req.UserId)
 	if err != nil {
 		return nil, badRequest(err.Error())
 	}
@@ -94,7 +94,7 @@ func (h *Handler) SpaceMembersCreate(ctx context.Context, req *apigen.SpaceMembe
 	if err := activitylog.Log(ctx, tx, activitylog.Entry{
 		SpaceSlug:  params.SpaceSlug,
 		EntityType: activitylog.EntityMember,
-		EntityID:   formatUserID(userID),
+		EntityID:   types.FormatUserID(userID),
 		Action:     activitylog.ActionCreated,
 		Details: []activitylog.Detail{
 			{Field: "role", To: new(string(req.Role))},
@@ -115,7 +115,7 @@ func (h *Handler) SpaceMembersUpdate(ctx context.Context, req *apigen.SpaceMembe
 		return nil, err
 	}
 
-	userID, err := parseUserID(params.UserId)
+	userID, err := types.ParseUserID(params.UserId)
 	if err != nil {
 		return nil, badRequest(err.Error())
 	}
@@ -155,7 +155,7 @@ func (h *Handler) SpaceMembersUpdate(ctx context.Context, req *apigen.SpaceMembe
 		if err := activitylog.Log(ctx, tx, activitylog.Entry{
 			SpaceSlug:  params.SpaceSlug,
 			EntityType: activitylog.EntityMember,
-			EntityID:   formatUserID(userID),
+			EntityID:   types.FormatUserID(userID),
 			Action:     activitylog.ActionUpdated,
 			Details: []activitylog.Detail{
 				{Field: "role", From: new(string(existingMember.Role)), To: new(string(req.Role))},
@@ -182,7 +182,7 @@ func (h *Handler) SpaceMembersDelete(ctx context.Context, params apigen.SpaceMem
 		return err
 	}
 
-	userID, err := parseUserID(params.UserId)
+	userID, err := types.ParseUserID(params.UserId)
 	if err != nil {
 		return badRequest(err.Error())
 	}
@@ -238,7 +238,7 @@ func (h *Handler) SpaceMembersDelete(ctx context.Context, params apigen.SpaceMem
 	if err := activitylog.Log(ctx, tx, activitylog.Entry{
 		SpaceSlug:  params.SpaceSlug,
 		EntityType: activitylog.EntityMember,
-		EntityID:   formatUserID(userID),
+		EntityID:   types.FormatUserID(userID),
 		Action:     activitylog.ActionDeleted,
 		Details: []activitylog.Detail{
 			{Field: "role", From: new(string(existingMember.Role))},

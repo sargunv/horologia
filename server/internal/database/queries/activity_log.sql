@@ -8,6 +8,9 @@ INSERT INTO activity_log_details (activity_log_id, field, from_value, to_value)
 VALUES ($1, $2, $3, $4);
 
 -- name: ListActivityLogBySpace :many
+-- Cursor sentinel: 0 means "no cursor" (first page). BIGSERIAL IDs start at 1,
+-- so 0 is never a real ID. Other list queries use `id > $cursor` where `id > 0`
+-- naturally returns all rows; here the DESC order requires an explicit guard.
 SELECT * FROM activity_log
 WHERE space_slug = $1 AND ($2::bigint = 0 OR id < $2)
 ORDER BY id DESC
