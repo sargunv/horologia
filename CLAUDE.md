@@ -26,13 +26,23 @@ Packages (`api`, `cli`, `server`, `web`) have their own tasks scoped by name, e.
 
 - ./api - TypeSpec definition for API.
 - ./server - Golang backend service and API implementation.
-- ./web - TODOL: React SPA served by the backend
+- ./web - React SPA served by the backend, built with Skeleton (React) design system.
 - ./cli - TODO: Golang CLI client
 
 ## Conventions
 
 - Never use `context.Background()` when a context is available from a caller (e.g. `cmd.Context()`,
   function parameter). Thread contexts through from the top.
+
+## Web App Conventions
+
+- Use [Skeleton (React)](https://www.skeleton.dev) as the design system. Prefer Skeleton components
+  over custom implementations wherever possible.
+- Lean on Skeleton's built-in theming for all styling. Do not hand-roll colors, typography, or
+  spacing tokens.
+- Our concerns are layout, functionality, and correct use of Skeleton components — not bespoke
+  styling.
+- Use `/frontend-design` when building UI to ensure high quality.
 
 ## Documentation
 

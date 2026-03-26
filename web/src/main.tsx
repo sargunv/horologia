@@ -26,12 +26,6 @@ function App() {
   );
 }
 
-window.addEventListener("tend:unauthorized", () => {
-  if (router.state.location.pathname === "/login") return;
-  queryClient.clear();
-  void router.navigate({ to: "/login" });
-});
-
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <App />
