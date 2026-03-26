@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
+	"github.com/sargunv/tend/server/internal/database"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
 )
@@ -30,8 +29,8 @@ var defaultPriorityLevels = []dbgen.CreateTaskPriorityLevelParams{
 
 // CreateSpaceWithDefaults creates a space, its default statuses, effort levels,
 // and priority levels, and adds the creator as an admin member, all in a single transaction.
-func CreateSpaceWithDefaults(ctx context.Context, pool *pgxpool.Pool, slug, name, description string, creatorUserID int64) (dbgen.Space, error) {
-	tx, err := pool.Begin(ctx)
+func CreateSpaceWithDefaults(ctx context.Context, db database.DB, slug, name, description string, creatorUserID int64) (dbgen.Space, error) {
+	tx, err := db.Begin(ctx)
 	if err != nil {
 		return dbgen.Space{}, fmt.Errorf("begin tx: %w", err)
 	}

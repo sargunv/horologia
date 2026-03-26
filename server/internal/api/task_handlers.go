@@ -175,7 +175,7 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 	statusName := req.Status.Or("")
 	if statusName == "" {
 		var err error
-		statusName, err = taskengine.FindInitialStatus(ctx, q, params.SpaceSlug)
+		statusName, err = taskengine.FindInitialStatus(ctx, tx, params.SpaceSlug)
 		if err != nil {
 			return nil, err
 		}
@@ -343,7 +343,7 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 	}
 
 	cr, err := taskengine.HandleCompletionTransition(
-		ctx, q, existing, newStatus,
+		ctx, tx, existing, newStatus,
 		recurrenceType, recurrenceRule,
 		newDue, existing.LastCompletedAt,
 		params.SpaceSlug, id, now,
@@ -374,7 +374,7 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 
 	// Trigger dependents when a task is completed.
 	if cr.JustCompleted {
-		if err := taskengine.ApplyCompletionTriggers(ctx, q, id, params.SpaceSlug, timeToTS(now)); err != nil {
+		if err := taskengine.ApplyCompletionTriggers(ctx, tx, id, params.SpaceSlug, timeToTS(now)); err != nil {
 			return nil, err
 		}
 	}

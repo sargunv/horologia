@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/sargunv/tend/server/internal/database"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
 )
@@ -43,8 +44,8 @@ func AdvanceRotation(pool []int64, currentAssignees []int64, step int) []int64 {
 
 // ApplyPoolRotation reads the rotation pool and current assignees for a task,
 // computes the next assignee, and writes it. No-op if the pool is empty.
-// Must be called within a transaction.
-func ApplyPoolRotation(ctx context.Context, q *dbgen.Queries, taskID int64, now time.Time) error {
+func ApplyPoolRotation(ctx context.Context, db database.DB, taskID int64, now time.Time) error {
+	q := dbgen.New(db)
 	pool, err := q.ListRotationPoolByTask(ctx, taskID)
 	if err != nil {
 		return err

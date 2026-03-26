@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/teambition/rrule-go"
 
+	"github.com/sargunv/tend/server/internal/database"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
 )
@@ -164,7 +165,8 @@ func InitialStatusFromSlice(statuses []dbgen.TaskStatus) (string, error) {
 
 // FindInitialStatus returns the name of the first initial-category status in
 // the space. Returns a validation error if no initial status exists.
-func FindInitialStatus(ctx context.Context, q *dbgen.Queries, spaceSlug string) (string, error) {
+func FindInitialStatus(ctx context.Context, db database.DB, spaceSlug string) (string, error) {
+	q := dbgen.New(db)
 	statuses, err := q.ListTaskStatusesBySpace(ctx, spaceSlug)
 	if err != nil {
 		return "", err
@@ -176,7 +178,8 @@ func FindInitialStatus(ctx context.Context, q *dbgen.Queries, spaceSlug string) 
 // the completed task. Only resets tasks with on_dependency recurrence type.
 // Single-level only — ResetTaskToInitial writes directly to the DB and does not
 // re-enter the update handler, so trigger cascades cannot occur.
-func ApplyCompletionTriggers(ctx context.Context, q *dbgen.Queries, completedTaskID int64, spaceSlug string, now pgtype.Timestamptz) error {
+func ApplyCompletionTriggers(ctx context.Context, db database.DB, completedTaskID int64, spaceSlug string, now pgtype.Timestamptz) error {
+	q := dbgen.New(db)
 	targets, err := q.ListTriggerTargets(ctx, dbgen.ListTriggerTargetsParams{
 		SourceTaskID: completedTaskID,
 		SpaceSlug:    spaceSlug,
@@ -189,7 +192,7 @@ func ApplyCompletionTriggers(ctx context.Context, q *dbgen.Queries, completedTas
 		return nil
 	}
 
-	initialStatus, err := FindInitialStatus(ctx, q, spaceSlug)
+	initialStatus, err := FindInitialStatus(ctx, db, spaceSlug)
 	if err != nil {
 		return err
 	}

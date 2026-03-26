@@ -78,14 +78,14 @@ func NewOIDCHandler(ctx context.Context, cfg OIDCConfig, handler *Handler) (http
 
 	// GET /auth/oidc/callback → exchange code, find/create user, issue token.
 	marshalToken := func(w http.ResponseWriter, r *http.Request, tokens *oidc.Tokens[*oidc.IDTokenClaims], state string, relyingParty rp.RelyingParty) {
-		handleOIDCCallback(w, r, tokens, relyingParty, handler)
+		handler.handleOIDCCallback(w, r, tokens, relyingParty)
 	}
 	mux.Handle("GET /auth/oidc/callback", rp.CodeExchangeHandler(marshalToken, provider))
 
 	return mux, nil
 }
 
-func handleOIDCCallback(w http.ResponseWriter, r *http.Request, tokens *oidc.Tokens[*oidc.IDTokenClaims], relyingParty rp.RelyingParty, handler *Handler) {
+func (h *Handler) handleOIDCCallback(w http.ResponseWriter, r *http.Request, tokens *oidc.Tokens[*oidc.IDTokenClaims], relyingParty rp.RelyingParty) {
 	ctx := r.Context()
 
 	subject := tokens.IDTokenClaims.Subject
@@ -94,7 +94,7 @@ func handleOIDCCallback(w http.ResponseWriter, r *http.Request, tokens *oidc.Tok
 	// they go in userinfo when an access token is issued). Fetch from userinfo.
 	info, err := rp.Userinfo[*oidc.UserInfo](ctx, tokens.AccessToken, tokens.TokenType, subject, relyingParty)
 	if err != nil {
-		handler.Log.ErrorContext(ctx, "oidc: userinfo request failed", "error", err)
+		h.Log.ErrorContext(ctx, "oidc: userinfo request failed", "error", err)
 		http.Error(w, "failed to fetch user info", http.StatusInternalServerError)
 		return
 	}
@@ -104,7 +104,7 @@ func handleOIDCCallback(w http.ResponseWriter, r *http.Request, tokens *oidc.Tok
 		email = tokens.IDTokenClaims.Email
 	}
 	if email == "" {
-		handler.Log.ErrorContext(ctx, "oidc: no email from provider", "subject", subject)
+		h.Log.ErrorContext(ctx, "oidc: no email from provider", "subject", subject)
 		http.Error(w, "OIDC provider did not return an email address", http.StatusBadRequest)
 		return
 	}
@@ -116,13 +116,13 @@ func handleOIDCCallback(w http.ResponseWriter, r *http.Request, tokens *oidc.Tok
 		name = email
 	}
 
-	q := dbgen.New(handler.Pool)
+	q := dbgen.New(h.Pool)
 	subjectText := pgtype.Text{String: subject, Valid: true}
 
 	// Try to find existing user by OIDC subject.
 	user, err := q.GetUserByOIDCSubject(ctx, subjectText)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-		handler.Log.ErrorContext(ctx, "oidc: get user", "error", err)
+		h.Log.ErrorContext(ctx, "oidc: get user", "error", err)
 		http.Error(w, "failed to look up user", http.StatusInternalServerError)
 		return
 	}
@@ -131,7 +131,7 @@ func handleOIDCCallback(w http.ResponseWriter, r *http.Request, tokens *oidc.Tok
 		// an existing password-created account.
 		user, err = q.GetUserByEmail(ctx, email)
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-			handler.Log.ErrorContext(ctx, "oidc: get user by email", "error", err)
+			h.Log.ErrorContext(ctx, "oidc: get user by email", "error", err)
 			http.Error(w, "failed to look up user", http.StatusInternalServerError)
 			return
 		}
@@ -147,11 +147,11 @@ func handleOIDCCallback(w http.ResponseWriter, r *http.Request, tokens *oidc.Tok
 				UpdatedAt:   tstz,
 			})
 			if err != nil {
-				handler.Log.ErrorContext(ctx, "oidc: create user", "error", err)
+				h.Log.ErrorContext(ctx, "oidc: create user", "error", err)
 				http.Error(w, "failed to create user", http.StatusInternalServerError)
 				return
 			}
-			handler.Log.InfoContext(ctx, "oidc: created user", "email", email, "subject", subject)
+			h.Log.InfoContext(ctx, "oidc: created user", "email", email, "subject", subject)
 		} else {
 			// Existing user found by email — link the OIDC subject.
 			if err := q.SetUserOIDCSubject(ctx, dbgen.SetUserOIDCSubjectParams{
@@ -159,18 +159,18 @@ func handleOIDCCallback(w http.ResponseWriter, r *http.Request, tokens *oidc.Tok
 				UpdatedAt:   timeToTS(time.Now()),
 				ID:          user.ID,
 			}); err != nil {
-				handler.Log.ErrorContext(ctx, "oidc: link user", "error", err)
+				h.Log.ErrorContext(ctx, "oidc: link user", "error", err)
 				http.Error(w, "failed to link user", http.StatusInternalServerError)
 				return
 			}
-			handler.Log.InfoContext(ctx, "oidc: linked user", "email", email, "subject", subject)
+			h.Log.InfoContext(ctx, "oidc: linked user", "email", email, "subject", subject)
 		}
 	}
 
 	// Generate a session token.
 	raw, err := createSessionToken(ctx, q, user.ID)
 	if err != nil {
-		handler.Log.ErrorContext(ctx, "oidc: create session", "error", err)
+		h.Log.ErrorContext(ctx, "oidc: create session", "error", err)
 		http.Error(w, "failed to create session", http.StatusInternalServerError)
 		return
 	}

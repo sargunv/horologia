@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 
+	"github.com/sargunv/tend/server/internal/database"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
 )
@@ -31,7 +32,7 @@ type CompletionResult struct {
 // input values are returned unchanged with JustCompleted=false.
 func HandleCompletionTransition(
 	ctx context.Context,
-	q *dbgen.Queries,
+	db database.DB,
 	existing dbgen.Task,
 	newStatus string,
 	recurrenceType dbgen.RecurrenceType,
@@ -42,6 +43,8 @@ func HandleCompletionTransition(
 	taskID int64,
 	now time.Time,
 ) (*CompletionResult, error) {
+	q := dbgen.New(db)
+
 	result := &CompletionResult{
 		Status:          newStatus,
 		RecurrenceType:  recurrenceType,
@@ -117,7 +120,7 @@ func HandleCompletionTransition(
 				return nil, err
 			}
 			overrideAssignees := AdvanceRotation(pool, currentAssignees, 0)
-			if _, err := SpawnTaskFromTemplate(ctx, q, existing,
+			if _, err := SpawnTaskFromTemplate(ctx, db, existing,
 				dbgen.RecurrenceTypeFixedAccumulating, recurrenceRule, next, initialStatus, now,
 				overrideAssignees, pool,
 			); err != nil {
@@ -137,7 +140,7 @@ func HandleCompletionTransition(
 	// Apply pool rotation for recurrence types that reset in place.
 	// fixed_accumulating is handled above (rotation passed to spawned task).
 	if result.RecurrenceType == dbgen.RecurrenceTypeCompletionBased || result.RecurrenceType == dbgen.RecurrenceTypeFixedNonAccumulating {
-		if err := ApplyPoolRotation(ctx, q, taskID, now); err != nil {
+		if err := ApplyPoolRotation(ctx, db, taskID, now); err != nil {
 			return nil, err
 		}
 	}

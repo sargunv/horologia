@@ -5,18 +5,18 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/sargunv/tend/server/internal/database"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 )
 
 // ProcessOverdueTasks finds all fixed_accumulating tasks with due_at <= now
 // and processes each one in its own transaction. Errors for individual tasks
 // are returned via the onError callback; processing continues for remaining tasks.
-func ProcessOverdueTasks(ctx context.Context, pool *pgxpool.Pool, onError func(taskID int64, spaceSlug string, err error)) error {
+func ProcessOverdueTasks(ctx context.Context, db database.DB, onError func(taskID int64, spaceSlug string, err error)) error {
 	now := time.Now()
 
-	q := dbgen.New(pool)
+	q := dbgen.New(db)
 	// The query caps results at 100 rows per tick for backpressure;
 	// remaining overdue tasks will be picked up in subsequent cron ticks.
 	tasks, err := q.ListOverdueAccumulatingTasks(ctx, pgtype.Date{Time: now, Valid: true})
@@ -25,7 +25,7 @@ func ProcessOverdueTasks(ctx context.Context, pool *pgxpool.Pool, onError func(t
 	}
 
 	for _, task := range tasks {
-		if err := processOneOverdueTask(ctx, pool, task, now); err != nil {
+		if err := processOneOverdueTask(ctx, db, task, now); err != nil {
 			if onError != nil {
 				onError(task.ID, task.SpaceSlug, err)
 			}
@@ -36,8 +36,8 @@ func ProcessOverdueTasks(ctx context.Context, pool *pgxpool.Pool, onError func(t
 
 // processOneOverdueTask processes a single overdue fixed_accumulating task
 // in its own transaction.
-func processOneOverdueTask(ctx context.Context, pool *pgxpool.Pool, task dbgen.Task, now time.Time) error {
-	tx, err := pool.Begin(ctx)
+func processOneOverdueTask(ctx context.Context, db database.DB, task dbgen.Task, now time.Time) error {
+	tx, err := db.Begin(ctx)
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func processOneOverdueTask(ctx context.Context, pool *pgxpool.Pool, task dbgen.T
 		return nil
 	}
 
-	if err := ProcessAccumulatingTask(ctx, q, existing, now); err != nil {
+	if err := ProcessAccumulatingTask(ctx, tx, existing, now); err != nil {
 		return err
 	}
 

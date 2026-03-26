@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/teambition/rrule-go"
 
+	"github.com/sargunv/tend/server/internal/database"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
 )
@@ -28,10 +29,9 @@ func copyOnSpawn(k dbgen.StoredRelationKind) bool {
 // It copies assignees (or uses overrideAssignees if non-nil), tags, rotation pool
 // (from srcPool), and copyOnSpawn=true relations from src.
 // A "spawns" relation is created from src to the new task.
-// Must be called within a transaction.
 func SpawnTaskFromTemplate(
 	ctx context.Context,
-	q *dbgen.Queries,
+	db database.DB,
 	src dbgen.Task,
 	newRecurrenceType dbgen.RecurrenceType,
 	newRecurrenceRule pgtype.Text,
@@ -41,6 +41,7 @@ func SpawnTaskFromTemplate(
 	overrideAssignees []int64,
 	srcPool []int64,
 ) (int64, error) {
+	q := dbgen.New(db)
 	dueAt, dueTz := types.DecomposeDueDate(newDue)
 	nowTz := types.Timestamptz(now)
 	newTask, err := q.CreateTask(ctx, dbgen.CreateTaskParams{
@@ -206,9 +207,9 @@ func allOverdueOccurrences(rule string, dtstart time.Time, until time.Time, loc 
 	return result, nil
 }
 
-// ProcessAccumulatingTask handles one overdue fixed_accumulating task within an
-// existing transaction.
-func ProcessAccumulatingTask(ctx context.Context, q *dbgen.Queries, task dbgen.Task, now time.Time) error {
+// ProcessAccumulatingTask handles one overdue fixed_accumulating task.
+func ProcessAccumulatingTask(ctx context.Context, db database.DB, task dbgen.Task, now time.Time) error {
+	q := dbgen.New(db)
 	due := types.NewDueDate(task.DueAt, task.DueTz)
 	if due == nil || !task.RecurrenceRule.Valid {
 		return nil
@@ -226,7 +227,7 @@ func ProcessAccumulatingTask(ctx context.Context, q *dbgen.Queries, task dbgen.T
 		return err
 	}
 
-	initialStatus, err := FindInitialStatus(ctx, q, task.SpaceSlug)
+	initialStatus, err := FindInitialStatus(ctx, db, task.SpaceSlug)
 	if err != nil {
 		return err
 	}
@@ -256,7 +257,7 @@ func ProcessAccumulatingTask(ctx context.Context, q *dbgen.Queries, task dbgen.T
 	for i, missedAt := range missed {
 		missedDue := types.DueDateFromLocal(missedAt, due.Tz)
 		overrideAssignees := AdvanceRotation(pool, currentAssignees, i)
-		if _, err := SpawnTaskFromTemplate(ctx, q, task,
+		if _, err := SpawnTaskFromTemplate(ctx, db, task,
 			dbgen.RecurrenceTypeOneOff, pgtype.Text{}, missedDue, initialStatus, now,
 			overrideAssignees, pool,
 		); err != nil {
@@ -271,7 +272,7 @@ func ProcessAccumulatingTask(ctx context.Context, q *dbgen.Queries, task dbgen.T
 
 	if next != nil {
 		overrideAssignees := AdvanceRotation(pool, currentAssignees, len(missed))
-		if _, err := SpawnTaskFromTemplate(ctx, q, task,
+		if _, err := SpawnTaskFromTemplate(ctx, db, task,
 			dbgen.RecurrenceTypeFixedAccumulating, task.RecurrenceRule, next, initialStatus, now,
 			overrideAssignees, pool,
 		); err != nil {
