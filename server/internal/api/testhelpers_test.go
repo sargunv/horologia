@@ -46,7 +46,7 @@ func setupTestServer(t *testing.T) *testEnv {
 	}
 	adminPool.Close()
 
-	dsn := fmt.Sprintf("postgres://postgres:postgres@localhost:15432/%s?sslmode=disable", dbName)
+	dsn := fmt.Sprintf("postgres://postgres:postgres@localhost:%d/%s?sslmode=disable", testPort, dbName)
 
 	// Open pgx pool for the test.
 	pool, err := database.OpenPool(ctx, dsn)

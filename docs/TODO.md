@@ -1,13 +1,5 @@
 # Tend v0.1 — TODO
 
-## Core Task Features
-
-(empty — all items completed)
-
-## Done
-
-1. **Completion history / activity log** — log all task actions with user+token attribution
-
 ## Views & UX
 
 1. **CLI feature parity with backend**

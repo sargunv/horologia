@@ -3,6 +3,7 @@ package api_test
 import (
 	"context"
 	"fmt"
+	"net"
 	"os"
 	"testing"
 
@@ -16,13 +17,39 @@ import (
 // It points to the default database; tests create per-test databases from the template.
 var testDSN string
 
+// testPort is the port the embedded PG instance is listening on.
+var testPort uint32
+
 // testTemplateName is the template database with migrations already applied.
 // Tests use CREATE DATABASE ... TEMPLATE to get a fresh copy instantly.
 const testTemplateName = "tend_template"
 
+func freePort(ctx context.Context) (uint32, error) {
+	var lc net.ListenConfig
+	l, err := lc.Listen(ctx, "tcp", "127.0.0.1:0")
+	if err != nil {
+		return 0, err
+	}
+	_ = l.Close()
+	tcpAddr, ok := l.Addr().(*net.TCPAddr)
+	if !ok {
+		return 0, fmt.Errorf("unexpected address type: %T", l.Addr())
+	}
+	if tcpAddr.Port < 0 || tcpAddr.Port > 65535 {
+		return 0, fmt.Errorf("port %d out of range", tcpAddr.Port)
+	}
+	return uint32(tcpAddr.Port), nil //#nosec G115 -- bounds checked above
+}
+
 func TestMain(m *testing.M) {
+	port, err := freePort(context.Background()) // TestMain receives *testing.M, no context available
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "find free port: %v\n", err)
+		os.Exit(1)
+	}
+
 	pg := embeddedpostgres.NewDatabase(embeddedpostgres.DefaultConfig().
-		Port(15432).
+		Port(port).
 		Database("tend_test"))
 
 	if err := pg.Start(); err != nil {
@@ -30,7 +57,8 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	testDSN = "postgres://postgres:postgres@localhost:15432/tend_test?sslmode=disable" //nolint:gosec // test credentials for embedded postgres
+	testPort = port
+	testDSN = fmt.Sprintf("postgres://postgres:postgres@localhost:%d/tend_test?sslmode=disable", testPort) //nolint:gosec // test credentials for embedded postgres
 
 	// Create and migrate the template database once.
 	if err := setupTemplate(); err != nil {
@@ -63,7 +91,7 @@ func setupTemplate() error {
 		return fmt.Errorf("create template db: %w", err)
 	}
 
-	templateDSN := fmt.Sprintf("postgres://postgres:postgres@localhost:15432/%s?sslmode=disable", testTemplateName)
+	templateDSN := fmt.Sprintf("postgres://postgres:postgres@localhost:%d/%s?sslmode=disable", testPort, testTemplateName)
 	sqlDB, err := database.OpenSQL(ctx, templateDSN)
 	if err != nil {
 		return fmt.Errorf("open template sql: %w", err)
