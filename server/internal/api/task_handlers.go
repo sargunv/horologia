@@ -208,7 +208,7 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 		return nil, err
 	}
 	dueAt, dueTz := types.DecomposeDueDate(due)
-	tstz := timeToTS(ts)
+	tstz := types.Timestamptz(ts)
 	task, err := q.CreateTask(ctx, dbgen.CreateTaskParams{
 		SpaceSlug:      params.SpaceSlug,
 		Title:          req.Title,
@@ -364,7 +364,7 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 		RecurrenceType:  cr.RecurrenceType,
 		RecurrenceRule:  cr.RecurrenceRule,
 		LastCompletedAt: cr.LastCompletedAt,
-		UpdatedAt:       timeToTS(now),
+		UpdatedAt:       types.Timestamptz(now),
 		ID:              id,
 		SpaceSlug:       params.SpaceSlug,
 	})
@@ -374,7 +374,7 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 
 	// Trigger dependents when a task is completed.
 	if cr.JustCompleted {
-		if err := taskengine.ApplyCompletionTriggers(ctx, tx, id, params.SpaceSlug, timeToTS(now)); err != nil {
+		if err := taskengine.ApplyCompletionTriggers(ctx, tx, id, params.SpaceSlug, types.Timestamptz(now)); err != nil {
 			return nil, err
 		}
 	}
@@ -421,7 +421,7 @@ func (h *Handler) SpaceTasksDelete(ctx context.Context, params apigen.SpaceTasks
 func (h *Handler) applyTaskCollections(ctx context.Context, q *dbgen.Queries, taskID int64, spaceSlug string, assigneeIDs, poolIDs, tagNames []string) error {
 	var memberSet map[int64]struct{}
 	var err error
-	if len(assigneeIDs) > 0 && len(poolIDs) > 0 {
+	if len(assigneeIDs) > 0 || len(poolIDs) > 0 {
 		memberSet, err = fetchMemberSet(ctx, q, spaceSlug)
 		if err != nil {
 			return err
@@ -504,7 +504,7 @@ func (h *Handler) setTaskAssignees(ctx context.Context, q *dbgen.Queries, taskID
 	if err := q.DeleteTaskAssignees(ctx, taskID); err != nil {
 		return err
 	}
-	tstz := timeToTS(time.Now())
+	tstz := types.Timestamptz(time.Now())
 	for _, uid := range userIDs {
 		if err := q.InsertTaskAssignee(ctx, dbgen.InsertTaskAssigneeParams{
 			TaskID:    taskID,
@@ -530,7 +530,7 @@ func (h *Handler) setTaskRotationPool(ctx context.Context, q *dbgen.Queries, tas
 	if err := q.DeleteRotationPool(ctx, taskID); err != nil {
 		return err
 	}
-	tstz := timeToTS(time.Now())
+	tstz := types.Timestamptz(time.Now())
 	for i, uid := range userIDs {
 		if err := q.InsertRotationPoolMember(ctx, dbgen.InsertRotationPoolMemberParams{
 			TaskID:    taskID,
@@ -576,7 +576,7 @@ func (h *Handler) setTaskTags(ctx context.Context, q *dbgen.Queries, taskID int6
 		entries = append(entries, tagEntry{displayName: name, foldedName: folded})
 	}
 
-	tstz := timeToTS(time.Now())
+	tstz := types.Timestamptz(time.Now())
 	for _, entry := range entries {
 		// Upsert the tag (no-op on conflict) and get its ID in one query.
 		tag, err := q.EnsureTag(ctx, dbgen.EnsureTagParams{

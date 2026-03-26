@@ -13,6 +13,7 @@ import (
 
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 type contextKey int
@@ -95,7 +96,7 @@ func createSessionToken(ctx context.Context, q *dbgen.Queries, userID int64) (st
 		TokenHash: hash,
 		Name:      "",
 		Kind:      dbgen.AuthTokenKindSession,
-		CreatedAt: timeToTS(time.Now()),
+		CreatedAt: types.Timestamptz(time.Now()),
 	})
 	return raw, err
 }

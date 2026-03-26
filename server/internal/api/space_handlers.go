@@ -7,6 +7,7 @@ import (
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/taskengine"
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 // --- Spaces ---
@@ -44,11 +45,7 @@ func (h *Handler) SpacesList(ctx context.Context) (*apigen.SpaceList, error) {
 		return nil, err
 	}
 
-	items, err := convertEach(spaceFromDB)(spaces)
-	if err != nil {
-		return nil, err
-	}
-	return &apigen.SpaceList{Items: items}, nil
+	return &apigen.SpaceList{Items: convertAll(spaces, spaceFromDB)}, nil
 }
 
 func (h *Handler) SpacesRead(ctx context.Context, params apigen.SpacesReadParams) (*apigen.Space, error) {
@@ -83,7 +80,7 @@ func (h *Handler) SpacesUpdate(ctx context.Context, req *apigen.SpaceUpdate, par
 		Slug:        req.Slug.Or(existing.Slug),
 		Name:        req.Name.Or(existing.Name),
 		Description: req.Description.Or(existing.Description),
-		UpdatedAt:   timeToTS(time.Now()),
+		UpdatedAt:   types.Timestamptz(time.Now()),
 		Slug_2:      params.SpaceSlug,
 	})
 	if err != nil {

@@ -86,10 +86,6 @@ func tsToTime(ts pgtype.Timestamptz) time.Time {
 	return ts.Time
 }
 
-func timeToTS(t time.Time) pgtype.Timestamptz {
-	return pgtype.Timestamptz{Time: t, Valid: true}
-}
-
 func spaceFromDB(s dbgen.Space) *apigen.Space {
 	return &apigen.Space{
 		Slug:        s.Slug,
@@ -250,15 +246,20 @@ func taskFromDB(task dbgen.Task, assigneeUserIDs []int64, tagNames []string, rel
 	return t, nil
 }
 
+// convertAll maps a slice of DB rows to API types using the given converter.
+func convertAll[DB any, API any](rows []DB, f func(DB) *API) []API {
+	items := make([]API, len(rows))
+	for i, r := range rows {
+		items[i] = *f(r)
+	}
+	return items
+}
+
 // convertEach wraps a per-element converter into the slice converter
 // signature expected by paginate.
 func convertEach[DB any, API any](f func(DB) *API) func([]DB) ([]API, error) {
 	return func(rows []DB) ([]API, error) {
-		items := make([]API, len(rows))
-		for i, r := range rows {
-			items[i] = *f(r)
-		}
-		return items, nil
+		return convertAll(rows, f), nil
 	}
 }
 

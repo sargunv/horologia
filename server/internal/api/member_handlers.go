@@ -10,6 +10,7 @@ import (
 
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 func (h *Handler) SpaceMembersList(ctx context.Context, params apigen.SpaceMembersListParams) (*apigen.SpaceMemberPage, error) {
@@ -82,7 +83,7 @@ func (h *Handler) SpaceMembersCreate(ctx context.Context, req *apigen.SpaceMembe
 		SpaceSlug: params.SpaceSlug,
 		UserID:    userID,
 		Role:      dbgen.SpaceRole(req.Role),
-		CreatedAt: timeToTS(time.Now()),
+		CreatedAt: types.Timestamptz(time.Now()),
 	})
 	if err != nil {
 		return nil, err

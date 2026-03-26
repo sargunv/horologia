@@ -106,12 +106,7 @@ func (h *Handler) SpaceTaskStatusesList(ctx context.Context, params apigen.Space
 		return nil, err
 	}
 
-	items, err := convertEach(statusFromDB)(rows)
-	if err != nil {
-		return nil, err
-	}
-
-	return &apigen.TaskStatusList{Items: items}, nil
+	return &apigen.TaskStatusList{Items: convertAll(rows, statusFromDB)}, nil
 }
 
 func (h *Handler) SpaceTaskStatusesReplace(ctx context.Context, req *apigen.TaskStatusReplace, params apigen.SpaceTaskStatusesReplaceParams) (*apigen.TaskStatusList, error) {
@@ -208,12 +203,7 @@ func (h *Handler) SpaceTaskStatusesReplace(ctx context.Context, req *apigen.Task
 		return nil, err
 	}
 
-	items, err := convertEach(statusFromDB)(rows)
-	if err != nil {
-		return nil, err
-	}
-
-	return &apigen.TaskStatusList{Items: items}, nil
+	return &apigen.TaskStatusList{Items: convertAll(rows, statusFromDB)}, nil
 }
 
 // --- Task Effort Levels ---
@@ -230,12 +220,7 @@ func (h *Handler) SpaceTaskEffortLevelsList(ctx context.Context, params apigen.S
 		return nil, err
 	}
 
-	items, err := convertEach(effortLevelFromDB)(rows)
-	if err != nil {
-		return nil, err
-	}
-
-	return &apigen.TaskEffortLevelList{Items: items}, nil
+	return &apigen.TaskEffortLevelList{Items: convertAll(rows, effortLevelFromDB)}, nil
 }
 
 func (h *Handler) SpaceTaskEffortLevelsReplace(ctx context.Context, req *apigen.TaskEffortLevelReplace, params apigen.SpaceTaskEffortLevelsReplaceParams) (*apigen.TaskEffortLevelList, error) {
@@ -297,12 +282,7 @@ func (h *Handler) SpaceTaskEffortLevelsReplace(ctx context.Context, req *apigen.
 		return nil, err
 	}
 
-	items, err := convertEach(effortLevelFromDB)(rows)
-	if err != nil {
-		return nil, err
-	}
-
-	return &apigen.TaskEffortLevelList{Items: items}, nil
+	return &apigen.TaskEffortLevelList{Items: convertAll(rows, effortLevelFromDB)}, nil
 }
 
 // --- Task Priority Levels ---
@@ -319,12 +299,7 @@ func (h *Handler) SpaceTaskPriorityLevelsList(ctx context.Context, params apigen
 		return nil, err
 	}
 
-	items, err := convertEach(priorityLevelFromDB)(rows)
-	if err != nil {
-		return nil, err
-	}
-
-	return &apigen.TaskPriorityLevelList{Items: items}, nil
+	return &apigen.TaskPriorityLevelList{Items: convertAll(rows, priorityLevelFromDB)}, nil
 }
 
 func (h *Handler) SpaceTaskPriorityLevelsReplace(ctx context.Context, req *apigen.TaskPriorityLevelReplace, params apigen.SpaceTaskPriorityLevelsReplaceParams) (*apigen.TaskPriorityLevelList, error) {
@@ -386,10 +361,5 @@ func (h *Handler) SpaceTaskPriorityLevelsReplace(ctx context.Context, req *apige
 		return nil, err
 	}
 
-	items, err := convertEach(priorityLevelFromDB)(rows)
-	if err != nil {
-		return nil, err
-	}
-
-	return &apigen.TaskPriorityLevelList{Items: items}, nil
+	return &apigen.TaskPriorityLevelList{Items: convertAll(rows, priorityLevelFromDB)}, nil
 }

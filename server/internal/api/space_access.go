@@ -17,14 +17,13 @@ func (h *Handler) requireSpaceRole(ctx context.Context, spaceSlug string, roles 
 	if user == nil {
 		return &ogenerrors.SecurityError{Err: ogenerrors.ErrSecurityRequirementIsNotSatisfied}
 	}
+	q := dbgen.New(h.Pool)
 	if user.IsOwner {
-		q := dbgen.New(h.Pool)
 		if _, err := q.GetSpace(ctx, spaceSlug); err != nil {
 			return err
 		}
 		return nil
 	}
-	q := dbgen.New(h.Pool)
 	member, err := q.GetSpaceMember(ctx, dbgen.GetSpaceMemberParams{
 		SpaceSlug: spaceSlug,
 		UserID:    user.ID,

@@ -6,6 +6,7 @@ import (
 
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 // rejectSpawnKind returns a validation error if the given kind is a
@@ -58,7 +59,7 @@ func (h *Handler) SpaceTaskRelationsCreate(ctx context.Context, req *apigen.Task
 		TargetTaskID: storedTarget,
 		SpaceSlug:    params.SpaceSlug,
 		Kind:         storedKind,
-		CreatedAt:    timeToTS(ts),
+		CreatedAt:    types.Timestamptz(ts),
 	}); err != nil {
 		return nil, err
 	}

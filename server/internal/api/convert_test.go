@@ -7,6 +7,7 @@ import (
 
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 func TestConvert_clampLimit(t *testing.T) {
@@ -266,84 +267,84 @@ func TestConvert_relationFromDB(t *testing.T) {
 	}{
 		{
 			name:          "parent: from source perspective",
-			rel:           taskRelationRow{SourceTaskID: 1, TargetTaskID: 2, Kind: dbgen.StoredRelationKindParent, CreatedAt: timeToTS(ts)},
+			rel:           taskRelationRow{SourceTaskID: 1, TargetTaskID: 2, Kind: dbgen.StoredRelationKindParent, CreatedAt: types.Timestamptz(ts)},
 			perspectiveID: 1,
 			wantKind:      apigen.TaskRelationKindParentOf,
 			wantTaskID:    "T2",
 		},
 		{
 			name:          "parent: from target perspective",
-			rel:           taskRelationRow{SourceTaskID: 1, TargetTaskID: 2, Kind: dbgen.StoredRelationKindParent, CreatedAt: timeToTS(ts)},
+			rel:           taskRelationRow{SourceTaskID: 1, TargetTaskID: 2, Kind: dbgen.StoredRelationKindParent, CreatedAt: types.Timestamptz(ts)},
 			perspectiveID: 2,
 			wantKind:      apigen.TaskRelationKindChildOf,
 			wantTaskID:    "T1",
 		},
 		{
 			name:          "blocks: from source perspective",
-			rel:           taskRelationRow{SourceTaskID: 3, TargetTaskID: 4, Kind: dbgen.StoredRelationKindBlocks, CreatedAt: timeToTS(ts)},
+			rel:           taskRelationRow{SourceTaskID: 3, TargetTaskID: 4, Kind: dbgen.StoredRelationKindBlocks, CreatedAt: types.Timestamptz(ts)},
 			perspectiveID: 3,
 			wantKind:      apigen.TaskRelationKindBlocks,
 			wantTaskID:    "T4",
 		},
 		{
 			name:          "blocks: from target perspective",
-			rel:           taskRelationRow{SourceTaskID: 3, TargetTaskID: 4, Kind: dbgen.StoredRelationKindBlocks, CreatedAt: timeToTS(ts)},
+			rel:           taskRelationRow{SourceTaskID: 3, TargetTaskID: 4, Kind: dbgen.StoredRelationKindBlocks, CreatedAt: types.Timestamptz(ts)},
 			perspectiveID: 4,
 			wantKind:      apigen.TaskRelationKindBlockedBy,
 			wantTaskID:    "T3",
 		},
 		{
 			name:          "relates_to: from source perspective",
-			rel:           taskRelationRow{SourceTaskID: 5, TargetTaskID: 6, Kind: dbgen.StoredRelationKindRelatesTo, CreatedAt: timeToTS(ts)},
+			rel:           taskRelationRow{SourceTaskID: 5, TargetTaskID: 6, Kind: dbgen.StoredRelationKindRelatesTo, CreatedAt: types.Timestamptz(ts)},
 			perspectiveID: 5,
 			wantKind:      apigen.TaskRelationKindRelatesTo,
 			wantTaskID:    "T6",
 		},
 		{
 			name:          "relates_to: from target perspective",
-			rel:           taskRelationRow{SourceTaskID: 5, TargetTaskID: 6, Kind: dbgen.StoredRelationKindRelatesTo, CreatedAt: timeToTS(ts)},
+			rel:           taskRelationRow{SourceTaskID: 5, TargetTaskID: 6, Kind: dbgen.StoredRelationKindRelatesTo, CreatedAt: types.Timestamptz(ts)},
 			perspectiveID: 6,
 			wantKind:      apigen.TaskRelationKindRelatesTo,
 			wantTaskID:    "T5",
 		},
 		{
 			name:          "duplicates: from source perspective",
-			rel:           taskRelationRow{SourceTaskID: 7, TargetTaskID: 8, Kind: dbgen.StoredRelationKindDuplicates, CreatedAt: timeToTS(ts)},
+			rel:           taskRelationRow{SourceTaskID: 7, TargetTaskID: 8, Kind: dbgen.StoredRelationKindDuplicates, CreatedAt: types.Timestamptz(ts)},
 			perspectiveID: 7,
 			wantKind:      apigen.TaskRelationKindDuplicates,
 			wantTaskID:    "T8",
 		},
 		{
 			name:          "duplicates: from target perspective",
-			rel:           taskRelationRow{SourceTaskID: 7, TargetTaskID: 8, Kind: dbgen.StoredRelationKindDuplicates, CreatedAt: timeToTS(ts)},
+			rel:           taskRelationRow{SourceTaskID: 7, TargetTaskID: 8, Kind: dbgen.StoredRelationKindDuplicates, CreatedAt: types.Timestamptz(ts)},
 			perspectiveID: 8,
 			wantKind:      apigen.TaskRelationKindDuplicates,
 			wantTaskID:    "T7",
 		},
 		{
 			name:          "triggers: from source perspective",
-			rel:           taskRelationRow{SourceTaskID: 11, TargetTaskID: 12, Kind: dbgen.StoredRelationKindTriggers, CreatedAt: timeToTS(ts)},
+			rel:           taskRelationRow{SourceTaskID: 11, TargetTaskID: 12, Kind: dbgen.StoredRelationKindTriggers, CreatedAt: types.Timestamptz(ts)},
 			perspectiveID: 11,
 			wantKind:      apigen.TaskRelationKindTriggers,
 			wantTaskID:    "T12",
 		},
 		{
 			name:          "triggers: from target perspective",
-			rel:           taskRelationRow{SourceTaskID: 11, TargetTaskID: 12, Kind: dbgen.StoredRelationKindTriggers, CreatedAt: timeToTS(ts)},
+			rel:           taskRelationRow{SourceTaskID: 11, TargetTaskID: 12, Kind: dbgen.StoredRelationKindTriggers, CreatedAt: types.Timestamptz(ts)},
 			perspectiveID: 12,
 			wantKind:      apigen.TaskRelationKindTriggeredBy,
 			wantTaskID:    "T11",
 		},
 		{
 			name:          "spawns: from source perspective",
-			rel:           taskRelationRow{SourceTaskID: 9, TargetTaskID: 10, Kind: dbgen.StoredRelationKindSpawns, CreatedAt: timeToTS(ts)},
+			rel:           taskRelationRow{SourceTaskID: 9, TargetTaskID: 10, Kind: dbgen.StoredRelationKindSpawns, CreatedAt: types.Timestamptz(ts)},
 			perspectiveID: 9,
 			wantKind:      apigen.TaskRelationKindSpawns,
 			wantTaskID:    "T10",
 		},
 		{
 			name:          "spawns: from target perspective",
-			rel:           taskRelationRow{SourceTaskID: 9, TargetTaskID: 10, Kind: dbgen.StoredRelationKindSpawns, CreatedAt: timeToTS(ts)},
+			rel:           taskRelationRow{SourceTaskID: 9, TargetTaskID: 10, Kind: dbgen.StoredRelationKindSpawns, CreatedAt: types.Timestamptz(ts)},
 			perspectiveID: 10,
 			wantKind:      apigen.TaskRelationKindSpawnedBy,
 			wantTaskID:    "T9",

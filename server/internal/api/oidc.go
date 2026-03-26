@@ -17,6 +17,7 @@ import (
 	"github.com/zitadel/oidc/v3/pkg/oidc"
 
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 // OIDCConfig holds the configuration for the OIDC relying party.
@@ -149,7 +150,7 @@ func (h *Handler) handleOIDCCallback(w http.ResponseWriter, r *http.Request, tok
 		if errors.Is(err, pgx.ErrNoRows) {
 			// Completely new user — create one.
 			ts := time.Now()
-			tstz := timeToTS(ts)
+			tstz := types.Timestamptz(ts)
 			user, err = q.CreateUser(ctx, dbgen.CreateUserParams{
 				Email:       email,
 				Name:        name,
@@ -167,7 +168,7 @@ func (h *Handler) handleOIDCCallback(w http.ResponseWriter, r *http.Request, tok
 			// Existing user found by email — link the OIDC subject.
 			if err := q.SetUserOIDCSubject(ctx, dbgen.SetUserOIDCSubjectParams{
 				OidcSubject: subjectText,
-				UpdatedAt:   timeToTS(time.Now()),
+				UpdatedAt:   types.Timestamptz(time.Now()),
 				ID:          user.ID,
 			}); err != nil {
 				h.Log.ErrorContext(ctx, "oidc: link user", "error", err)

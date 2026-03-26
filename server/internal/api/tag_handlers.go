@@ -8,6 +8,7 @@ import (
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/taskengine"
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 func (h *Handler) SpaceTagsList(ctx context.Context, params apigen.SpaceTagsListParams) (*apigen.TagPage, error) {
@@ -63,7 +64,7 @@ func (h *Handler) SpaceTagsCreate(ctx context.Context, req *apigen.TagCreate, pa
 		SpaceSlug:  params.SpaceSlug,
 		Name:       name,
 		NameFolded: taskengine.FoldTagName(name),
-		CreatedAt:  timeToTS(time.Now()),
+		CreatedAt:  types.Timestamptz(time.Now()),
 	})
 	if err != nil {
 		return nil, err
