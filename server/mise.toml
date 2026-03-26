@@ -30,3 +30,20 @@ run = "go test ./..."
 description = "Run the server"
 depends = ["build"]
 run = "./tend-server serve"
+
+[tasks.seed]
+description = "Create default admin user"
+depends = ["build"]
+run = "./tend-server create-admin --email admin@localhost --name Admin --password password"
+
+[tasks.build-dev-oidc]
+description = "Build dev OIDC server"
+depends = ["generate"]
+sources = ["**/*.go", "go.mod", "go.sum"]
+outputs = ["dev-oidc"]
+run = "go build -o dev-oidc ./cmd/dev-oidc"
+
+[tasks.run-dev-oidc]
+description = "Run dev OIDC server"
+depends = ["build-dev-oidc"]
+run = "./dev-oidc"

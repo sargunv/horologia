@@ -32,6 +32,14 @@ postinstall = [
   "go mod download",
 ]
 
+[tasks.generate]
+description = "Run all code generation"
+depends = ["//*:generate"]
+
+[tasks.build]
+description = "Build all packages"
+depends = ["//*:build"]
+
 [tasks.test]
 description = "Run all tests"
 depends = ["//*:test"]

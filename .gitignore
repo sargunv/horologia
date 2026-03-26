@@ -1,6 +1,6 @@
 # Go
 /server/tend-server
-/server/tmp/
+/server/dev-oidc
 /cli/tend
 
 # Web

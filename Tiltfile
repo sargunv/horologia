@@ -13,24 +13,14 @@ common_env = {
     "TEND_OIDC_REDIRECT_URL": "http://localhost:%d/api/auth/oidc/callback" % WEB_PORT,
 }
 
-go_deps = [
-    "server/go.mod",
-    "server/go.sum",
-    "server/tools.go",
-    "server/internal",
-    "server/api",
-    "server/cmd",
-]
-
 docker_compose("docker-compose.yml")
 dc_resource("postgres", labels=["infra"])
 
 local_resource(
     "oidc",
-    cmd="cd server && go build -o tmp/dev-oidc ./cmd/dev-oidc",
-    serve_cmd="./server/tmp/dev-oidc",
+    serve_cmd="mise run //server:run-dev-oidc",
     serve_env=common_env,
-    deps=go_deps,
+    deps=["server"],
     readiness_probe=probe(
         http_get=http_get_action(port=OIDC_PORT, path="/.well-known/openid-configuration"),
         initial_delay_secs=2,
@@ -43,10 +33,9 @@ local_resource(
 
 local_resource(
     "server",
-    cmd="cd server && go build -o tmp/tend-server ./cmd/server",
-    serve_cmd="./server/tmp/tend-server serve",
+    serve_cmd="mise run //server:run",
     serve_env=common_env,
-    deps=go_deps,
+    deps=["server"],
     resource_deps=["oidc", "postgres"],
     readiness_probe=probe(
         exec=exec_action(["nc", "-z", "localhost", str(SERVER_PORT)]),
@@ -60,7 +49,7 @@ local_resource(
 
 local_resource(
     "seed",
-    cmd="./server/tmp/tend-server create-admin --email admin@localhost --name Admin --password password",
+    cmd="mise run //server:seed",
     env=common_env,
     resource_deps=["server"],
     labels=["infra"],
@@ -68,8 +57,7 @@ local_resource(
 
 local_resource(
     "web",
-    serve_cmd="pnpm exec vp dev",
-    serve_dir="./web",
+    serve_cmd="mise run //web:dev",
     resource_deps=["server"],
     links=["http://localhost:%d/" % WEB_PORT],
     labels=["app"],
