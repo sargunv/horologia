@@ -13,35 +13,18 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/caarlos0/env/v11"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pressly/goose/v3"
 	"github.com/spf13/cobra"
 
 	"github.com/sargunv/tend/server/internal/api"
+	"github.com/sargunv/tend/server/internal/config"
 	"github.com/sargunv/tend/server/internal/cron"
 	"github.com/sargunv/tend/server/internal/database"
 	"github.com/sargunv/tend/server/internal/taskengine"
 )
 
-type config struct {
-	DB        string `env:"TEND_DB,required"`
-	Addr      string `env:"TEND_ADDR" envDefault:":8080"`
-	LogFormat string `env:"TEND_LOG_FORMAT" envDefault:"text"`
-	LogLevel  string `env:"TEND_LOG_LEVEL" envDefault:"info"`
-
-	// OIDC config — all optional. If OIDCIssuer is empty, OIDC is disabled.
-	OIDCIssuer       string `env:"TEND_OIDC_ISSUER"`
-	OIDCClientID     string `env:"TEND_OIDC_CLIENT_ID"`
-	OIDCClientSecret string `env:"TEND_OIDC_CLIENT_SECRET"`
-	OIDCRedirectURL  string `env:"TEND_OIDC_REDIRECT_URL"`
-}
-
-func loadConfig() (config, error) {
-	return env.ParseAs[config]()
-}
-
-func newLogger(cfg config) (*slog.Logger, error) {
+func newLogger(cfg config.Config) (*slog.Logger, error) {
 	var level slog.Level
 	if err := level.UnmarshalText([]byte(cfg.LogLevel)); err != nil {
 		return nil, fmt.Errorf("invalid TEND_LOG_LEVEL %q: %w", cfg.LogLevel, err)
@@ -62,7 +45,7 @@ func newLogger(cfg config) (*slog.Logger, error) {
 	return slog.New(handler), nil
 }
 
-func openMigrationDB(ctx context.Context, cfg config) (*sql.DB, *goose.Provider, error) {
+func openMigrationDB(ctx context.Context, cfg config.Config) (*sql.DB, *goose.Provider, error) {
 	db, err := database.OpenSQL(ctx, cfg.DB)
 	if err != nil {
 		return nil, nil, err
@@ -78,7 +61,7 @@ func openMigrationDB(ctx context.Context, cfg config) (*sql.DB, *goose.Provider,
 }
 
 // migrateAndOpenPool runs database migrations and returns an application pool.
-func migrateAndOpenPool(ctx context.Context, cfg config) (*pgxpool.Pool, error) {
+func migrateAndOpenPool(ctx context.Context, cfg config.Config) (*pgxpool.Pool, error) {
 	migrationDB, migrator, err := openMigrationDB(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -107,7 +90,7 @@ var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Run the HTTP server",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := loadConfig()
+		cfg, err := config.Load()
 		if err != nil {
 			return err
 		}
@@ -123,7 +106,7 @@ var serveCmd = &cobra.Command{
 		}
 		defer pool.Close()
 
-		handler := &api.Handler{Pool: pool, Log: log}
+		handler := &api.Handler{Pool: pool, Log: log, SecureCookies: cfg.SecureCookies}
 
 		// Start the fixed_accumulating cron job.
 		cronCtx, cronCancel := context.WithCancel(cmd.Context())
@@ -196,7 +179,7 @@ var createAdminCmd = &cobra.Command{
 	Use:   "create-admin",
 	Short: "Create a global owner user",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := loadConfig()
+		cfg, err := config.Load()
 		if err != nil {
 			return err
 		}

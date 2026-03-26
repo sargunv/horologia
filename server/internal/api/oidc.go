@@ -116,7 +116,15 @@ func (h *Handler) handleOIDCCallback(w http.ResponseWriter, r *http.Request, tok
 		name = email
 	}
 
-	q := dbgen.New(h.Pool)
+	tx, err := h.Pool.Begin(ctx)
+	if err != nil {
+		h.Log.ErrorContext(ctx, "oidc: begin tx", "error", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	q := dbgen.New(tx)
 	subjectText := pgtype.Text{String: subject, Valid: true}
 
 	// Try to find existing user by OIDC subject.
@@ -129,6 +137,9 @@ func (h *Handler) handleOIDCCallback(w http.ResponseWriter, r *http.Request, tok
 	if errors.Is(err, pgx.ErrNoRows) {
 		// No user with this OIDC subject. Try matching by email to link
 		// an existing password-created account.
+		// TODO: Auto-linking by email means any trusted OIDC provider can claim
+		// an existing account without user consent. Consider requiring explicit
+		// user approval before linking OIDC identities to password-based accounts.
 		user, err = q.GetUserByEmail(ctx, email)
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			h.Log.ErrorContext(ctx, "oidc: get user by email", "error", err)
@@ -175,7 +186,13 @@ func (h *Handler) handleOIDCCallback(w http.ResponseWriter, r *http.Request, tok
 		return
 	}
 
-	setSessionCookie(w, raw)
+	if err := tx.Commit(ctx); err != nil {
+		h.Log.ErrorContext(ctx, "oidc: commit tx", "error", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	h.setSessionCookie(w, raw)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 

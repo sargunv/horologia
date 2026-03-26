@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/sargunv/tend/server/internal/config"
 	"github.com/sargunv/tend/server/internal/database"
 )
 
@@ -15,7 +16,7 @@ var migrateUpCmd = &cobra.Command{
 	Use:   "up",
 	Short: "Apply all pending migrations",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := loadConfig()
+		cfg, err := config.Load()
 		if err != nil {
 			return err
 		}
@@ -57,7 +58,7 @@ var migrateStatusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Print migration status",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := loadConfig()
+		cfg, err := config.Load()
 		if err != nil {
 			return err
 		}

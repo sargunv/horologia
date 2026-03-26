@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -75,7 +76,7 @@ func WebLoginHandler(handler *Handler) http.Handler {
 			return
 		}
 
-		setSessionCookie(w, raw)
+		handler.setSessionCookie(w, raw)
 
 		apiUser := userFromDB(user)
 
@@ -90,7 +91,7 @@ func WebLogoutHandler(handler *Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c, err := r.Cookie(sessionCookieName)
 		if err != nil {
-			clearSessionCookie(w)
+			handler.clearSessionCookie(w)
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
@@ -100,7 +101,7 @@ func WebLogoutHandler(handler *Handler) http.Handler {
 		q := dbgen.New(handler.Pool)
 		_, _ = q.DeleteAuthTokenByHash(ctx, hash)
 
-		clearSessionCookie(w)
+		handler.clearSessionCookie(w)
 		w.WriteHeader(http.StatusNoContent)
 	})
 }
@@ -132,24 +133,26 @@ func validatePassword(ctx context.Context, q *dbgen.Queries, email, password str
 	return user, nil
 }
 
-func setSessionCookie(w http.ResponseWriter, token string) {
+func (h *Handler) setSessionCookie(w http.ResponseWriter, token string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookieName,
 		Value:    token,
 		Path:     sessionCookiePath,
 		MaxAge:   sessionMaxAge,
 		HttpOnly: true,
+		Secure:   h.SecureCookies,
 		SameSite: http.SameSiteLaxMode,
 	})
 }
 
-func clearSessionCookie(w http.ResponseWriter) {
+func (h *Handler) clearSessionCookie(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookieName,
 		Value:    "",
 		Path:     sessionCookiePath,
 		MaxAge:   -1,
 		HttpOnly: true,
+		Secure:   h.SecureCookies,
 		SameSite: http.SameSiteLaxMode,
 	})
 }
@@ -178,6 +181,6 @@ func writeJSONError(w http.ResponseWriter, status int, message string) {
 		"code":    httpStatusToCode(status),
 		"message": message,
 	}); err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		slog.Error("writeJSONError: failed to write response", "error", err)
 	}
 }
