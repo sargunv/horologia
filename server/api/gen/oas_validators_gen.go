@@ -1332,19 +1332,6 @@ func (s *TaskStatusInput) Validate() error {
 	return nil
 }
 
-func (s TaskStatusInputCategory) Validate() error {
-	switch s {
-	case "initial":
-		return nil
-	case "intermediate":
-		return nil
-	case "completion":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
 func (s *TaskStatusList) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer

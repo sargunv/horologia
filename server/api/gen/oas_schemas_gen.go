@@ -157,6 +157,7 @@ func (s *AuthTokenCreateResponse) SetAuthToken(val AuthToken) {
 	s.AuthToken = val
 }
 
+// Ref: #/components/schemas/AuthTokenKind
 type AuthTokenKind string
 
 const (
@@ -1880,6 +1881,7 @@ func (s *TaskStatus) SetPosition(val int64) {
 	s.Position = val
 }
 
+// Ref: #/components/schemas/TaskStatusCategory
 type TaskStatusCategory string
 
 const (
@@ -1930,8 +1932,8 @@ func (s *TaskStatusCategory) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/TaskStatusInput
 type TaskStatusInput struct {
-	Name     string                  `json:"name"`
-	Category TaskStatusInputCategory `json:"category"`
+	Name     string             `json:"name"`
+	Category TaskStatusCategory `json:"category"`
 }
 
 // GetName returns the value of Name.
@@ -1940,7 +1942,7 @@ func (s *TaskStatusInput) GetName() string {
 }
 
 // GetCategory returns the value of Category.
-func (s *TaskStatusInput) GetCategory() TaskStatusInputCategory {
+func (s *TaskStatusInput) GetCategory() TaskStatusCategory {
 	return s.Category
 }
 
@@ -1950,56 +1952,8 @@ func (s *TaskStatusInput) SetName(val string) {
 }
 
 // SetCategory sets the value of Category.
-func (s *TaskStatusInput) SetCategory(val TaskStatusInputCategory) {
+func (s *TaskStatusInput) SetCategory(val TaskStatusCategory) {
 	s.Category = val
-}
-
-type TaskStatusInputCategory string
-
-const (
-	TaskStatusInputCategoryInitial      TaskStatusInputCategory = "initial"
-	TaskStatusInputCategoryIntermediate TaskStatusInputCategory = "intermediate"
-	TaskStatusInputCategoryCompletion   TaskStatusInputCategory = "completion"
-)
-
-// AllValues returns all TaskStatusInputCategory values.
-func (TaskStatusInputCategory) AllValues() []TaskStatusInputCategory {
-	return []TaskStatusInputCategory{
-		TaskStatusInputCategoryInitial,
-		TaskStatusInputCategoryIntermediate,
-		TaskStatusInputCategoryCompletion,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s TaskStatusInputCategory) MarshalText() ([]byte, error) {
-	switch s {
-	case TaskStatusInputCategoryInitial:
-		return []byte(s), nil
-	case TaskStatusInputCategoryIntermediate:
-		return []byte(s), nil
-	case TaskStatusInputCategoryCompletion:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *TaskStatusInputCategory) UnmarshalText(data []byte) error {
-	switch TaskStatusInputCategory(data) {
-	case TaskStatusInputCategoryInitial:
-		*s = TaskStatusInputCategoryInitial
-		return nil
-	case TaskStatusInputCategoryIntermediate:
-		*s = TaskStatusInputCategoryIntermediate
-		return nil
-	case TaskStatusInputCategoryCompletion:
-		*s = TaskStatusInputCategoryCompletion
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 // Ref: #/components/schemas/TaskStatusList

@@ -134,6 +134,20 @@ func TestTaskStatusesReplaceRejectNoInitial(t *testing.T) {
 	assertStatusClose(t, resp, http.StatusBadRequest)
 }
 
+func TestTaskStatusesReplaceRejectMultipleInitial(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "st", "Status Test")
+
+	resp := doRequest(t, env, "PUT", "/spaces/st/task-statuses", `{
+		"items": [
+			{"name": "todo", "category": "initial"},
+			{"name": "new", "category": "initial"},
+			{"name": "done", "category": "completion"}
+		]
+	}`)
+	assertStatusClose(t, resp, http.StatusBadRequest)
+}
+
 func TestTaskStatusesReplaceRejectNoCompletion(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "st", "Status Test")

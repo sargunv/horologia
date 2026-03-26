@@ -14,10 +14,15 @@ model LoginResponse {
   user: User;
 }
 
+enum AuthTokenKind {
+  session,
+  api,
+}
+
 model AuthToken {
   id: string;
   name: string;
-  kind: "session" | "api";
+  kind: AuthTokenKind;
   createdAt: utcDateTime;
 }
 

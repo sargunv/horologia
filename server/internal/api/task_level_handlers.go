@@ -119,20 +119,21 @@ func (h *Handler) SpaceTaskStatusesReplace(ctx context.Context, req *apigen.Task
 		return nil, err
 	}
 
-	// Status-specific validation: at least 1 initial and 1 completion.
-	var hasInitial, hasCompletion bool
+	// Status-specific validation: exactly 1 initial and at least 1 completion.
+	var initialCount int
+	var hasCompletion bool
 	for _, item := range req.Items {
 		switch item.Category {
-		case apigen.TaskStatusInputCategoryInitial:
-			hasInitial = true
-		case apigen.TaskStatusInputCategoryIntermediate:
+		case apigen.TaskStatusCategoryInitial:
+			initialCount++
+		case apigen.TaskStatusCategoryIntermediate:
 			// no constraint
-		case apigen.TaskStatusInputCategoryCompletion:
+		case apigen.TaskStatusCategoryCompletion:
 			hasCompletion = true
 		}
 	}
-	if !hasInitial {
-		return nil, badRequest("at least one status with category \"initial\" is required")
+	if initialCount != 1 {
+		return nil, badRequest("exactly one status with category \"initial\" is required")
 	}
 	if !hasCompletion {
 		return nil, badRequest("at least one status with category \"completion\" is required")

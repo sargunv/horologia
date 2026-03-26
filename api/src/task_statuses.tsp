@@ -4,9 +4,15 @@ using Http;
 
 namespace Tend;
 
+enum TaskStatusCategory {
+  initial,
+  intermediate,
+  completion,
+}
+
 model TaskStatus {
   name: string;
-  category: "initial" | "intermediate" | "completion";
+  category: TaskStatusCategory;
   position: int64;
 }
 
@@ -16,7 +22,7 @@ model TaskStatusList {
 
 model TaskStatusInput {
   @minLength(1) @maxLength(100) name: string;
-  category: "initial" | "intermediate" | "completion";
+  category: TaskStatusCategory;
 }
 
 model TaskStatusReplace {

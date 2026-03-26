@@ -5008,48 +5008,6 @@ func (s *TaskStatusInput) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
-// Encode encodes TaskStatusInputCategory as json.
-func (s TaskStatusInputCategory) Encode(e *jx.Encoder) {
-	e.Str(string(s))
-}
-
-// Decode decodes TaskStatusInputCategory from json.
-func (s *TaskStatusInputCategory) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode TaskStatusInputCategory to nil")
-	}
-	v, err := d.StrBytes()
-	if err != nil {
-		return err
-	}
-	// Try to use constant string.
-	switch TaskStatusInputCategory(v) {
-	case TaskStatusInputCategoryInitial:
-		*s = TaskStatusInputCategoryInitial
-	case TaskStatusInputCategoryIntermediate:
-		*s = TaskStatusInputCategoryIntermediate
-	case TaskStatusInputCategoryCompletion:
-		*s = TaskStatusInputCategoryCompletion
-	default:
-		*s = TaskStatusInputCategory(v)
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s TaskStatusInputCategory) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *TaskStatusInputCategory) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
 // Encode implements json.Marshaler.
 func (s *TaskStatusList) Encode(e *jx.Encoder) {
 	e.ObjStart()
