@@ -255,13 +255,7 @@ func (h *Handler) SpaceTasksList(ctx context.Context, params apigen.SpaceTasksLi
 
 	limit := clampLimit(params.Limit)
 
-	tx, err := h.Pool.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-
-	q := dbgen.New(tx)
+	q := dbgen.New(h.Pool)
 
 	rows, err := q.ListTasksBySpace(ctx, dbgen.ListTasksBySpaceParams{
 		SpaceSlug: params.SpaceSlug,
@@ -292,13 +286,7 @@ func (h *Handler) SpaceTasksRead(ctx context.Context, params apigen.SpaceTasksRe
 	if err != nil {
 		return nil, badRequest(err.Error())
 	}
-	tx, err := h.Pool.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-
-	q := dbgen.New(tx)
+	q := dbgen.New(h.Pool)
 	return h.fetchTask(ctx, q, id, params.SpaceSlug)
 }
 

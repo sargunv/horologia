@@ -93,7 +93,3 @@ var migrateStatusCmd = &cobra.Command{
 		return nil
 	},
 }
-
-func init() {
-	migrateCmd.AddCommand(migrateUpCmd, migrateStatusCmd)
-}

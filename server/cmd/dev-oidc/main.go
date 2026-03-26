@@ -12,6 +12,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"log/slog"
@@ -103,7 +104,7 @@ func main() {
 	}
 
 	logger.Info("dev OIDC provider listening", "issuer", issuer, "users", "admin@localhost/password, test@localhost/password")
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		logger.Error("server error", "error", err)
 		os.Exit(1)
 	}

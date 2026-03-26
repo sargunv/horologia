@@ -175,6 +175,8 @@ var serveCmd = &cobra.Command{
 			log.Info("shutting down", "signal", sig.String())
 		}
 
+		// Use Background() intentionally: cmd.Context() is already cancelled, so deriving
+		// from it would give a pre-cancelled context with no time to drain.
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer shutdownCancel()
 		if err := srv.Shutdown(shutdownCtx); err != nil {
@@ -234,6 +236,7 @@ func init() {
 }
 
 func main() {
+	migrateCmd.AddCommand(migrateUpCmd, migrateStatusCmd)
 	rootCmd.AddCommand(serveCmd, migrateCmd, createAdminCmd)
 
 	if err := rootCmd.Execute(); err != nil {

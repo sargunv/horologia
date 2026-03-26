@@ -136,21 +136,20 @@ type relationKey struct {
 	flip bool
 }
 
-// inverseKindMap is derived from directedKindMap at init time. It maps
+// inverseKindMap is derived from directedKindMap. It maps
 // (storedKind, isFlipped) to the API-facing directed kind.
-var inverseKindMap map[relationKey]apigen.TaskRelationKind
+var inverseKindMap = func() map[relationKey]apigen.TaskRelationKind {
+	m := make(map[relationKey]apigen.TaskRelationKind, len(directedKindMap))
+	for apiKind, c := range directedKindMap {
+		m[relationKey{c.storedKind, c.flip}] = apiKind
+	}
+	return m
+}()
 
 // symmetricKinds lists stored relation kinds that are symmetric (same kind in both directions).
 var symmetricKinds = map[dbgen.StoredRelationKind]struct{}{
 	dbgen.StoredRelationKindRelatesTo:  {},
 	dbgen.StoredRelationKindDuplicates: {},
-}
-
-func init() {
-	inverseKindMap = make(map[relationKey]apigen.TaskRelationKind, len(directedKindMap))
-	for apiKind, c := range directedKindMap {
-		inverseKindMap[relationKey{c.storedKind, c.flip}] = apiKind
-	}
 }
 
 func relationFromDB(rel taskRelationRow, perspectiveTaskID int64) (apigen.TaskRelation, error) {
