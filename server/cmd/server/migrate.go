@@ -1,8 +1,6 @@
 package main
 
 import (
-	"context"
-
 	"github.com/spf13/cobra"
 
 	"github.com/sargunv/tend/server/internal/database"
@@ -27,7 +25,7 @@ var migrateUpCmd = &cobra.Command{
 			return err
 		}
 
-		db, err := database.OpenSQL(context.Background(), cfg.DB)
+		db, err := database.OpenSQL(cmd.Context(), cfg.DB)
 		if err != nil {
 			return err
 		}
@@ -38,7 +36,7 @@ var migrateUpCmd = &cobra.Command{
 			return err
 		}
 
-		results, err := migrator.Up(context.Background())
+		results, err := migrator.Up(cmd.Context())
 		if err != nil {
 			return err
 		}
@@ -69,7 +67,7 @@ var migrateStatusCmd = &cobra.Command{
 			return err
 		}
 
-		db, err := database.OpenSQL(context.Background(), cfg.DB)
+		db, err := database.OpenSQL(cmd.Context(), cfg.DB)
 		if err != nil {
 			return err
 		}
@@ -80,7 +78,7 @@ var migrateStatusCmd = &cobra.Command{
 			return err
 		}
 
-		statuses, err := migrator.Status(context.Background())
+		statuses, err := migrator.Status(cmd.Context())
 		if err != nil {
 			return err
 		}

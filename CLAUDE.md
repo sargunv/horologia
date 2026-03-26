@@ -29,6 +29,11 @@ Packages (`api`, `cli`, `server`, `web`) have their own tasks scoped by name, e.
 - ./web - TODOL: React SPA served by the backend
 - ./cli - TODO: Golang CLI client
 
+## Conventions
+
+- Never use `context.Background()` when a context is available from a caller (e.g. `cmd.Context()`,
+  function parameter). Thread contexts through from the top.
+
 ## Documentation
 
 - [Skeleton design system](https://www.skeleton.dev/llms-react.txt)

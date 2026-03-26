@@ -117,7 +117,7 @@ var serveCmd = &cobra.Command{
 			return err
 		}
 
-		pool, err := migrateAndOpenPool(context.Background(), cfg)
+		pool, err := migrateAndOpenPool(cmd.Context(), cfg)
 		if err != nil {
 			return err
 		}
@@ -126,7 +126,7 @@ var serveCmd = &cobra.Command{
 		handler := &api.Handler{Pool: pool, Log: log}
 
 		// Start the fixed_accumulating cron job.
-		cronCtx, cronCancel := context.WithCancel(context.Background())
+		cronCtx, cronCancel := context.WithCancel(cmd.Context())
 		defer cronCancel()
 		go cron.RunAccumulatingCron(cronCtx, pool, log, time.Minute)
 
@@ -138,7 +138,7 @@ var serveCmd = &cobra.Command{
 		// Mount OIDC routes if configured.
 		finalHandler := h
 		if cfg.OIDCIssuer != "" {
-			oidcHandler, err := api.NewOIDCHandler(context.Background(), api.OIDCConfig{
+			oidcHandler, err := api.NewOIDCHandler(cmd.Context(), api.OIDCConfig{
 				Issuer:       cfg.OIDCIssuer,
 				ClientID:     cfg.OIDCClientID,
 				ClientSecret: cfg.OIDCClientSecret,
@@ -204,7 +204,7 @@ var createAdminCmd = &cobra.Command{
 			return err
 		}
 
-		pool, err := migrateAndOpenPool(context.Background(), cfg)
+		pool, err := migrateAndOpenPool(cmd.Context(), cfg)
 		if err != nil {
 			return err
 		}
@@ -214,7 +214,7 @@ var createAdminCmd = &cobra.Command{
 		name, _ := cmd.Flags().GetString("name")
 		password, _ := cmd.Flags().GetString("password")
 
-		user, err := taskengine.CreateUserWithPassword(context.Background(), pool, email, name, password, true)
+		user, err := taskengine.CreateUserWithPassword(cmd.Context(), pool, email, name, password, true)
 		if err != nil {
 			return fmt.Errorf("create admin: %w", err)
 		}
