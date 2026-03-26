@@ -19,6 +19,7 @@ model SpaceCreate {
 }
 
 model SpaceUpdate {
+  @minLength(1) @maxLength(100) slug?: string;
   @minLength(1) @maxLength(200) name?: string;
   @maxLength(1000) description?: string;
 }

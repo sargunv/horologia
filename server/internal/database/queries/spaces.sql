@@ -14,8 +14,8 @@ LIMIT $2;
 
 -- name: UpdateSpace :one
 UPDATE spaces
-SET name = $1, description = $2, updated_at = $3
-WHERE slug = $4
+SET slug = $1, name = $2, description = $3, updated_at = $4
+WHERE slug = $5
 RETURNING *;
 
 -- name: DeleteSpace :execresult

@@ -92,10 +92,11 @@ func (h *Handler) SpacesUpdate(ctx context.Context, req *apigen.SpaceUpdate, par
 	}
 
 	space, err := q.UpdateSpace(ctx, dbgen.UpdateSpaceParams{
-		Slug:        params.SpaceSlug,
+		Slug:        req.Slug.Or(existing.Slug),
 		Name:        req.Name.Or(existing.Name),
 		Description: req.Description.Or(existing.Description),
 		UpdatedAt:   timeToTS(time.Now()),
+		Slug_2:      params.SpaceSlug,
 	})
 	if err != nil {
 		return nil, err

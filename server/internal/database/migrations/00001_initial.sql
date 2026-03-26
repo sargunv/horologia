@@ -18,7 +18,7 @@ CREATE TABLE spaces (
 
 -- Task statuses
 CREATE TABLE task_statuses (
-    space_slug TEXT            NOT NULL REFERENCES spaces (slug) ON DELETE CASCADE,
+    space_slug TEXT            NOT NULL REFERENCES spaces (slug) ON DELETE CASCADE ON UPDATE CASCADE,
     name       TEXT            NOT NULL,
     category   status_category NOT NULL,
     position   INTEGER         NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE task_statuses (
 
 -- Task effort levels
 CREATE TABLE task_effort_levels (
-    space_slug TEXT    NOT NULL REFERENCES spaces (slug) ON DELETE CASCADE,
+    space_slug TEXT    NOT NULL REFERENCES spaces (slug) ON DELETE CASCADE ON UPDATE CASCADE,
     name       TEXT    NOT NULL,
     position   INTEGER NOT NULL,
     PRIMARY KEY (space_slug, name),
@@ -37,7 +37,7 @@ CREATE TABLE task_effort_levels (
 
 -- Task priority levels
 CREATE TABLE task_priority_levels (
-    space_slug TEXT    NOT NULL REFERENCES spaces (slug) ON DELETE CASCADE,
+    space_slug TEXT    NOT NULL REFERENCES spaces (slug) ON DELETE CASCADE ON UPDATE CASCADE,
     name       TEXT    NOT NULL,
     position   INTEGER NOT NULL,
     PRIMARY KEY (space_slug, name),
@@ -60,7 +60,7 @@ CREATE TABLE tasks (
     last_completed_at TIMESTAMPTZ,
     created_at      TIMESTAMPTZ     NOT NULL,
     updated_at      TIMESTAMPTZ     NOT NULL,
-    FOREIGN KEY (space_slug) REFERENCES spaces (slug) ON DELETE CASCADE,
+    FOREIGN KEY (space_slug) REFERENCES spaces (slug) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (space_slug, status_name) REFERENCES task_statuses (space_slug, name) ON UPDATE CASCADE,
     FOREIGN KEY (space_slug, effort_name) REFERENCES task_effort_levels (space_slug, name) ON UPDATE CASCADE,
     FOREIGN KEY (space_slug, priority_name) REFERENCES task_priority_levels (space_slug, name) ON UPDATE CASCADE,
@@ -112,7 +112,7 @@ CREATE INDEX idx_auth_tokens_expires ON auth_tokens (expires_at)
 
 -- Space members
 CREATE TABLE space_members (
-    space_slug TEXT        NOT NULL REFERENCES spaces (slug) ON DELETE CASCADE,
+    space_slug TEXT        NOT NULL REFERENCES spaces (slug) ON DELETE CASCADE ON UPDATE CASCADE,
     user_id    BIGINT      NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     role       space_role  NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
@@ -134,7 +134,7 @@ CREATE INDEX idx_task_assignees_user ON task_assignees (user_id);
 -- Tags
 CREATE TABLE tags (
     id          BIGSERIAL   NOT NULL PRIMARY KEY,
-    space_slug  TEXT        NOT NULL REFERENCES spaces (slug) ON DELETE CASCADE,
+    space_slug  TEXT        NOT NULL REFERENCES spaces (slug) ON DELETE CASCADE ON UPDATE CASCADE,
     name        TEXT        NOT NULL,
     name_folded TEXT        NOT NULL,
     created_at  TIMESTAMPTZ NOT NULL,
@@ -161,8 +161,8 @@ CREATE TABLE task_relations (
     kind           stored_relation_kind NOT NULL,
     created_at     TIMESTAMPTZ         NOT NULL,
     PRIMARY KEY (source_task_id, target_task_id, kind),
-    FOREIGN KEY (source_task_id, space_slug) REFERENCES tasks (id, space_slug) ON DELETE CASCADE,
-    FOREIGN KEY (target_task_id, space_slug) REFERENCES tasks (id, space_slug) ON DELETE CASCADE,
+    FOREIGN KEY (source_task_id, space_slug) REFERENCES tasks (id, space_slug) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (target_task_id, space_slug) REFERENCES tasks (id, space_slug) ON DELETE CASCADE ON UPDATE CASCADE,
     CHECK (source_task_id != target_task_id),
     CHECK (kind NOT IN ('relates_to', 'duplicates') OR source_task_id < target_task_id)
 );

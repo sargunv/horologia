@@ -110,24 +110,26 @@ func (q *Queries) ListSpaces(ctx context.Context, arg ListSpacesParams) ([]Space
 
 const updateSpace = `-- name: UpdateSpace :one
 UPDATE spaces
-SET name = $1, description = $2, updated_at = $3
-WHERE slug = $4
+SET slug = $1, name = $2, description = $3, updated_at = $4
+WHERE slug = $5
 RETURNING slug, name, description, created_at, updated_at
 `
 
 type UpdateSpaceParams struct {
+	Slug        string
 	Name        string
 	Description string
 	UpdatedAt   pgtype.Timestamptz
-	Slug        string
+	Slug_2      string
 }
 
 func (q *Queries) UpdateSpace(ctx context.Context, arg UpdateSpaceParams) (Space, error) {
 	row := q.db.QueryRow(ctx, updateSpace,
+		arg.Slug,
 		arg.Name,
 		arg.Description,
 		arg.UpdatedAt,
-		arg.Slug,
+		arg.Slug_2,
 	)
 	var i Space
 	err := row.Scan(

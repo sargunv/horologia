@@ -1012,8 +1012,14 @@ type SpaceTasksDeleteNoContent struct{}
 
 // Ref: #/components/schemas/SpaceUpdate
 type SpaceUpdate struct {
+	Slug        OptString `json:"slug"`
 	Name        OptString `json:"name"`
 	Description OptString `json:"description"`
+}
+
+// GetSlug returns the value of Slug.
+func (s *SpaceUpdate) GetSlug() OptString {
+	return s.Slug
 }
 
 // GetName returns the value of Name.
@@ -1024,6 +1030,11 @@ func (s *SpaceUpdate) GetName() OptString {
 // GetDescription returns the value of Description.
 func (s *SpaceUpdate) GetDescription() OptString {
 	return s.Description
+}
+
+// SetSlug sets the value of Slug.
+func (s *SpaceUpdate) SetSlug(val OptString) {
+	s.Slug = val
 }
 
 // SetName sets the value of Name.

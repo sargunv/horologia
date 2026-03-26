@@ -168,6 +168,59 @@ func TestSpacesUpdate(t *testing.T) {
 	}
 }
 
+func TestSpacesUpdateSlug(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "old-slug", "My Space")
+
+	// Rename the slug.
+	resp := doRequest(t, env, "PATCH", "/spaces/old-slug", `{"slug":"new-slug"}`)
+	assertStatus(t, resp, http.StatusOK)
+	var space map[string]any
+	readJSON(t, resp, &space)
+	if space["slug"] != "new-slug" {
+		t.Errorf("slug = %v, want new-slug", space["slug"])
+	}
+	if space["name"] != "My Space" {
+		t.Errorf("name = %v, want My Space", space["name"])
+	}
+
+	// Old slug should 404.
+	resp2 := doRequest(t, env, "GET", "/spaces/old-slug", "")
+	assertStatus(t, resp2, http.StatusNotFound)
+
+	// New slug should work.
+	resp3 := doRequest(t, env, "GET", "/spaces/new-slug", "")
+	assertStatus(t, resp3, http.StatusOK)
+}
+
+func TestSpacesUpdateSlugCascadesToTasks(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "old-slug", "My Space")
+
+	// Create a task in the space.
+	resp := doRequest(t, env, "POST", "/spaces/old-slug/tasks", `{"title":"Test task"}`)
+	assertStatusClose(t, resp, http.StatusCreated)
+
+	// Rename the slug.
+	resp2 := doRequest(t, env, "PATCH", "/spaces/old-slug", `{"slug":"new-slug"}`)
+	assertStatus(t, resp2, http.StatusOK)
+
+	// Tasks should be accessible under the new slug.
+	resp3 := doRequest(t, env, "GET", "/spaces/new-slug/tasks", "")
+	assertStatus(t, resp3, http.StatusOK)
+	var taskList map[string]any
+	readJSON(t, resp3, &taskList)
+	items, ok := taskList["items"].([]any)
+	if !ok {
+		t.Fatal("items is not an array")
+	}
+	if len(items) != 1 {
+		t.Fatalf("expected 1 task, got %d", len(items))
+	}
+}
+
 func TestSpacesDelete(t *testing.T) {
 	env := setupTestServer(t)
 

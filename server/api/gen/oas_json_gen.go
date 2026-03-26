@@ -2122,6 +2122,12 @@ func (s *SpaceUpdate) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *SpaceUpdate) encodeFields(e *jx.Encoder) {
 	{
+		if s.Slug.Set {
+			e.FieldStart("slug")
+			s.Slug.Encode(e)
+		}
+	}
+	{
 		if s.Name.Set {
 			e.FieldStart("name")
 			s.Name.Encode(e)
@@ -2135,9 +2141,10 @@ func (s *SpaceUpdate) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfSpaceUpdate = [2]string{
-	0: "name",
-	1: "description",
+var jsonFieldsNameOfSpaceUpdate = [3]string{
+	0: "slug",
+	1: "name",
+	2: "description",
 }
 
 // Decode decodes SpaceUpdate from json.
@@ -2148,6 +2155,16 @@ func (s *SpaceUpdate) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
+		case "slug":
+			if err := func() error {
+				s.Slug.Reset()
+				if err := s.Slug.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"slug\"")
+			}
 		case "name":
 			if err := func() error {
 				s.Name.Reset()
