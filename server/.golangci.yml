@@ -25,7 +25,7 @@ linters:
           list-mode: lax
           files:
             - "!${config-path}/cmd/server/*.go"
-            - "!$test"
+            - "!${config-path}/internal/api/*.go"
           deny:
             - pkg: "github.com/sargunv/tend/server/internal/api"
               desc: "only cmd/server may import the api layer"
