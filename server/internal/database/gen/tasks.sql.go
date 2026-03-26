@@ -137,6 +137,9 @@ ORDER BY space_slug, id ASC
 LIMIT 100
 `
 
+// Cap at 100 rows per tick to provide backpressure on the cron job.
+// The cron runs frequently enough that any remaining overdue tasks will
+// be picked up in subsequent ticks, so the backlog drains gradually.
 func (q *Queries) ListOverdueAccumulatingTasks(ctx context.Context, dueAt pgtype.Date) ([]Task, error) {
 	rows, err := q.db.Query(ctx, listOverdueAccumulatingTasks, dueAt)
 	if err != nil {
