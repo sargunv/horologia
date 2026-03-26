@@ -7,10 +7,10 @@ sources = [
   "internal/database/queries/*.sql",
   "sqlc.yaml",
 ]
-outputs = ["api/gen/*.go", "internal/database/gen/*.go"]
+outputs = ["internal/api/gen/*.go", "internal/database/gen/*.go"]
 run = [
   "go run github.com/sqlc-dev/sqlc/cmd/sqlc generate",
-  "go run github.com/ogen-go/ogen/cmd/ogen --target api/gen --package gen --clean ../api/tsp-output/schema/openapi.yaml",
+  "go run github.com/ogen-go/ogen/cmd/ogen --target internal/api/gen --package gen --clean ../api/tsp-output/schema/openapi.yaml",
 ]
 
 [tasks.build]

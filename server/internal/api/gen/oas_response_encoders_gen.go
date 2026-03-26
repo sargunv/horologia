@@ -428,4 +428,5 @@ func encodeErrorResponse(response *ApiErrorStatusCode, w http.ResponseWriter, sp
 		return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
 	}
 	return nil
+
 }

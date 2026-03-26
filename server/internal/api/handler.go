@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ogen-go/ogen/ogenerrors"
 
-	apigen "github.com/sargunv/tend/server/api/gen"
+	apigen "github.com/sargunv/tend/server/internal/api/gen"
 	"github.com/sargunv/tend/server/internal/types"
 )
 

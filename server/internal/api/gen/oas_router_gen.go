@@ -227,6 +227,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 							return
 						}
+
 					}
 
 				}
@@ -383,6 +384,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 									return
 								}
+
 							}
 
 						case 't': // Prefix: "ta"
@@ -468,6 +470,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 										return
 									}
+
 								}
 
 							case 's': // Prefix: "sk"
@@ -751,9 +754,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 														return
 													}
+
 												}
+
 											}
+
 										}
+
 									}
 
 								}
@@ -761,7 +768,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							}
 
 						}
+
 					}
+
 				}
 
 			case 'u': // Prefix: "users/me"
@@ -790,6 +799,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				}
 
 			}
+
 		}
 	}
 	s.notFound(w, r)
@@ -991,6 +1001,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								return
 							}
 						}
+
 					}
 
 				}
@@ -1166,6 +1177,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										return
 									}
 								}
+
 							}
 
 						case 't': // Prefix: "ta"
@@ -1255,6 +1267,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											return
 										}
 									}
+
 								}
 
 							case 's': // Prefix: "sk"
@@ -1547,9 +1560,13 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 															return
 														}
 													}
+
 												}
+
 											}
+
 										}
+
 									}
 
 								}
@@ -1557,7 +1574,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							}
 
 						}
+
 					}
+
 				}
 
 			case 'u': // Prefix: "users/me"
@@ -1586,6 +1605,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 				}
 
 			}
+
 		}
 	}
 	return r, false
