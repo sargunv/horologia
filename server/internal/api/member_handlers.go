@@ -105,36 +105,31 @@ func (h *Handler) SpaceMembersUpdate(ctx context.Context, req *apigen.SpaceMembe
 		return nil, badRequest(err.Error())
 	}
 
-	tx, err := h.Pool.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	q := dbgen.New(h.Pool)
 
-	q := dbgen.New(tx)
-
-	// Guard against removing the last admin.
-	if dbgen.SpaceRole(req.Role) != dbgen.SpaceRoleAdmin {
-		if err := h.ensureNotLastAdmin(ctx, q, params.SpaceSlug, userID); err != nil {
-			return nil, err
-		}
-	}
-
+	// Atomically updates the role; refuses to demote the last admin (returns no rows).
 	member, err := q.UpdateSpaceMemberRole(ctx, dbgen.UpdateSpaceMemberRoleParams{
 		Role:      dbgen.SpaceRole(req.Role),
 		SpaceSlug: params.SpaceSlug,
 		UserID:    userID,
 	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		// Either the member doesn't exist, or they're the last admin being demoted.
+		// Check which case to return the right error.
+		if _, lookupErr := q.GetSpaceMember(ctx, dbgen.GetSpaceMemberParams{
+			SpaceSlug: params.SpaceSlug,
+			UserID:    userID,
+		}); lookupErr != nil {
+			return nil, lookupErr // not found
+		}
+		return nil, badRequest("cannot remove the last admin from a space")
+	}
 	if err != nil {
 		return nil, err
 	}
 
 	targetUser, err := q.GetUserByID(ctx, userID)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 
@@ -159,11 +154,6 @@ func (h *Handler) SpaceMembersDelete(ctx context.Context, params apigen.SpaceMem
 
 	q := dbgen.New(tx)
 
-	// Guard against removing the last admin.
-	if err := h.ensureNotLastAdmin(ctx, q, params.SpaceSlug, userID); err != nil {
-		return err
-	}
-
 	// Remove task assignments and rotation pool entries for this user in this space
 	// before removing membership.
 	if err := q.DeleteTaskAssigneesBySpaceAndUser(ctx, dbgen.DeleteTaskAssigneesBySpaceAndUserParams{
@@ -179,6 +169,7 @@ func (h *Handler) SpaceMembersDelete(ctx context.Context, params apigen.SpaceMem
 		return err
 	}
 
+	// Atomically deletes the member; refuses to delete the last admin (affects zero rows).
 	result, err := q.DeleteSpaceMember(ctx, dbgen.DeleteSpaceMemberParams{
 		SpaceSlug: params.SpaceSlug,
 		UserID:    userID,
@@ -186,31 +177,20 @@ func (h *Handler) SpaceMembersDelete(ctx context.Context, params apigen.SpaceMem
 	if err != nil {
 		return err
 	}
-	if err := checkDeleted(result); err != nil {
-		return err
+	if result.RowsAffected() == 0 {
+		// Either the member doesn't exist, or they're the last admin.
+		member, lookupErr := q.GetSpaceMember(ctx, dbgen.GetSpaceMemberParams{
+			SpaceSlug: params.SpaceSlug,
+			UserID:    userID,
+		})
+		if lookupErr != nil {
+			return lookupErr // not found
+		}
+		if member.Role == dbgen.SpaceRoleAdmin {
+			return badRequest("cannot remove the last admin from a space")
+		}
+		return pgx.ErrNoRows // shouldn't happen, but safe fallback
 	}
 
 	return tx.Commit(ctx)
-}
-
-// ensureNotLastAdmin returns an error if the given user is the only admin in the space.
-func (h *Handler) ensureNotLastAdmin(ctx context.Context, q *dbgen.Queries, spaceSlug string, userID int64) error {
-	member, err := q.GetSpaceMember(ctx, dbgen.GetSpaceMemberParams{
-		SpaceSlug: spaceSlug,
-		UserID:    userID,
-	})
-	if err != nil {
-		return err
-	}
-	if member.Role != dbgen.SpaceRoleAdmin {
-		return nil // not an admin, no risk
-	}
-	count, err := q.CountSpaceAdmins(ctx, spaceSlug)
-	if err != nil {
-		return err
-	}
-	if count <= 1 {
-		return badRequest("cannot remove the last admin from a space")
-	}
-	return nil
 }

@@ -379,6 +379,9 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 		}
 	}
 
+	// Intentionally after HandleCompletionTransition: if the user provides
+	// explicit assigneeIds in the same PATCH, they override the rotation result.
+	// See TestRotationExplicitAssigneesOverrideRotation.
 	if err := h.applyTaskCollections(ctx, q, id, params.SpaceSlug, req.AssigneeIds, req.RotationPool, req.Tags); err != nil {
 		return nil, err
 	}

@@ -28,14 +28,15 @@ WHERE sm.user_id = $1
 ORDER BY s.slug ASC;
 
 -- name: UpdateSpaceMemberRole :one
-UPDATE space_members
+-- Atomically updates a member's role, refusing to demote the last admin.
+-- Returns the updated row, or no rows if the member doesn't exist or the
+-- update would leave the space with zero admins.
+UPDATE space_members sm
 SET role = $1
-WHERE space_slug = $2 AND user_id = $3
+WHERE sm.space_slug = $2 AND sm.user_id = $3
+  AND ($1::space_role = 'admin' OR sm.role != 'admin'
+       OR (SELECT COUNT(*) FROM space_members WHERE space_slug = sm.space_slug AND role = 'admin') > 1)
 RETURNING *;
-
--- name: CountSpaceAdmins :one
-SELECT COUNT(*) FROM space_members
-WHERE space_slug = $1 AND role = 'admin';
 
 -- name: ListSpaceMemberUserIDs :many
 SELECT user_id FROM space_members
@@ -43,4 +44,9 @@ WHERE space_slug = $1
 ORDER BY user_id ASC;
 
 -- name: DeleteSpaceMember :execresult
-DELETE FROM space_members WHERE space_slug = $1 AND user_id = $2;
+-- Atomically deletes a member, refusing to delete the last admin.
+-- Affects zero rows if the member is the sole admin.
+DELETE FROM space_members sm
+WHERE sm.space_slug = $1 AND sm.user_id = $2
+  AND (sm.role != 'admin'
+       OR (SELECT COUNT(*) FROM space_members WHERE space_slug = sm.space_slug AND role = 'admin') > 1);

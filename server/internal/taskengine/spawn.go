@@ -177,10 +177,8 @@ func SpawnTaskFromTemplate(
 
 // maxMissedOccurrences caps the number of tasks spawned per cron tick for a
 // single fixed_accumulating task.
-const maxMissedOccurrences = 365
-
-// allOverdueOccurrences returns RRULE occurrences from dtstart up to and
-// including `until`, capped at maxMissedOccurrences.
+// allOverdueOccurrences returns all RRULE occurrences from dtstart up to and
+// including `until`.
 func allOverdueOccurrences(rule string, dtstart time.Time, until time.Time, loc *time.Location) ([]time.Time, error) {
 	opt, err := rrule.StrToROption(rule)
 	if err != nil {
@@ -194,10 +192,6 @@ func allOverdueOccurrences(rule string, dtstart time.Time, until time.Time, loc 
 	}
 
 	occurrences := rr.Between(dtstart, until, false)
-
-	if len(occurrences) > maxMissedOccurrences {
-		occurrences = occurrences[len(occurrences)-maxMissedOccurrences:]
-	}
 
 	result := make([]time.Time, 0, len(occurrences))
 	for _, occ := range occurrences {

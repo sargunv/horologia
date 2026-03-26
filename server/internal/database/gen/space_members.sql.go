@@ -12,18 +12,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const countSpaceAdmins = `-- name: CountSpaceAdmins :one
-SELECT COUNT(*) FROM space_members
-WHERE space_slug = $1 AND role = 'admin'
-`
-
-func (q *Queries) CountSpaceAdmins(ctx context.Context, spaceSlug string) (int64, error) {
-	row := q.db.QueryRow(ctx, countSpaceAdmins, spaceSlug)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
 const createSpaceMember = `-- name: CreateSpaceMember :one
 INSERT INTO space_members (space_slug, user_id, role, created_at)
 VALUES ($1, $2, $3, $4)
@@ -55,7 +43,10 @@ func (q *Queries) CreateSpaceMember(ctx context.Context, arg CreateSpaceMemberPa
 }
 
 const deleteSpaceMember = `-- name: DeleteSpaceMember :execresult
-DELETE FROM space_members WHERE space_slug = $1 AND user_id = $2
+DELETE FROM space_members sm
+WHERE sm.space_slug = $1 AND sm.user_id = $2
+  AND (sm.role != 'admin'
+       OR (SELECT COUNT(*) FROM space_members WHERE space_slug = sm.space_slug AND role = 'admin') > 1)
 `
 
 type DeleteSpaceMemberParams struct {
@@ -63,6 +54,8 @@ type DeleteSpaceMemberParams struct {
 	UserID    int64
 }
 
+// Atomically deletes a member, refusing to delete the last admin.
+// Affects zero rows if the member is the sole admin.
 func (q *Queries) DeleteSpaceMember(ctx context.Context, arg DeleteSpaceMemberParams) (pgconn.CommandTag, error) {
 	return q.db.Exec(ctx, deleteSpaceMember, arg.SpaceSlug, arg.UserID)
 }
@@ -206,9 +199,11 @@ func (q *Queries) ListSpacesByUser(ctx context.Context, userID int64) ([]Space, 
 }
 
 const updateSpaceMemberRole = `-- name: UpdateSpaceMemberRole :one
-UPDATE space_members
+UPDATE space_members sm
 SET role = $1
-WHERE space_slug = $2 AND user_id = $3
+WHERE sm.space_slug = $2 AND sm.user_id = $3
+  AND ($1::space_role = 'admin' OR sm.role != 'admin'
+       OR (SELECT COUNT(*) FROM space_members WHERE space_slug = sm.space_slug AND role = 'admin') > 1)
 RETURNING space_slug, user_id, role, created_at
 `
 
@@ -218,6 +213,9 @@ type UpdateSpaceMemberRoleParams struct {
 	UserID    int64
 }
 
+// Atomically updates a member's role, refusing to demote the last admin.
+// Returns the updated row, or no rows if the member doesn't exist or the
+// update would leave the space with zero admins.
 func (q *Queries) UpdateSpaceMemberRole(ctx context.Context, arg UpdateSpaceMemberRoleParams) (SpaceMember, error) {
 	row := q.db.QueryRow(ctx, updateSpaceMemberRole, arg.Role, arg.SpaceSlug, arg.UserID)
 	var i SpaceMember
