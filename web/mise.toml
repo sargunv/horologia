@@ -1,23 +1,23 @@
+[tasks.generate]
+description = "Run all code generation"
+depends = ["//api:build"]
+sources = ["../api/tsp-output/schema/openapi.yaml", "src/routes/**/*.tsx"]
+outputs = ["src/api/schema.d.ts", "src/routeTree.gen.ts"]
+run = [
+  "pnpm exec openapi-typescript ../api/tsp-output/schema/openapi.yaml -o src/api/schema.d.ts",
+  "pnpm exec tsr generate",
+]
+
 [tasks.dev]
 description = "Start dev server"
-run = "vp dev"
+run = "pnpm exec vp dev"
 
 [tasks.build]
 description = "Build for production"
-depends = ["codegen"]
-run = "vp build"
-
-[tasks.codegen]
-description = "Generate OpenAPI types"
-depends = ["//api:compile"]
-sources = ["../api/tsp-output/schema/openapi.yaml"]
-outputs = ["src/api/schema.d.ts"]
-run = "pnpm exec openapi-typescript ../api/tsp-output/schema/openapi.yaml -o src/api/schema.d.ts"
-
-[tasks.check]
-description = "Run lint and type checks"
-run = "vp check"
+depends = ["generate"]
+run = "pnpm exec vp build"
 
 [tasks.test]
 description = "Run tests"
-run = "vp test"
+depends = ["generate"]
+run = "pnpm exec vp test"

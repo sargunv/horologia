@@ -35,9 +35,6 @@ function SpaceListPage() {
           ))}
         </div>
       )}
-      {data.nextCursor ? (
-        <p className="text-sm text-surface-500">There are more spaces not shown on this page.</p>
-      ) : null}
     </div>
   );
 }

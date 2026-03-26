@@ -61,7 +61,7 @@ function TaskDetailPage() {
           </div>
           <div className="flex gap-4">
             <dt className="text-surface-500 w-24">Due date</dt>
-            <dd>{task.dueDate ?? "None"}</dd>
+            <dd>{task.due ? task.due.at : "None"}</dd>
           </div>
           <div className="flex gap-4">
             <dt className="text-surface-500 w-24">Assignees</dt>

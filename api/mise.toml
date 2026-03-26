@@ -1,5 +1,5 @@
-[tasks.compile]
+[tasks.build]
 description = "Compile TypeSpec"
-run = "pnpm tsp compile ."
+run = "pnpm exec tsp compile ."
 sources = ["main.tsp", "src/**/*.tsp", "tspconfig.yaml"]
 outputs = ["tsp-output/schema/openapi.yaml"]

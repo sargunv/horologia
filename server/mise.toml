@@ -1,6 +1,6 @@
 [tasks.generate]
 description = "Run all code generation"
-depends = ["//api:compile"]
+depends = ["//api:build"]
 sources = [
   "../api/tsp-output/schema/openapi.yaml",
   "internal/database/migrations/*.sql",

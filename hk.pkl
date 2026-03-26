@@ -22,13 +22,13 @@ local allSteps = new Mapping<String, Step> {
   }
   ["vp-check"] {
     glob = List("**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx")
-    check = "cd web && pnpm vp check --no-fmt"
-    fix = "cd web && pnpm vp check --no-fmt --fix"
+    check = "cd web && pnpm exec vp check --no-fmt"
+    fix = "cd web && pnpm exec vp check --no-fmt --fix"
   }
   ["tsp-format"] {
     glob = List("api/**/*.tsp")
-    check = "cd api && pnpm tsp format . --check"
-    fix = "cd api && pnpm tsp format ."
+    check = "cd api && pnpm exec tsp format . --check"
+    fix = "cd api && pnpm exec tsp format ."
   }
 }
 

@@ -1,13 +1,11 @@
 [tasks.build]
 description = "Build CLI binary"
-depends = ["//server:generate"]
 sources = ["**/*.go", "go.mod", "go.sum"]
 outputs = ["tend"]
 run = "go build -o tend ."
 
 [tasks.test]
 description = "Run tests"
-depends = ["//server:generate"]
 sources = ["**/*.go", "go.mod", "go.sum"]
 run = "go test ./..."
 

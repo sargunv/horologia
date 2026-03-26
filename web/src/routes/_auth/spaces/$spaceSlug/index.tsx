@@ -76,8 +76,8 @@ function TaskListPage() {
                     )}
                   </td>
                   <td>
-                    {task.dueDate ? (
-                      <span className="text-sm">{task.dueDate}</span>
+                    {task.due ? (
+                      <span className="text-sm">{task.due.at}</span>
                     ) : (
                       <span className="text-surface-500">&mdash;</span>
                     )}
