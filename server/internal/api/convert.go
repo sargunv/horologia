@@ -105,13 +105,8 @@ type taskRelationRow struct {
 	CreatedAt    pgtype.Timestamptz
 }
 
-// directedKindMap maps API-facing directed relation kinds to their stored canonical kind,
-// whether source/target should be flipped, and whether the relation should be copied
-// when spawning a new task from a fixed_accumulating template.
-//
-// copyOnSpawn policy: true for relations that describe a task's role in a workflow
-// (parent/child, blocking, triggering); false for relations specific to a particular
-// instance (duplicates, spawn lineage).
+// directedKindMap maps API-facing directed relation kinds to their stored canonical kind
+// and whether source/target should be flipped.
 var directedKindMap = map[apigen.TaskRelationKind]struct {
 	storedKind dbgen.StoredRelationKind
 	flip       bool

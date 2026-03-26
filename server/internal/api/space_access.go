@@ -10,8 +10,8 @@ import (
 )
 
 // requireSpaceRole checks that the authenticated user has one of the given roles
-// in the specified space. Global owners always pass but the space must exist
-// (prevents returning empty 200 for nonexistent spaces).
+// in the specified space. Global owners always pass, but the space must still
+// exist to prevent a 200 OK for a nonexistent space.
 func (h *Handler) requireSpaceRole(ctx context.Context, spaceSlug string, roles ...dbgen.SpaceRole) error {
 	user := UserFromContext(ctx)
 	if user == nil {

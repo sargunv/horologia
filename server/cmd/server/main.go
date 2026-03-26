@@ -166,7 +166,7 @@ var serveCmd = &cobra.Command{
 			return fmt.Errorf("shutdown: %w", err)
 		}
 
-		// ListenAndServe returns ErrServerClosed after Shutdown; drain it.
+		// Serve returns ErrServerClosed after Shutdown; drain it.
 		if err := <-errCh; err != nil && !errors.Is(err, http.ErrServerClosed) {
 			return err
 		}
