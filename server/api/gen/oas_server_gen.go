@@ -119,7 +119,7 @@ type Handler interface {
 	// SpacesList implements Spaces_list operation.
 	//
 	// GET /spaces
-	SpacesList(ctx context.Context, params SpacesListParams) (*SpacePage, error)
+	SpacesList(ctx context.Context) (*SpaceList, error)
 	// SpacesRead implements Spaces_read operation.
 	//
 	// GET /spaces/{spaceSlug}

@@ -797,6 +797,21 @@ func (s *SpaceCreate) SetDescription(val OptString) {
 	s.Description = val
 }
 
+// Ref: #/components/schemas/SpaceList
+type SpaceList struct {
+	Items []Space `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *SpaceList) GetItems() []Space {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *SpaceList) SetItems(val []Space) {
+	s.Items = val
+}
+
 // Ref: #/components/schemas/SpaceMember
 type SpaceMember struct {
 	UserId    string    `json:"userId"`
@@ -925,32 +940,6 @@ func (s *SpaceMemberUpdate) SetRole(val SpaceRole) {
 
 // SpaceMembersDeleteNoContent is response for SpaceMembersDelete operation.
 type SpaceMembersDeleteNoContent struct{}
-
-// Ref: #/components/schemas/SpacePage
-type SpacePage struct {
-	Items      []Space   `json:"items"`
-	NextCursor NilString `json:"nextCursor"`
-}
-
-// GetItems returns the value of Items.
-func (s *SpacePage) GetItems() []Space {
-	return s.Items
-}
-
-// GetNextCursor returns the value of NextCursor.
-func (s *SpacePage) GetNextCursor() NilString {
-	return s.NextCursor
-}
-
-// SetItems sets the value of Items.
-func (s *SpacePage) SetItems(val []Space) {
-	s.Items = val
-}
-
-// SetNextCursor sets the value of NextCursor.
-func (s *SpacePage) SetNextCursor(val NilString) {
-	s.NextCursor = val
-}
 
 // Ref: #/components/schemas/SpaceRole
 type SpaceRole string

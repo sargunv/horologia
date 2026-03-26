@@ -72,18 +72,11 @@ func (q *Queries) GetSpace(ctx context.Context, slug string) (Space, error) {
 
 const listSpaces = `-- name: ListSpaces :many
 SELECT slug, name, description, created_at, updated_at FROM spaces
-WHERE slug > $1
 ORDER BY slug ASC
-LIMIT $2
 `
 
-type ListSpacesParams struct {
-	Slug  string
-	Limit int32
-}
-
-func (q *Queries) ListSpaces(ctx context.Context, arg ListSpacesParams) ([]Space, error) {
-	rows, err := q.db.Query(ctx, listSpaces, arg.Slug, arg.Limit)
+func (q *Queries) ListSpaces(ctx context.Context) ([]Space, error) {
+	rows, err := q.db.Query(ctx, listSpaces)
 	if err != nil {
 		return nil, err
 	}

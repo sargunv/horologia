@@ -168,6 +168,8 @@ CREATE TABLE task_relations (
 );
 
 CREATE INDEX idx_task_relations_target ON task_relations (target_task_id);
+CREATE INDEX idx_task_relations_triggers ON task_relations (source_task_id, space_slug)
+    WHERE kind = 'triggers';
 
 -- Task rotation pool
 CREATE TABLE task_rotation_pool (

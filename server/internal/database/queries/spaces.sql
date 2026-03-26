@@ -8,9 +8,7 @@ SELECT * FROM spaces WHERE slug = $1;
 
 -- name: ListSpaces :many
 SELECT * FROM spaces
-WHERE slug > $1
-ORDER BY slug ASC
-LIMIT $2;
+ORDER BY slug ASC;
 
 -- name: UpdateSpace :one
 UPDATE spaces

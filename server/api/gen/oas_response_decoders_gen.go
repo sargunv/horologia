@@ -2215,7 +2215,7 @@ func decodeSpacesDeleteResponse(resp *http.Response) (res *SpacesDeleteNoContent
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeSpacesListResponse(resp *http.Response) (res *SpacePage, _ error) {
+func decodeSpacesListResponse(resp *http.Response) (res *SpaceList, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -2231,7 +2231,7 @@ func decodeSpacesListResponse(resp *http.Response) (res *SpacePage, _ error) {
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response SpacePage
+			var response SpaceList
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err

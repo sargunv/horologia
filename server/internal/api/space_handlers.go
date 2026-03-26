@@ -26,41 +26,29 @@ func (h *Handler) SpacesCreate(ctx context.Context, req *apigen.SpaceCreate) (*a
 	return spaceFromDB(space), nil
 }
 
-func (h *Handler) SpacesList(ctx context.Context, params apigen.SpacesListParams) (*apigen.SpacePage, error) {
+func (h *Handler) SpacesList(ctx context.Context) (*apigen.SpaceList, error) {
 	user := UserFromContext(ctx)
-	cursor, err := decodeCursor(params.Cursor)
-	if err != nil {
-		return nil, badRequest(err.Error())
-	}
-	limit := clampLimit(params.Limit)
 
 	q := dbgen.New(h.Pool)
 
-	var spaces []dbgen.Space
+	var (
+		spaces []dbgen.Space
+		err    error
+	)
 	if user.IsOwner {
-		spaces, err = q.ListSpaces(ctx, dbgen.ListSpacesParams{
-			Slug:  cursor,
-			Limit: limit + 1,
-		})
+		spaces, err = q.ListSpaces(ctx)
 	} else {
-		spaces, err = q.ListSpacesByUser(ctx, dbgen.ListSpacesByUserParams{
-			UserID: user.ID,
-			Slug:   cursor,
-			Limit:  limit + 1,
-		})
+		spaces, err = q.ListSpacesByUser(ctx, user.ID)
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	items, nextCursor, err := paginate(spaces, limit, convertEach(spaceFromDB), func(s dbgen.Space) string {
-		return s.Slug
-	})
+	items, err := convertEach(spaceFromDB)(spaces)
 	if err != nil {
 		return nil, err
 	}
-
-	return &apigen.SpacePage{Items: items, NextCursor: nextCursor}, nil
+	return &apigen.SpaceList{Items: items}, nil
 }
 
 func (h *Handler) SpacesRead(ctx context.Context, params apigen.SpacesReadParams) (*apigen.Space, error) {

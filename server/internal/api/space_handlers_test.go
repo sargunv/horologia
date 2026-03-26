@@ -67,14 +67,11 @@ func TestSpacesListEmpty(t *testing.T) {
 	resp := doRequest(t, env, "GET", "/spaces", "")
 	assertStatus(t, resp, http.StatusOK)
 
-	var page map[string]any
-	readJSON(t, resp, &page)
-	items := jsonAs[[]any](t, page["items"])
+	var list map[string]any
+	readJSON(t, resp, &list)
+	items := jsonAs[[]any](t, list["items"])
 	if len(items) != 0 {
 		t.Fatalf("got %d items, want 0", len(items))
-	}
-	if page["nextCursor"] != nil {
-		t.Error("expected null nextCursor")
 	}
 }
 
@@ -89,60 +86,15 @@ func TestSpacesList(t *testing.T) {
 	resp := doRequest(t, env, "GET", "/spaces", "")
 	assertStatus(t, resp, http.StatusOK)
 
-	var page map[string]any
-	readJSON(t, resp, &page)
-	items := jsonAs[[]any](t, page["items"])
+	var list map[string]any
+	readJSON(t, resp, &list)
+	items := jsonAs[[]any](t, list["items"])
 	slugs := make([]string, len(items))
 	for i, item := range items {
 		slugs[i] = jsonAs[string](t, jsonAs[map[string]any](t, item)["slug"])
 	}
 	if slugs[0] != "alpha" || slugs[1] != "beta" || slugs[2] != "gamma" {
 		t.Errorf("slugs = %v, want [alpha beta gamma]", slugs)
-	}
-}
-
-func TestSpacesListPagination(t *testing.T) {
-	env := setupTestServer(t)
-
-	// Create 4 items to test exact page boundary (4 items / limit 2 = 2 full pages).
-	createSpace(t, env, "a", "A")
-	createSpace(t, env, "b", "B")
-	createSpace(t, env, "c", "C")
-	createSpace(t, env, "d", "D")
-
-	// Page 1: should return "a" and "b" with a cursor.
-	resp := doRequest(t, env, "GET", "/spaces?limit=2", "")
-	assertStatus(t, resp, http.StatusOK)
-	var page1 map[string]any
-	readJSON(t, resp, &page1)
-	items1 := jsonAs[[]any](t, page1["items"])
-	if len(items1) != 2 {
-		t.Fatalf("page 1: got %d items, want 2", len(items1))
-	}
-	if jsonAs[map[string]any](t, items1[0])["slug"] != "a" || jsonAs[map[string]any](t, items1[1])["slug"] != "b" {
-		t.Errorf("page 1: got slugs %v/%v, want a/b",
-			jsonAs[map[string]any](t, items1[0])["slug"], jsonAs[map[string]any](t, items1[1])["slug"])
-	}
-	cursor := page1["nextCursor"]
-	if cursor == nil {
-		t.Fatal("page 1: expected nextCursor")
-	}
-
-	// Page 2: should return "c" and "d" with null cursor (exact boundary).
-	resp2 := doRequest(t, env, "GET", "/spaces?limit=2&cursor="+jsonAs[string](t, cursor), "")
-	assertStatus(t, resp2, http.StatusOK)
-	var page2 map[string]any
-	readJSON(t, resp2, &page2)
-	items2 := jsonAs[[]any](t, page2["items"])
-	if len(items2) != 2 {
-		t.Fatalf("page 2: got %d items, want 2", len(items2))
-	}
-	if jsonAs[map[string]any](t, items2[0])["slug"] != "c" || jsonAs[map[string]any](t, items2[1])["slug"] != "d" {
-		t.Errorf("page 2: got slugs %v/%v, want c/d",
-			jsonAs[map[string]any](t, items2[0])["slug"], jsonAs[map[string]any](t, items2[1])["slug"])
-	}
-	if page2["nextCursor"] != nil {
-		t.Error("page 2: expected null nextCursor")
 	}
 }
 

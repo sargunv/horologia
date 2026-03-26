@@ -205,7 +205,7 @@ func (UnimplementedHandler) SpacesDelete(ctx context.Context, params SpacesDelet
 // SpacesList implements Spaces_list operation.
 //
 // GET /spaces
-func (UnimplementedHandler) SpacesList(ctx context.Context, params SpacesListParams) (r *SpacePage, _ error) {
+func (UnimplementedHandler) SpacesList(ctx context.Context) (r *SpaceList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

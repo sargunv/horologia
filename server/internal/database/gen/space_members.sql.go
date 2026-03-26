@@ -175,19 +175,12 @@ func (q *Queries) ListSpaceMembersBySpace(ctx context.Context, arg ListSpaceMemb
 const listSpacesByUser = `-- name: ListSpacesByUser :many
 SELECT s.slug, s.name, s.description, s.created_at, s.updated_at FROM spaces s
 JOIN space_members sm ON sm.space_slug = s.slug
-WHERE sm.user_id = $1 AND s.slug > $2
+WHERE sm.user_id = $1
 ORDER BY s.slug ASC
-LIMIT $3
 `
 
-type ListSpacesByUserParams struct {
-	UserID int64
-	Slug   string
-	Limit  int32
-}
-
-func (q *Queries) ListSpacesByUser(ctx context.Context, arg ListSpacesByUserParams) ([]Space, error) {
-	rows, err := q.db.Query(ctx, listSpacesByUser, arg.UserID, arg.Slug, arg.Limit)
+func (q *Queries) ListSpacesByUser(ctx context.Context, userID int64) ([]Space, error) {
+	rows, err := q.db.Query(ctx, listSpacesByUser, userID)
 	if err != nil {
 		return nil, err
 	}

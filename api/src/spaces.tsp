@@ -24,12 +24,14 @@ model SpaceUpdate {
   @maxLength(1000) description?: string;
 }
 
-model SpacePage is Page<Space>;
+model SpaceList {
+  items: Space[];
+}
 
 @route("/spaces")
 @tag("Spaces")
 interface Spaces {
-  @get list(...PageParams): SpacePage | ApiError;
+  @get list(): SpaceList | ApiError;
 
   @post create(@body body: SpaceCreate): {
     @statusCode statusCode: 201;

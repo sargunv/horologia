@@ -5675,20 +5675,10 @@ func (s *Server) handleSpacesListRequest(args [0]string, argsEscaped bool, w htt
 			return
 		}
 	}
-	params, err := decodeSpacesListParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
 
 	var rawBody []byte
 
-	var response *SpacePage
+	var response *SpaceList
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -5697,23 +5687,14 @@ func (s *Server) handleSpacesListRequest(args [0]string, argsEscaped bool, w htt
 			OperationID:      "Spaces_list",
 			Body:             nil,
 			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "cursor",
-					In:   "query",
-				}: params.Cursor,
-				{
-					Name: "limit",
-					In:   "query",
-				}: params.Limit,
-			},
-			Raw: r,
+			Params:           middleware.Parameters{},
+			Raw:              r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = SpacesListParams
-			Response = *SpacePage
+			Params   = struct{}
+			Response = *SpaceList
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -5722,14 +5703,14 @@ func (s *Server) handleSpacesListRequest(args [0]string, argsEscaped bool, w htt
 		](
 			m,
 			mreq,
-			unpackSpacesListParams,
+			nil,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.SpacesList(ctx, params)
+				response, err = s.h.SpacesList(ctx)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.SpacesList(ctx, params)
+		response, err = s.h.SpacesList(ctx)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ApiErrorStatusCode](err); ok {

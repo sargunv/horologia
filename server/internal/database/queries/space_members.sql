@@ -24,9 +24,8 @@ LIMIT $3;
 -- name: ListSpacesByUser :many
 SELECT s.* FROM spaces s
 JOIN space_members sm ON sm.space_slug = s.slug
-WHERE sm.user_id = $1 AND s.slug > $2
-ORDER BY s.slug ASC
-LIMIT $3;
+WHERE sm.user_id = $1
+ORDER BY s.slug ASC;
 
 -- name: UpdateSpaceMemberRole :one
 UPDATE space_members
