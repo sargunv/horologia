@@ -24,6 +24,10 @@ type Handler interface {
 	//
 	// POST /auth/login
 	AuthLogin(ctx context.Context, req *LoginRequest) (*LoginResponse, error)
+	// SpaceActivityList implements SpaceActivity_list operation.
+	//
+	// GET /spaces/{spaceSlug}/activity
+	SpaceActivityList(ctx context.Context, params SpaceActivityListParams) (*ActivityLogPage, error)
 	// SpaceMembersCreate implements SpaceMembers_create operation.
 	//
 	// POST /spaces/{spaceSlug}/members
@@ -56,6 +60,10 @@ type Handler interface {
 	//
 	// PATCH /spaces/{spaceSlug}/tags/{tagName}
 	SpaceTagsUpdate(ctx context.Context, req *TagUpdate, params SpaceTagsUpdateParams) (*Tag, error)
+	// SpaceTaskActivityList implements SpaceTaskActivity_list operation.
+	//
+	// GET /spaces/{spaceSlug}/tasks/{taskId}/activity
+	SpaceTaskActivityList(ctx context.Context, params SpaceTaskActivityListParams) (*ActivityLogPage, error)
 	// SpaceTaskEffortLevelsList implements SpaceTaskEffortLevels_list operation.
 	//
 	// GET /spaces/{spaceSlug}/task-effort-levels
@@ -128,6 +136,10 @@ type Handler interface {
 	//
 	// PATCH /spaces/{spaceSlug}
 	SpacesUpdate(ctx context.Context, req *SpaceUpdate, params SpacesUpdateParams) (*Space, error)
+	// UserActivityList implements UserActivity_list operation.
+	//
+	// GET /users/{userId}/activity
+	UserActivityList(ctx context.Context, params UserActivityListParams) (*ActivityLogPage, error)
 	// UsersMe implements Users_me operation.
 	//
 	// GET /users/me

@@ -3,7 +3,9 @@ package api
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/sargunv/tend/server/internal/activitylog"
 	apigen "github.com/sargunv/tend/server/internal/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 )
@@ -92,6 +94,29 @@ func replaceLevels[Item any](ctx context.Context, q *dbgen.Queries, spaceSlug st
 	return nil
 }
 
+// computeBulkDiff computes added and removed items between old and new name lists.
+func computeBulkDiff(oldNames, newNames []string) (added, removed []string) {
+	oldSet := make(map[string]struct{}, len(oldNames))
+	for _, n := range oldNames {
+		oldSet[n] = struct{}{}
+	}
+	newSet := make(map[string]struct{}, len(newNames))
+	for _, n := range newNames {
+		newSet[n] = struct{}{}
+	}
+	for _, n := range newNames {
+		if _, ok := oldSet[n]; !ok {
+			added = append(added, n)
+		}
+	}
+	for _, n := range oldNames {
+		if _, ok := newSet[n]; !ok {
+			removed = append(removed, n)
+		}
+	}
+	return added, removed
+}
+
 // --- Task Statuses ---
 
 func (h *Handler) SpaceTaskStatusesList(ctx context.Context, params apigen.SpaceTaskStatusesListParams) (*apigen.TaskStatusList, error) {
@@ -141,6 +166,13 @@ func (h *Handler) SpaceTaskStatusesReplace(ctx context.Context, req *apigen.Task
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := dbgen.New(tx)
+
+	// Snapshot before for diff.
+	beforeRows, err := q.ListTaskStatusesBySpace(ctx, params.SpaceSlug)
+	if err != nil {
+		return nil, err
+	}
+	beforeNames := extractNames(beforeRows, func(r dbgen.TaskStatus) string { return r.Name })
 
 	if err := replaceLevels(ctx, q, params.SpaceSlug, req.Items, replaceLevelsOps[apigen.TaskStatusInput]{
 		label:    "status",
@@ -199,6 +231,30 @@ func (h *Handler) SpaceTaskStatusesReplace(ctx context.Context, req *apigen.Task
 		return nil, err
 	}
 
+	afterNames := extractNames(rows, func(r dbgen.TaskStatus) string { return r.Name })
+	added, removed := computeBulkDiff(beforeNames, afterNames)
+	now := time.Now()
+	for _, name := range added {
+		if err := activitylog.Log(ctx, tx, activitylog.Entry{
+			SpaceSlug:  params.SpaceSlug,
+			EntityType: activitylog.EntityStatus,
+			EntityID:   name,
+			Action:     activitylog.ActionCreated,
+		}, now); err != nil {
+			return nil, err
+		}
+	}
+	for _, name := range removed {
+		if err := activitylog.Log(ctx, tx, activitylog.Entry{
+			SpaceSlug:  params.SpaceSlug,
+			EntityType: activitylog.EntityStatus,
+			EntityID:   name,
+			Action:     activitylog.ActionDeleted,
+		}, now); err != nil {
+			return nil, err
+		}
+	}
+
 	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
@@ -235,6 +291,13 @@ func (h *Handler) SpaceTaskEffortLevelsReplace(ctx context.Context, req *apigen.
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := dbgen.New(tx)
+
+	// Snapshot before for diff.
+	beforeRows, err := q.ListTaskEffortLevelsBySpace(ctx, params.SpaceSlug)
+	if err != nil {
+		return nil, err
+	}
+	beforeNames := extractNames(beforeRows, func(r dbgen.TaskEffortLevel) string { return r.Name })
 
 	if err := replaceLevels(ctx, q, params.SpaceSlug, req.Items, replaceLevelsOps[apigen.TaskEffortLevelInput]{
 		label:    "effort level",
@@ -278,6 +341,30 @@ func (h *Handler) SpaceTaskEffortLevelsReplace(ctx context.Context, req *apigen.
 		return nil, err
 	}
 
+	afterNames := extractNames(rows, func(r dbgen.TaskEffortLevel) string { return r.Name })
+	added, removed := computeBulkDiff(beforeNames, afterNames)
+	now := time.Now()
+	for _, name := range added {
+		if err := activitylog.Log(ctx, tx, activitylog.Entry{
+			SpaceSlug:  params.SpaceSlug,
+			EntityType: activitylog.EntityEffortLevel,
+			EntityID:   name,
+			Action:     activitylog.ActionCreated,
+		}, now); err != nil {
+			return nil, err
+		}
+	}
+	for _, name := range removed {
+		if err := activitylog.Log(ctx, tx, activitylog.Entry{
+			SpaceSlug:  params.SpaceSlug,
+			EntityType: activitylog.EntityEffortLevel,
+			EntityID:   name,
+			Action:     activitylog.ActionDeleted,
+		}, now); err != nil {
+			return nil, err
+		}
+	}
+
 	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
@@ -314,6 +401,13 @@ func (h *Handler) SpaceTaskPriorityLevelsReplace(ctx context.Context, req *apige
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := dbgen.New(tx)
+
+	// Snapshot before for diff.
+	beforeRows, err := q.ListTaskPriorityLevelsBySpace(ctx, params.SpaceSlug)
+	if err != nil {
+		return nil, err
+	}
+	beforeNames := extractNames(beforeRows, func(r dbgen.TaskPriorityLevel) string { return r.Name })
 
 	if err := replaceLevels(ctx, q, params.SpaceSlug, req.Items, replaceLevelsOps[apigen.TaskPriorityLevelInput]{
 		label:    "priority level",
@@ -355,6 +449,30 @@ func (h *Handler) SpaceTaskPriorityLevelsReplace(ctx context.Context, req *apige
 	rows, err := q.ListTaskPriorityLevelsBySpace(ctx, params.SpaceSlug)
 	if err != nil {
 		return nil, err
+	}
+
+	afterNames := extractNames(rows, func(r dbgen.TaskPriorityLevel) string { return r.Name })
+	added, removed := computeBulkDiff(beforeNames, afterNames)
+	now := time.Now()
+	for _, name := range added {
+		if err := activitylog.Log(ctx, tx, activitylog.Entry{
+			SpaceSlug:  params.SpaceSlug,
+			EntityType: activitylog.EntityPriorityLevel,
+			EntityID:   name,
+			Action:     activitylog.ActionCreated,
+		}, now); err != nil {
+			return nil, err
+		}
+	}
+	for _, name := range removed {
+		if err := activitylog.Log(ctx, tx, activitylog.Entry{
+			SpaceSlug:  params.SpaceSlug,
+			EntityType: activitylog.EntityPriorityLevel,
+			EntityID:   name,
+			Action:     activitylog.ActionDeleted,
+		}, now); err != nil {
+			return nil, err
+		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {

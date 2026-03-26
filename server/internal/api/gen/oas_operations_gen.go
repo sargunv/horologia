@@ -10,6 +10,7 @@ const (
 	AuthDeleteTokenOperation                OperationName = "AuthDeleteToken"
 	AuthListTokensOperation                 OperationName = "AuthListTokens"
 	AuthLoginOperation                      OperationName = "AuthLogin"
+	SpaceActivityListOperation              OperationName = "SpaceActivityList"
 	SpaceMembersCreateOperation             OperationName = "SpaceMembersCreate"
 	SpaceMembersDeleteOperation             OperationName = "SpaceMembersDelete"
 	SpaceMembersListOperation               OperationName = "SpaceMembersList"
@@ -18,6 +19,7 @@ const (
 	SpaceTagsDeleteOperation                OperationName = "SpaceTagsDelete"
 	SpaceTagsListOperation                  OperationName = "SpaceTagsList"
 	SpaceTagsUpdateOperation                OperationName = "SpaceTagsUpdate"
+	SpaceTaskActivityListOperation          OperationName = "SpaceTaskActivityList"
 	SpaceTaskEffortLevelsListOperation      OperationName = "SpaceTaskEffortLevelsList"
 	SpaceTaskEffortLevelsReplaceOperation   OperationName = "SpaceTaskEffortLevelsReplace"
 	SpaceTaskPriorityLevelsListOperation    OperationName = "SpaceTaskPriorityLevelsList"
@@ -36,5 +38,6 @@ const (
 	SpacesListOperation                     OperationName = "SpacesList"
 	SpacesReadOperation                     OperationName = "SpacesRead"
 	SpacesUpdateOperation                   OperationName = "SpacesUpdate"
+	UserActivityListOperation               OperationName = "UserActivityList"
 	UsersMeOperation                        OperationName = "UsersMe"
 )

@@ -1,0 +1,34 @@
+package auth
+
+import "context"
+
+type contextKey int
+
+const contextKeyUser contextKey = iota
+
+// TokenInfo identifies the API token used for authentication, if any.
+type TokenInfo struct {
+	ID   int64
+	Name string
+}
+
+// User is the authenticated user attached to the request context.
+type User struct {
+	ID      int64
+	Email   string
+	Name    string
+	IsOwner bool
+	Token   *TokenInfo // nil for session tokens
+}
+
+// UserFromContext retrieves the authenticated user from the context.
+// Returns nil if unauthenticated.
+func UserFromContext(ctx context.Context) *User {
+	u, _ := ctx.Value(contextKeyUser).(*User)
+	return u
+}
+
+// ContextWithUser returns a new context with the given user attached.
+func ContextWithUser(ctx context.Context, u *User) context.Context {
+	return context.WithValue(ctx, contextKeyUser, u)
+}

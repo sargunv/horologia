@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/teambition/rrule-go"
 
+	"github.com/sargunv/tend/server/internal/activitylog"
 	"github.com/sargunv/tend/server/internal/database"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
@@ -212,6 +213,20 @@ func ApplyCompletionTriggers(ctx context.Context, db database.DB, completedTaskI
 			SpaceSlug:    spaceSlug,
 			StatusName_2: initialStatus,
 		}); err != nil {
+			return err
+		}
+
+		// Log dependency trigger (system action — user who completed the trigger task is in context).
+		if err := activitylog.Log(ctx, db, activitylog.Entry{
+			SpaceSlug:  spaceSlug,
+			EntityType: activitylog.EntityTask,
+			EntityID:   types.FormatTaskID(targetID),
+			Action:     activitylog.ActionUpdated,
+			Details: []activitylog.Detail{
+				{Field: "status", To: new(initialStatus)},
+				{Field: "triggered_by", To: new(types.FormatTaskID(completedTaskID))},
+			},
+		}, now.Time); err != nil {
 			return err
 		}
 	}

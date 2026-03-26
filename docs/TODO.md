@@ -2,6 +2,10 @@
 
 ## Core Task Features
 
+(empty — all items completed)
+
+## Done
+
 1. **Completion history / activity log** — log all task actions with user+token attribution
 
 ## Views & UX

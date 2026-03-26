@@ -13,6 +13,316 @@ func (s *ApiErrorStatusCode) Error() string {
 	return fmt.Sprintf("code %d: %+v", s.StatusCode, s.Response)
 }
 
+// Ref: #/components/schemas/ActivityAction
+type ActivityAction string
+
+const (
+	ActivityActionCreated ActivityAction = "created"
+	ActivityActionUpdated ActivityAction = "updated"
+	ActivityActionDeleted ActivityAction = "deleted"
+)
+
+// AllValues returns all ActivityAction values.
+func (ActivityAction) AllValues() []ActivityAction {
+	return []ActivityAction{
+		ActivityActionCreated,
+		ActivityActionUpdated,
+		ActivityActionDeleted,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ActivityAction) MarshalText() ([]byte, error) {
+	switch s {
+	case ActivityActionCreated:
+		return []byte(s), nil
+	case ActivityActionUpdated:
+		return []byte(s), nil
+	case ActivityActionDeleted:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ActivityAction) UnmarshalText(data []byte) error {
+	switch ActivityAction(data) {
+	case ActivityActionCreated:
+		*s = ActivityActionCreated
+		return nil
+	case ActivityActionUpdated:
+		*s = ActivityActionUpdated
+		return nil
+	case ActivityActionDeleted:
+		*s = ActivityActionDeleted
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/ActivityDetail
+type ActivityDetail struct {
+	Field string    `json:"field"`
+	From  NilString `json:"from"`
+	To    NilString `json:"to"`
+}
+
+// GetField returns the value of Field.
+func (s *ActivityDetail) GetField() string {
+	return s.Field
+}
+
+// GetFrom returns the value of From.
+func (s *ActivityDetail) GetFrom() NilString {
+	return s.From
+}
+
+// GetTo returns the value of To.
+func (s *ActivityDetail) GetTo() NilString {
+	return s.To
+}
+
+// SetField sets the value of Field.
+func (s *ActivityDetail) SetField(val string) {
+	s.Field = val
+}
+
+// SetFrom sets the value of From.
+func (s *ActivityDetail) SetFrom(val NilString) {
+	s.From = val
+}
+
+// SetTo sets the value of To.
+func (s *ActivityDetail) SetTo(val NilString) {
+	s.To = val
+}
+
+// Ref: #/components/schemas/ActivityEntityType
+type ActivityEntityType string
+
+const (
+	ActivityEntityTypeTask          ActivityEntityType = "task"
+	ActivityEntityTypeSpace         ActivityEntityType = "space"
+	ActivityEntityTypeMember        ActivityEntityType = "member"
+	ActivityEntityTypeTag           ActivityEntityType = "tag"
+	ActivityEntityTypeStatus        ActivityEntityType = "status"
+	ActivityEntityTypeEffortLevel   ActivityEntityType = "effort_level"
+	ActivityEntityTypePriorityLevel ActivityEntityType = "priority_level"
+	ActivityEntityTypeRelation      ActivityEntityType = "relation"
+)
+
+// AllValues returns all ActivityEntityType values.
+func (ActivityEntityType) AllValues() []ActivityEntityType {
+	return []ActivityEntityType{
+		ActivityEntityTypeTask,
+		ActivityEntityTypeSpace,
+		ActivityEntityTypeMember,
+		ActivityEntityTypeTag,
+		ActivityEntityTypeStatus,
+		ActivityEntityTypeEffortLevel,
+		ActivityEntityTypePriorityLevel,
+		ActivityEntityTypeRelation,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ActivityEntityType) MarshalText() ([]byte, error) {
+	switch s {
+	case ActivityEntityTypeTask:
+		return []byte(s), nil
+	case ActivityEntityTypeSpace:
+		return []byte(s), nil
+	case ActivityEntityTypeMember:
+		return []byte(s), nil
+	case ActivityEntityTypeTag:
+		return []byte(s), nil
+	case ActivityEntityTypeStatus:
+		return []byte(s), nil
+	case ActivityEntityTypeEffortLevel:
+		return []byte(s), nil
+	case ActivityEntityTypePriorityLevel:
+		return []byte(s), nil
+	case ActivityEntityTypeRelation:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ActivityEntityType) UnmarshalText(data []byte) error {
+	switch ActivityEntityType(data) {
+	case ActivityEntityTypeTask:
+		*s = ActivityEntityTypeTask
+		return nil
+	case ActivityEntityTypeSpace:
+		*s = ActivityEntityTypeSpace
+		return nil
+	case ActivityEntityTypeMember:
+		*s = ActivityEntityTypeMember
+		return nil
+	case ActivityEntityTypeTag:
+		*s = ActivityEntityTypeTag
+		return nil
+	case ActivityEntityTypeStatus:
+		*s = ActivityEntityTypeStatus
+		return nil
+	case ActivityEntityTypeEffortLevel:
+		*s = ActivityEntityTypeEffortLevel
+		return nil
+	case ActivityEntityTypePriorityLevel:
+		*s = ActivityEntityTypePriorityLevel
+		return nil
+	case ActivityEntityTypeRelation:
+		*s = ActivityEntityTypeRelation
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/ActivityLogEntry
+type ActivityLogEntry struct {
+	ID         string             `json:"id"`
+	SpaceSlug  string             `json:"spaceSlug"`
+	ActorId    NilString          `json:"actorId"`
+	TokenId    NilString          `json:"tokenId"`
+	TokenName  NilString          `json:"tokenName"`
+	EntityType ActivityEntityType `json:"entityType"`
+	EntityId   string             `json:"entityId"`
+	Action     ActivityAction     `json:"action"`
+	Details    []ActivityDetail   `json:"details"`
+	CreatedAt  time.Time          `json:"createdAt"`
+}
+
+// GetID returns the value of ID.
+func (s *ActivityLogEntry) GetID() string {
+	return s.ID
+}
+
+// GetSpaceSlug returns the value of SpaceSlug.
+func (s *ActivityLogEntry) GetSpaceSlug() string {
+	return s.SpaceSlug
+}
+
+// GetActorId returns the value of ActorId.
+func (s *ActivityLogEntry) GetActorId() NilString {
+	return s.ActorId
+}
+
+// GetTokenId returns the value of TokenId.
+func (s *ActivityLogEntry) GetTokenId() NilString {
+	return s.TokenId
+}
+
+// GetTokenName returns the value of TokenName.
+func (s *ActivityLogEntry) GetTokenName() NilString {
+	return s.TokenName
+}
+
+// GetEntityType returns the value of EntityType.
+func (s *ActivityLogEntry) GetEntityType() ActivityEntityType {
+	return s.EntityType
+}
+
+// GetEntityId returns the value of EntityId.
+func (s *ActivityLogEntry) GetEntityId() string {
+	return s.EntityId
+}
+
+// GetAction returns the value of Action.
+func (s *ActivityLogEntry) GetAction() ActivityAction {
+	return s.Action
+}
+
+// GetDetails returns the value of Details.
+func (s *ActivityLogEntry) GetDetails() []ActivityDetail {
+	return s.Details
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *ActivityLogEntry) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// SetID sets the value of ID.
+func (s *ActivityLogEntry) SetID(val string) {
+	s.ID = val
+}
+
+// SetSpaceSlug sets the value of SpaceSlug.
+func (s *ActivityLogEntry) SetSpaceSlug(val string) {
+	s.SpaceSlug = val
+}
+
+// SetActorId sets the value of ActorId.
+func (s *ActivityLogEntry) SetActorId(val NilString) {
+	s.ActorId = val
+}
+
+// SetTokenId sets the value of TokenId.
+func (s *ActivityLogEntry) SetTokenId(val NilString) {
+	s.TokenId = val
+}
+
+// SetTokenName sets the value of TokenName.
+func (s *ActivityLogEntry) SetTokenName(val NilString) {
+	s.TokenName = val
+}
+
+// SetEntityType sets the value of EntityType.
+func (s *ActivityLogEntry) SetEntityType(val ActivityEntityType) {
+	s.EntityType = val
+}
+
+// SetEntityId sets the value of EntityId.
+func (s *ActivityLogEntry) SetEntityId(val string) {
+	s.EntityId = val
+}
+
+// SetAction sets the value of Action.
+func (s *ActivityLogEntry) SetAction(val ActivityAction) {
+	s.Action = val
+}
+
+// SetDetails sets the value of Details.
+func (s *ActivityLogEntry) SetDetails(val []ActivityDetail) {
+	s.Details = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *ActivityLogEntry) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// Ref: #/components/schemas/ActivityLogPage
+type ActivityLogPage struct {
+	Items      []ActivityLogEntry `json:"items"`
+	NextCursor NilString          `json:"nextCursor"`
+}
+
+// GetItems returns the value of Items.
+func (s *ActivityLogPage) GetItems() []ActivityLogEntry {
+	return s.Items
+}
+
+// GetNextCursor returns the value of NextCursor.
+func (s *ActivityLogPage) GetNextCursor() NilString {
+	return s.NextCursor
+}
+
+// SetItems sets the value of Items.
+func (s *ActivityLogPage) SetItems(val []ActivityLogEntry) {
+	s.Items = val
+}
+
+// SetNextCursor sets the value of NextCursor.
+func (s *ActivityLogPage) SetNextCursor(val NilString) {
+	s.NextCursor = val
+}
+
 // Ref: #/components/schemas/ApiError
 type ApiError struct {
 	Code    string `json:"code"`

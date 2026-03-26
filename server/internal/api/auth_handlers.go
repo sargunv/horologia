@@ -6,6 +6,7 @@ import (
 	"time"
 
 	apigen "github.com/sargunv/tend/server/internal/api/gen"
+	"github.com/sargunv/tend/server/internal/auth"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
 )
@@ -36,7 +37,7 @@ func (h *Handler) AuthLogin(ctx context.Context, req *apigen.LoginRequest) (*api
 // --- Auth: Tokens ---
 
 func (h *Handler) AuthListTokens(ctx context.Context, params apigen.AuthListTokensParams) (*apigen.AuthTokenPage, error) {
-	user := UserFromContext(ctx)
+	user := auth.UserFromContext(ctx)
 
 	cursorID, err := decodeCursorInt64(params.Cursor)
 	if err != nil {
@@ -66,7 +67,7 @@ func (h *Handler) AuthListTokens(ctx context.Context, params apigen.AuthListToke
 }
 
 func (h *Handler) AuthCreateToken(ctx context.Context, req *apigen.AuthTokenCreate) (*apigen.AuthTokenCreateResponse, error) {
-	user := UserFromContext(ctx)
+	user := auth.UserFromContext(ctx)
 
 	raw, hash, err := generateToken()
 	if err != nil {
@@ -94,7 +95,7 @@ func (h *Handler) AuthCreateToken(ctx context.Context, req *apigen.AuthTokenCrea
 }
 
 func (h *Handler) AuthDeleteToken(ctx context.Context, params apigen.AuthDeleteTokenParams) error {
-	user := UserFromContext(ctx)
+	user := auth.UserFromContext(ctx)
 
 	id, err := parseTokenID(params.TokenId)
 	if err != nil {

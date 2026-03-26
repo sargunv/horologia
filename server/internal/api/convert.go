@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -62,20 +61,8 @@ func decodeCursorInt64(opt apigen.OptString) (int64, error) {
 	return id, nil
 }
 
-func formatTaskID(id int64) string {
-	return "T" + strconv.FormatInt(id, 10)
-}
-
-func parseTaskID(s string) (int64, error) {
-	if !strings.HasPrefix(s, "T") {
-		return 0, fmt.Errorf("invalid task ID %q: must start with T", s)
-	}
-	id, err := strconv.ParseInt(s[1:], 10, 64)
-	if err != nil {
-		return 0, fmt.Errorf("invalid task ID %q: %w", s, err)
-	}
-	return id, nil
-}
+func formatTaskID(id int64) string        { return types.FormatTaskID(id) }
+func parseTaskID(s string) (int64, error) { return types.ParseTaskID(s) }
 
 // tsToTime converts a NOT NULL pgtype.Timestamptz to time.Time.
 // It panics if ts is not valid, indicating a bug (nullable column passed to a NOT NULL helper).
@@ -303,20 +290,8 @@ func dueFromExisting(existing *types.DueDate, update apigen.OptNilTaskDue) (*typ
 	return dueToDB(update)
 }
 
-func formatUserID(id int64) string {
-	return "U" + strconv.FormatInt(id, 10)
-}
-
-func parseUserID(s string) (int64, error) {
-	if !strings.HasPrefix(s, "U") {
-		return 0, fmt.Errorf("invalid user ID %q: must start with U", s)
-	}
-	id, err := strconv.ParseInt(s[1:], 10, 64)
-	if err != nil {
-		return 0, fmt.Errorf("invalid user ID %q: %w", s, err)
-	}
-	return id, nil
-}
+func formatUserID(id int64) string        { return types.FormatUserID(id) }
+func parseUserID(s string) (int64, error) { return types.ParseUserID(s) }
 
 func parseTokenID(s string) (int64, error) {
 	id, err := strconv.ParseInt(s, 10, 64)

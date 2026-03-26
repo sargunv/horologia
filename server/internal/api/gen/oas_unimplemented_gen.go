@@ -41,6 +41,13 @@ func (UnimplementedHandler) AuthLogin(ctx context.Context, req *LoginRequest) (r
 	return r, ht.ErrNotImplemented
 }
 
+// SpaceActivityList implements SpaceActivity_list operation.
+//
+// GET /spaces/{spaceSlug}/activity
+func (UnimplementedHandler) SpaceActivityList(ctx context.Context, params SpaceActivityListParams) (r *ActivityLogPage, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // SpaceMembersCreate implements SpaceMembers_create operation.
 //
 // POST /spaces/{spaceSlug}/members
@@ -94,6 +101,13 @@ func (UnimplementedHandler) SpaceTagsList(ctx context.Context, params SpaceTagsL
 //
 // PATCH /spaces/{spaceSlug}/tags/{tagName}
 func (UnimplementedHandler) SpaceTagsUpdate(ctx context.Context, req *TagUpdate, params SpaceTagsUpdateParams) (r *Tag, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SpaceTaskActivityList implements SpaceTaskActivity_list operation.
+//
+// GET /spaces/{spaceSlug}/tasks/{taskId}/activity
+func (UnimplementedHandler) SpaceTaskActivityList(ctx context.Context, params SpaceTaskActivityListParams) (r *ActivityLogPage, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -220,6 +234,13 @@ func (UnimplementedHandler) SpacesRead(ctx context.Context, params SpacesReadPar
 //
 // PATCH /spaces/{spaceSlug}
 func (UnimplementedHandler) SpacesUpdate(ctx context.Context, req *SpaceUpdate, params SpacesUpdateParams) (r *Space, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UserActivityList implements UserActivity_list operation.
+//
+// GET /users/{userId}/activity
+func (UnimplementedHandler) UserActivityList(ctx context.Context, params UserActivityListParams) (r *ActivityLogPage, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

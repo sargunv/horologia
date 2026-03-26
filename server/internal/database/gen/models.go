@@ -11,6 +11,97 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type ActivityAction string
+
+const (
+	ActivityActionCreated ActivityAction = "created"
+	ActivityActionUpdated ActivityAction = "updated"
+	ActivityActionDeleted ActivityAction = "deleted"
+)
+
+func (e *ActivityAction) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = ActivityAction(s)
+	case string:
+		*e = ActivityAction(s)
+	default:
+		return fmt.Errorf("unsupported scan type for ActivityAction: %T", src)
+	}
+	return nil
+}
+
+type NullActivityAction struct {
+	ActivityAction ActivityAction
+	Valid          bool // Valid is true if ActivityAction is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullActivityAction) Scan(value interface{}) error {
+	if value == nil {
+		ns.ActivityAction, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.ActivityAction.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullActivityAction) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.ActivityAction), nil
+}
+
+type ActivityEntityType string
+
+const (
+	ActivityEntityTypeTask          ActivityEntityType = "task"
+	ActivityEntityTypeSpace         ActivityEntityType = "space"
+	ActivityEntityTypeMember        ActivityEntityType = "member"
+	ActivityEntityTypeTag           ActivityEntityType = "tag"
+	ActivityEntityTypeStatus        ActivityEntityType = "status"
+	ActivityEntityTypeEffortLevel   ActivityEntityType = "effort_level"
+	ActivityEntityTypePriorityLevel ActivityEntityType = "priority_level"
+	ActivityEntityTypeRelation      ActivityEntityType = "relation"
+)
+
+func (e *ActivityEntityType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = ActivityEntityType(s)
+	case string:
+		*e = ActivityEntityType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for ActivityEntityType: %T", src)
+	}
+	return nil
+}
+
+type NullActivityEntityType struct {
+	ActivityEntityType ActivityEntityType
+	Valid              bool // Valid is true if ActivityEntityType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullActivityEntityType) Scan(value interface{}) error {
+	if value == nil {
+		ns.ActivityEntityType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.ActivityEntityType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullActivityEntityType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.ActivityEntityType), nil
+}
+
 type AuthTokenKind string
 
 const (
@@ -228,6 +319,26 @@ func (ns NullStoredRelationKind) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.StoredRelationKind), nil
+}
+
+type ActivityLog struct {
+	ID         int64
+	SpaceSlug  string
+	ActorID    pgtype.Int8
+	TokenID    pgtype.Int8
+	TokenName  pgtype.Text
+	EntityType ActivityEntityType
+	EntityID   string
+	Action     ActivityAction
+	CreatedAt  pgtype.Timestamptz
+}
+
+type ActivityLogDetail struct {
+	ID            int64
+	ActivityLogID int64
+	Field         string
+	FromValue     pgtype.Text
+	ToValue       pgtype.Text
 }
 
 type AuthToken struct {

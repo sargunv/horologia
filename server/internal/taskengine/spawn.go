@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/teambition/rrule-go"
 
+	"github.com/sargunv/tend/server/internal/activitylog"
 	"github.com/sargunv/tend/server/internal/database"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
@@ -172,6 +173,19 @@ func SpawnTaskFromTemplate(
 		return 0, err
 	}
 
+	// Log spawn activity (system action — no user in context).
+	if err := activitylog.Log(ctx, db, activitylog.Entry{
+		SpaceSlug:  src.SpaceSlug,
+		EntityType: activitylog.EntityTask,
+		EntityID:   types.FormatTaskID(newTask.ID),
+		Action:     activitylog.ActionCreated,
+		Details: []activitylog.Detail{
+			{Field: "spawned_from", To: new(types.FormatTaskID(src.ID))},
+		},
+	}, now); err != nil {
+		return 0, err
+	}
+
 	return newTask.ID, nil
 }
 
@@ -274,5 +288,18 @@ func ProcessAccumulatingTask(ctx context.Context, db database.DB, task dbgen.Tas
 		}
 	}
 
-	return q.DeleteRotationPool(ctx, task.ID)
+	if err := q.DeleteRotationPool(ctx, task.ID); err != nil {
+		return err
+	}
+
+	// Log the overdue advance (system action).
+	return activitylog.Log(ctx, db, activitylog.Entry{
+		SpaceSlug:  task.SpaceSlug,
+		EntityType: activitylog.EntityTask,
+		EntityID:   types.FormatTaskID(task.ID),
+		Action:     activitylog.ActionUpdated,
+		Details: []activitylog.Detail{
+			{Field: "recurrence", From: new("fixed_accumulating"), To: new("one_off")},
+		},
+	}, now)
 }

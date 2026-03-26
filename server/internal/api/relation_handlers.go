@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/sargunv/tend/server/internal/activitylog"
 	apigen "github.com/sargunv/tend/server/internal/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
@@ -40,7 +41,13 @@ func (h *Handler) SpaceTaskRelationsCreate(ctx context.Context, req *apigen.Task
 		return nil, err
 	}
 
-	q := dbgen.New(h.Pool)
+	tx, err := h.Pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	q := dbgen.New(tx)
 
 	// Verify target task exists and is in the same space.
 	_, err = q.GetTask(ctx, dbgen.GetTaskParams{ID: targetID, SpaceSlug: params.SpaceSlug})
@@ -61,6 +68,23 @@ func (h *Handler) SpaceTaskRelationsCreate(ctx context.Context, req *apigen.Task
 		Kind:         storedKind,
 		CreatedAt:    types.Timestamptz(ts),
 	}); err != nil {
+		return nil, err
+	}
+
+	if err := activitylog.Log(ctx, tx, activitylog.Entry{
+		SpaceSlug:  params.SpaceSlug,
+		EntityType: activitylog.EntityRelation,
+		EntityID:   formatTaskID(sourceID),
+		Action:     activitylog.ActionCreated,
+		Details: []activitylog.Detail{
+			{Field: "kind", To: new(string(req.Kind))},
+			{Field: "related_task", To: new(formatTaskID(targetID))},
+		},
+	}, ts); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 
@@ -94,7 +118,13 @@ func (h *Handler) SpaceTaskRelationsDelete(ctx context.Context, params apigen.Sp
 		return badRequest(err.Error())
 	}
 
-	q := dbgen.New(h.Pool)
+	tx, err := h.Pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	q := dbgen.New(tx)
 	result, err := q.DeleteTaskRelation(ctx, dbgen.DeleteTaskRelationParams{
 		SourceTaskID: storedSource,
 		TargetTaskID: storedTarget,
@@ -104,5 +134,23 @@ func (h *Handler) SpaceTaskRelationsDelete(ctx context.Context, params apigen.Sp
 	if err != nil {
 		return err
 	}
-	return checkDeleted(result)
+	if err := checkDeleted(result); err != nil {
+		return err
+	}
+
+	now := time.Now()
+	if err := activitylog.Log(ctx, tx, activitylog.Entry{
+		SpaceSlug:  params.SpaceSlug,
+		EntityType: activitylog.EntityRelation,
+		EntityID:   formatTaskID(sourceID),
+		Action:     activitylog.ActionDeleted,
+		Details: []activitylog.Detail{
+			{Field: "kind", From: new(string(params.Kind))},
+			{Field: "related_task", From: new(formatTaskID(targetID))},
+		},
+	}, now); err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
 }

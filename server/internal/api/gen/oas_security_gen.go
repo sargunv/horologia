@@ -37,6 +37,7 @@ var operationRolesBearerAuth = map[string][]string{
 	AuthCreateTokenOperation:                []string{},
 	AuthDeleteTokenOperation:                []string{},
 	AuthListTokensOperation:                 []string{},
+	SpaceActivityListOperation:              []string{},
 	SpaceMembersCreateOperation:             []string{},
 	SpaceMembersDeleteOperation:             []string{},
 	SpaceMembersListOperation:               []string{},
@@ -45,6 +46,7 @@ var operationRolesBearerAuth = map[string][]string{
 	SpaceTagsDeleteOperation:                []string{},
 	SpaceTagsListOperation:                  []string{},
 	SpaceTagsUpdateOperation:                []string{},
+	SpaceTaskActivityListOperation:          []string{},
 	SpaceTaskEffortLevelsListOperation:      []string{},
 	SpaceTaskEffortLevelsReplaceOperation:   []string{},
 	SpaceTaskPriorityLevelsListOperation:    []string{},
@@ -63,6 +65,7 @@ var operationRolesBearerAuth = map[string][]string{
 	SpacesListOperation:                     []string{},
 	SpacesReadOperation:                     []string{},
 	SpacesUpdateOperation:                   []string{},
+	UserActivityListOperation:               []string{},
 	UsersMeOperation:                        []string{},
 }
 

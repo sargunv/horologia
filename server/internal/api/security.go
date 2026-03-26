@@ -12,35 +12,10 @@ import (
 	"github.com/ogen-go/ogen/ogenerrors"
 
 	apigen "github.com/sargunv/tend/server/internal/api/gen"
+	"github.com/sargunv/tend/server/internal/auth"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
 )
-
-type contextKey int
-
-const (
-	contextKeyUser contextKey = iota
-)
-
-// AuthUser is the authenticated user attached to the request context.
-type AuthUser struct {
-	ID      int64
-	Email   string
-	Name    string
-	IsOwner bool
-}
-
-// UserFromContext retrieves the authenticated user from the context.
-// Returns nil if unauthenticated.
-func UserFromContext(ctx context.Context) *AuthUser {
-	u, _ := ctx.Value(contextKeyUser).(*AuthUser)
-	return u
-}
-
-// ContextWithUser returns a new context with the given user attached.
-func ContextWithUser(ctx context.Context, u *AuthUser) context.Context {
-	return context.WithValue(ctx, contextKeyUser, u)
-}
 
 // HandleBearerAuth validates the bearer token and enriches the context with the user.
 func (h *Handler) HandleBearerAuth(ctx context.Context, operationName apigen.OperationName, t apigen.BearerAuth) (context.Context, error) {
@@ -59,13 +34,19 @@ func (h *Handler) HandleBearerAuth(ctx context.Context, operationName apigen.Ope
 		return ctx, ogenerrors.ErrSkipServerSecurity
 	}
 
-	user := &AuthUser{
+	user := &auth.User{
 		ID:      row.UserID,
 		Email:   row.UserEmail,
 		Name:    row.UserName,
 		IsOwner: row.UserIsOwner,
 	}
-	return ContextWithUser(ctx, user), nil
+
+	// Attribute API token identity for activity logging.
+	if row.Kind == dbgen.AuthTokenKindApi {
+		user.Token = &auth.TokenInfo{ID: row.ID, Name: row.Name}
+	}
+
+	return auth.ContextWithUser(ctx, user), nil
 }
 
 // generateToken creates a cryptographically random token and returns both

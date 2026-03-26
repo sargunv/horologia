@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"github.com/sargunv/tend/server/internal/activitylog"
 	apigen "github.com/sargunv/tend/server/internal/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
@@ -79,13 +80,26 @@ func (h *Handler) SpaceMembersCreate(ctx context.Context, req *apigen.SpaceMembe
 		return nil, err
 	}
 
+	now := time.Now()
 	member, err := q.CreateSpaceMember(ctx, dbgen.CreateSpaceMemberParams{
 		SpaceSlug: params.SpaceSlug,
 		UserID:    userID,
 		Role:      dbgen.SpaceRole(req.Role),
-		CreatedAt: types.Timestamptz(time.Now()),
+		CreatedAt: types.Timestamptz(now),
 	})
 	if err != nil {
+		return nil, err
+	}
+
+	if err := activitylog.Log(ctx, tx, activitylog.Entry{
+		SpaceSlug:  params.SpaceSlug,
+		EntityType: activitylog.EntityMember,
+		EntityID:   formatUserID(userID),
+		Action:     activitylog.ActionCreated,
+		Details: []activitylog.Detail{
+			{Field: "role", To: new(string(req.Role))},
+		},
+	}, now); err != nil {
 		return nil, err
 	}
 
@@ -106,7 +120,22 @@ func (h *Handler) SpaceMembersUpdate(ctx context.Context, req *apigen.SpaceMembe
 		return nil, badRequest(err.Error())
 	}
 
-	q := dbgen.New(h.Pool)
+	tx, err := h.Pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	q := dbgen.New(tx)
+
+	// Capture existing role before the update.
+	existingMember, err := q.GetSpaceMember(ctx, dbgen.GetSpaceMemberParams{
+		SpaceSlug: params.SpaceSlug,
+		UserID:    userID,
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	// Atomically updates the role; refuses to demote the last admin (returns no rows).
 	member, err := q.UpdateSpaceMemberRole(ctx, dbgen.UpdateSpaceMemberRoleParams{
@@ -115,22 +144,33 @@ func (h *Handler) SpaceMembersUpdate(ctx context.Context, req *apigen.SpaceMembe
 		UserID:    userID,
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
-		// Either the member doesn't exist, or they're the last admin being demoted.
-		// Check which case to return the right error.
-		if _, lookupErr := q.GetSpaceMember(ctx, dbgen.GetSpaceMemberParams{
-			SpaceSlug: params.SpaceSlug,
-			UserID:    userID,
-		}); lookupErr != nil {
-			return nil, lookupErr // not found
-		}
 		return nil, badRequest("cannot remove the last admin from a space")
 	}
 	if err != nil {
 		return nil, err
 	}
 
+	now := time.Now()
+	if string(existingMember.Role) != string(req.Role) {
+		if err := activitylog.Log(ctx, tx, activitylog.Entry{
+			SpaceSlug:  params.SpaceSlug,
+			EntityType: activitylog.EntityMember,
+			EntityID:   formatUserID(userID),
+			Action:     activitylog.ActionUpdated,
+			Details: []activitylog.Detail{
+				{Field: "role", From: new(string(existingMember.Role)), To: new(string(req.Role))},
+			},
+		}, now); err != nil {
+			return nil, err
+		}
+	}
+
 	targetUser, err := q.GetUserByID(ctx, userID)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 
@@ -154,6 +194,15 @@ func (h *Handler) SpaceMembersDelete(ctx context.Context, params apigen.SpaceMem
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := dbgen.New(tx)
+
+	// Capture existing role before deletion for the log entry.
+	existingMember, err := q.GetSpaceMember(ctx, dbgen.GetSpaceMemberParams{
+		SpaceSlug: params.SpaceSlug,
+		UserID:    userID,
+	})
+	if err != nil {
+		return err
+	}
 
 	// Remove task assignments and rotation pool entries for this user in this space
 	// before removing membership.
@@ -179,18 +228,23 @@ func (h *Handler) SpaceMembersDelete(ctx context.Context, params apigen.SpaceMem
 		return err
 	}
 	if result.RowsAffected() == 0 {
-		// Either the member doesn't exist, or they're the last admin.
-		member, lookupErr := q.GetSpaceMember(ctx, dbgen.GetSpaceMemberParams{
-			SpaceSlug: params.SpaceSlug,
-			UserID:    userID,
-		})
-		if lookupErr != nil {
-			return lookupErr // not found
-		}
-		if member.Role == dbgen.SpaceRoleAdmin {
+		if existingMember.Role == dbgen.SpaceRoleAdmin {
 			return badRequest("cannot remove the last admin from a space")
 		}
-		return pgx.ErrNoRows // shouldn't happen, but safe fallback
+		return pgx.ErrNoRows
+	}
+
+	now := time.Now()
+	if err := activitylog.Log(ctx, tx, activitylog.Entry{
+		SpaceSlug:  params.SpaceSlug,
+		EntityType: activitylog.EntityMember,
+		EntityID:   formatUserID(userID),
+		Action:     activitylog.ActionDeleted,
+		Details: []activitylog.Detail{
+			{Field: "role", From: new(string(existingMember.Role))},
+		},
+	}, now); err != nil {
+		return err
 	}
 
 	return tx.Commit(ctx)

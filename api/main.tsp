@@ -10,6 +10,7 @@ import "./src/tasks.tsp";
 import "./src/task_statuses.tsp";
 import "./src/task_effort_levels.tsp";
 import "./src/task_priority_levels.tsp";
+import "./src/activity_log.tsp";
 
 using Http;
 

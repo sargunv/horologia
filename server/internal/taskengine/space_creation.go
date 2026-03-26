@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sargunv/tend/server/internal/activitylog"
 	"github.com/sargunv/tend/server/internal/database"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
@@ -79,6 +80,19 @@ func CreateSpaceWithDefaults(ctx context.Context, db database.DB, slug, name, de
 		CreatedAt: now,
 	}); err != nil {
 		return dbgen.Space{}, fmt.Errorf("create admin member: %w", err)
+	}
+
+	// Log space creation inside the transaction for atomicity.
+	if err := activitylog.Log(ctx, tx, activitylog.Entry{
+		SpaceSlug:  space.Slug,
+		EntityType: activitylog.EntitySpace,
+		EntityID:   space.Slug,
+		Action:     activitylog.ActionCreated,
+		Details: []activitylog.Detail{
+			{Field: "name", To: new(space.Name)},
+		},
+	}, now.Time); err != nil {
+		return dbgen.Space{}, fmt.Errorf("log space creation: %w", err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {

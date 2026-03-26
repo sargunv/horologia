@@ -6,6 +6,7 @@ import (
 
 	"github.com/ogen-go/ogen/ogenerrors"
 
+	"github.com/sargunv/tend/server/internal/auth"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 )
 
@@ -13,7 +14,7 @@ import (
 // in the specified space. Global owners always pass, but the space must still
 // exist to prevent a 200 OK for a nonexistent space.
 func (h *Handler) requireSpaceRole(ctx context.Context, spaceSlug string, roles ...dbgen.SpaceRole) error {
-	user := UserFromContext(ctx)
+	user := auth.UserFromContext(ctx)
 	if user == nil {
 		return &ogenerrors.SecurityError{Err: ogenerrors.ErrSecurityRequirementIsNotSatisfied}
 	}

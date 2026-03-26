@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 
+	"github.com/sargunv/tend/server/internal/activitylog"
 	apigen "github.com/sargunv/tend/server/internal/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/taskengine"
@@ -231,6 +232,19 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 		return nil, err
 	}
 
+	if err := activitylog.Log(ctx, tx, activitylog.Entry{
+		SpaceSlug:  params.SpaceSlug,
+		EntityType: activitylog.EntityTask,
+		EntityID:   formatTaskID(task.ID),
+		Action:     activitylog.ActionCreated,
+		Details: []activitylog.Detail{
+			{Field: "title", To: new(task.Title)},
+			{Field: "status", To: new(statusName)},
+		},
+	}, ts); err != nil {
+		return nil, err
+	}
+
 	// Re-fetch with assignees, tags, relations, and rotation pool.
 	result, err := h.fetchTask(ctx, q, task.ID, params.SpaceSlug)
 	if err != nil {
@@ -372,6 +386,29 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 		return nil, err
 	}
 
+	// Log task update with field-level diffs.
+	taskEntityID := formatTaskID(id)
+	newTitle := req.Title.Or(existing.Title)
+	newDescription := req.Description.Or(existing.Description)
+	var details []activitylog.Detail
+	if newTitle != existing.Title {
+		details = append(details, activitylog.Detail{Field: "title", From: new(existing.Title), To: new(newTitle)})
+	}
+	if newDescription != existing.Description {
+		details = append(details, activitylog.Detail{Field: "description", From: new(existing.Description), To: new(newDescription)})
+	}
+	if cr.Status != existing.StatusName {
+		details = append(details, activitylog.Detail{Field: "status", From: new(existing.StatusName), To: new(cr.Status)})
+	}
+	if effortName != existing.EffortName {
+		details = append(details, activitylog.Detail{Field: "effort", From: new(existing.EffortName.String), To: new(effortName.String)})
+	}
+	if priorityName != existing.PriorityName {
+		details = append(details, activitylog.Detail{Field: "priority", From: new(existing.PriorityName.String), To: new(priorityName.String)})
+	}
+	if string(cr.RecurrenceType) != string(existing.RecurrenceType) {
+		details = append(details, activitylog.Detail{Field: "recurrence_type", From: new(string(existing.RecurrenceType)), To: new(string(cr.RecurrenceType))})
+	}
 	// Trigger dependents when a task is completed.
 	if cr.JustCompleted {
 		if err := taskengine.ApplyCompletionTriggers(ctx, tx, id, params.SpaceSlug, types.Timestamptz(now)); err != nil {
@@ -379,11 +416,46 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 		}
 	}
 
+	// Diff collection fields before applyTaskCollections replaces them.
+	if req.AssigneeIds != nil {
+		oldIDs, err := q.ListAssigneeUserIDsByTask(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		details = append(details, diffIDList("assignee", oldIDs, req.AssigneeIds, formatUserID, parseUserID)...)
+	}
+	if req.RotationPool != nil {
+		oldIDs, err := q.ListRotationPoolByTask(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		details = append(details, diffIDList("rotation_pool", oldIDs, req.RotationPool, formatUserID, parseUserID)...)
+	}
+	if req.Tags != nil {
+		oldNames, err := q.ListTagNamesByTask(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		details = append(details, diffStringList("tag", oldNames, req.Tags)...)
+	}
+
 	// Intentionally after HandleCompletionTransition: if the user provides
 	// explicit assigneeIds in the same PATCH, they override the rotation result.
 	// See TestRotationExplicitAssigneesOverrideRotation.
 	if err := h.applyTaskCollections(ctx, q, id, params.SpaceSlug, req.AssigneeIds, req.RotationPool, req.Tags); err != nil {
 		return nil, err
+	}
+
+	if len(details) > 0 {
+		if err := activitylog.Log(ctx, tx, activitylog.Entry{
+			SpaceSlug:  params.SpaceSlug,
+			EntityType: activitylog.EntityTask,
+			EntityID:   taskEntityID,
+			Action:     activitylog.ActionUpdated,
+			Details:    details,
+		}, now); err != nil {
+			return nil, err
+		}
 	}
 
 	// Re-fetch with assignees, tags, relations, and rotation pool.
@@ -407,12 +479,41 @@ func (h *Handler) SpaceTasksDelete(ctx context.Context, params apigen.SpaceTasks
 	if err != nil {
 		return badRequest(err.Error())
 	}
-	q := dbgen.New(h.Pool)
+
+	tx, err := h.Pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	q := dbgen.New(tx)
+	existing, err := q.GetTask(ctx, dbgen.GetTaskParams{ID: id, SpaceSlug: params.SpaceSlug})
+	if err != nil {
+		return err
+	}
+
 	result, err := q.DeleteTask(ctx, dbgen.DeleteTaskParams{ID: id, SpaceSlug: params.SpaceSlug})
 	if err != nil {
 		return err
 	}
-	return checkDeleted(result)
+	if err := checkDeleted(result); err != nil {
+		return err
+	}
+
+	now := time.Now()
+	if err := activitylog.Log(ctx, tx, activitylog.Entry{
+		SpaceSlug:  params.SpaceSlug,
+		EntityType: activitylog.EntityTask,
+		EntityID:   formatTaskID(id),
+		Action:     activitylog.ActionDeleted,
+		Details: []activitylog.Detail{
+			{Field: "title", From: new(existing.Title)},
+		},
+	}, now); err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
 }
 
 // applyTaskCollections replaces assignees, rotation pool, and tags for a task
@@ -598,6 +699,57 @@ func (h *Handler) setTaskTags(ctx context.Context, q *dbgen.Queries, taskID int6
 		}
 	}
 	return nil
+}
+
+// diffIDList computes added/removed entries between old numeric IDs and new
+// string-formatted IDs, returning activity log details for each change.
+func diffIDList(field string, oldIDs []int64, newRaw []string, format func(int64) string, parse func(string) (int64, error)) []activitylog.Detail {
+	oldSet := make(map[int64]struct{}, len(oldIDs))
+	for _, id := range oldIDs {
+		oldSet[id] = struct{}{}
+	}
+	newSet := make(map[int64]struct{}, len(newRaw))
+	for _, raw := range newRaw {
+		if id, err := parse(raw); err == nil {
+			newSet[id] = struct{}{}
+		}
+	}
+	var details []activitylog.Detail
+	for id := range newSet {
+		if _, ok := oldSet[id]; !ok {
+			details = append(details, activitylog.Detail{Field: field, To: new(format(id))})
+		}
+	}
+	for _, id := range oldIDs {
+		if _, ok := newSet[id]; !ok {
+			details = append(details, activitylog.Detail{Field: field, From: new(format(id))})
+		}
+	}
+	return details
+}
+
+// diffStringList computes added/removed entries between two string slices.
+func diffStringList(field string, oldNames, newNames []string) []activitylog.Detail {
+	oldSet := make(map[string]struct{}, len(oldNames))
+	for _, n := range oldNames {
+		oldSet[n] = struct{}{}
+	}
+	newSet := make(map[string]struct{}, len(newNames))
+	for _, n := range newNames {
+		newSet[n] = struct{}{}
+	}
+	var details []activitylog.Detail
+	for _, n := range newNames {
+		if _, ok := oldSet[n]; !ok {
+			details = append(details, activitylog.Detail{Field: field, To: new(n)})
+		}
+	}
+	for _, n := range oldNames {
+		if _, ok := newSet[n]; !ok {
+			details = append(details, activitylog.Detail{Field: field, From: new(n)})
+		}
+	}
+	return details
 }
 
 func validateLevel[T any](ctx context.Context, name pgtype.Text, label string, fetch func(context.Context) ([]T, error), getName func(T) string) error {
