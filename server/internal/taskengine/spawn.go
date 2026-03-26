@@ -151,6 +151,11 @@ func SpawnTaskFromTemplate(
 		if !copyOnSpawn(r.Kind) {
 			continue
 		}
+		// Skip incoming trigger relations: spawned tasks should not inherit
+		// trigger edges, which would cause unexpected resets.
+		if r.Kind == dbgen.StoredRelationKindTriggers {
+			continue
+		}
 		if err := q.InsertTaskRelation(ctx, dbgen.InsertTaskRelationParams{
 			SourceTaskID: r.SourceTaskID,
 			TargetTaskID: newTask.ID,

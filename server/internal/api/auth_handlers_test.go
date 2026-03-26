@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 func TestAuthLoginSuccess(t *testing.T) {
@@ -167,6 +168,13 @@ func TestAuthTokenListIsolation(t *testing.T) {
 func TestExpiredTokenRejected(t *testing.T) {
 	env := setupTestServer(t)
 
+	// Look up the owner user ID via the standard helper.
+	ownerID := getUserID(t, env, env.Token)
+	ownerNumericID, err := types.ParseUserID(ownerID)
+	if err != nil {
+		t.Fatalf("parse owner ID %q: %v", ownerID, err)
+	}
+
 	// Create a token that's already expired directly in the DB.
 	rawToken := "expired-test-token"
 	hash := sha256.Sum256([]byte(rawToken))
@@ -174,8 +182,8 @@ func TestExpiredTokenRejected(t *testing.T) {
 	pastTime := time.Now().Add(-1 * time.Hour)
 
 	q := dbgen.New(env.pool)
-	_, err := q.CreateAuthToken(t.Context(), dbgen.CreateAuthTokenParams{
-		UserID:    1, // owner user
+	_, err = q.CreateAuthToken(t.Context(), dbgen.CreateAuthTokenParams{
+		UserID:    ownerNumericID,
 		TokenHash: tokenHash,
 		Name:      "expired",
 		Kind:      dbgen.AuthTokenKindSession,

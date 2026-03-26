@@ -42,8 +42,15 @@ func (h *Handler) SpaceTaskActivityList(ctx context.Context, params apigen.Space
 		return nil, err
 	}
 
-	if _, err := types.ParseTaskID(params.TaskId); err != nil {
+	taskID, err := types.ParseTaskID(params.TaskId)
+	if err != nil {
 		return nil, badRequest(err.Error())
+	}
+
+	// Verify the task exists in this space; return 404 if not.
+	q := dbgen.New(h.Pool)
+	if _, err := q.GetTask(ctx, dbgen.GetTaskParams{ID: taskID, SpaceSlug: params.SpaceSlug}); err != nil {
+		return nil, err
 	}
 
 	cursorID, err := decodeCursorInt64(params.Cursor)
@@ -52,7 +59,6 @@ func (h *Handler) SpaceTaskActivityList(ctx context.Context, params apigen.Space
 	}
 
 	limit := clampLimit(params.Limit)
-	q := dbgen.New(h.Pool)
 
 	rows, err := q.ListActivityLogByTask(ctx, dbgen.ListActivityLogByTaskParams{
 		EntityID:  params.TaskId,

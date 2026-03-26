@@ -619,7 +619,55 @@ func TestRelationActivity(t *testing.T) {
 	}
 }
 
-// --- Test 16: StatusReplaceActivity ---
+// --- Test 16: TokenIdAndNameInActivityLog ---
+
+func TestTokenIdAndNameInActivityLog(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "ws", "WS")
+
+	// Create an API token.
+	resp := doRequest(t, env, "POST", "/auth/tokens", `{"name":"audit-token"}`)
+	assertStatus(t, resp, http.StatusCreated)
+	var tokenResult map[string]any
+	readJSON(t, resp, &tokenResult)
+	rawToken := jsonAs[string](t, tokenResult["token"])
+	authToken := jsonAs[map[string]any](t, tokenResult["authToken"])
+	tokenID := jsonAs[string](t, authToken["id"])
+	tokenName := jsonAs[string](t, authToken["name"])
+
+	// Use the API token to perform a logged action (create a task).
+	resp2 := doRequestAs(t, env, rawToken, "POST", "/spaces/ws/tasks", `{"title":"Token task"}`)
+	assertStatus(t, resp2, http.StatusCreated)
+	var createdTask map[string]any
+	readJSON(t, resp2, &createdTask)
+	taskID := jsonAs[string](t, createdTask["id"])
+
+	// Read the activity log and find the task-create entry.
+	items := activityItems(t, env, "/spaces/ws/tasks/"+taskID+"/activity")
+	if len(items) == 0 {
+		t.Fatal("expected at least one activity entry for the created task")
+	}
+
+	// The newest (and only) entry should be the create.
+	entry := entryMap(t, items[0])
+	if entry["action"] != "created" || entry["entityType"] != "task" {
+		t.Fatalf("unexpected entry: action=%v entityType=%v", entry["action"], entry["entityType"])
+	}
+
+	// Assert tokenId and tokenName are present and match.
+	if entry["tokenId"] == nil {
+		t.Error("expected non-null tokenId on action performed via API token")
+	} else if jsonAs[string](t, entry["tokenId"]) != tokenID {
+		t.Errorf("tokenId = %v, want %s", entry["tokenId"], tokenID)
+	}
+	if entry["tokenName"] == nil {
+		t.Error("expected non-null tokenName on action performed via API token")
+	} else if jsonAs[string](t, entry["tokenName"]) != tokenName {
+		t.Errorf("tokenName = %v, want %s", entry["tokenName"], tokenName)
+	}
+}
+
+// --- Test 17: StatusReplaceActivity ---
 
 func TestStatusReplaceActivity(t *testing.T) {
 	env := setupTestServer(t)

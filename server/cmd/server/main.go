@@ -158,9 +158,7 @@ var serveCmd = &cobra.Command{
 			log.Info("shutting down", "signal", sig.String())
 		}
 
-		// Use Background() intentionally: cmd.Context() is already cancelled, so deriving
-		// from it would give a pre-cancelled context with no time to drain.
-		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.WithoutCancel(cmd.Context()), 30*time.Second)
 		defer shutdownCancel()
 		if err := srv.Shutdown(shutdownCtx); err != nil {
 			return fmt.Errorf("shutdown: %w", err)

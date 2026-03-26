@@ -145,6 +145,9 @@ type ListActivityLogBySpaceParams struct {
 	Limit     int32
 }
 
+// Cursor sentinel: 0 means "no cursor" (first page). BIGSERIAL IDs start at 1,
+// so 0 is never a real ID. Other list queries use `id > $cursor` where `id > 0`
+// naturally returns all rows; here the DESC order requires an explicit guard.
 func (q *Queries) ListActivityLogBySpace(ctx context.Context, arg ListActivityLogBySpaceParams) ([]ActivityLog, error) {
 	rows, err := q.db.Query(ctx, listActivityLogBySpace, arg.SpaceSlug, arg.Column2, arg.Limit)
 	if err != nil {

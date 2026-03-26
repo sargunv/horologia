@@ -231,7 +231,7 @@ func (h *Handler) SpaceMembersDelete(ctx context.Context, params apigen.SpaceMem
 		if existingMember.Role == dbgen.SpaceRoleAdmin {
 			return badRequest("cannot remove the last admin from a space")
 		}
-		return pgx.ErrNoRows
+		return errors.New("unexpected: member row disappeared during delete")
 	}
 
 	now := time.Now()

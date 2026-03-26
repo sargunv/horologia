@@ -897,9 +897,12 @@ func TestFixedAccumulatingCronBackfill(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "fa-cron", "FA Cron")
 
-	// Create a weekly task with due date 3 weeks in the past.
+	// Create a weekly task with due date ~3.5 weeks in the past (dynamically computed).
+	// Using 25 days ensures we clearly have 3 missed weekly occurrences in the past
+	// and the 4th occurrence lands in the future as the continuation.
+	dueDate := time.Now().AddDate(0, 0, -25).Format(time.DateOnly)
 	task := createTask(t, env, "fa-cron",
-		`{"title":"Weekly","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY","due":{"at":"2026-03-03","timezone":"UTC"}}`)
+		`{"title":"Weekly","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY","due":{"at":"`+dueDate+`","timezone":"UTC"}}`)
 	taskID := jsonAs[string](t, task["id"])
 
 	// Directly call processOverdueTasks to simulate the cron.
@@ -922,8 +925,8 @@ func TestFixedAccumulatingCronBackfill(t *testing.T) {
 	readJSON(t, resp2, &page)
 	items := jsonAs[[]any](t, page["items"])
 
-	// Due 2026-03-03, missed: 2026-03-10, 2026-03-17, 2026-03-24.
-	// Continuation: next week after now (2026-03-31).
+	// Due date is ~25 days ago. Missed occurrences at due+7d (~18d ago), due+14d (~11d ago),
+	// due+21d (~4d ago). Continuation at due+28d (~3d in future).
 	// Total: 1 original + 3 missed + 1 continuation = 5.
 	if len(items) != 5 {
 		t.Fatalf("expected exactly 5 tasks after cron backfill (1 original + 3 missed + 1 continuation), got %d", len(items))
@@ -960,9 +963,10 @@ func TestFixedAccumulatingCronIdempotent(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "fa-idem", "FA Idempotent")
 
-	// Create a weekly task with due date in the past.
+	// Create a weekly task with due date in the past (dynamically computed).
+	idemDue := time.Now().AddDate(0, 0, -14).Format(time.DateOnly)
 	createTask(t, env, "fa-idem",
-		`{"title":"Weekly","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY","due":{"at":"2026-03-10","timezone":"UTC"}}`)
+		`{"title":"Weekly","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY","due":{"at":"`+idemDue+`","timezone":"UTC"}}`)
 
 	// Run the cron twice.
 	must(t, taskengine.ProcessOverdueTasks(t.Context(), env.pool, nil))
@@ -993,8 +997,10 @@ func TestFixedAccumulatingCronExhaustedRule(t *testing.T) {
 	createSpace(t, env, "fa-exh", "FA Exhausted")
 
 	// Create a task with UNTIL in the past — rule is already exhausted.
+	exhDue := time.Now().AddDate(0, 0, -21).Format(time.DateOnly)
+	exhUntil := time.Now().AddDate(0, 0, -14).Format("20060102T150405Z")
 	task := createTask(t, env, "fa-exh",
-		`{"title":"Expired","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY;UNTIL=20260310T000000Z","due":{"at":"2026-03-03","timezone":"UTC"}}`)
+		`{"title":"Expired","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY;UNTIL=`+exhUntil+`","due":{"at":"`+exhDue+`","timezone":"UTC"}}`)
 	taskID := jsonAs[string](t, task["id"])
 
 	must(t, taskengine.ProcessOverdueTasks(t.Context(), env.pool, nil))
@@ -1014,10 +1020,11 @@ func TestFixedAccumulatingCronNonUTCTimezone(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "fa-tz", "FA TZ")
 
-	// Weekly task due Mondays in Eastern timezone.
-	// Due date is 2 weeks in the past.
+	// Weekly task due in Eastern timezone.
+	// Due date is 2 weeks in the past (dynamically computed).
+	tzDue := time.Now().AddDate(0, 0, -14).Format(time.DateOnly)
 	task := createTask(t, env, "fa-tz",
-		`{"title":"Weekly Eastern","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY","due":{"at":"2026-03-09","timezone":"America/New_York"}}`)
+		`{"title":"Weekly Eastern","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY","due":{"at":"`+tzDue+`","timezone":"America/New_York"}}`)
 	taskID := jsonAs[string](t, task["id"])
 
 	must(t, taskengine.ProcessOverdueTasks(t.Context(), env.pool, nil))
@@ -1073,9 +1080,10 @@ func TestFixedAccumulatingCronAfterCompletion(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "fa-race", "FA Race")
 
-	// Create a task with due date in the past.
+	// Create a task with due date in the past (dynamically computed).
+	raceDue := time.Now().AddDate(0, 0, -7).Format(time.DateOnly)
 	task := createTask(t, env, "fa-race",
-		`{"title":"Weekly","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY","due":{"at":"2026-03-17","timezone":"UTC"}}`)
+		`{"title":"Weekly","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY","due":{"at":"`+raceDue+`","timezone":"UTC"}}`)
 	taskID := jsonAs[string](t, task["id"])
 
 	// Complete the task via HTTP — this converts it to one_off and spawns a new task.
