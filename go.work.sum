@@ -167,5 +167,7 @@ modernc.org/golex v1.1.0 h1:dmSaksHMd+y6NkBsRsCShNPRaSNCNH+abrVm5/gZic8=
 modernc.org/golex v1.1.0/go.mod h1:2pVlfqApurXhR1m0N+WDYu6Twnc4QuvO4+U8HnwoiRA=
 modernc.org/parser v1.1.0 h1:XoClYpoz2xHEDIteSQ7tICOTFcNwBI7XRCeghUS6SNI=
 modernc.org/parser v1.1.0/go.mod h1:CXl3OTJRZij8FeMpzI3Id/bjupHf0u9HSrCUP4Z9pbA=
+modernc.org/sqlite v1.46.1 h1:eFJ2ShBLIEnUWlLy12raN0Z1plqmFX9Qe3rjQTKt6sU=
+modernc.org/sqlite v1.46.1/go.mod h1:CzbrU2lSB1DKUusvwGz7rqEKIq+NUd8GWuBBZDs9/nA=
 modernc.org/y v1.1.0 h1:JdIvLry+rKeSsVNRCdr6YWYimwwNm0GXtzxid77VfWc=
 modernc.org/y v1.1.0/go.mod h1:Iz3BmyIS4OwAbwGaUS7cqRrLsSsfp2sFWtpzX+P4CsE=

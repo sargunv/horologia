@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/spf13/cobra"
+
+	"github.com/sargunv/tend/server/internal/database"
 )
 
 var migrateCmd = &cobra.Command{
@@ -25,11 +27,16 @@ var migrateUpCmd = &cobra.Command{
 			return err
 		}
 
-		db, migrator, err := openDB(cfg)
+		db, err := database.OpenSQL(cfg.DB)
 		if err != nil {
 			return err
 		}
 		defer func() { _ = db.Close() }()
+
+		migrator, err := database.NewMigrator(db)
+		if err != nil {
+			return err
+		}
 
 		results, err := migrator.Up(context.Background())
 		if err != nil {
@@ -62,11 +69,16 @@ var migrateStatusCmd = &cobra.Command{
 			return err
 		}
 
-		db, migrator, err := openDB(cfg)
+		db, err := database.OpenSQL(cfg.DB)
 		if err != nil {
 			return err
 		}
 		defer func() { _ = db.Close() }()
+
+		migrator, err := database.NewMigrator(db)
+		if err != nil {
+			return err
+		}
 
 		statuses, err := migrator.Status(context.Background())
 		if err != nil {

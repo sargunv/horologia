@@ -2,13 +2,12 @@ package api
 
 import (
 	"context"
-	"database/sql"
 	"strconv"
+	"time"
 
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/taskengine"
-	"github.com/sargunv/tend/server/internal/types"
 )
 
 func (h *Handler) SpaceTagsList(ctx context.Context, params apigen.SpaceTagsListParams) (*apigen.TagPage, error) {
@@ -23,11 +22,11 @@ func (h *Handler) SpaceTagsList(ctx context.Context, params apigen.SpaceTagsList
 
 	limit := clampLimit(params.Limit)
 
-	tx, err := h.DB.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := h.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := dbgen.New(tx)
 
@@ -58,11 +57,11 @@ func (h *Handler) SpaceTagsCreate(ctx context.Context, req *apigen.TagCreate, pa
 		return nil, err
 	}
 
-	tx, err := h.DB.BeginTx(ctx, nil)
+	tx, err := h.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := dbgen.New(tx)
 
@@ -70,13 +69,13 @@ func (h *Handler) SpaceTagsCreate(ctx context.Context, req *apigen.TagCreate, pa
 		SpaceSlug:  params.SpaceSlug,
 		Name:       name,
 		NameFolded: taskengine.FoldTagName(name),
-		CreatedAt:  types.Now(),
+		CreatedAt:  timeToTS(time.Now()),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 
@@ -93,11 +92,11 @@ func (h *Handler) SpaceTagsUpdate(ctx context.Context, req *apigen.TagUpdate, pa
 		return nil, err
 	}
 
-	tx, err := h.DB.BeginTx(ctx, nil)
+	tx, err := h.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := dbgen.New(tx)
 	existing, err := q.GetTagByFoldedName(ctx, dbgen.GetTagByFoldedNameParams{
@@ -118,7 +117,7 @@ func (h *Handler) SpaceTagsUpdate(ctx context.Context, req *apigen.TagUpdate, pa
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 
@@ -130,7 +129,7 @@ func (h *Handler) SpaceTagsDelete(ctx context.Context, params apigen.SpaceTagsDe
 		return err
 	}
 
-	q := dbgen.New(h.DB)
+	q := dbgen.New(h.Pool)
 	result, err := q.DeleteTag(ctx, dbgen.DeleteTagParams{
 		SpaceSlug:  params.SpaceSlug,
 		NameFolded: taskengine.FoldTagName(params.TagName),

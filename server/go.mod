@@ -4,8 +4,10 @@ go 1.26.1
 
 require (
 	github.com/caarlos0/env/v11 v11.4.0
+	github.com/fergusstrange/embedded-postgres v1.34.0
 	github.com/go-faster/errors v0.7.1
 	github.com/go-faster/jx v1.2.0
+	github.com/jackc/pgx/v5 v5.8.0
 	github.com/ogen-go/ogen v1.20.1
 	github.com/pressly/goose/v3 v3.27.0
 	github.com/spf13/cobra v1.9.1
@@ -17,7 +19,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.40.0
 	golang.org/x/crypto v0.49.0
 	golang.org/x/text v0.35.0
-	modernc.org/sqlite v1.47.0
 )
 
 require (
@@ -45,9 +46,9 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
-	github.com/jackc/pgx/v5 v5.8.0 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
+	github.com/lib/pq v1.10.9 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
@@ -71,6 +72,7 @@ require (
 	github.com/tetratelabs/wazero v1.9.0 // indirect
 	github.com/wasilibs/go-pgquery v0.0.0-20250409022910-10ac41983c07 // indirect
 	github.com/wasilibs/wazero-helpers v0.0.0-20240620070341-3dff1577cd52 // indirect
+	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	github.com/zitadel/logging v0.7.0 // indirect
 	github.com/zitadel/schema v1.3.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
@@ -94,4 +96,5 @@ require (
 	modernc.org/libc v1.70.0 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
+	modernc.org/sqlite v1.46.1 // indirect
 )

@@ -2,10 +2,10 @@ package api
 
 import (
 	"context"
+	"time"
 
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/types"
 )
 
 func (h *Handler) SpaceTaskRelationsCreate(ctx context.Context, req *apigen.TaskRelationCreate, params apigen.SpaceTaskRelationsCreateParams) (*apigen.TaskRelation, error) {
@@ -32,7 +32,7 @@ func (h *Handler) SpaceTaskRelationsCreate(ctx context.Context, req *apigen.Task
 		return nil, badRequest("spawns/spawned_by relations are system-managed and cannot be created manually")
 	}
 
-	q := dbgen.New(h.DB)
+	q := dbgen.New(h.Pool)
 
 	// Verify target task exists and is in the same space.
 	_, err = q.GetTask(ctx, dbgen.GetTaskParams{ID: targetID, SpaceSlug: params.SpaceSlug})
@@ -45,13 +45,13 @@ func (h *Handler) SpaceTaskRelationsCreate(ctx context.Context, req *apigen.Task
 		return nil, badRequest(err.Error())
 	}
 
-	ts := types.Now()
+	ts := time.Now()
 	if err := q.InsertTaskRelation(ctx, dbgen.InsertTaskRelationParams{
 		SourceTaskID: storedSource,
 		TargetTaskID: storedTarget,
 		SpaceSlug:    params.SpaceSlug,
 		Kind:         storedKind,
-		CreatedAt:    ts,
+		CreatedAt:    timeToTS(ts),
 	}); err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (h *Handler) SpaceTaskRelationsCreate(ctx context.Context, req *apigen.Task
 	return &apigen.TaskRelation{
 		Kind:      req.Kind,
 		TaskId:    formatTaskID(targetID),
-		CreatedAt: ts.Time(),
+		CreatedAt: ts,
 	}, nil
 }
 
@@ -86,7 +86,7 @@ func (h *Handler) SpaceTaskRelationsDelete(ctx context.Context, params apigen.Sp
 		return badRequest(err.Error())
 	}
 
-	q := dbgen.New(h.DB)
+	q := dbgen.New(h.Pool)
 	result, err := q.DeleteTaskRelation(ctx, dbgen.DeleteTaskRelationParams{
 		SourceTaskID: storedSource,
 		TargetTaskID: storedTarget,

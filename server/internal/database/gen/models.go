@@ -5,32 +5,254 @@
 package gen
 
 import (
-	"github.com/sargunv/tend/server/internal/types"
+	"database/sql/driver"
+	"fmt"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type AuthTokenKind string
+
+const (
+	AuthTokenKindSession AuthTokenKind = "session"
+	AuthTokenKindApi     AuthTokenKind = "api"
+)
+
+func (e *AuthTokenKind) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = AuthTokenKind(s)
+	case string:
+		*e = AuthTokenKind(s)
+	default:
+		return fmt.Errorf("unsupported scan type for AuthTokenKind: %T", src)
+	}
+	return nil
+}
+
+type NullAuthTokenKind struct {
+	AuthTokenKind AuthTokenKind
+	Valid         bool // Valid is true if AuthTokenKind is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullAuthTokenKind) Scan(value interface{}) error {
+	if value == nil {
+		ns.AuthTokenKind, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.AuthTokenKind.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullAuthTokenKind) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.AuthTokenKind), nil
+}
+
+type RecurrenceType string
+
+const (
+	RecurrenceTypeOneOff               RecurrenceType = "one_off"
+	RecurrenceTypeCompletionBased      RecurrenceType = "completion_based"
+	RecurrenceTypeFixedNonAccumulating RecurrenceType = "fixed_non_accumulating"
+	RecurrenceTypeFixedAccumulating    RecurrenceType = "fixed_accumulating"
+	RecurrenceTypeOnDependency         RecurrenceType = "on_dependency"
+)
+
+func (e *RecurrenceType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = RecurrenceType(s)
+	case string:
+		*e = RecurrenceType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for RecurrenceType: %T", src)
+	}
+	return nil
+}
+
+type NullRecurrenceType struct {
+	RecurrenceType RecurrenceType
+	Valid          bool // Valid is true if RecurrenceType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullRecurrenceType) Scan(value interface{}) error {
+	if value == nil {
+		ns.RecurrenceType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.RecurrenceType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullRecurrenceType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.RecurrenceType), nil
+}
+
+type SpaceRole string
+
+const (
+	SpaceRoleAdmin  SpaceRole = "admin"
+	SpaceRoleMember SpaceRole = "member"
+	SpaceRoleViewer SpaceRole = "viewer"
+)
+
+func (e *SpaceRole) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = SpaceRole(s)
+	case string:
+		*e = SpaceRole(s)
+	default:
+		return fmt.Errorf("unsupported scan type for SpaceRole: %T", src)
+	}
+	return nil
+}
+
+type NullSpaceRole struct {
+	SpaceRole SpaceRole
+	Valid     bool // Valid is true if SpaceRole is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullSpaceRole) Scan(value interface{}) error {
+	if value == nil {
+		ns.SpaceRole, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.SpaceRole.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullSpaceRole) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.SpaceRole), nil
+}
+
+type StatusCategory string
+
+const (
+	StatusCategoryInitial      StatusCategory = "initial"
+	StatusCategoryIntermediate StatusCategory = "intermediate"
+	StatusCategoryCompletion   StatusCategory = "completion"
+)
+
+func (e *StatusCategory) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = StatusCategory(s)
+	case string:
+		*e = StatusCategory(s)
+	default:
+		return fmt.Errorf("unsupported scan type for StatusCategory: %T", src)
+	}
+	return nil
+}
+
+type NullStatusCategory struct {
+	StatusCategory StatusCategory
+	Valid          bool // Valid is true if StatusCategory is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullStatusCategory) Scan(value interface{}) error {
+	if value == nil {
+		ns.StatusCategory, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.StatusCategory.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullStatusCategory) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.StatusCategory), nil
+}
+
+type StoredRelationKind string
+
+const (
+	StoredRelationKindParent     StoredRelationKind = "parent"
+	StoredRelationKindBlocks     StoredRelationKind = "blocks"
+	StoredRelationKindRelatesTo  StoredRelationKind = "relates_to"
+	StoredRelationKindDuplicates StoredRelationKind = "duplicates"
+	StoredRelationKindTriggers   StoredRelationKind = "triggers"
+	StoredRelationKindSpawns     StoredRelationKind = "spawns"
+)
+
+func (e *StoredRelationKind) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = StoredRelationKind(s)
+	case string:
+		*e = StoredRelationKind(s)
+	default:
+		return fmt.Errorf("unsupported scan type for StoredRelationKind: %T", src)
+	}
+	return nil
+}
+
+type NullStoredRelationKind struct {
+	StoredRelationKind StoredRelationKind
+	Valid              bool // Valid is true if StoredRelationKind is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullStoredRelationKind) Scan(value interface{}) error {
+	if value == nil {
+		ns.StoredRelationKind, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.StoredRelationKind.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullStoredRelationKind) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.StoredRelationKind), nil
+}
 
 type AuthToken struct {
 	ID        int64
 	UserID    int64
 	TokenHash string
 	Name      string
-	Kind      types.AuthTokenKind
-	ExpiresAt *types.EpochSeconds
-	CreatedAt types.EpochSeconds
+	Kind      AuthTokenKind
+	ExpiresAt pgtype.Timestamptz
+	CreatedAt pgtype.Timestamptz
 }
 
 type Space struct {
 	Slug        string
 	Name        string
 	Description string
-	CreatedAt   types.EpochSeconds
-	UpdatedAt   types.EpochSeconds
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
 }
 
 type SpaceMember struct {
 	SpaceSlug string
 	UserID    int64
-	Role      types.SpaceRole
-	CreatedAt types.EpochSeconds
+	Role      SpaceRole
+	CreatedAt pgtype.Timestamptz
 }
 
 type Tag struct {
@@ -38,7 +260,7 @@ type Tag struct {
 	SpaceSlug  string
 	Name       string
 	NameFolded string
-	CreatedAt  types.EpochSeconds
+	CreatedAt  pgtype.Timestamptz
 }
 
 type Task struct {
@@ -47,70 +269,70 @@ type Task struct {
 	Title           string
 	Description     string
 	StatusName      string
-	EffortName      *string
-	PriorityName    *string
-	DueAt           *types.EpochSeconds
-	DueTz           *string
-	RecurrenceType  types.RecurrenceType
-	RecurrenceRule  *string
-	LastCompletedAt *types.EpochSeconds
-	CreatedAt       types.EpochSeconds
-	UpdatedAt       types.EpochSeconds
+	EffortName      pgtype.Text
+	PriorityName    pgtype.Text
+	DueAt           pgtype.Date
+	DueTz           pgtype.Text
+	RecurrenceType  RecurrenceType
+	RecurrenceRule  pgtype.Text
+	LastCompletedAt pgtype.Timestamptz
+	CreatedAt       pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
 }
 
 type TaskAssignee struct {
 	TaskID    int64
 	UserID    int64
-	CreatedAt types.EpochSeconds
+	CreatedAt pgtype.Timestamptz
 }
 
 type TaskEffortLevel struct {
 	SpaceSlug string
 	Name      string
-	Position  int64
+	Position  int32
 }
 
 type TaskPriorityLevel struct {
 	SpaceSlug string
 	Name      string
-	Position  int64
+	Position  int32
 }
 
 type TaskRelation struct {
 	SourceTaskID int64
 	TargetTaskID int64
 	SpaceSlug    string
-	Kind         types.StoredRelationKind
-	CreatedAt    types.EpochSeconds
+	Kind         StoredRelationKind
+	CreatedAt    pgtype.Timestamptz
 }
 
 type TaskRotationPool struct {
 	TaskID    int64
 	UserID    int64
-	Position  int64
-	CreatedAt types.EpochSeconds
+	Position  int32
+	CreatedAt pgtype.Timestamptz
 }
 
 type TaskStatus struct {
 	SpaceSlug string
 	Name      string
-	Category  types.StatusCategory
-	Position  int64
+	Category  StatusCategory
+	Position  int32
 }
 
 type TaskTag struct {
 	TaskID    int64
 	TagID     int64
-	CreatedAt types.EpochSeconds
+	CreatedAt pgtype.Timestamptz
 }
 
 type User struct {
 	ID           int64
 	Email        string
 	Name         string
-	PasswordHash *string
-	IsOwner      types.BoolInt
-	OidcSubject  *string
-	CreatedAt    types.EpochSeconds
-	UpdatedAt    types.EpochSeconds
+	PasswordHash pgtype.Text
+	IsOwner      bool
+	OidcSubject  pgtype.Text
+	CreatedAt    pgtype.Timestamptz
+	UpdatedAt    pgtype.Timestamptz
 }

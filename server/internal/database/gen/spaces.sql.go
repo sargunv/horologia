@@ -7,14 +7,14 @@ package gen
 
 import (
 	"context"
-	"database/sql"
 
-	"github.com/sargunv/tend/server/internal/types"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createSpace = `-- name: CreateSpace :one
 INSERT INTO spaces (slug, name, description, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING slug, name, description, created_at, updated_at
 `
 
@@ -22,12 +22,12 @@ type CreateSpaceParams struct {
 	Slug        string
 	Name        string
 	Description string
-	CreatedAt   types.EpochSeconds
-	UpdatedAt   types.EpochSeconds
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
 }
 
 func (q *Queries) CreateSpace(ctx context.Context, arg CreateSpaceParams) (Space, error) {
-	row := q.db.QueryRowContext(ctx, createSpace,
+	row := q.db.QueryRow(ctx, createSpace,
 		arg.Slug,
 		arg.Name,
 		arg.Description,
@@ -46,19 +46,19 @@ func (q *Queries) CreateSpace(ctx context.Context, arg CreateSpaceParams) (Space
 }
 
 const deleteSpace = `-- name: DeleteSpace :execresult
-DELETE FROM spaces WHERE slug = ?
+DELETE FROM spaces WHERE slug = $1
 `
 
-func (q *Queries) DeleteSpace(ctx context.Context, slug string) (sql.Result, error) {
-	return q.db.ExecContext(ctx, deleteSpace, slug)
+func (q *Queries) DeleteSpace(ctx context.Context, slug string) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, deleteSpace, slug)
 }
 
 const getSpace = `-- name: GetSpace :one
-SELECT slug, name, description, created_at, updated_at FROM spaces WHERE slug = ?
+SELECT slug, name, description, created_at, updated_at FROM spaces WHERE slug = $1
 `
 
 func (q *Queries) GetSpace(ctx context.Context, slug string) (Space, error) {
-	row := q.db.QueryRowContext(ctx, getSpace, slug)
+	row := q.db.QueryRow(ctx, getSpace, slug)
 	var i Space
 	err := row.Scan(
 		&i.Slug,
@@ -72,18 +72,18 @@ func (q *Queries) GetSpace(ctx context.Context, slug string) (Space, error) {
 
 const listSpaces = `-- name: ListSpaces :many
 SELECT slug, name, description, created_at, updated_at FROM spaces
-WHERE slug > ?
+WHERE slug > $1
 ORDER BY slug ASC
-LIMIT ?
+LIMIT $2
 `
 
 type ListSpacesParams struct {
 	Slug  string
-	Limit int64
+	Limit int32
 }
 
 func (q *Queries) ListSpaces(ctx context.Context, arg ListSpacesParams) ([]Space, error) {
-	rows, err := q.db.QueryContext(ctx, listSpaces, arg.Slug, arg.Limit)
+	rows, err := q.db.Query(ctx, listSpaces, arg.Slug, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -102,9 +102,6 @@ func (q *Queries) ListSpaces(ctx context.Context, arg ListSpacesParams) ([]Space
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -113,20 +110,20 @@ func (q *Queries) ListSpaces(ctx context.Context, arg ListSpacesParams) ([]Space
 
 const updateSpace = `-- name: UpdateSpace :one
 UPDATE spaces
-SET name = ?, description = ?, updated_at = ?
-WHERE slug = ?
+SET name = $1, description = $2, updated_at = $3
+WHERE slug = $4
 RETURNING slug, name, description, created_at, updated_at
 `
 
 type UpdateSpaceParams struct {
 	Name        string
 	Description string
-	UpdatedAt   types.EpochSeconds
+	UpdatedAt   pgtype.Timestamptz
 	Slug        string
 }
 
 func (q *Queries) UpdateSpace(ctx context.Context, arg UpdateSpaceParams) (Space, error) {
-	row := q.db.QueryRowContext(ctx, updateSpace,
+	row := q.db.QueryRow(ctx, updateSpace,
 		arg.Name,
 		arg.Description,
 		arg.UpdatedAt,

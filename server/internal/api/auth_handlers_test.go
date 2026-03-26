@@ -8,8 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
+
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/types"
 )
 
 func TestAuthLoginSuccess(t *testing.T) {
@@ -170,16 +171,16 @@ func TestExpiredTokenRejected(t *testing.T) {
 	rawToken := "expired-test-token"
 	hash := sha256.Sum256([]byte(rawToken))
 	tokenHash := hex.EncodeToString(hash[:])
-	pastTime := types.EpochSeconds(time.Now().Add(-1 * time.Hour))
+	pastTime := time.Now().Add(-1 * time.Hour)
 
-	q := dbgen.New(env.db)
+	q := dbgen.New(env.pool)
 	_, err := q.CreateAuthToken(t.Context(), dbgen.CreateAuthTokenParams{
 		UserID:    1, // owner user
 		TokenHash: tokenHash,
 		Name:      "expired",
-		Kind:      "session",
-		ExpiresAt: &pastTime,
-		CreatedAt: types.Now(),
+		Kind:      dbgen.AuthTokenKindSession,
+		ExpiresAt: pgtype.Timestamptz{Time: pastTime, Valid: true},
+		CreatedAt: pgtype.Timestamptz{Time: time.Now(), Valid: true},
 	})
 	if err != nil {
 		t.Fatalf("create expired token: %v", err)

@@ -7,23 +7,24 @@ package gen
 
 import (
 	"context"
-	"database/sql"
+
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 const createTaskPriorityLevel = `-- name: CreateTaskPriorityLevel :one
 INSERT INTO task_priority_levels (space_slug, name, position)
-VALUES (?, ?, ?)
+VALUES ($1, $2, $3)
 RETURNING space_slug, name, position
 `
 
 type CreateTaskPriorityLevelParams struct {
 	SpaceSlug string
 	Name      string
-	Position  int64
+	Position  int32
 }
 
 func (q *Queries) CreateTaskPriorityLevel(ctx context.Context, arg CreateTaskPriorityLevelParams) (TaskPriorityLevel, error) {
-	row := q.db.QueryRowContext(ctx, createTaskPriorityLevel, arg.SpaceSlug, arg.Name, arg.Position)
+	row := q.db.QueryRow(ctx, createTaskPriorityLevel, arg.SpaceSlug, arg.Name, arg.Position)
 	var i TaskPriorityLevel
 	err := row.Scan(&i.SpaceSlug, &i.Name, &i.Position)
 	return i, err
@@ -31,7 +32,7 @@ func (q *Queries) CreateTaskPriorityLevel(ctx context.Context, arg CreateTaskPri
 
 const deleteTaskPriorityLevel = `-- name: DeleteTaskPriorityLevel :execresult
 DELETE FROM task_priority_levels
-WHERE space_slug = ? AND name = ?
+WHERE space_slug = $1 AND name = $2
 `
 
 type DeleteTaskPriorityLevelParams struct {
@@ -39,18 +40,18 @@ type DeleteTaskPriorityLevelParams struct {
 	Name      string
 }
 
-func (q *Queries) DeleteTaskPriorityLevel(ctx context.Context, arg DeleteTaskPriorityLevelParams) (sql.Result, error) {
-	return q.db.ExecContext(ctx, deleteTaskPriorityLevel, arg.SpaceSlug, arg.Name)
+func (q *Queries) DeleteTaskPriorityLevel(ctx context.Context, arg DeleteTaskPriorityLevelParams) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, deleteTaskPriorityLevel, arg.SpaceSlug, arg.Name)
 }
 
 const listTaskPriorityLevelsBySpace = `-- name: ListTaskPriorityLevelsBySpace :many
 SELECT space_slug, name, position FROM task_priority_levels
-WHERE space_slug = ?
+WHERE space_slug = $1
 ORDER BY position ASC
 `
 
 func (q *Queries) ListTaskPriorityLevelsBySpace(ctx context.Context, spaceSlug string) ([]TaskPriorityLevel, error) {
-	rows, err := q.db.QueryContext(ctx, listTaskPriorityLevelsBySpace, spaceSlug)
+	rows, err := q.db.Query(ctx, listTaskPriorityLevelsBySpace, spaceSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -63,9 +64,6 @@ func (q *Queries) ListTaskPriorityLevelsBySpace(ctx context.Context, spaceSlug s
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -73,17 +71,17 @@ func (q *Queries) ListTaskPriorityLevelsBySpace(ctx context.Context, spaceSlug s
 }
 
 const updateTaskPriorityLevel = `-- name: UpdateTaskPriorityLevel :exec
-UPDATE task_priority_levels SET position = ?
-WHERE space_slug = ? AND name = ?
+UPDATE task_priority_levels SET position = $1
+WHERE space_slug = $2 AND name = $3
 `
 
 type UpdateTaskPriorityLevelParams struct {
-	Position  int64
+	Position  int32
 	SpaceSlug string
 	Name      string
 }
 
 func (q *Queries) UpdateTaskPriorityLevel(ctx context.Context, arg UpdateTaskPriorityLevelParams) error {
-	_, err := q.db.ExecContext(ctx, updateTaskPriorityLevel, arg.Position, arg.SpaceSlug, arg.Name)
+	_, err := q.db.Exec(ctx, updateTaskPriorityLevel, arg.Position, arg.SpaceSlug, arg.Name)
 	return err
 }

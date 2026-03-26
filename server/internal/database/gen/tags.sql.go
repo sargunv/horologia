@@ -7,14 +7,14 @@ package gen
 
 import (
 	"context"
-	"database/sql"
 
-	"github.com/sargunv/tend/server/internal/types"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createTag = `-- name: CreateTag :one
 INSERT INTO tags (space_slug, name, name_folded, created_at)
-VALUES (?, ?, ?, ?)
+VALUES ($1, $2, $3, $4)
 RETURNING id, space_slug, name, name_folded, created_at
 `
 
@@ -22,11 +22,11 @@ type CreateTagParams struct {
 	SpaceSlug  string
 	Name       string
 	NameFolded string
-	CreatedAt  types.EpochSeconds
+	CreatedAt  pgtype.Timestamptz
 }
 
 func (q *Queries) CreateTag(ctx context.Context, arg CreateTagParams) (Tag, error) {
-	row := q.db.QueryRowContext(ctx, createTag,
+	row := q.db.QueryRow(ctx, createTag,
 		arg.SpaceSlug,
 		arg.Name,
 		arg.NameFolded,
@@ -44,7 +44,7 @@ func (q *Queries) CreateTag(ctx context.Context, arg CreateTagParams) (Tag, erro
 }
 
 const deleteTag = `-- name: DeleteTag :execresult
-DELETE FROM tags WHERE space_slug = ? AND name_folded = ?
+DELETE FROM tags WHERE space_slug = $1 AND name_folded = $2
 `
 
 type DeleteTagParams struct {
@@ -52,14 +52,14 @@ type DeleteTagParams struct {
 	NameFolded string
 }
 
-func (q *Queries) DeleteTag(ctx context.Context, arg DeleteTagParams) (sql.Result, error) {
-	return q.db.ExecContext(ctx, deleteTag, arg.SpaceSlug, arg.NameFolded)
+func (q *Queries) DeleteTag(ctx context.Context, arg DeleteTagParams) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, deleteTag, arg.SpaceSlug, arg.NameFolded)
 }
 
 const ensureTag = `-- name: EnsureTag :one
 INSERT INTO tags (space_slug, name, name_folded, created_at)
-VALUES (?, ?, ?, ?)
-ON CONFLICT (space_slug, name_folded) DO UPDATE SET name = name
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (space_slug, name_folded) DO UPDATE SET name = tags.name
 RETURNING id, space_slug, name, name_folded, created_at
 `
 
@@ -67,13 +67,14 @@ type EnsureTagParams struct {
 	SpaceSlug  string
 	Name       string
 	NameFolded string
-	CreatedAt  types.EpochSeconds
+	CreatedAt  pgtype.Timestamptz
 }
 
-// Uses DO UPDATE SET name = name (a no-op) instead of DO NOTHING so that
-// RETURNING returns the row even when the insert is skipped due to conflict.
+// Uses DO UPDATE SET name = tags.name (a true no-op that preserves the
+// existing display name) instead of DO NOTHING so that RETURNING returns
+// the row even when the insert is skipped due to conflict.
 func (q *Queries) EnsureTag(ctx context.Context, arg EnsureTagParams) (Tag, error) {
-	row := q.db.QueryRowContext(ctx, ensureTag,
+	row := q.db.QueryRow(ctx, ensureTag,
 		arg.SpaceSlug,
 		arg.Name,
 		arg.NameFolded,
@@ -92,7 +93,7 @@ func (q *Queries) EnsureTag(ctx context.Context, arg EnsureTagParams) (Tag, erro
 
 const getTagByFoldedName = `-- name: GetTagByFoldedName :one
 SELECT id, space_slug, name, name_folded, created_at FROM tags
-WHERE space_slug = ? AND name_folded = ?
+WHERE space_slug = $1 AND name_folded = $2
 `
 
 type GetTagByFoldedNameParams struct {
@@ -101,7 +102,7 @@ type GetTagByFoldedNameParams struct {
 }
 
 func (q *Queries) GetTagByFoldedName(ctx context.Context, arg GetTagByFoldedNameParams) (Tag, error) {
-	row := q.db.QueryRowContext(ctx, getTagByFoldedName, arg.SpaceSlug, arg.NameFolded)
+	row := q.db.QueryRow(ctx, getTagByFoldedName, arg.SpaceSlug, arg.NameFolded)
 	var i Tag
 	err := row.Scan(
 		&i.ID,
@@ -115,19 +116,19 @@ func (q *Queries) GetTagByFoldedName(ctx context.Context, arg GetTagByFoldedName
 
 const listTagsBySpace = `-- name: ListTagsBySpace :many
 SELECT id, space_slug, name, name_folded, created_at FROM tags
-WHERE space_slug = ? AND id > ?
+WHERE space_slug = $1 AND id > $2
 ORDER BY id ASC
-LIMIT ?
+LIMIT $3
 `
 
 type ListTagsBySpaceParams struct {
 	SpaceSlug string
 	ID        int64
-	Limit     int64
+	Limit     int32
 }
 
 func (q *Queries) ListTagsBySpace(ctx context.Context, arg ListTagsBySpaceParams) ([]Tag, error) {
-	rows, err := q.db.QueryContext(ctx, listTagsBySpace, arg.SpaceSlug, arg.ID, arg.Limit)
+	rows, err := q.db.Query(ctx, listTagsBySpace, arg.SpaceSlug, arg.ID, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -146,9 +147,6 @@ func (q *Queries) ListTagsBySpace(ctx context.Context, arg ListTagsBySpaceParams
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -157,8 +155,8 @@ func (q *Queries) ListTagsBySpace(ctx context.Context, arg ListTagsBySpaceParams
 
 const updateTag = `-- name: UpdateTag :one
 UPDATE tags
-SET name = ?, name_folded = ?
-WHERE id = ? AND space_slug = ?
+SET name = $1, name_folded = $2
+WHERE id = $3 AND space_slug = $4
 RETURNING id, space_slug, name, name_folded, created_at
 `
 
@@ -170,7 +168,7 @@ type UpdateTagParams struct {
 }
 
 func (q *Queries) UpdateTag(ctx context.Context, arg UpdateTagParams) (Tag, error) {
-	row := q.db.QueryRowContext(ctx, updateTag,
+	row := q.db.QueryRow(ctx, updateTag,
 		arg.Name,
 		arg.NameFolded,
 		arg.ID,

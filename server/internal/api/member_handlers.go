@@ -2,13 +2,14 @@ package api
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"strconv"
+	"time"
+
+	"github.com/jackc/pgx/v5"
 
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/types"
 )
 
 func (h *Handler) SpaceMembersList(ctx context.Context, params apigen.SpaceMembersListParams) (*apigen.SpaceMemberPage, error) {
@@ -23,11 +24,11 @@ func (h *Handler) SpaceMembersList(ctx context.Context, params apigen.SpaceMembe
 
 	limit := clampLimit(params.Limit)
 
-	tx, err := h.DB.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := h.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := dbgen.New(tx)
 
@@ -57,7 +58,7 @@ func (h *Handler) SpaceMembersList(ctx context.Context, params apigen.SpaceMembe
 }
 
 func (h *Handler) SpaceMembersCreate(ctx context.Context, req *apigen.SpaceMemberCreate, params apigen.SpaceMembersCreateParams) (*apigen.SpaceMember, error) {
-	if err := h.requireSpaceRole(ctx, params.SpaceSlug, types.SpaceRoleAdmin); err != nil {
+	if err := h.requireSpaceRole(ctx, params.SpaceSlug, dbgen.SpaceRoleAdmin); err != nil {
 		return nil, err
 	}
 
@@ -66,17 +67,17 @@ func (h *Handler) SpaceMembersCreate(ctx context.Context, req *apigen.SpaceMembe
 		return nil, badRequest(err.Error())
 	}
 
-	tx, err := h.DB.BeginTx(ctx, nil)
+	tx, err := h.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := dbgen.New(tx)
 
 	// Verify the target user exists.
 	targetUser, err := q.GetUserByID(ctx, userID)
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, badRequest("user not found")
 	}
 	if err != nil {
@@ -86,14 +87,14 @@ func (h *Handler) SpaceMembersCreate(ctx context.Context, req *apigen.SpaceMembe
 	member, err := q.CreateSpaceMember(ctx, dbgen.CreateSpaceMemberParams{
 		SpaceSlug: params.SpaceSlug,
 		UserID:    userID,
-		Role:      types.SpaceRole(req.Role),
-		CreatedAt: types.Now(),
+		Role:      dbgen.SpaceRole(req.Role),
+		CreatedAt: timeToTS(time.Now()),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 
@@ -101,7 +102,7 @@ func (h *Handler) SpaceMembersCreate(ctx context.Context, req *apigen.SpaceMembe
 }
 
 func (h *Handler) SpaceMembersUpdate(ctx context.Context, req *apigen.SpaceMemberUpdate, params apigen.SpaceMembersUpdateParams) (*apigen.SpaceMember, error) {
-	if err := h.requireSpaceRole(ctx, params.SpaceSlug, types.SpaceRoleAdmin); err != nil {
+	if err := h.requireSpaceRole(ctx, params.SpaceSlug, dbgen.SpaceRoleAdmin); err != nil {
 		return nil, err
 	}
 
@@ -110,23 +111,23 @@ func (h *Handler) SpaceMembersUpdate(ctx context.Context, req *apigen.SpaceMembe
 		return nil, badRequest(err.Error())
 	}
 
-	tx, err := h.DB.BeginTx(ctx, nil)
+	tx, err := h.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := dbgen.New(tx)
 
 	// Guard against removing the last admin.
-	if types.SpaceRole(req.Role) != types.SpaceRoleAdmin {
+	if dbgen.SpaceRole(req.Role) != dbgen.SpaceRoleAdmin {
 		if err := h.ensureNotLastAdmin(ctx, q, params.SpaceSlug, userID); err != nil {
 			return nil, err
 		}
 	}
 
 	member, err := q.UpdateSpaceMemberRole(ctx, dbgen.UpdateSpaceMemberRoleParams{
-		Role:      types.SpaceRole(req.Role),
+		Role:      dbgen.SpaceRole(req.Role),
 		SpaceSlug: params.SpaceSlug,
 		UserID:    userID,
 	})
@@ -139,7 +140,7 @@ func (h *Handler) SpaceMembersUpdate(ctx context.Context, req *apigen.SpaceMembe
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 
@@ -147,7 +148,7 @@ func (h *Handler) SpaceMembersUpdate(ctx context.Context, req *apigen.SpaceMembe
 }
 
 func (h *Handler) SpaceMembersDelete(ctx context.Context, params apigen.SpaceMembersDeleteParams) error {
-	if err := h.requireSpaceRole(ctx, params.SpaceSlug, types.SpaceRoleAdmin); err != nil {
+	if err := h.requireSpaceRole(ctx, params.SpaceSlug, dbgen.SpaceRoleAdmin); err != nil {
 		return err
 	}
 
@@ -156,11 +157,11 @@ func (h *Handler) SpaceMembersDelete(ctx context.Context, params apigen.SpaceMem
 		return badRequest(err.Error())
 	}
 
-	tx, err := h.DB.BeginTx(ctx, nil)
+	tx, err := h.Pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := dbgen.New(tx)
 
@@ -195,7 +196,7 @@ func (h *Handler) SpaceMembersDelete(ctx context.Context, params apigen.SpaceMem
 		return err
 	}
 
-	return tx.Commit()
+	return tx.Commit(ctx)
 }
 
 // ensureNotLastAdmin returns an error if the given user is the only admin in the space.
@@ -207,7 +208,7 @@ func (h *Handler) ensureNotLastAdmin(ctx context.Context, q *dbgen.Queries, spac
 	if err != nil {
 		return err
 	}
-	if member.Role != types.SpaceRoleAdmin {
+	if member.Role != dbgen.SpaceRoleAdmin {
 		return nil // not an admin, no risk
 	}
 	count, err := q.CountSpaceAdmins(ctx, spaceSlug)

@@ -7,45 +7,44 @@ package gen
 
 import (
 	"context"
-	"strings"
 
-	"github.com/sargunv/tend/server/internal/types"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const deleteTaskTags = `-- name: DeleteTaskTags :exec
-DELETE FROM task_tags WHERE task_id = ?
+DELETE FROM task_tags WHERE task_id = $1
 `
 
 func (q *Queries) DeleteTaskTags(ctx context.Context, taskID int64) error {
-	_, err := q.db.ExecContext(ctx, deleteTaskTags, taskID)
+	_, err := q.db.Exec(ctx, deleteTaskTags, taskID)
 	return err
 }
 
 const insertTaskTag = `-- name: InsertTaskTag :exec
 INSERT INTO task_tags (task_id, tag_id, created_at)
-VALUES (?, ?, ?)
+VALUES ($1, $2, $3)
 `
 
 type InsertTaskTagParams struct {
 	TaskID    int64
 	TagID     int64
-	CreatedAt types.EpochSeconds
+	CreatedAt pgtype.Timestamptz
 }
 
 func (q *Queries) InsertTaskTag(ctx context.Context, arg InsertTaskTagParams) error {
-	_, err := q.db.ExecContext(ctx, insertTaskTag, arg.TaskID, arg.TagID, arg.CreatedAt)
+	_, err := q.db.Exec(ctx, insertTaskTag, arg.TaskID, arg.TagID, arg.CreatedAt)
 	return err
 }
 
 const listTagNamesByTask = `-- name: ListTagNamesByTask :many
 SELECT tg.name FROM task_tags tt
 JOIN tags tg ON tg.id = tt.tag_id
-WHERE tt.task_id = ?
+WHERE tt.task_id = $1
 ORDER BY tg.name ASC
 `
 
 func (q *Queries) ListTagNamesByTask(ctx context.Context, taskID int64) ([]string, error) {
-	rows, err := q.db.QueryContext(ctx, listTagNamesByTask, taskID)
+	rows, err := q.db.Query(ctx, listTagNamesByTask, taskID)
 	if err != nil {
 		return nil, err
 	}
@@ -58,9 +57,6 @@ func (q *Queries) ListTagNamesByTask(ctx context.Context, taskID int64) ([]strin
 		}
 		items = append(items, name)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -70,7 +66,7 @@ func (q *Queries) ListTagNamesByTask(ctx context.Context, taskID int64) ([]strin
 const listTagNamesByTasks = `-- name: ListTagNamesByTasks :many
 SELECT tt.task_id, tg.name FROM task_tags tt
 JOIN tags tg ON tg.id = tt.tag_id
-WHERE tt.task_id IN (/*SLICE:task_ids*/?)
+WHERE tt.task_id = ANY($1::bigint[])
 ORDER BY tt.task_id, tg.name
 `
 
@@ -80,17 +76,7 @@ type ListTagNamesByTasksRow struct {
 }
 
 func (q *Queries) ListTagNamesByTasks(ctx context.Context, taskIds []int64) ([]ListTagNamesByTasksRow, error) {
-	query := listTagNamesByTasks
-	var queryParams []interface{}
-	if len(taskIds) > 0 {
-		for _, v := range taskIds {
-			queryParams = append(queryParams, v)
-		}
-		query = strings.Replace(query, "/*SLICE:task_ids*/?", strings.Repeat(",?", len(taskIds))[1:], 1)
-	} else {
-		query = strings.Replace(query, "/*SLICE:task_ids*/?", "NULL", 1)
-	}
-	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	rows, err := q.db.Query(ctx, listTagNamesByTasks, taskIds)
 	if err != nil {
 		return nil, err
 	}
@@ -102,9 +88,6 @@ func (q *Queries) ListTagNamesByTasks(ctx context.Context, taskIds []int64) ([]L
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

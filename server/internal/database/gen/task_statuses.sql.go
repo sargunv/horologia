@@ -7,14 +7,13 @@ package gen
 
 import (
 	"context"
-	"database/sql"
 
-	"github.com/sargunv/tend/server/internal/types"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 const countTasksByStatusName = `-- name: CountTasksByStatusName :one
 SELECT COUNT(*) FROM tasks
-WHERE space_slug = ? AND status_name = ?
+WHERE space_slug = $1 AND status_name = $2
 `
 
 type CountTasksByStatusNameParams struct {
@@ -23,7 +22,7 @@ type CountTasksByStatusNameParams struct {
 }
 
 func (q *Queries) CountTasksByStatusName(ctx context.Context, arg CountTasksByStatusNameParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, countTasksByStatusName, arg.SpaceSlug, arg.StatusName)
+	row := q.db.QueryRow(ctx, countTasksByStatusName, arg.SpaceSlug, arg.StatusName)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -31,19 +30,19 @@ func (q *Queries) CountTasksByStatusName(ctx context.Context, arg CountTasksBySt
 
 const createTaskStatus = `-- name: CreateTaskStatus :one
 INSERT INTO task_statuses (space_slug, name, category, position)
-VALUES (?, ?, ?, ?)
+VALUES ($1, $2, $3, $4)
 RETURNING space_slug, name, category, position
 `
 
 type CreateTaskStatusParams struct {
 	SpaceSlug string
 	Name      string
-	Category  types.StatusCategory
-	Position  int64
+	Category  StatusCategory
+	Position  int32
 }
 
 func (q *Queries) CreateTaskStatus(ctx context.Context, arg CreateTaskStatusParams) (TaskStatus, error) {
-	row := q.db.QueryRowContext(ctx, createTaskStatus,
+	row := q.db.QueryRow(ctx, createTaskStatus,
 		arg.SpaceSlug,
 		arg.Name,
 		arg.Category,
@@ -61,7 +60,7 @@ func (q *Queries) CreateTaskStatus(ctx context.Context, arg CreateTaskStatusPara
 
 const deleteTaskStatus = `-- name: DeleteTaskStatus :execresult
 DELETE FROM task_statuses
-WHERE space_slug = ? AND name = ?
+WHERE space_slug = $1 AND name = $2
 `
 
 type DeleteTaskStatusParams struct {
@@ -69,18 +68,18 @@ type DeleteTaskStatusParams struct {
 	Name      string
 }
 
-func (q *Queries) DeleteTaskStatus(ctx context.Context, arg DeleteTaskStatusParams) (sql.Result, error) {
-	return q.db.ExecContext(ctx, deleteTaskStatus, arg.SpaceSlug, arg.Name)
+func (q *Queries) DeleteTaskStatus(ctx context.Context, arg DeleteTaskStatusParams) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, deleteTaskStatus, arg.SpaceSlug, arg.Name)
 }
 
 const listTaskStatusesBySpace = `-- name: ListTaskStatusesBySpace :many
 SELECT space_slug, name, category, position FROM task_statuses
-WHERE space_slug = ?
+WHERE space_slug = $1
 ORDER BY position ASC
 `
 
 func (q *Queries) ListTaskStatusesBySpace(ctx context.Context, spaceSlug string) ([]TaskStatus, error) {
-	rows, err := q.db.QueryContext(ctx, listTaskStatusesBySpace, spaceSlug)
+	rows, err := q.db.Query(ctx, listTaskStatusesBySpace, spaceSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -98,9 +97,6 @@ func (q *Queries) ListTaskStatusesBySpace(ctx context.Context, spaceSlug string)
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -108,19 +104,19 @@ func (q *Queries) ListTaskStatusesBySpace(ctx context.Context, spaceSlug string)
 }
 
 const updateTaskStatus = `-- name: UpdateTaskStatus :exec
-UPDATE task_statuses SET category = ?, position = ?
-WHERE space_slug = ? AND name = ?
+UPDATE task_statuses SET category = $1, position = $2
+WHERE space_slug = $3 AND name = $4
 `
 
 type UpdateTaskStatusParams struct {
-	Category  types.StatusCategory
-	Position  int64
+	Category  StatusCategory
+	Position  int32
 	SpaceSlug string
 	Name      string
 }
 
 func (q *Queries) UpdateTaskStatus(ctx context.Context, arg UpdateTaskStatusParams) error {
-	_, err := q.db.ExecContext(ctx, updateTaskStatus,
+	_, err := q.db.Exec(ctx, updateTaskStatus,
 		arg.Category,
 		arg.Position,
 		arg.SpaceSlug,

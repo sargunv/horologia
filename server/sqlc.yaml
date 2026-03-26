@@ -1,66 +1,11 @@
 version: "2"
 sql:
-  - engine: "sqlite"
+  - engine: "postgresql"
     queries: "internal/database/queries"
     schema: "internal/database/migrations"
     gen:
       go:
         package: "gen"
         out: "internal/database/gen"
-        sql_package: "database/sql"
+        sql_package: "pgx/v5"
         emit_empty_slices: true
-        emit_pointers_for_null_types: true
-        overrides:
-          - column: "spaces.created_at"
-            go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"
-          - column: "spaces.updated_at"
-            go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"
-          - column: "tasks.created_at"
-            go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"
-          - column: "tasks.updated_at"
-            go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"
-          - column: "users.created_at"
-            go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"
-          - column: "users.updated_at"
-            go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"
-          - column: "auth_tokens.expires_at"
-            go_type:
-              import: "github.com/sargunv/tend/server/internal/types"
-              type: "EpochSeconds"
-              pointer: true
-          - column: "auth_tokens.created_at"
-            go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"
-          - column: "space_members.created_at"
-            go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"
-          - column: "task_assignees.created_at"
-            go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"
-          - column: "tags.created_at"
-            go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"
-          - column: "task_tags.created_at"
-            go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"
-          - column: "tasks.due_at"
-            go_type:
-              import: "github.com/sargunv/tend/server/internal/types"
-              type: "EpochSeconds"
-              pointer: true
-          - column: "tasks.last_completed_at"
-            go_type:
-              import: "github.com/sargunv/tend/server/internal/types"
-              type: "EpochSeconds"
-              pointer: true
-          - column: "task_relations.created_at"
-            go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"
-          - column: "task_rotation_pool.created_at"
-            go_type: "github.com/sargunv/tend/server/internal/types.EpochSeconds"
-          - column: "users.is_owner"
-            go_type: "github.com/sargunv/tend/server/internal/types.BoolInt"
-          - column: "tasks.recurrence_type"
-            go_type: "github.com/sargunv/tend/server/internal/types.RecurrenceType"
-          - column: "task_statuses.category"
-            go_type: "github.com/sargunv/tend/server/internal/types.StatusCategory"
-          - column: "space_members.role"
-            go_type: "github.com/sargunv/tend/server/internal/types.SpaceRole"
-          - column: "auth_tokens.kind"
-            go_type: "github.com/sargunv/tend/server/internal/types.AuthTokenKind"
-          - column: "task_relations.kind"
-            go_type: "github.com/sargunv/tend/server/internal/types.StoredRelationKind"

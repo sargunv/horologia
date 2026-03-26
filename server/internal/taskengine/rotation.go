@@ -2,9 +2,11 @@ package taskengine
 
 import (
 	"context"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/types"
 )
 
 // AdvanceRotation derives the next assignee from the rotation pool.
@@ -43,7 +45,7 @@ func AdvanceRotation(pool []int64, currentAssignees []int64, step int) []int64 {
 // ApplyPoolRotation reads the rotation pool and current assignees for a task,
 // computes the next assignee, and writes it. No-op if the pool is empty.
 // Must be called within a transaction.
-func ApplyPoolRotation(ctx context.Context, q *dbgen.Queries, taskID int64, now types.EpochSeconds) error {
+func ApplyPoolRotation(ctx context.Context, q *dbgen.Queries, taskID int64, now time.Time) error {
 	pool, err := q.ListRotationPoolByTask(ctx, taskID)
 	if err != nil {
 		return err
@@ -55,6 +57,7 @@ func ApplyPoolRotation(ctx context.Context, q *dbgen.Queries, taskID int64, now 
 	if err != nil {
 		return err
 	}
+	nowTz := pgtype.Timestamptz{Time: now, Valid: true}
 	nextAssignees := AdvanceRotation(pool, currentAssignees, 0)
 	if err := q.DeleteTaskAssignees(ctx, taskID); err != nil {
 		return err
@@ -63,7 +66,7 @@ func ApplyPoolRotation(ctx context.Context, q *dbgen.Queries, taskID int64, now 
 		if err := q.InsertTaskAssignee(ctx, dbgen.InsertTaskAssigneeParams{
 			TaskID:    taskID,
 			UserID:    uid,
-			CreatedAt: now,
+			CreatedAt: nowTz,
 		}); err != nil {
 			return err
 		}

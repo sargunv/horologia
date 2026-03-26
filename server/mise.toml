@@ -30,13 +30,3 @@ run = "go test ./..."
 description = "Run the server"
 depends = ["build"]
 run = "./tend-server serve"
-
-[tasks."db:reset"]
-description = "Delete and recreate the dev database"
-run = "rm -f tend.db tend.db-shm tend.db-wal"
-
-[tasks."db:create-admin"]
-description = "Create the dev admin user (admin@localhost / password)"
-depends = ["build"]
-env = { TEND_DB = "{{config_root}}/tend.db" }
-run = "./tend-server create-admin --email admin@localhost --name Admin --password password"

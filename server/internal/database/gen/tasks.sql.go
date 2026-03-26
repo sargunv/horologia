@@ -7,30 +7,30 @@ package gen
 
 import (
 	"context"
-	"database/sql"
 
-	"github.com/sargunv/tend/server/internal/types"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const convertAccumulatingToOneOff = `-- name: ConvertAccumulatingToOneOff :execresult
 UPDATE tasks
-SET recurrence_type = 'one_off', recurrence_rule = NULL, updated_at = ?
-WHERE id = ? AND space_slug = ? AND recurrence_type = 'fixed_accumulating'
+SET recurrence_type = 'one_off', recurrence_rule = NULL, updated_at = $1
+WHERE id = $2 AND space_slug = $3 AND recurrence_type = 'fixed_accumulating'
 `
 
 type ConvertAccumulatingToOneOffParams struct {
-	UpdatedAt types.EpochSeconds
+	UpdatedAt pgtype.Timestamptz
 	ID        int64
 	SpaceSlug string
 }
 
-func (q *Queries) ConvertAccumulatingToOneOff(ctx context.Context, arg ConvertAccumulatingToOneOffParams) (sql.Result, error) {
-	return q.db.ExecContext(ctx, convertAccumulatingToOneOff, arg.UpdatedAt, arg.ID, arg.SpaceSlug)
+func (q *Queries) ConvertAccumulatingToOneOff(ctx context.Context, arg ConvertAccumulatingToOneOffParams) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, convertAccumulatingToOneOff, arg.UpdatedAt, arg.ID, arg.SpaceSlug)
 }
 
 const createTask = `-- name: CreateTask :one
 INSERT INTO tasks (space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 RETURNING id, space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, last_completed_at, created_at, updated_at
 `
 
@@ -39,18 +39,18 @@ type CreateTaskParams struct {
 	Title          string
 	Description    string
 	StatusName     string
-	EffortName     *string
-	PriorityName   *string
-	DueAt          *types.EpochSeconds
-	DueTz          *string
-	RecurrenceType types.RecurrenceType
-	RecurrenceRule *string
-	CreatedAt      types.EpochSeconds
-	UpdatedAt      types.EpochSeconds
+	EffortName     pgtype.Text
+	PriorityName   pgtype.Text
+	DueAt          pgtype.Date
+	DueTz          pgtype.Text
+	RecurrenceType RecurrenceType
+	RecurrenceRule pgtype.Text
+	CreatedAt      pgtype.Timestamptz
+	UpdatedAt      pgtype.Timestamptz
 }
 
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
-	row := q.db.QueryRowContext(ctx, createTask,
+	row := q.db.QueryRow(ctx, createTask,
 		arg.SpaceSlug,
 		arg.Title,
 		arg.Description,
@@ -85,7 +85,7 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 }
 
 const deleteTask = `-- name: DeleteTask :execresult
-DELETE FROM tasks WHERE id = ? AND space_slug = ?
+DELETE FROM tasks WHERE id = $1 AND space_slug = $2
 `
 
 type DeleteTaskParams struct {
@@ -93,12 +93,12 @@ type DeleteTaskParams struct {
 	SpaceSlug string
 }
 
-func (q *Queries) DeleteTask(ctx context.Context, arg DeleteTaskParams) (sql.Result, error) {
-	return q.db.ExecContext(ctx, deleteTask, arg.ID, arg.SpaceSlug)
+func (q *Queries) DeleteTask(ctx context.Context, arg DeleteTaskParams) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, deleteTask, arg.ID, arg.SpaceSlug)
 }
 
 const getTask = `-- name: GetTask :one
-SELECT id, space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, last_completed_at, created_at, updated_at FROM tasks WHERE id = ? AND space_slug = ?
+SELECT id, space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, last_completed_at, created_at, updated_at FROM tasks WHERE id = $1 AND space_slug = $2
 `
 
 type GetTaskParams struct {
@@ -107,7 +107,7 @@ type GetTaskParams struct {
 }
 
 func (q *Queries) GetTask(ctx context.Context, arg GetTaskParams) (Task, error) {
-	row := q.db.QueryRowContext(ctx, getTask, arg.ID, arg.SpaceSlug)
+	row := q.db.QueryRow(ctx, getTask, arg.ID, arg.SpaceSlug)
 	var i Task
 	err := row.Scan(
 		&i.ID,
@@ -132,13 +132,13 @@ const listOverdueAccumulatingTasks = `-- name: ListOverdueAccumulatingTasks :man
 SELECT id, space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, last_completed_at, created_at, updated_at FROM tasks
 WHERE recurrence_type = 'fixed_accumulating'
   AND due_at IS NOT NULL
-  AND due_at <= ?
+  AND due_at <= $1
 ORDER BY space_slug, id ASC
 LIMIT 100
 `
 
-func (q *Queries) ListOverdueAccumulatingTasks(ctx context.Context, dueAt *types.EpochSeconds) ([]Task, error) {
-	rows, err := q.db.QueryContext(ctx, listOverdueAccumulatingTasks, dueAt)
+func (q *Queries) ListOverdueAccumulatingTasks(ctx context.Context, dueAt pgtype.Date) ([]Task, error) {
+	rows, err := q.db.Query(ctx, listOverdueAccumulatingTasks, dueAt)
 	if err != nil {
 		return nil, err
 	}
@@ -165,9 +165,6 @@ func (q *Queries) ListOverdueAccumulatingTasks(ctx context.Context, dueAt *types
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -177,19 +174,19 @@ func (q *Queries) ListOverdueAccumulatingTasks(ctx context.Context, dueAt *types
 
 const listTasksBySpace = `-- name: ListTasksBySpace :many
 SELECT id, space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, last_completed_at, created_at, updated_at FROM tasks
-WHERE space_slug = ? AND id > ?
+WHERE space_slug = $1 AND id > $2
 ORDER BY id ASC
-LIMIT ?
+LIMIT $3
 `
 
 type ListTasksBySpaceParams struct {
 	SpaceSlug string
 	ID        int64
-	Limit     int64
+	Limit     int32
 }
 
 func (q *Queries) ListTasksBySpace(ctx context.Context, arg ListTasksBySpaceParams) ([]Task, error) {
-	rows, err := q.db.QueryContext(ctx, listTasksBySpace, arg.SpaceSlug, arg.ID, arg.Limit)
+	rows, err := q.db.Query(ctx, listTasksBySpace, arg.SpaceSlug, arg.ID, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -217,9 +214,6 @@ func (q *Queries) ListTasksBySpace(ctx context.Context, arg ListTasksBySpacePara
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -228,20 +222,20 @@ func (q *Queries) ListTasksBySpace(ctx context.Context, arg ListTasksBySpacePara
 
 const resetTaskToInitial = `-- name: ResetTaskToInitial :exec
 UPDATE tasks
-SET status_name = ?, updated_at = ?
-WHERE id = ? AND space_slug = ? AND status_name != ?
+SET status_name = $1, updated_at = $2
+WHERE id = $3 AND space_slug = $4 AND status_name != $5
 `
 
 type ResetTaskToInitialParams struct {
 	StatusName   string
-	UpdatedAt    types.EpochSeconds
+	UpdatedAt    pgtype.Timestamptz
 	ID           int64
 	SpaceSlug    string
 	StatusName_2 string
 }
 
 func (q *Queries) ResetTaskToInitial(ctx context.Context, arg ResetTaskToInitialParams) error {
-	_, err := q.db.ExecContext(ctx, resetTaskToInitial,
+	_, err := q.db.Exec(ctx, resetTaskToInitial,
 		arg.StatusName,
 		arg.UpdatedAt,
 		arg.ID,
@@ -253,9 +247,9 @@ func (q *Queries) ResetTaskToInitial(ctx context.Context, arg ResetTaskToInitial
 
 const updateTask = `-- name: UpdateTask :one
 UPDATE tasks
-SET title = ?, description = ?, status_name = ?, effort_name = ?, priority_name = ?, due_at = ?, due_tz = ?,
-    recurrence_type = ?, recurrence_rule = ?, last_completed_at = ?, updated_at = ?
-WHERE id = ? AND space_slug = ?
+SET title = $1, description = $2, status_name = $3, effort_name = $4, priority_name = $5, due_at = $6, due_tz = $7,
+    recurrence_type = $8, recurrence_rule = $9, last_completed_at = $10, updated_at = $11
+WHERE id = $12 AND space_slug = $13
 RETURNING id, space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, last_completed_at, created_at, updated_at
 `
 
@@ -263,20 +257,20 @@ type UpdateTaskParams struct {
 	Title           string
 	Description     string
 	StatusName      string
-	EffortName      *string
-	PriorityName    *string
-	DueAt           *types.EpochSeconds
-	DueTz           *string
-	RecurrenceType  types.RecurrenceType
-	RecurrenceRule  *string
-	LastCompletedAt *types.EpochSeconds
-	UpdatedAt       types.EpochSeconds
+	EffortName      pgtype.Text
+	PriorityName    pgtype.Text
+	DueAt           pgtype.Date
+	DueTz           pgtype.Text
+	RecurrenceType  RecurrenceType
+	RecurrenceRule  pgtype.Text
+	LastCompletedAt pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
 	ID              int64
 	SpaceSlug       string
 }
 
 func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error) {
-	row := q.db.QueryRowContext(ctx, updateTask,
+	row := q.db.QueryRow(ctx, updateTask,
 		arg.Title,
 		arg.Description,
 		arg.StatusName,

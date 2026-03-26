@@ -2,12 +2,12 @@ package api
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
 
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
@@ -62,7 +62,7 @@ func WebLoginHandler(handler *Handler) http.Handler {
 		}
 
 		ctx := r.Context()
-		q := dbgen.New(handler.DB)
+		q := dbgen.New(handler.Pool)
 
 		user, err := validatePassword(ctx, q, req.Email, req.Password)
 		if err != nil {
@@ -99,7 +99,7 @@ func WebLogoutHandler(handler *Handler) http.Handler {
 
 		ctx := r.Context()
 		hash := hashToken(c.Value)
-		q := dbgen.New(handler.DB)
+		q := dbgen.New(handler.Pool)
 		_, _ = q.DeleteAuthTokenByHash(ctx, hash)
 
 		clearSessionCookie(w)
@@ -112,7 +112,7 @@ func WebLogoutHandler(handler *Handler) http.Handler {
 // email enumeration.
 func validatePassword(ctx context.Context, q *dbgen.Queries, email, password string) (dbgen.User, error) {
 	user, err := q.GetUserByEmail(ctx, email)
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, pgx.ErrNoRows) {
 		_ = bcrypt.CompareHashAndPassword(sentinelHash, []byte(password))
 		return dbgen.User{}, errors.New("invalid credentials")
 	}
@@ -120,14 +120,14 @@ func validatePassword(ctx context.Context, q *dbgen.Queries, email, password str
 		return dbgen.User{}, err
 	}
 
-	if user.PasswordHash == nil {
+	if !user.PasswordHash.Valid {
 		// OIDC-only user — no password login allowed. Run bcrypt against
 		// the sentinel hash to prevent timing-based enumeration.
 		_ = bcrypt.CompareHashAndPassword(sentinelHash, []byte(password))
 		return dbgen.User{}, errors.New("invalid credentials")
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(*user.PasswordHash), []byte(password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash.String), []byte(password)); err != nil {
 		return dbgen.User{}, errors.New("invalid credentials")
 	}
 

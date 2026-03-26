@@ -2,28 +2,28 @@ package taskengine
 
 import (
 	"context"
-	"database/sql"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/types"
 )
 
 // ProcessOverdueTasks finds all fixed_accumulating tasks with due_at <= now
 // and processes each one in its own transaction. Errors for individual tasks
 // are returned via the onError callback; processing continues for remaining tasks.
-func ProcessOverdueTasks(ctx context.Context, db *sql.DB, onError func(taskID int64, spaceSlug string, err error)) error {
+func ProcessOverdueTasks(ctx context.Context, pool *pgxpool.Pool, onError func(taskID int64, spaceSlug string, err error)) error {
 	now := time.Now()
-	nowEpoch := types.EpochSecondsFrom(now)
 
-	q := dbgen.New(db)
-	tasks, err := q.ListOverdueAccumulatingTasks(ctx, &nowEpoch)
+	q := dbgen.New(pool)
+	tasks, err := q.ListOverdueAccumulatingTasks(ctx, pgtype.Date{Time: now, Valid: true})
 	if err != nil {
 		return err
 	}
 
 	for _, task := range tasks {
-		if err := processOneOverdueTask(ctx, db, task, now); err != nil {
+		if err := processOneOverdueTask(ctx, pool, task, now); err != nil {
 			if onError != nil {
 				onError(task.ID, task.SpaceSlug, err)
 			}
@@ -34,12 +34,12 @@ func ProcessOverdueTasks(ctx context.Context, db *sql.DB, onError func(taskID in
 
 // processOneOverdueTask processes a single overdue fixed_accumulating task
 // in its own transaction.
-func processOneOverdueTask(ctx context.Context, db *sql.DB, task dbgen.Task, now time.Time) error {
-	tx, err := db.BeginTx(ctx, nil)
+func processOneOverdueTask(ctx context.Context, pool *pgxpool.Pool, task dbgen.Task, now time.Time) error {
+	tx, err := pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := dbgen.New(tx)
 
@@ -48,7 +48,7 @@ func processOneOverdueTask(ctx context.Context, db *sql.DB, task dbgen.Task, now
 		return err
 	}
 
-	if existing.RecurrenceType != types.RecurrenceTypeFixedAccumulating || existing.DueAt == nil || existing.DueAt.Time().After(now) {
+	if existing.RecurrenceType != dbgen.RecurrenceTypeFixedAccumulating || !existing.DueAt.Valid || existing.DueAt.Time.After(now) {
 		return nil
 	}
 
@@ -56,5 +56,5 @@ func processOneOverdueTask(ctx context.Context, db *sql.DB, task dbgen.Task, now
 		return err
 	}
 
-	return tx.Commit()
+	return tx.Commit(ctx)
 }

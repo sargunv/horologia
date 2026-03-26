@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/teambition/rrule-go"
 
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
@@ -14,17 +15,17 @@ import (
 // ValidateRecurrence checks that the recurrence_type and recurrence_rule
 // combination is valid. Call this on both create and update paths.
 // The now parameter is used for time-dependent validation (e.g., UNTIL cap).
-func ValidateRecurrence(recurrenceType types.RecurrenceType, recurrenceRule *string, now time.Time) error {
+func ValidateRecurrence(recurrenceType dbgen.RecurrenceType, recurrenceRule pgtype.Text, now time.Time) error {
 	switch recurrenceType {
-	case types.RecurrenceTypeOneOff, types.RecurrenceTypeOnDependency:
-		if recurrenceRule != nil {
+	case dbgen.RecurrenceTypeOneOff, dbgen.RecurrenceTypeOnDependency:
+		if recurrenceRule.Valid {
 			return types.ValidationError(fmt.Sprintf("recurrence_rule must not be set for %s tasks", recurrenceType))
 		}
-	case types.RecurrenceTypeCompletionBased, types.RecurrenceTypeFixedNonAccumulating, types.RecurrenceTypeFixedAccumulating:
-		if recurrenceRule == nil {
+	case dbgen.RecurrenceTypeCompletionBased, dbgen.RecurrenceTypeFixedNonAccumulating, dbgen.RecurrenceTypeFixedAccumulating:
+		if !recurrenceRule.Valid {
 			return types.ValidationError(fmt.Sprintf("recurrence_rule is required for %s tasks", recurrenceType))
 		}
-		if err := validateRRule(*recurrenceRule, now); err != nil {
+		if err := validateRRule(recurrenceRule.String, now); err != nil {
 			return err
 		}
 	default:
@@ -84,11 +85,11 @@ func validateRRule(rule string, now time.Time) error {
 // DueDate preserves the timezone from the input (defaulting to "UTC").
 //
 //   - completion_based: DTSTART is now (completion time) in the task's timezone.
-//   - fixed_non_accumulating / fixed_accumulating: DTSTART is the current due_at
+//   - fixed_non_accumulating / fixed_accumulating: DTSTART is the current due date
 //     in the task's timezone; next occurrence after now.
 //
 // Precondition: ValidateRecurrence must have been called first.
-func ComputeNextDueAt(recurrenceType types.RecurrenceType, recurrenceRule *string, due *types.DueDate, now time.Time) (*types.DueDate, error) {
+func ComputeNextDueAt(recurrenceType dbgen.RecurrenceType, recurrenceRule pgtype.Text, due *types.DueDate, now time.Time) (*types.DueDate, error) {
 	tz := "UTC"
 	if due != nil {
 		tz = due.Tz
@@ -100,17 +101,17 @@ func ComputeNextDueAt(recurrenceType types.RecurrenceType, recurrenceRule *strin
 
 	nowInTz := now.In(loc)
 
-	var nextAt *types.EpochSeconds
+	var nextDate *time.Time
 	switch recurrenceType {
-	case types.RecurrenceTypeCompletionBased:
-		nextAt, err = nextRRuleOccurrence(*recurrenceRule, nowInTz, nowInTz)
-	case types.RecurrenceTypeFixedNonAccumulating, types.RecurrenceTypeFixedAccumulating:
+	case dbgen.RecurrenceTypeCompletionBased:
+		nextDate, err = nextRRuleOccurrence(recurrenceRule.String, nowInTz, nowInTz)
+	case dbgen.RecurrenceTypeFixedNonAccumulating, dbgen.RecurrenceTypeFixedAccumulating:
 		dtstart := nowInTz
 		if due != nil {
-			dtstart = due.At.Time().In(loc)
+			dtstart = due.Date.In(loc)
 		}
-		nextAt, err = nextRRuleOccurrence(*recurrenceRule, dtstart, nowInTz)
-	case types.RecurrenceTypeOneOff, types.RecurrenceTypeOnDependency:
+		nextDate, err = nextRRuleOccurrence(recurrenceRule.String, dtstart, nowInTz)
+	case dbgen.RecurrenceTypeOneOff, dbgen.RecurrenceTypeOnDependency:
 		return nil, nil
 	default:
 		return nil, fmt.Errorf("unhandled recurrence type %q", recurrenceType)
@@ -118,15 +119,15 @@ func ComputeNextDueAt(recurrenceType types.RecurrenceType, recurrenceRule *strin
 	if err != nil {
 		return nil, err
 	}
-	if nextAt == nil {
+	if nextDate == nil {
 		return nil, nil
 	}
-	return &types.DueDate{At: *nextAt, Tz: tz}, nil
+	return &types.DueDate{Date: *nextDate, Tz: tz}, nil
 }
 
 // nextRRuleOccurrence parses the rule, sets dtstart, and finds the first
 // occurrence strictly after `after`. Returns nil if no future occurrence exists.
-func nextRRuleOccurrence(rule string, dtstart time.Time, after time.Time) (*types.EpochSeconds, error) {
+func nextRRuleOccurrence(rule string, dtstart time.Time, after time.Time) (*time.Time, error) {
 	opt, err := rrule.StrToROption(rule)
 	if err != nil {
 		return nil, fmt.Errorf("invalid recurrence_rule: %w", err)
@@ -144,15 +145,14 @@ func nextRRuleOccurrence(rule string, dtstart time.Time, after time.Time) (*type
 	}
 
 	midnight := time.Date(next.Year(), next.Month(), next.Day(), 0, 0, 0, 0, next.Location())
-	es := types.EpochSecondsFrom(midnight)
-	return &es, nil
+	return &midnight, nil
 }
 
 // InitialStatusFromSlice returns the name of the first initial-category status
 // from a pre-fetched slice. Returns a validation error if none exists.
 func InitialStatusFromSlice(statuses []dbgen.TaskStatus) (string, error) {
 	for _, s := range statuses {
-		if s.Category == types.StatusCategoryInitial {
+		if s.Category == dbgen.StatusCategoryInitial {
 			return s.Name, nil
 		}
 	}
@@ -173,7 +173,7 @@ func FindInitialStatus(ctx context.Context, q *dbgen.Queries, spaceSlug string) 
 // the completed task. Only resets tasks with on_dependency recurrence type.
 // Single-level only — ResetTaskToInitial writes directly to the DB and does not
 // re-enter the update handler, so trigger cascades cannot occur.
-func ApplyCompletionTriggers(ctx context.Context, q *dbgen.Queries, completedTaskID int64, spaceSlug string, now types.EpochSeconds) error {
+func ApplyCompletionTriggers(ctx context.Context, q *dbgen.Queries, completedTaskID int64, spaceSlug string, now pgtype.Timestamptz) error {
 	targets, err := q.ListTriggerTargets(ctx, dbgen.ListTriggerTargetsParams{
 		SourceTaskID: completedTaskID,
 		SpaceSlug:    spaceSlug,
@@ -196,7 +196,7 @@ func ApplyCompletionTriggers(ctx context.Context, q *dbgen.Queries, completedTas
 		if err != nil {
 			return err
 		}
-		if target.RecurrenceType != types.RecurrenceTypeOnDependency {
+		if target.RecurrenceType != dbgen.RecurrenceTypeOnDependency {
 			continue
 		}
 		if err := q.ResetTaskToInitial(ctx, dbgen.ResetTaskToInitialParams{

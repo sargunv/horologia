@@ -7,24 +7,23 @@ package gen
 
 import (
 	"context"
-	"strings"
 
-	"github.com/sargunv/tend/server/internal/types"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const deleteTaskAssignees = `-- name: DeleteTaskAssignees :exec
-DELETE FROM task_assignees WHERE task_id = ?
+DELETE FROM task_assignees WHERE task_id = $1
 `
 
 func (q *Queries) DeleteTaskAssignees(ctx context.Context, taskID int64) error {
-	_, err := q.db.ExecContext(ctx, deleteTaskAssignees, taskID)
+	_, err := q.db.Exec(ctx, deleteTaskAssignees, taskID)
 	return err
 }
 
 const deleteTaskAssigneesBySpaceAndUser = `-- name: DeleteTaskAssigneesBySpaceAndUser :exec
 DELETE FROM task_assignees
-WHERE user_id = ?
-  AND task_id IN (SELECT id FROM tasks WHERE space_slug = ?)
+WHERE user_id = $1
+  AND task_id IN (SELECT id FROM tasks WHERE space_slug = $2)
 `
 
 type DeleteTaskAssigneesBySpaceAndUserParams struct {
@@ -33,34 +32,34 @@ type DeleteTaskAssigneesBySpaceAndUserParams struct {
 }
 
 func (q *Queries) DeleteTaskAssigneesBySpaceAndUser(ctx context.Context, arg DeleteTaskAssigneesBySpaceAndUserParams) error {
-	_, err := q.db.ExecContext(ctx, deleteTaskAssigneesBySpaceAndUser, arg.UserID, arg.SpaceSlug)
+	_, err := q.db.Exec(ctx, deleteTaskAssigneesBySpaceAndUser, arg.UserID, arg.SpaceSlug)
 	return err
 }
 
 const insertTaskAssignee = `-- name: InsertTaskAssignee :exec
 INSERT INTO task_assignees (task_id, user_id, created_at)
-VALUES (?, ?, ?)
+VALUES ($1, $2, $3)
 `
 
 type InsertTaskAssigneeParams struct {
 	TaskID    int64
 	UserID    int64
-	CreatedAt types.EpochSeconds
+	CreatedAt pgtype.Timestamptz
 }
 
 func (q *Queries) InsertTaskAssignee(ctx context.Context, arg InsertTaskAssigneeParams) error {
-	_, err := q.db.ExecContext(ctx, insertTaskAssignee, arg.TaskID, arg.UserID, arg.CreatedAt)
+	_, err := q.db.Exec(ctx, insertTaskAssignee, arg.TaskID, arg.UserID, arg.CreatedAt)
 	return err
 }
 
 const listAssigneeUserIDsByTask = `-- name: ListAssigneeUserIDsByTask :many
 SELECT user_id FROM task_assignees
-WHERE task_id = ?
+WHERE task_id = $1
 ORDER BY user_id ASC
 `
 
 func (q *Queries) ListAssigneeUserIDsByTask(ctx context.Context, taskID int64) ([]int64, error) {
-	rows, err := q.db.QueryContext(ctx, listAssigneeUserIDsByTask, taskID)
+	rows, err := q.db.Query(ctx, listAssigneeUserIDsByTask, taskID)
 	if err != nil {
 		return nil, err
 	}
@@ -73,9 +72,6 @@ func (q *Queries) ListAssigneeUserIDsByTask(ctx context.Context, taskID int64) (
 		}
 		items = append(items, user_id)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -84,7 +80,7 @@ func (q *Queries) ListAssigneeUserIDsByTask(ctx context.Context, taskID int64) (
 
 const listAssigneeUserIDsByTasks = `-- name: ListAssigneeUserIDsByTasks :many
 SELECT task_id, user_id FROM task_assignees
-WHERE task_id IN (/*SLICE:task_ids*/?)
+WHERE task_id = ANY($1::bigint[])
 ORDER BY task_id, user_id
 `
 
@@ -94,17 +90,7 @@ type ListAssigneeUserIDsByTasksRow struct {
 }
 
 func (q *Queries) ListAssigneeUserIDsByTasks(ctx context.Context, taskIds []int64) ([]ListAssigneeUserIDsByTasksRow, error) {
-	query := listAssigneeUserIDsByTasks
-	var queryParams []interface{}
-	if len(taskIds) > 0 {
-		for _, v := range taskIds {
-			queryParams = append(queryParams, v)
-		}
-		query = strings.Replace(query, "/*SLICE:task_ids*/?", strings.Repeat(",?", len(taskIds))[1:], 1)
-	} else {
-		query = strings.Replace(query, "/*SLICE:task_ids*/?", "NULL", 1)
-	}
-	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	rows, err := q.db.Query(ctx, listAssigneeUserIDsByTasks, taskIds)
 	if err != nil {
 		return nil, err
 	}
@@ -116,9 +102,6 @@ func (q *Queries) ListAssigneeUserIDsByTasks(ctx context.Context, taskIds []int6
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

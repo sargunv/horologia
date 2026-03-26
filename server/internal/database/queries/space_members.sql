@@ -1,11 +1,11 @@
 -- name: CreateSpaceMember :one
 INSERT INTO space_members (space_slug, user_id, role, created_at)
-VALUES (?, ?, ?, ?)
+VALUES ($1, $2, $3, $4)
 RETURNING *;
 
 -- name: GetSpaceMember :one
 SELECT * FROM space_members
-WHERE space_slug = ? AND user_id = ?;
+WHERE space_slug = $1 AND user_id = $2;
 
 -- name: ListSpaceMembersBySpace :many
 SELECT
@@ -17,31 +17,31 @@ SELECT
     u.email AS user_email
 FROM space_members sm
 JOIN users u ON u.id = sm.user_id
-WHERE sm.space_slug = ? AND sm.user_id > ?
+WHERE sm.space_slug = $1 AND sm.user_id > $2
 ORDER BY sm.user_id ASC
-LIMIT ?;
+LIMIT $3;
 
 -- name: ListSpacesByUser :many
 SELECT s.* FROM spaces s
 JOIN space_members sm ON sm.space_slug = s.slug
-WHERE sm.user_id = ? AND s.slug > ?
+WHERE sm.user_id = $1 AND s.slug > $2
 ORDER BY s.slug ASC
-LIMIT ?;
+LIMIT $3;
 
 -- name: UpdateSpaceMemberRole :one
 UPDATE space_members
-SET role = ?
-WHERE space_slug = ? AND user_id = ?
+SET role = $1
+WHERE space_slug = $2 AND user_id = $3
 RETURNING *;
 
 -- name: CountSpaceAdmins :one
 SELECT COUNT(*) FROM space_members
-WHERE space_slug = ? AND role = 'admin';
+WHERE space_slug = $1 AND role = 'admin';
 
 -- name: ListSpaceMemberUserIDs :many
 SELECT user_id FROM space_members
-WHERE space_slug = ?
+WHERE space_slug = $1
 ORDER BY user_id ASC;
 
 -- name: DeleteSpaceMember :execresult
-DELETE FROM space_members WHERE space_slug = ? AND user_id = ?;
+DELETE FROM space_members WHERE space_slug = $1 AND user_id = $2;

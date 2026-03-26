@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
+
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
@@ -17,10 +19,10 @@ const (
 	maxLimit     = 100
 )
 
-func clampLimit(opt apigen.OptInt32) int64 {
-	limit := int64(defaultLimit)
+func clampLimit(opt apigen.OptInt32) int32 {
+	limit := int32(defaultLimit)
 	if opt.IsSet() {
-		limit = int64(opt.Value)
+		limit = opt.Value
 	}
 	if limit <= 0 {
 		limit = defaultLimit
@@ -75,13 +77,21 @@ func parseTaskID(s string) (int64, error) {
 	return id, nil
 }
 
+func tsToTime(ts pgtype.Timestamptz) time.Time {
+	return ts.Time
+}
+
+func timeToTS(t time.Time) pgtype.Timestamptz {
+	return pgtype.Timestamptz{Time: t, Valid: true}
+}
+
 func spaceFromDB(s dbgen.Space) *apigen.Space {
 	return &apigen.Space{
 		Slug:        s.Slug,
 		Name:        s.Name,
 		Description: s.Description,
-		CreatedAt:   s.CreatedAt.Time(),
-		UpdatedAt:   s.UpdatedAt.Time(),
+		CreatedAt:   tsToTime(s.CreatedAt),
+		UpdatedAt:   tsToTime(s.UpdatedAt),
 	}
 }
 
@@ -90,8 +100,8 @@ func spaceFromDB(s dbgen.Space) *apigen.Space {
 type taskRelationRow struct {
 	SourceTaskID int64
 	TargetTaskID int64
-	Kind         types.StoredRelationKind
-	CreatedAt    types.EpochSeconds
+	Kind         dbgen.StoredRelationKind
+	CreatedAt    pgtype.Timestamptz
 }
 
 // directedKindMap maps API-facing directed relation kinds to their stored canonical kind,
@@ -102,22 +112,22 @@ type taskRelationRow struct {
 // (parent/child, blocking, triggering); false for relations specific to a particular
 // instance (duplicates, spawn lineage).
 var directedKindMap = map[apigen.TaskRelationKind]struct {
-	storedKind types.StoredRelationKind
+	storedKind dbgen.StoredRelationKind
 	flip       bool
 }{
-	apigen.TaskRelationKindParentOf:    {types.RelationKindParent, false},
-	apigen.TaskRelationKindChildOf:     {types.RelationKindParent, true},
-	apigen.TaskRelationKindBlocks:      {types.RelationKindBlocks, false},
-	apigen.TaskRelationKindBlockedBy:   {types.RelationKindBlocks, true},
-	apigen.TaskRelationKindTriggers:    {types.RelationKindTriggers, false},
-	apigen.TaskRelationKindTriggeredBy: {types.RelationKindTriggers, true},
-	apigen.TaskRelationKindSpawns:      {types.RelationKindSpawns, false},
-	apigen.TaskRelationKindSpawnedBy:   {types.RelationKindSpawns, true},
+	apigen.TaskRelationKindParentOf:    {dbgen.StoredRelationKindParent, false},
+	apigen.TaskRelationKindChildOf:     {dbgen.StoredRelationKindParent, true},
+	apigen.TaskRelationKindBlocks:      {dbgen.StoredRelationKindBlocks, false},
+	apigen.TaskRelationKindBlockedBy:   {dbgen.StoredRelationKindBlocks, true},
+	apigen.TaskRelationKindTriggers:    {dbgen.StoredRelationKindTriggers, false},
+	apigen.TaskRelationKindTriggeredBy: {dbgen.StoredRelationKindTriggers, true},
+	apigen.TaskRelationKindSpawns:      {dbgen.StoredRelationKindSpawns, false},
+	apigen.TaskRelationKindSpawnedBy:   {dbgen.StoredRelationKindSpawns, true},
 }
 
 // relationKey identifies a stored relation by its canonical kind and direction.
 type relationKey struct {
-	kind types.StoredRelationKind
+	kind dbgen.StoredRelationKind
 	flip bool
 }
 
@@ -126,9 +136,9 @@ type relationKey struct {
 var inverseKindMap map[relationKey]apigen.TaskRelationKind
 
 // symmetricKinds lists stored relation kinds that are symmetric (same kind in both directions).
-var symmetricKinds = map[types.StoredRelationKind]struct{}{
-	types.RelationKindRelatesTo:  {},
-	types.RelationKindDuplicates: {},
+var symmetricKinds = map[dbgen.StoredRelationKind]struct{}{
+	dbgen.StoredRelationKindRelatesTo:  {},
+	dbgen.StoredRelationKindDuplicates: {},
 }
 
 func init() {
@@ -163,11 +173,11 @@ func relationFromDB(rel taskRelationRow, perspectiveTaskID int64) (apigen.TaskRe
 	return apigen.TaskRelation{
 		Kind:      kind,
 		TaskId:    formatTaskID(relatedID),
-		CreatedAt: rel.CreatedAt.Time(),
+		CreatedAt: tsToTime(rel.CreatedAt),
 	}, nil
 }
 
-func canonicalizeRelation(kind apigen.TaskRelationKind, sourceID, targetID int64) (storedKind types.StoredRelationKind, storedSource, storedTarget int64, err error) {
+func canonicalizeRelation(kind apigen.TaskRelationKind, sourceID, targetID int64) (storedKind dbgen.StoredRelationKind, storedSource, storedTarget int64, err error) {
 	if c, ok := directedKindMap[kind]; ok {
 		if c.flip {
 			sourceID, targetID = targetID, sourceID
@@ -175,7 +185,7 @@ func canonicalizeRelation(kind apigen.TaskRelationKind, sourceID, targetID int64
 		return c.storedKind, sourceID, targetID, nil
 	}
 	// Symmetric kinds: normalize order so the lower ID is always source.
-	sk := types.StoredRelationKind(kind)
+	sk := dbgen.StoredRelationKind(kind)
 	if _, ok := symmetricKinds[sk]; !ok {
 		return "", 0, 0, fmt.Errorf("unknown relation kind %q", kind)
 	}
@@ -214,21 +224,21 @@ func taskFromDB(task dbgen.Task, assigneeUserIDs []int64, tagNames []string, rel
 		RotationPool:   poolIDs,
 		Tags:           tagNames,
 		Relations:      apiRelations,
-		CreatedAt:      task.CreatedAt.Time(),
-		UpdatedAt:      task.UpdatedAt.Time(),
+		CreatedAt:      tsToTime(task.CreatedAt),
+		UpdatedAt:      tsToTime(task.UpdatedAt),
 	}
 
 	if due := types.NewDueDate(task.DueAt, task.DueTz); due != nil {
 		t.Due.SetTo(apigen.TaskDue{
-			At:       due.At.Time(),
+			At:       due.Date,
 			Timezone: due.Tz,
 		})
 	} else {
 		t.Due.SetToNull()
 	}
 
-	if task.LastCompletedAt != nil {
-		t.LastCompletedAt.SetTo(task.LastCompletedAt.Time())
+	if task.LastCompletedAt.Valid {
+		t.LastCompletedAt.SetTo(task.LastCompletedAt.Time)
 	} else {
 		t.LastCompletedAt.SetToNull()
 	}
@@ -250,11 +260,11 @@ func convertEach[DB any, API any](f func(DB) *API) func([]DB) ([]API, error) {
 
 func paginate[DB any, API any](
 	rows []DB,
-	limit int64,
+	limit int32,
 	convertAll func([]DB) ([]API, error),
 	cursorOf func(DB) string,
 ) ([]API, apigen.NilString, error) {
-	hasMore := int64(len(rows)) > limit
+	hasMore := len(rows) > int(limit)
 	if hasMore {
 		rows = rows[:limit]
 	}
@@ -281,8 +291,8 @@ func dueToDB(opt apigen.OptNilTaskDue) (*types.DueDate, error) {
 		return nil, badRequest(fmt.Sprintf("invalid timezone %q", opt.Value.Timezone))
 	}
 	return &types.DueDate{
-		At: types.EpochSecondsFrom(opt.Value.At),
-		Tz: opt.Value.Timezone,
+		Date: opt.Value.At,
+		Tz:   opt.Value.Timezone,
 	}, nil
 }
 
@@ -323,9 +333,9 @@ func userFromDB(u dbgen.User) *apigen.User {
 		ID:        formatUserID(u.ID),
 		Email:     u.Email,
 		Name:      u.Name,
-		IsOwner:   u.IsOwner.Bool(),
-		CreatedAt: u.CreatedAt.Time(),
-		UpdatedAt: u.UpdatedAt.Time(),
+		IsOwner:   u.IsOwner,
+		CreatedAt: tsToTime(u.CreatedAt),
+		UpdatedAt: tsToTime(u.UpdatedAt),
 	}
 }
 
@@ -334,17 +344,17 @@ func authTokenFromDB(t dbgen.AuthToken) *apigen.AuthToken {
 		ID:        strconv.FormatInt(t.ID, 10),
 		Name:      t.Name,
 		Kind:      apigen.AuthTokenKind(t.Kind),
-		CreatedAt: t.CreatedAt.Time(),
+		CreatedAt: tsToTime(t.CreatedAt),
 	}
 }
 
-func memberToAPI(userID int64, userName, userEmail string, role types.SpaceRole, createdAt types.EpochSeconds) *apigen.SpaceMember {
+func memberToAPI(userID int64, userName, userEmail string, role dbgen.SpaceRole, createdAt pgtype.Timestamptz) *apigen.SpaceMember {
 	return &apigen.SpaceMember{
 		UserId:    formatUserID(userID),
 		UserName:  userName,
 		UserEmail: userEmail,
 		Role:      apigen.SpaceRole(role),
-		CreatedAt: createdAt.Time(),
+		CreatedAt: tsToTime(createdAt),
 	}
 }
 
@@ -358,7 +368,7 @@ func validateTagName(name string) error {
 func tagFromDB(t dbgen.Tag) *apigen.Tag {
 	return &apigen.Tag{
 		Name:      t.Name,
-		CreatedAt: t.CreatedAt.Time(),
+		CreatedAt: tsToTime(t.CreatedAt),
 	}
 }
 
@@ -366,48 +376,46 @@ func statusFromDB(s dbgen.TaskStatus) *apigen.TaskStatus {
 	return &apigen.TaskStatus{
 		Name:     s.Name,
 		Category: apigen.TaskStatusCategory(s.Category),
-		Position: s.Position,
+		Position: int64(s.Position),
 	}
 }
 
 func effortLevelFromDB(e dbgen.TaskEffortLevel) *apigen.TaskEffortLevel {
 	return &apigen.TaskEffortLevel{
 		Name:     e.Name,
-		Position: e.Position,
+		Position: int64(e.Position),
 	}
 }
 
 func priorityLevelFromDB(p dbgen.TaskPriorityLevel) *apigen.TaskPriorityLevel {
 	return &apigen.TaskPriorityLevel{
 		Name:     p.Name,
-		Position: p.Position,
+		Position: int64(p.Position),
 	}
 }
 
-func nilStringFromDB(s *string) apigen.NilString {
-	if s != nil {
-		return apigen.NewNilString(*s)
+func nilStringFromDB(s pgtype.Text) apigen.NilString {
+	if s.Valid {
+		return apigen.NewNilString(s.String)
 	}
 	var ns apigen.NilString
 	ns.SetToNull()
 	return ns
 }
 
-func optStringToDB(opt apigen.OptString) *string {
+func optStringToDB(opt apigen.OptString) pgtype.Text {
 	if !opt.IsSet() {
-		return nil
+		return pgtype.Text{}
 	}
-	s := opt.Value
-	return &s
+	return pgtype.Text{String: opt.Value, Valid: true}
 }
 
-func optNilStringToDB(opt apigen.OptNilString, existing *string) *string {
+func optNilStringToDB(opt apigen.OptNilString, existing pgtype.Text) pgtype.Text {
 	if !opt.IsSet() {
 		return existing
 	}
 	if opt.IsNull() {
-		return nil
+		return pgtype.Text{}
 	}
-	s := opt.Value
-	return &s
+	return pgtype.Text{String: opt.Value, Valid: true}
 }

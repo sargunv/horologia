@@ -7,14 +7,14 @@ package gen
 
 import (
 	"context"
-	"database/sql"
 
-	"github.com/sargunv/tend/server/internal/types"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createAuthToken = `-- name: CreateAuthToken :one
 INSERT INTO auth_tokens (user_id, token_hash, name, kind, expires_at, created_at)
-VALUES (?, ?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING id, user_id, token_hash, name, kind, expires_at, created_at
 `
 
@@ -22,13 +22,13 @@ type CreateAuthTokenParams struct {
 	UserID    int64
 	TokenHash string
 	Name      string
-	Kind      types.AuthTokenKind
-	ExpiresAt *types.EpochSeconds
-	CreatedAt types.EpochSeconds
+	Kind      AuthTokenKind
+	ExpiresAt pgtype.Timestamptz
+	CreatedAt pgtype.Timestamptz
 }
 
 func (q *Queries) CreateAuthToken(ctx context.Context, arg CreateAuthTokenParams) (AuthToken, error) {
-	row := q.db.QueryRowContext(ctx, createAuthToken,
+	row := q.db.QueryRow(ctx, createAuthToken,
 		arg.UserID,
 		arg.TokenHash,
 		arg.Name,
@@ -50,7 +50,7 @@ func (q *Queries) CreateAuthToken(ctx context.Context, arg CreateAuthTokenParams
 }
 
 const deleteAuthToken = `-- name: DeleteAuthToken :execresult
-DELETE FROM auth_tokens WHERE id = ? AND user_id = ?
+DELETE FROM auth_tokens WHERE id = $1 AND user_id = $2
 `
 
 type DeleteAuthTokenParams struct {
@@ -58,16 +58,16 @@ type DeleteAuthTokenParams struct {
 	UserID int64
 }
 
-func (q *Queries) DeleteAuthToken(ctx context.Context, arg DeleteAuthTokenParams) (sql.Result, error) {
-	return q.db.ExecContext(ctx, deleteAuthToken, arg.ID, arg.UserID)
+func (q *Queries) DeleteAuthToken(ctx context.Context, arg DeleteAuthTokenParams) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, deleteAuthToken, arg.ID, arg.UserID)
 }
 
 const deleteAuthTokenByHash = `-- name: DeleteAuthTokenByHash :execresult
-DELETE FROM auth_tokens WHERE token_hash = ?
+DELETE FROM auth_tokens WHERE token_hash = $1
 `
 
-func (q *Queries) DeleteAuthTokenByHash(ctx context.Context, tokenHash string) (sql.Result, error) {
-	return q.db.ExecContext(ctx, deleteAuthTokenByHash, tokenHash)
+func (q *Queries) DeleteAuthTokenByHash(ctx context.Context, tokenHash string) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, deleteAuthTokenByHash, tokenHash)
 }
 
 const getAuthTokenByHash = `-- name: GetAuthTokenByHash :one
@@ -85,7 +85,7 @@ SELECT
     u.is_owner   AS user_is_owner
 FROM auth_tokens t
 JOIN users u ON u.id = t.user_id
-WHERE t.token_hash = ?
+WHERE t.token_hash = $1
 `
 
 type GetAuthTokenByHashRow struct {
@@ -93,17 +93,17 @@ type GetAuthTokenByHashRow struct {
 	UserID      int64
 	TokenHash   string
 	Name        string
-	Kind        types.AuthTokenKind
-	ExpiresAt   *types.EpochSeconds
-	CreatedAt   types.EpochSeconds
+	Kind        AuthTokenKind
+	ExpiresAt   pgtype.Timestamptz
+	CreatedAt   pgtype.Timestamptz
 	UserID2     int64
 	UserEmail   string
 	UserName    string
-	UserIsOwner types.BoolInt
+	UserIsOwner bool
 }
 
 func (q *Queries) GetAuthTokenByHash(ctx context.Context, tokenHash string) (GetAuthTokenByHashRow, error) {
-	row := q.db.QueryRowContext(ctx, getAuthTokenByHash, tokenHash)
+	row := q.db.QueryRow(ctx, getAuthTokenByHash, tokenHash)
 	var i GetAuthTokenByHashRow
 	err := row.Scan(
 		&i.ID,
@@ -123,19 +123,19 @@ func (q *Queries) GetAuthTokenByHash(ctx context.Context, tokenHash string) (Get
 
 const listAuthTokensByUser = `-- name: ListAuthTokensByUser :many
 SELECT id, user_id, token_hash, name, kind, expires_at, created_at FROM auth_tokens
-WHERE user_id = ? AND id > ?
+WHERE user_id = $1 AND id > $2
 ORDER BY id ASC
-LIMIT ?
+LIMIT $3
 `
 
 type ListAuthTokensByUserParams struct {
 	UserID int64
 	ID     int64
-	Limit  int64
+	Limit  int32
 }
 
 func (q *Queries) ListAuthTokensByUser(ctx context.Context, arg ListAuthTokensByUserParams) ([]AuthToken, error) {
-	rows, err := q.db.QueryContext(ctx, listAuthTokensByUser, arg.UserID, arg.ID, arg.Limit)
+	rows, err := q.db.Query(ctx, listAuthTokensByUser, arg.UserID, arg.ID, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -155,9 +155,6 @@ func (q *Queries) ListAuthTokensByUser(ctx context.Context, arg ListAuthTokensBy
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

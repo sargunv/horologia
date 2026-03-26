@@ -7,37 +7,35 @@ import (
 	"fmt"
 	"io/fs"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
-	_ "modernc.org/sqlite"
 )
 
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
 
-// Open opens a SQLite database at the given path and configures pragmas
-// (foreign keys, WAL mode, busy timeout). It does not run migrations.
-func Open(path string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite", path)
+// OpenPool opens a pgx connection pool for the given connection string.
+// The connStr should be a PostgreSQL URI, e.g. "postgres://user:pass@host/dbname".
+func OpenPool(ctx context.Context, connStr string) (*pgxpool.Pool, error) {
+	pool, err := pgxpool.New(ctx, connStr)
 	if err != nil {
-		return nil, fmt.Errorf("open sqlite: %w", err)
+		return nil, fmt.Errorf("open pool: %w", err)
 	}
-
-	db.SetMaxOpenConns(1)
-	db.SetMaxIdleConns(1)
-
-	pragmas := []string{
-		"PRAGMA foreign_keys = ON",
-		"PRAGMA journal_mode = WAL",
-		"PRAGMA busy_timeout = 5000",
-		"PRAGMA synchronous = NORMAL",
+	if err := pool.Ping(ctx); err != nil {
+		pool.Close()
+		return nil, fmt.Errorf("ping postgres: %w", err)
 	}
-	for _, p := range pragmas {
-		if _, err := db.ExecContext(context.Background(), p); err != nil {
-			_ = db.Close()
-			return nil, fmt.Errorf("pragma %q: %w", p, err)
-		}
-	}
+	return pool, nil
+}
 
+// OpenSQL opens a database/sql connection for use with goose migrations.
+// The connStr should be a PostgreSQL URI, e.g. "postgres://user:pass@host/dbname".
+func OpenSQL(connStr string) (*sql.DB, error) {
+	db, err := sql.Open("pgx", connStr)
+	if err != nil {
+		return nil, fmt.Errorf("open sql: %w", err)
+	}
 	return db, nil
 }
 
@@ -49,7 +47,7 @@ func NewMigrator(db *sql.DB) (*goose.Provider, error) {
 		return nil, fmt.Errorf("migrations fs: %w", err)
 	}
 
-	provider, err := goose.NewProvider(goose.DialectSQLite3, db, migrations)
+	provider, err := goose.NewProvider(goose.DialectPostgres, db, migrations)
 	if err != nil {
 		return nil, fmt.Errorf("goose provider: %w", err)
 	}

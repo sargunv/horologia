@@ -3,6 +3,9 @@ package taskengine
 import (
 	"context"
 	"fmt"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
@@ -12,10 +15,10 @@ import (
 // status transition for completion logic.
 type CompletionResult struct {
 	Status          string
-	RecurrenceType  types.RecurrenceType
-	RecurrenceRule  *string
+	RecurrenceType  dbgen.RecurrenceType
+	RecurrenceRule  pgtype.Text
 	Due             *types.DueDate
-	LastCompletedAt *types.EpochSeconds
+	LastCompletedAt pgtype.Timestamptz
 	JustCompleted   bool
 }
 
@@ -31,13 +34,13 @@ func HandleCompletionTransition(
 	q *dbgen.Queries,
 	existing dbgen.Task,
 	newStatus string,
-	recurrenceType types.RecurrenceType,
-	recurrenceRule *string,
+	recurrenceType dbgen.RecurrenceType,
+	recurrenceRule pgtype.Text,
 	due *types.DueDate,
-	lastCompletedAt *types.EpochSeconds,
+	lastCompletedAt pgtype.Timestamptz,
 	spaceSlug string,
 	taskID int64,
-	now types.EpochSeconds,
+	now time.Time,
 ) (*CompletionResult, error) {
 	result := &CompletionResult{
 		Status:          newStatus,
@@ -56,7 +59,7 @@ func HandleCompletionTransition(
 		return nil, err
 	}
 
-	categoryOf := func(name string) types.StatusCategory {
+	categoryOf := func(name string) dbgen.StatusCategory {
 		for _, s := range statuses {
 			if s.Name == name {
 				return s.Category
@@ -65,24 +68,24 @@ func HandleCompletionTransition(
 		return ""
 	}
 
-	oldIsCompletion := categoryOf(existing.StatusName) == types.StatusCategoryCompletion
-	newIsCompletion := categoryOf(newStatus) == types.StatusCategoryCompletion
+	oldIsCompletion := categoryOf(existing.StatusName) == dbgen.StatusCategoryCompletion
+	newIsCompletion := categoryOf(newStatus) == dbgen.StatusCategoryCompletion
 
 	if oldIsCompletion || !newIsCompletion {
 		return result, nil
 	}
 
 	result.JustCompleted = true
-	result.LastCompletedAt = &now
+	result.LastCompletedAt = pgtype.Timestamptz{Time: now, Valid: true}
 
 	existingDue := types.NewDueDate(existing.DueAt, existing.DueTz)
 
 	switch recurrenceType {
-	case types.RecurrenceTypeOneOff, types.RecurrenceTypeOnDependency:
+	case dbgen.RecurrenceTypeOneOff, dbgen.RecurrenceTypeOnDependency:
 		// no special completion behavior
 
-	case types.RecurrenceTypeCompletionBased, types.RecurrenceTypeFixedNonAccumulating:
-		next, err := ComputeNextDueAt(recurrenceType, recurrenceRule, existingDue, now.Time())
+	case dbgen.RecurrenceTypeCompletionBased, dbgen.RecurrenceTypeFixedNonAccumulating:
+		next, err := ComputeNextDueAt(recurrenceType, recurrenceRule, existingDue, now)
 		if err != nil {
 			return nil, err
 		}
@@ -95,8 +98,8 @@ func HandleCompletionTransition(
 			result.Status = initialStatus
 		}
 
-	case types.RecurrenceTypeFixedAccumulating:
-		next, err := ComputeNextDueAt(recurrenceType, recurrenceRule, existingDue, now.Time())
+	case dbgen.RecurrenceTypeFixedAccumulating:
+		next, err := ComputeNextDueAt(recurrenceType, recurrenceRule, existingDue, now)
 		if err != nil {
 			return nil, err
 		}
@@ -115,14 +118,14 @@ func HandleCompletionTransition(
 			}
 			overrideAssignees := AdvanceRotation(pool, currentAssignees, 0)
 			if _, err := SpawnTaskFromTemplate(ctx, q, existing,
-				types.RecurrenceTypeFixedAccumulating, recurrenceRule, next, initialStatus, now,
+				dbgen.RecurrenceTypeFixedAccumulating, recurrenceRule, next, initialStatus, now,
 				overrideAssignees, pool,
 			); err != nil {
 				return nil, err
 			}
 		}
-		result.RecurrenceType = types.RecurrenceTypeOneOff
-		result.RecurrenceRule = nil
+		result.RecurrenceType = dbgen.RecurrenceTypeOneOff
+		result.RecurrenceRule = pgtype.Text{}
 		if err := q.DeleteRotationPool(ctx, taskID); err != nil {
 			return nil, err
 		}
@@ -133,7 +136,7 @@ func HandleCompletionTransition(
 
 	// Apply pool rotation for recurrence types that reset in place.
 	// fixed_accumulating is handled above (rotation passed to spawned task).
-	if result.RecurrenceType == types.RecurrenceTypeCompletionBased || result.RecurrenceType == types.RecurrenceTypeFixedNonAccumulating {
+	if result.RecurrenceType == dbgen.RecurrenceTypeCompletionBased || result.RecurrenceType == dbgen.RecurrenceTypeFixedNonAccumulating {
 		if err := ApplyPoolRotation(ctx, q, taskID, now); err != nil {
 			return nil, err
 		}

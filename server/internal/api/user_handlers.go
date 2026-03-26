@@ -9,7 +9,7 @@ import (
 
 func (h *Handler) UsersMe(ctx context.Context) (*apigen.User, error) {
 	authUser := UserFromContext(ctx)
-	q := dbgen.New(h.DB)
+	q := dbgen.New(h.Pool)
 	user, err := q.GetUserByID(ctx, authUser.ID)
 	if err != nil {
 		return nil, err

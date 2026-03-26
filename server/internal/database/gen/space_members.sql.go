@@ -7,18 +7,18 @@ package gen
 
 import (
 	"context"
-	"database/sql"
 
-	"github.com/sargunv/tend/server/internal/types"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const countSpaceAdmins = `-- name: CountSpaceAdmins :one
 SELECT COUNT(*) FROM space_members
-WHERE space_slug = ? AND role = 'admin'
+WHERE space_slug = $1 AND role = 'admin'
 `
 
 func (q *Queries) CountSpaceAdmins(ctx context.Context, spaceSlug string) (int64, error) {
-	row := q.db.QueryRowContext(ctx, countSpaceAdmins, spaceSlug)
+	row := q.db.QueryRow(ctx, countSpaceAdmins, spaceSlug)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -26,19 +26,19 @@ func (q *Queries) CountSpaceAdmins(ctx context.Context, spaceSlug string) (int64
 
 const createSpaceMember = `-- name: CreateSpaceMember :one
 INSERT INTO space_members (space_slug, user_id, role, created_at)
-VALUES (?, ?, ?, ?)
+VALUES ($1, $2, $3, $4)
 RETURNING space_slug, user_id, role, created_at
 `
 
 type CreateSpaceMemberParams struct {
 	SpaceSlug string
 	UserID    int64
-	Role      types.SpaceRole
-	CreatedAt types.EpochSeconds
+	Role      SpaceRole
+	CreatedAt pgtype.Timestamptz
 }
 
 func (q *Queries) CreateSpaceMember(ctx context.Context, arg CreateSpaceMemberParams) (SpaceMember, error) {
-	row := q.db.QueryRowContext(ctx, createSpaceMember,
+	row := q.db.QueryRow(ctx, createSpaceMember,
 		arg.SpaceSlug,
 		arg.UserID,
 		arg.Role,
@@ -55,7 +55,7 @@ func (q *Queries) CreateSpaceMember(ctx context.Context, arg CreateSpaceMemberPa
 }
 
 const deleteSpaceMember = `-- name: DeleteSpaceMember :execresult
-DELETE FROM space_members WHERE space_slug = ? AND user_id = ?
+DELETE FROM space_members WHERE space_slug = $1 AND user_id = $2
 `
 
 type DeleteSpaceMemberParams struct {
@@ -63,13 +63,13 @@ type DeleteSpaceMemberParams struct {
 	UserID    int64
 }
 
-func (q *Queries) DeleteSpaceMember(ctx context.Context, arg DeleteSpaceMemberParams) (sql.Result, error) {
-	return q.db.ExecContext(ctx, deleteSpaceMember, arg.SpaceSlug, arg.UserID)
+func (q *Queries) DeleteSpaceMember(ctx context.Context, arg DeleteSpaceMemberParams) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, deleteSpaceMember, arg.SpaceSlug, arg.UserID)
 }
 
 const getSpaceMember = `-- name: GetSpaceMember :one
 SELECT space_slug, user_id, role, created_at FROM space_members
-WHERE space_slug = ? AND user_id = ?
+WHERE space_slug = $1 AND user_id = $2
 `
 
 type GetSpaceMemberParams struct {
@@ -78,7 +78,7 @@ type GetSpaceMemberParams struct {
 }
 
 func (q *Queries) GetSpaceMember(ctx context.Context, arg GetSpaceMemberParams) (SpaceMember, error) {
-	row := q.db.QueryRowContext(ctx, getSpaceMember, arg.SpaceSlug, arg.UserID)
+	row := q.db.QueryRow(ctx, getSpaceMember, arg.SpaceSlug, arg.UserID)
 	var i SpaceMember
 	err := row.Scan(
 		&i.SpaceSlug,
@@ -91,12 +91,12 @@ func (q *Queries) GetSpaceMember(ctx context.Context, arg GetSpaceMemberParams) 
 
 const listSpaceMemberUserIDs = `-- name: ListSpaceMemberUserIDs :many
 SELECT user_id FROM space_members
-WHERE space_slug = ?
+WHERE space_slug = $1
 ORDER BY user_id ASC
 `
 
 func (q *Queries) ListSpaceMemberUserIDs(ctx context.Context, spaceSlug string) ([]int64, error) {
-	rows, err := q.db.QueryContext(ctx, listSpaceMemberUserIDs, spaceSlug)
+	rows, err := q.db.Query(ctx, listSpaceMemberUserIDs, spaceSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -108,9 +108,6 @@ func (q *Queries) ListSpaceMemberUserIDs(ctx context.Context, spaceSlug string) 
 			return nil, err
 		}
 		items = append(items, user_id)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -128,28 +125,28 @@ SELECT
     u.email AS user_email
 FROM space_members sm
 JOIN users u ON u.id = sm.user_id
-WHERE sm.space_slug = ? AND sm.user_id > ?
+WHERE sm.space_slug = $1 AND sm.user_id > $2
 ORDER BY sm.user_id ASC
-LIMIT ?
+LIMIT $3
 `
 
 type ListSpaceMembersBySpaceParams struct {
 	SpaceSlug string
 	UserID    int64
-	Limit     int64
+	Limit     int32
 }
 
 type ListSpaceMembersBySpaceRow struct {
 	SpaceSlug string
 	UserID    int64
-	Role      types.SpaceRole
-	CreatedAt types.EpochSeconds
+	Role      SpaceRole
+	CreatedAt pgtype.Timestamptz
 	UserName  string
 	UserEmail string
 }
 
 func (q *Queries) ListSpaceMembersBySpace(ctx context.Context, arg ListSpaceMembersBySpaceParams) ([]ListSpaceMembersBySpaceRow, error) {
-	rows, err := q.db.QueryContext(ctx, listSpaceMembersBySpace, arg.SpaceSlug, arg.UserID, arg.Limit)
+	rows, err := q.db.Query(ctx, listSpaceMembersBySpace, arg.SpaceSlug, arg.UserID, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -169,9 +166,6 @@ func (q *Queries) ListSpaceMembersBySpace(ctx context.Context, arg ListSpaceMemb
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -181,19 +175,19 @@ func (q *Queries) ListSpaceMembersBySpace(ctx context.Context, arg ListSpaceMemb
 const listSpacesByUser = `-- name: ListSpacesByUser :many
 SELECT s.slug, s.name, s.description, s.created_at, s.updated_at FROM spaces s
 JOIN space_members sm ON sm.space_slug = s.slug
-WHERE sm.user_id = ? AND s.slug > ?
+WHERE sm.user_id = $1 AND s.slug > $2
 ORDER BY s.slug ASC
-LIMIT ?
+LIMIT $3
 `
 
 type ListSpacesByUserParams struct {
 	UserID int64
 	Slug   string
-	Limit  int64
+	Limit  int32
 }
 
 func (q *Queries) ListSpacesByUser(ctx context.Context, arg ListSpacesByUserParams) ([]Space, error) {
-	rows, err := q.db.QueryContext(ctx, listSpacesByUser, arg.UserID, arg.Slug, arg.Limit)
+	rows, err := q.db.Query(ctx, listSpacesByUser, arg.UserID, arg.Slug, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -212,9 +206,6 @@ func (q *Queries) ListSpacesByUser(ctx context.Context, arg ListSpacesByUserPara
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -223,19 +214,19 @@ func (q *Queries) ListSpacesByUser(ctx context.Context, arg ListSpacesByUserPara
 
 const updateSpaceMemberRole = `-- name: UpdateSpaceMemberRole :one
 UPDATE space_members
-SET role = ?
-WHERE space_slug = ? AND user_id = ?
+SET role = $1
+WHERE space_slug = $2 AND user_id = $3
 RETURNING space_slug, user_id, role, created_at
 `
 
 type UpdateSpaceMemberRoleParams struct {
-	Role      types.SpaceRole
+	Role      SpaceRole
 	SpaceSlug string
 	UserID    int64
 }
 
 func (q *Queries) UpdateSpaceMemberRole(ctx context.Context, arg UpdateSpaceMemberRoleParams) (SpaceMember, error) {
-	row := q.db.QueryRowContext(ctx, updateSpaceMemberRole, arg.Role, arg.SpaceSlug, arg.UserID)
+	row := q.db.QueryRow(ctx, updateSpaceMemberRole, arg.Role, arg.SpaceSlug, arg.UserID)
 	var i SpaceMember
 	err := row.Scan(
 		&i.SpaceSlug,

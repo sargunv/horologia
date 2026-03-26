@@ -7,23 +7,24 @@ package gen
 
 import (
 	"context"
-	"database/sql"
+
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 const createTaskEffortLevel = `-- name: CreateTaskEffortLevel :one
 INSERT INTO task_effort_levels (space_slug, name, position)
-VALUES (?, ?, ?)
+VALUES ($1, $2, $3)
 RETURNING space_slug, name, position
 `
 
 type CreateTaskEffortLevelParams struct {
 	SpaceSlug string
 	Name      string
-	Position  int64
+	Position  int32
 }
 
 func (q *Queries) CreateTaskEffortLevel(ctx context.Context, arg CreateTaskEffortLevelParams) (TaskEffortLevel, error) {
-	row := q.db.QueryRowContext(ctx, createTaskEffortLevel, arg.SpaceSlug, arg.Name, arg.Position)
+	row := q.db.QueryRow(ctx, createTaskEffortLevel, arg.SpaceSlug, arg.Name, arg.Position)
 	var i TaskEffortLevel
 	err := row.Scan(&i.SpaceSlug, &i.Name, &i.Position)
 	return i, err
@@ -31,7 +32,7 @@ func (q *Queries) CreateTaskEffortLevel(ctx context.Context, arg CreateTaskEffor
 
 const deleteTaskEffortLevel = `-- name: DeleteTaskEffortLevel :execresult
 DELETE FROM task_effort_levels
-WHERE space_slug = ? AND name = ?
+WHERE space_slug = $1 AND name = $2
 `
 
 type DeleteTaskEffortLevelParams struct {
@@ -39,18 +40,18 @@ type DeleteTaskEffortLevelParams struct {
 	Name      string
 }
 
-func (q *Queries) DeleteTaskEffortLevel(ctx context.Context, arg DeleteTaskEffortLevelParams) (sql.Result, error) {
-	return q.db.ExecContext(ctx, deleteTaskEffortLevel, arg.SpaceSlug, arg.Name)
+func (q *Queries) DeleteTaskEffortLevel(ctx context.Context, arg DeleteTaskEffortLevelParams) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, deleteTaskEffortLevel, arg.SpaceSlug, arg.Name)
 }
 
 const listTaskEffortLevelsBySpace = `-- name: ListTaskEffortLevelsBySpace :many
 SELECT space_slug, name, position FROM task_effort_levels
-WHERE space_slug = ?
+WHERE space_slug = $1
 ORDER BY position ASC
 `
 
 func (q *Queries) ListTaskEffortLevelsBySpace(ctx context.Context, spaceSlug string) ([]TaskEffortLevel, error) {
-	rows, err := q.db.QueryContext(ctx, listTaskEffortLevelsBySpace, spaceSlug)
+	rows, err := q.db.Query(ctx, listTaskEffortLevelsBySpace, spaceSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -63,9 +64,6 @@ func (q *Queries) ListTaskEffortLevelsBySpace(ctx context.Context, spaceSlug str
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -73,17 +71,17 @@ func (q *Queries) ListTaskEffortLevelsBySpace(ctx context.Context, spaceSlug str
 }
 
 const updateTaskEffortLevel = `-- name: UpdateTaskEffortLevel :exec
-UPDATE task_effort_levels SET position = ?
-WHERE space_slug = ? AND name = ?
+UPDATE task_effort_levels SET position = $1
+WHERE space_slug = $2 AND name = $3
 `
 
 type UpdateTaskEffortLevelParams struct {
-	Position  int64
+	Position  int32
 	SpaceSlug string
 	Name      string
 }
 
 func (q *Queries) UpdateTaskEffortLevel(ctx context.Context, arg UpdateTaskEffortLevelParams) error {
-	_, err := q.db.ExecContext(ctx, updateTaskEffortLevel, arg.Position, arg.SpaceSlug, arg.Name)
+	_, err := q.db.Exec(ctx, updateTaskEffortLevel, arg.Position, arg.SpaceSlug, arg.Name)
 	return err
 }

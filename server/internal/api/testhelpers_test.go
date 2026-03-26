@@ -3,49 +3,69 @@ package api_test
 import (
 	"context"
 	"crypto/sha256"
-	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/sargunv/tend/server/internal/api"
 	"github.com/sargunv/tend/server/internal/database"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/taskengine"
-	"github.com/sargunv/tend/server/internal/types"
 )
 
 type testEnv struct {
 	Server  *httptest.Server
 	Token   string
 	Handler *api.Handler
-	db      *sql.DB
+	pool    *pgxpool.Pool
 }
 
 func setupTestServer(t *testing.T) *testEnv {
 	t.Helper()
+	ctx := context.Background()
 
-	db, err := database.Open(":memory:")
-	if err != nil {
-		t.Fatalf("open db: %v", err)
-	}
-	t.Cleanup(func() { _ = db.Close() })
+	// Create a fresh database from the pre-migrated template.
+	dbName := "test_" + strings.ReplaceAll(strings.ToLower(t.Name()), "/", "_")
 
-	migrator, err := database.NewMigrator(db)
+	adminPool, err := pgxpool.New(ctx, testDSN)
 	if err != nil {
-		t.Fatalf("new migrator: %v", err)
+		t.Fatalf("connect to test postgres: %v", err)
 	}
-	if _, err := migrator.Up(context.Background()); err != nil {
-		t.Fatalf("migrate: %v", err)
+	if _, err := adminPool.Exec(ctx, fmt.Sprintf("CREATE DATABASE %s TEMPLATE %s", dbName, testTemplateName)); err != nil {
+		adminPool.Close()
+		t.Fatalf("create test database: %v", err)
 	}
+	adminPool.Close()
+
+	dsn := fmt.Sprintf("postgres://postgres:postgres@localhost:15432/%s?sslmode=disable", dbName)
+
+	// Open pgx pool for the test.
+	pool, err := database.OpenPool(ctx, dsn)
+	if err != nil {
+		t.Fatalf("open pool: %v", err)
+	}
+	t.Cleanup(func() {
+		pool.Close()
+		// Drop the test database.
+		adminPool, err := pgxpool.New(ctx, testDSN)
+		if err == nil {
+			_, _ = adminPool.Exec(ctx, fmt.Sprintf("DROP DATABASE %q", dbName))
+			adminPool.Close()
+		}
+	})
 
 	// Create a test owner user.
-	user, err := taskengine.CreateUserWithPassword(context.Background(), db, "test@example.com", "Test User", "password", true)
+	user, err := taskengine.CreateUserWithPassword(ctx, pool, "test@example.com", "Test User", "password", true)
 	if err != nil {
 		t.Fatalf("create user: %v", err)
 	}
@@ -55,20 +75,20 @@ func setupTestServer(t *testing.T) *testEnv {
 	hash := sha256.Sum256([]byte(rawToken))
 	tokenHash := hex.EncodeToString(hash[:])
 
-	q := dbgen.New(db)
-	_, err = q.CreateAuthToken(context.Background(), dbgen.CreateAuthTokenParams{
+	q := dbgen.New(pool)
+	_, err = q.CreateAuthToken(ctx, dbgen.CreateAuthTokenParams{
 		UserID:    user.ID,
 		TokenHash: tokenHash,
 		Name:      "test",
-		Kind:      types.AuthTokenKindSession,
-		CreatedAt: types.Now(),
+		Kind:      dbgen.AuthTokenKindSession,
+		CreatedAt: pgtype.Timestamptz{Time: time.Now(), Valid: true},
 	})
 	if err != nil {
 		t.Fatalf("create token: %v", err)
 	}
 
 	log := slog.New(slog.DiscardHandler)
-	handler := &api.Handler{DB: db, Log: log}
+	handler := &api.Handler{Pool: pool, Log: log}
 	h, err := api.NewServer(handler, log)
 	if err != nil {
 		t.Fatalf("new server: %v", err)
@@ -81,7 +101,7 @@ func setupTestServer(t *testing.T) *testEnv {
 		Server:  srv,
 		Token:   rawToken,
 		Handler: handler,
-		db:      db,
+		pool:    pool,
 	}
 }
 
@@ -116,7 +136,7 @@ func doRequest(t *testing.T, env *testEnv, method, path, body string) *http.Resp
 // createTestUser creates a non-owner user via the DB and logs them in to get a token.
 func createTestUser(t *testing.T, env *testEnv, email, name, password string) string {
 	t.Helper()
-	_, err := taskengine.CreateUserWithPassword(context.Background(), env.db, email, name, password, false)
+	_, err := taskengine.CreateUserWithPassword(context.Background(), env.pool, email, name, password, false)
 	if err != nil {
 		t.Fatalf("create test user: %v", err)
 	}

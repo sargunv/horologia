@@ -4,16 +4,15 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
-	"database/sql"
 	"encoding/hex"
 	"errors"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/ogen-go/ogen/ogenerrors"
 
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/types"
 )
 
 type contextKey int
@@ -45,9 +44,9 @@ func ContextWithUser(ctx context.Context, u *AuthUser) context.Context {
 // HandleBearerAuth validates the bearer token and enriches the context with the user.
 func (h *Handler) HandleBearerAuth(ctx context.Context, operationName apigen.OperationName, t apigen.BearerAuth) (context.Context, error) {
 	hash := hashToken(t.Token)
-	q := dbgen.New(h.DB)
+	q := dbgen.New(h.Pool)
 	row, err := q.GetAuthTokenByHash(ctx, hash)
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return ctx, ogenerrors.ErrSkipServerSecurity
 	}
 	if err != nil {
@@ -55,8 +54,8 @@ func (h *Handler) HandleBearerAuth(ctx context.Context, operationName apigen.Ope
 	}
 
 	// Check expiration.
-	if row.ExpiresAt != nil {
-		if time.Now().After(row.ExpiresAt.Time()) {
+	if row.ExpiresAt.Valid {
+		if time.Now().After(row.ExpiresAt.Time) {
 			return ctx, ogenerrors.ErrSkipServerSecurity
 		}
 	}
@@ -65,7 +64,7 @@ func (h *Handler) HandleBearerAuth(ctx context.Context, operationName apigen.Ope
 		ID:      row.UserID,
 		Email:   row.UserEmail,
 		Name:    row.UserName,
-		IsOwner: row.UserIsOwner.Bool(),
+		IsOwner: row.UserIsOwner,
 	}
 	return ContextWithUser(ctx, user), nil
 }
@@ -97,8 +96,8 @@ func createSessionToken(ctx context.Context, q *dbgen.Queries, userID int64) (st
 		UserID:    userID,
 		TokenHash: hash,
 		Name:      "",
-		Kind:      types.AuthTokenKindSession,
-		CreatedAt: types.Now(),
+		Kind:      dbgen.AuthTokenKindSession,
+		CreatedAt: timeToTS(time.Now()),
 	})
 	return raw, err
 }

@@ -3,16 +3,16 @@ package api
 import (
 	"context"
 	"strconv"
+	"time"
 
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/types"
 )
 
 // --- Auth: Login ---
 
 func (h *Handler) AuthLogin(ctx context.Context, req *apigen.LoginRequest) (*apigen.LoginResponse, error) {
-	q := dbgen.New(h.DB)
+	q := dbgen.New(h.Pool)
 
 	user, err := validatePassword(ctx, q, req.Email, req.Password)
 	if err != nil {
@@ -43,7 +43,7 @@ func (h *Handler) AuthListTokens(ctx context.Context, params apigen.AuthListToke
 	}
 
 	limit := clampLimit(params.Limit)
-	q := dbgen.New(h.DB)
+	q := dbgen.New(h.Pool)
 
 	tokens, err := q.ListAuthTokensByUser(ctx, dbgen.ListAuthTokensByUserParams{
 		UserID: user.ID,
@@ -72,13 +72,13 @@ func (h *Handler) AuthCreateToken(ctx context.Context, req *apigen.AuthTokenCrea
 		return nil, err
 	}
 
-	q := dbgen.New(h.DB)
+	q := dbgen.New(h.Pool)
 	token, err := q.CreateAuthToken(ctx, dbgen.CreateAuthTokenParams{
 		UserID:    user.ID,
 		TokenHash: hash,
 		Name:      req.Name,
-		Kind:      types.AuthTokenKindAPI,
-		CreatedAt: types.Now(),
+		Kind:      dbgen.AuthTokenKindApi,
+		CreatedAt: timeToTS(time.Now()),
 	})
 	if err != nil {
 		return nil, err
@@ -100,7 +100,7 @@ func (h *Handler) AuthDeleteToken(ctx context.Context, params apigen.AuthDeleteT
 		return badRequest(err.Error())
 	}
 
-	q := dbgen.New(h.DB)
+	q := dbgen.New(h.Pool)
 	result, err := q.DeleteAuthToken(ctx, dbgen.DeleteAuthTokenParams{
 		ID:     id,
 		UserID: user.ID,

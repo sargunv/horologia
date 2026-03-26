@@ -2,11 +2,11 @@ package api
 
 import (
 	"context"
+	"time"
 
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/taskengine"
-	"github.com/sargunv/tend/server/internal/types"
 )
 
 // --- Spaces ---
@@ -14,7 +14,7 @@ import (
 func (h *Handler) SpacesCreate(ctx context.Context, req *apigen.SpaceCreate) (*apigen.Space, error) {
 	user := UserFromContext(ctx)
 	space, err := taskengine.CreateSpaceWithDefaults(
-		ctx, h.DB,
+		ctx, h.Pool,
 		req.Slug,
 		req.Name,
 		req.Description.Or(""),
@@ -34,7 +34,7 @@ func (h *Handler) SpacesList(ctx context.Context, params apigen.SpacesListParams
 	}
 	limit := clampLimit(params.Limit)
 
-	q := dbgen.New(h.DB)
+	q := dbgen.New(h.Pool)
 
 	var spaces []dbgen.Space
 	if user.IsOwner {
@@ -67,7 +67,7 @@ func (h *Handler) SpacesRead(ctx context.Context, params apigen.SpacesReadParams
 	if err := h.requireSpaceRead(ctx, params.SpaceSlug); err != nil {
 		return nil, err
 	}
-	q := dbgen.New(h.DB)
+	q := dbgen.New(h.Pool)
 	space, err := q.GetSpace(ctx, params.SpaceSlug)
 	if err != nil {
 		return nil, err
@@ -76,14 +76,14 @@ func (h *Handler) SpacesRead(ctx context.Context, params apigen.SpacesReadParams
 }
 
 func (h *Handler) SpacesUpdate(ctx context.Context, req *apigen.SpaceUpdate, params apigen.SpacesUpdateParams) (*apigen.Space, error) {
-	if err := h.requireSpaceRole(ctx, params.SpaceSlug, types.SpaceRoleAdmin); err != nil {
+	if err := h.requireSpaceRole(ctx, params.SpaceSlug, dbgen.SpaceRoleAdmin); err != nil {
 		return nil, err
 	}
-	tx, err := h.DB.BeginTx(ctx, nil)
+	tx, err := h.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := dbgen.New(tx)
 	existing, err := q.GetSpace(ctx, params.SpaceSlug)
@@ -95,13 +95,13 @@ func (h *Handler) SpacesUpdate(ctx context.Context, req *apigen.SpaceUpdate, par
 		Slug:        params.SpaceSlug,
 		Name:        req.Name.Or(existing.Name),
 		Description: req.Description.Or(existing.Description),
-		UpdatedAt:   types.Now(),
+		UpdatedAt:   timeToTS(time.Now()),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 
@@ -109,10 +109,10 @@ func (h *Handler) SpacesUpdate(ctx context.Context, req *apigen.SpaceUpdate, par
 }
 
 func (h *Handler) SpacesDelete(ctx context.Context, params apigen.SpacesDeleteParams) error {
-	if err := h.requireSpaceRole(ctx, params.SpaceSlug, types.SpaceRoleAdmin); err != nil {
+	if err := h.requireSpaceRole(ctx, params.SpaceSlug, dbgen.SpaceRoleAdmin); err != nil {
 		return err
 	}
-	q := dbgen.New(h.DB)
+	q := dbgen.New(h.Pool)
 	result, err := q.DeleteSpace(ctx, params.SpaceSlug)
 	if err != nil {
 		return err

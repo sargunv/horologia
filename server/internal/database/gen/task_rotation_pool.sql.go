@@ -7,24 +7,23 @@ package gen
 
 import (
 	"context"
-	"strings"
 
-	"github.com/sargunv/tend/server/internal/types"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const deleteRotationPool = `-- name: DeleteRotationPool :exec
-DELETE FROM task_rotation_pool WHERE task_id = ?
+DELETE FROM task_rotation_pool WHERE task_id = $1
 `
 
 func (q *Queries) DeleteRotationPool(ctx context.Context, taskID int64) error {
-	_, err := q.db.ExecContext(ctx, deleteRotationPool, taskID)
+	_, err := q.db.Exec(ctx, deleteRotationPool, taskID)
 	return err
 }
 
 const deleteRotationPoolBySpaceAndUser = `-- name: DeleteRotationPoolBySpaceAndUser :exec
 DELETE FROM task_rotation_pool
-WHERE user_id = ?
-  AND task_id IN (SELECT id FROM tasks WHERE space_slug = ?)
+WHERE user_id = $1
+  AND task_id IN (SELECT id FROM tasks WHERE space_slug = $2)
 `
 
 type DeleteRotationPoolBySpaceAndUserParams struct {
@@ -33,24 +32,24 @@ type DeleteRotationPoolBySpaceAndUserParams struct {
 }
 
 func (q *Queries) DeleteRotationPoolBySpaceAndUser(ctx context.Context, arg DeleteRotationPoolBySpaceAndUserParams) error {
-	_, err := q.db.ExecContext(ctx, deleteRotationPoolBySpaceAndUser, arg.UserID, arg.SpaceSlug)
+	_, err := q.db.Exec(ctx, deleteRotationPoolBySpaceAndUser, arg.UserID, arg.SpaceSlug)
 	return err
 }
 
 const insertRotationPoolMember = `-- name: InsertRotationPoolMember :exec
 INSERT INTO task_rotation_pool (task_id, user_id, position, created_at)
-VALUES (?, ?, ?, ?)
+VALUES ($1, $2, $3, $4)
 `
 
 type InsertRotationPoolMemberParams struct {
 	TaskID    int64
 	UserID    int64
-	Position  int64
-	CreatedAt types.EpochSeconds
+	Position  int32
+	CreatedAt pgtype.Timestamptz
 }
 
 func (q *Queries) InsertRotationPoolMember(ctx context.Context, arg InsertRotationPoolMemberParams) error {
-	_, err := q.db.ExecContext(ctx, insertRotationPoolMember,
+	_, err := q.db.Exec(ctx, insertRotationPoolMember,
 		arg.TaskID,
 		arg.UserID,
 		arg.Position,
@@ -61,12 +60,12 @@ func (q *Queries) InsertRotationPoolMember(ctx context.Context, arg InsertRotati
 
 const listRotationPoolByTask = `-- name: ListRotationPoolByTask :many
 SELECT user_id FROM task_rotation_pool
-WHERE task_id = ?
+WHERE task_id = $1
 ORDER BY position ASC
 `
 
 func (q *Queries) ListRotationPoolByTask(ctx context.Context, taskID int64) ([]int64, error) {
-	rows, err := q.db.QueryContext(ctx, listRotationPoolByTask, taskID)
+	rows, err := q.db.Query(ctx, listRotationPoolByTask, taskID)
 	if err != nil {
 		return nil, err
 	}
@@ -79,9 +78,6 @@ func (q *Queries) ListRotationPoolByTask(ctx context.Context, taskID int64) ([]i
 		}
 		items = append(items, user_id)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -90,7 +86,7 @@ func (q *Queries) ListRotationPoolByTask(ctx context.Context, taskID int64) ([]i
 
 const listRotationPoolByTasks = `-- name: ListRotationPoolByTasks :many
 SELECT task_id, user_id FROM task_rotation_pool
-WHERE task_id IN (/*SLICE:task_ids*/?)
+WHERE task_id = ANY($1::bigint[])
 ORDER BY task_id, position ASC
 `
 
@@ -100,17 +96,7 @@ type ListRotationPoolByTasksRow struct {
 }
 
 func (q *Queries) ListRotationPoolByTasks(ctx context.Context, taskIds []int64) ([]ListRotationPoolByTasksRow, error) {
-	query := listRotationPoolByTasks
-	var queryParams []interface{}
-	if len(taskIds) > 0 {
-		for _, v := range taskIds {
-			queryParams = append(queryParams, v)
-		}
-		query = strings.Replace(query, "/*SLICE:task_ids*/?", strings.Repeat(",?", len(taskIds))[1:], 1)
-	} else {
-		query = strings.Replace(query, "/*SLICE:task_ids*/?", "NULL", 1)
-	}
-	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	rows, err := q.db.Query(ctx, listRotationPoolByTasks, taskIds)
 	if err != nil {
 		return nil, err
 	}
@@ -122,9 +108,6 @@ func (q *Queries) ListRotationPoolByTasks(ctx context.Context, taskIds []int64) 
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

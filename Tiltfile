@@ -1,9 +1,10 @@
+POSTGRES_PORT = 5432
 OIDC_PORT = 5556
 SERVER_PORT = 8080
 WEB_PORT = 5173
 
 common_env = {
-    "TEND_DB": "server/tend.db",
+    "TEND_DB": "postgres://postgres:postgres@localhost:%d/tend?sslmode=disable" % POSTGRES_PORT,
     "TEND_LOG_FORMAT": "text",
     "TEND_LOG_LEVEL": "debug",
     "TEND_OIDC_ISSUER": "http://localhost:%d/" % OIDC_PORT,
@@ -20,6 +21,9 @@ go_deps = [
     "server/api",
     "server/cmd",
 ]
+
+docker_compose("docker-compose.yml")
+dc_resource("postgres", labels=["infra"])
 
 local_resource(
     "oidc",
@@ -43,7 +47,7 @@ local_resource(
     serve_cmd="./server/tmp/tend-server serve",
     serve_env=common_env,
     deps=go_deps,
-    resource_deps=["oidc"],
+    resource_deps=["oidc", "postgres"],
     readiness_probe=probe(
         exec=exec_action(["nc", "-z", "localhost", str(SERVER_PORT)]),
         initial_delay_secs=2,
@@ -52,6 +56,14 @@ local_resource(
     ),
     links=["http://localhost:%d/" % SERVER_PORT],
     labels=["app"],
+)
+
+local_resource(
+    "seed",
+    cmd="./server/tmp/tend-server create-admin --email admin@localhost --name Admin --password password",
+    env=common_env,
+    resource_deps=["server"],
+    labels=["infra"],
 )
 
 local_resource(

@@ -2,14 +2,14 @@ package api
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"log/slog"
 	"net/http"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ogen-go/ogen/ogenerrors"
-	sqlite "modernc.org/sqlite"
-	sqlite3 "modernc.org/sqlite/lib"
 
 	apigen "github.com/sargunv/tend/server/api/gen"
 	"github.com/sargunv/tend/server/internal/types"
@@ -18,8 +18,8 @@ import (
 // Handler implements the generated API interface.
 type Handler struct {
 	apigen.UnimplementedHandler
-	DB  *sql.DB
-	Log *slog.Logger
+	Pool *pgxpool.Pool
+	Log  *slog.Logger
 }
 
 func (h *Handler) NewError(ctx context.Context, err error) *apigen.ApiErrorStatusCode {
@@ -28,20 +28,21 @@ func (h *Handler) NewError(ctx context.Context, err error) *apigen.ApiErrorStatu
 	message := "an internal error occurred"
 
 	var secErr *ogenerrors.SecurityError
+	var pgErr *pgconn.PgError
 	switch {
 	case errors.As(err, &secErr):
 		code = http.StatusUnauthorized
 		apiCode = "unauthorized"
 		message = "authentication required"
-	case errors.Is(err, sql.ErrNoRows):
+	case errors.Is(err, pgx.ErrNoRows):
 		code = http.StatusNotFound
 		apiCode = "not_found"
 		message = "resource not found"
-	case isUniqueViolation(err):
+	case errors.As(err, &pgErr) && pgErr.Code == "23505": // unique_violation
 		code = http.StatusConflict
 		apiCode = "conflict"
 		message = "resource already exists"
-	case isForeignKeyViolation(err):
+	case errors.As(err, &pgErr) && pgErr.Code == "23503": // foreign_key_violation
 		code = http.StatusBadRequest
 		apiCode = "bad_request"
 		message = "referenced resource does not exist"
@@ -68,32 +69,14 @@ func (h *Handler) NewError(ctx context.Context, err error) *apigen.ApiErrorStatu
 	}
 }
 
-func isSQLiteCode(err error, code int) bool {
-	var sqliteErr *sqlite.Error
-	return errors.As(err, &sqliteErr) && sqliteErr.Code() == code
-}
-
-func isUniqueViolation(err error) bool {
-	return isSQLiteCode(err, sqlite3.SQLITE_CONSTRAINT_UNIQUE) ||
-		isSQLiteCode(err, sqlite3.SQLITE_CONSTRAINT_PRIMARYKEY)
-}
-
-func isForeignKeyViolation(err error) bool {
-	return isSQLiteCode(err, sqlite3.SQLITE_CONSTRAINT_FOREIGNKEY)
-}
-
 var (
 	badRequest = types.ValidationError
 	forbidden  = types.ForbiddenError
 )
 
-func checkDeleted(result sql.Result) error {
-	n, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if n == 0 {
-		return sql.ErrNoRows
+func checkDeleted(result pgconn.CommandTag) error {
+	if result.RowsAffected() == 0 {
+		return pgx.ErrNoRows
 	}
 	return nil
 }

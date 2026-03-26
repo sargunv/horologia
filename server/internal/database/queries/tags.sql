@@ -1,31 +1,32 @@
 -- name: CreateTag :one
 INSERT INTO tags (space_slug, name, name_folded, created_at)
-VALUES (?, ?, ?, ?)
+VALUES ($1, $2, $3, $4)
 RETURNING *;
 
 -- name: EnsureTag :one
--- Uses DO UPDATE SET name = name (a no-op) instead of DO NOTHING so that
--- RETURNING returns the row even when the insert is skipped due to conflict.
+-- Uses DO UPDATE SET name = tags.name (a true no-op that preserves the
+-- existing display name) instead of DO NOTHING so that RETURNING returns
+-- the row even when the insert is skipped due to conflict.
 INSERT INTO tags (space_slug, name, name_folded, created_at)
-VALUES (?, ?, ?, ?)
-ON CONFLICT (space_slug, name_folded) DO UPDATE SET name = name
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (space_slug, name_folded) DO UPDATE SET name = tags.name
 RETURNING *;
 
 -- name: GetTagByFoldedName :one
 SELECT * FROM tags
-WHERE space_slug = ? AND name_folded = ?;
+WHERE space_slug = $1 AND name_folded = $2;
 
 -- name: ListTagsBySpace :many
 SELECT * FROM tags
-WHERE space_slug = ? AND id > ?
+WHERE space_slug = $1 AND id > $2
 ORDER BY id ASC
-LIMIT ?;
+LIMIT $3;
 
 -- name: UpdateTag :one
 UPDATE tags
-SET name = ?, name_folded = ?
-WHERE id = ? AND space_slug = ?
+SET name = $1, name_folded = $2
+WHERE id = $3 AND space_slug = $4
 RETURNING *;
 
 -- name: DeleteTag :execresult
-DELETE FROM tags WHERE space_slug = ? AND name_folded = ?;
+DELETE FROM tags WHERE space_slug = $1 AND name_folded = $2;

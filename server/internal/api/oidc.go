@@ -3,19 +3,20 @@ package api
 import (
 	"context"
 	"crypto/rand"
-	"database/sql"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/zitadel/oidc/v3/pkg/client/rp"
 	zhttp "github.com/zitadel/oidc/v3/pkg/http"
 	"github.com/zitadel/oidc/v3/pkg/oidc"
 
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/types"
 )
 
 // OIDCConfig holds the configuration for the OIDC relying party.
@@ -115,34 +116,35 @@ func handleOIDCCallback(w http.ResponseWriter, r *http.Request, tokens *oidc.Tok
 		name = email
 	}
 
-	q := dbgen.New(handler.DB)
-	subjectStr := subject
+	q := dbgen.New(handler.Pool)
+	subjectText := pgtype.Text{String: subject, Valid: true}
 
 	// Try to find existing user by OIDC subject.
-	user, err := q.GetUserByOIDCSubject(ctx, &subjectStr)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+	user, err := q.GetUserByOIDCSubject(ctx, subjectText)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		handler.Log.ErrorContext(ctx, "oidc: get user", "error", err)
 		http.Error(w, "failed to look up user", http.StatusInternalServerError)
 		return
 	}
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, pgx.ErrNoRows) {
 		// No user with this OIDC subject. Try matching by email to link
 		// an existing password-created account.
 		user, err = q.GetUserByEmail(ctx, email)
-		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			handler.Log.ErrorContext(ctx, "oidc: get user by email", "error", err)
 			http.Error(w, "failed to look up user", http.StatusInternalServerError)
 			return
 		}
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			// Completely new user — create one.
-			ts := types.Now()
+			ts := time.Now()
+			tstz := timeToTS(ts)
 			user, err = q.CreateUser(ctx, dbgen.CreateUserParams{
 				Email:       email,
 				Name:        name,
-				OidcSubject: &subjectStr,
-				CreatedAt:   ts,
-				UpdatedAt:   ts,
+				OidcSubject: subjectText,
+				CreatedAt:   tstz,
+				UpdatedAt:   tstz,
 			})
 			if err != nil {
 				handler.Log.ErrorContext(ctx, "oidc: create user", "error", err)
@@ -153,8 +155,8 @@ func handleOIDCCallback(w http.ResponseWriter, r *http.Request, tokens *oidc.Tok
 		} else {
 			// Existing user found by email — link the OIDC subject.
 			if err := q.SetUserOIDCSubject(ctx, dbgen.SetUserOIDCSubjectParams{
-				OidcSubject: &subjectStr,
-				UpdatedAt:   types.Now(),
+				OidcSubject: subjectText,
+				UpdatedAt:   timeToTS(time.Now()),
 				ID:          user.ID,
 			}); err != nil {
 				handler.Log.ErrorContext(ctx, "oidc: link user", "error", err)

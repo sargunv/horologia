@@ -8,27 +8,27 @@ package gen
 import (
 	"context"
 
-	"github.com/sargunv/tend/server/internal/types"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (email, name, password_hash, is_owner, oidc_subject, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING id, email, name, password_hash, is_owner, oidc_subject, created_at, updated_at
 `
 
 type CreateUserParams struct {
 	Email        string
 	Name         string
-	PasswordHash *string
-	IsOwner      types.BoolInt
-	OidcSubject  *string
-	CreatedAt    types.EpochSeconds
-	UpdatedAt    types.EpochSeconds
+	PasswordHash pgtype.Text
+	IsOwner      bool
+	OidcSubject  pgtype.Text
+	CreatedAt    pgtype.Timestamptz
+	UpdatedAt    pgtype.Timestamptz
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, createUser,
+	row := q.db.QueryRow(ctx, createUser,
 		arg.Email,
 		arg.Name,
 		arg.PasswordHash,
@@ -52,11 +52,11 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, name, password_hash, is_owner, oidc_subject, created_at, updated_at FROM users WHERE email = ?
+SELECT id, email, name, password_hash, is_owner, oidc_subject, created_at, updated_at FROM users WHERE email = $1
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
-	row := q.db.QueryRowContext(ctx, getUserByEmail, email)
+	row := q.db.QueryRow(ctx, getUserByEmail, email)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -72,11 +72,11 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, email, name, password_hash, is_owner, oidc_subject, created_at, updated_at FROM users WHERE id = ?
+SELECT id, email, name, password_hash, is_owner, oidc_subject, created_at, updated_at FROM users WHERE id = $1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
-	row := q.db.QueryRowContext(ctx, getUserByID, id)
+	row := q.db.QueryRow(ctx, getUserByID, id)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -92,11 +92,11 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 }
 
 const getUserByOIDCSubject = `-- name: GetUserByOIDCSubject :one
-SELECT id, email, name, password_hash, is_owner, oidc_subject, created_at, updated_at FROM users WHERE oidc_subject = ?
+SELECT id, email, name, password_hash, is_owner, oidc_subject, created_at, updated_at FROM users WHERE oidc_subject = $1
 `
 
-func (q *Queries) GetUserByOIDCSubject(ctx context.Context, oidcSubject *string) (User, error) {
-	row := q.db.QueryRowContext(ctx, getUserByOIDCSubject, oidcSubject)
+func (q *Queries) GetUserByOIDCSubject(ctx context.Context, oidcSubject pgtype.Text) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByOIDCSubject, oidcSubject)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -112,16 +112,16 @@ func (q *Queries) GetUserByOIDCSubject(ctx context.Context, oidcSubject *string)
 }
 
 const setUserOIDCSubject = `-- name: SetUserOIDCSubject :exec
-UPDATE users SET oidc_subject = ?, updated_at = ? WHERE id = ?
+UPDATE users SET oidc_subject = $1, updated_at = $2 WHERE id = $3
 `
 
 type SetUserOIDCSubjectParams struct {
-	OidcSubject *string
-	UpdatedAt   types.EpochSeconds
+	OidcSubject pgtype.Text
+	UpdatedAt   pgtype.Timestamptz
 	ID          int64
 }
 
 func (q *Queries) SetUserOIDCSubject(ctx context.Context, arg SetUserOIDCSubjectParams) error {
-	_, err := q.db.ExecContext(ctx, setUserOIDCSubject, arg.OidcSubject, arg.UpdatedAt, arg.ID)
+	_, err := q.db.Exec(ctx, setUserOIDCSubject, arg.OidcSubject, arg.UpdatedAt, arg.ID)
 	return err
 }

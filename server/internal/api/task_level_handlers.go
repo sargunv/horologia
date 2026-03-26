@@ -6,7 +6,6 @@ import (
 
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/types"
 )
 
 // extractNames maps a slice of rows to a slice of name strings.
@@ -24,8 +23,8 @@ type replaceLevelsOps[Item any] struct {
 	label          string
 	itemName       func(Item) string
 	listNames      func(ctx context.Context, q *dbgen.Queries, spaceSlug string) ([]string, error)
-	create         func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item Item, pos int64) error
-	update         func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item Item, pos int64) error
+	create         func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item Item, pos int32) error
+	update         func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item Item, pos int32) error
 	delete         func(ctx context.Context, q *dbgen.Queries, spaceSlug, name string) error
 	validateRemove func(ctx context.Context, q *dbgen.Queries, spaceSlug, name string) error // nil = skip
 }
@@ -80,11 +79,11 @@ func replaceLevels[Item any](ctx context.Context, q *dbgen.Queries, spaceSlug st
 	// Insert new and update existing.
 	for i, item := range items {
 		if _, exists := currentNames[ops.itemName(item)]; exists {
-			if err := ops.update(ctx, q, spaceSlug, item, int64(i)); err != nil {
+			if err := ops.update(ctx, q, spaceSlug, item, int32(i)); err != nil {
 				return err
 			}
 		} else {
-			if err := ops.create(ctx, q, spaceSlug, item, int64(i)); err != nil {
+			if err := ops.create(ctx, q, spaceSlug, item, int32(i)); err != nil {
 				return err
 			}
 		}
@@ -100,7 +99,7 @@ func (h *Handler) SpaceTaskStatusesList(ctx context.Context, params apigen.Space
 		return nil, err
 	}
 
-	q := dbgen.New(h.DB)
+	q := dbgen.New(h.Pool)
 
 	rows, err := q.ListTaskStatusesBySpace(ctx, params.SpaceSlug)
 	if err != nil {
@@ -116,7 +115,7 @@ func (h *Handler) SpaceTaskStatusesList(ctx context.Context, params apigen.Space
 }
 
 func (h *Handler) SpaceTaskStatusesReplace(ctx context.Context, req *apigen.TaskStatusReplace, params apigen.SpaceTaskStatusesReplaceParams) (*apigen.TaskStatusList, error) {
-	if err := h.requireSpaceRole(ctx, params.SpaceSlug, types.SpaceRoleAdmin); err != nil {
+	if err := h.requireSpaceRole(ctx, params.SpaceSlug, dbgen.SpaceRoleAdmin); err != nil {
 		return nil, err
 	}
 
@@ -139,11 +138,11 @@ func (h *Handler) SpaceTaskStatusesReplace(ctx context.Context, req *apigen.Task
 		return nil, badRequest("at least one status with category \"completion\" is required")
 	}
 
-	tx, err := h.DB.BeginTx(ctx, nil)
+	tx, err := h.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := dbgen.New(tx)
 
@@ -157,18 +156,18 @@ func (h *Handler) SpaceTaskStatusesReplace(ctx context.Context, req *apigen.Task
 			}
 			return extractNames(rows, func(r dbgen.TaskStatus) string { return r.Name }), nil
 		},
-		create: func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item apigen.TaskStatusInput, pos int64) error {
+		create: func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item apigen.TaskStatusInput, pos int32) error {
 			_, err := q.CreateTaskStatus(ctx, dbgen.CreateTaskStatusParams{
 				SpaceSlug: spaceSlug,
 				Name:      item.Name,
-				Category:  types.StatusCategory(item.Category),
+				Category:  dbgen.StatusCategory(item.Category),
 				Position:  pos,
 			})
 			return err
 		},
-		update: func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item apigen.TaskStatusInput, pos int64) error {
+		update: func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item apigen.TaskStatusInput, pos int32) error {
 			return q.UpdateTaskStatus(ctx, dbgen.UpdateTaskStatusParams{
-				Category:  types.StatusCategory(item.Category),
+				Category:  dbgen.StatusCategory(item.Category),
 				Position:  pos,
 				SpaceSlug: spaceSlug,
 				Name:      item.Name,
@@ -204,7 +203,7 @@ func (h *Handler) SpaceTaskStatusesReplace(ctx context.Context, req *apigen.Task
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 
@@ -223,7 +222,7 @@ func (h *Handler) SpaceTaskEffortLevelsList(ctx context.Context, params apigen.S
 		return nil, err
 	}
 
-	q := dbgen.New(h.DB)
+	q := dbgen.New(h.Pool)
 
 	rows, err := q.ListTaskEffortLevelsBySpace(ctx, params.SpaceSlug)
 	if err != nil {
@@ -239,15 +238,15 @@ func (h *Handler) SpaceTaskEffortLevelsList(ctx context.Context, params apigen.S
 }
 
 func (h *Handler) SpaceTaskEffortLevelsReplace(ctx context.Context, req *apigen.TaskEffortLevelReplace, params apigen.SpaceTaskEffortLevelsReplaceParams) (*apigen.TaskEffortLevelList, error) {
-	if err := h.requireSpaceRole(ctx, params.SpaceSlug, types.SpaceRoleAdmin); err != nil {
+	if err := h.requireSpaceRole(ctx, params.SpaceSlug, dbgen.SpaceRoleAdmin); err != nil {
 		return nil, err
 	}
 
-	tx, err := h.DB.BeginTx(ctx, nil)
+	tx, err := h.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := dbgen.New(tx)
 
@@ -261,7 +260,7 @@ func (h *Handler) SpaceTaskEffortLevelsReplace(ctx context.Context, req *apigen.
 			}
 			return extractNames(rows, func(r dbgen.TaskEffortLevel) string { return r.Name }), nil
 		},
-		create: func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item apigen.TaskEffortLevelInput, pos int64) error {
+		create: func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item apigen.TaskEffortLevelInput, pos int32) error {
 			_, err := q.CreateTaskEffortLevel(ctx, dbgen.CreateTaskEffortLevelParams{
 				SpaceSlug: spaceSlug,
 				Name:      item.Name,
@@ -269,7 +268,7 @@ func (h *Handler) SpaceTaskEffortLevelsReplace(ctx context.Context, req *apigen.
 			})
 			return err
 		},
-		update: func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item apigen.TaskEffortLevelInput, pos int64) error {
+		update: func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item apigen.TaskEffortLevelInput, pos int32) error {
 			return q.UpdateTaskEffortLevel(ctx, dbgen.UpdateTaskEffortLevelParams{
 				Position:  pos,
 				SpaceSlug: spaceSlug,
@@ -293,7 +292,7 @@ func (h *Handler) SpaceTaskEffortLevelsReplace(ctx context.Context, req *apigen.
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 
@@ -312,7 +311,7 @@ func (h *Handler) SpaceTaskPriorityLevelsList(ctx context.Context, params apigen
 		return nil, err
 	}
 
-	q := dbgen.New(h.DB)
+	q := dbgen.New(h.Pool)
 
 	rows, err := q.ListTaskPriorityLevelsBySpace(ctx, params.SpaceSlug)
 	if err != nil {
@@ -328,15 +327,15 @@ func (h *Handler) SpaceTaskPriorityLevelsList(ctx context.Context, params apigen
 }
 
 func (h *Handler) SpaceTaskPriorityLevelsReplace(ctx context.Context, req *apigen.TaskPriorityLevelReplace, params apigen.SpaceTaskPriorityLevelsReplaceParams) (*apigen.TaskPriorityLevelList, error) {
-	if err := h.requireSpaceRole(ctx, params.SpaceSlug, types.SpaceRoleAdmin); err != nil {
+	if err := h.requireSpaceRole(ctx, params.SpaceSlug, dbgen.SpaceRoleAdmin); err != nil {
 		return nil, err
 	}
 
-	tx, err := h.DB.BeginTx(ctx, nil)
+	tx, err := h.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := dbgen.New(tx)
 
@@ -350,7 +349,7 @@ func (h *Handler) SpaceTaskPriorityLevelsReplace(ctx context.Context, req *apige
 			}
 			return extractNames(rows, func(r dbgen.TaskPriorityLevel) string { return r.Name }), nil
 		},
-		create: func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item apigen.TaskPriorityLevelInput, pos int64) error {
+		create: func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item apigen.TaskPriorityLevelInput, pos int32) error {
 			_, err := q.CreateTaskPriorityLevel(ctx, dbgen.CreateTaskPriorityLevelParams{
 				SpaceSlug: spaceSlug,
 				Name:      item.Name,
@@ -358,7 +357,7 @@ func (h *Handler) SpaceTaskPriorityLevelsReplace(ctx context.Context, req *apige
 			})
 			return err
 		},
-		update: func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item apigen.TaskPriorityLevelInput, pos int64) error {
+		update: func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item apigen.TaskPriorityLevelInput, pos int32) error {
 			return q.UpdateTaskPriorityLevel(ctx, dbgen.UpdateTaskPriorityLevelParams{
 				Position:  pos,
 				SpaceSlug: spaceSlug,
@@ -382,7 +381,7 @@ func (h *Handler) SpaceTaskPriorityLevelsReplace(ctx context.Context, req *apige
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 

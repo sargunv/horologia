@@ -7,25 +7,24 @@ import (
 	"github.com/ogen-go/ogen/ogenerrors"
 
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/types"
 )
 
 // requireSpaceRole checks that the authenticated user has one of the given roles
 // in the specified space. Global owners always pass but the space must exist
 // (prevents returning empty 200 for nonexistent spaces).
-func (h *Handler) requireSpaceRole(ctx context.Context, spaceSlug string, roles ...types.SpaceRole) error {
+func (h *Handler) requireSpaceRole(ctx context.Context, spaceSlug string, roles ...dbgen.SpaceRole) error {
 	user := UserFromContext(ctx)
 	if user == nil {
 		return &ogenerrors.SecurityError{Err: ogenerrors.ErrSecurityRequirementIsNotSatisfied}
 	}
 	if user.IsOwner {
-		q := dbgen.New(h.DB)
+		q := dbgen.New(h.Pool)
 		if _, err := q.GetSpace(ctx, spaceSlug); err != nil {
 			return err
 		}
 		return nil
 	}
-	q := dbgen.New(h.DB)
+	q := dbgen.New(h.Pool)
 	member, err := q.GetSpaceMember(ctx, dbgen.GetSpaceMemberParams{
 		SpaceSlug: spaceSlug,
 		UserID:    user.ID,
@@ -41,10 +40,10 @@ func (h *Handler) requireSpaceRole(ctx context.Context, spaceSlug string, roles 
 
 // requireSpaceWrite checks that the user has member or admin role.
 func (h *Handler) requireSpaceWrite(ctx context.Context, spaceSlug string) error {
-	return h.requireSpaceRole(ctx, spaceSlug, types.SpaceRoleMember, types.SpaceRoleAdmin)
+	return h.requireSpaceRole(ctx, spaceSlug, dbgen.SpaceRoleMember, dbgen.SpaceRoleAdmin)
 }
 
 // requireSpaceRead checks that the user has any role in the space.
 func (h *Handler) requireSpaceRead(ctx context.Context, spaceSlug string) error {
-	return h.requireSpaceRole(ctx, spaceSlug, types.SpaceRoleViewer, types.SpaceRoleMember, types.SpaceRoleAdmin)
+	return h.requireSpaceRole(ctx, spaceSlug, dbgen.SpaceRoleViewer, dbgen.SpaceRoleMember, dbgen.SpaceRoleAdmin)
 }

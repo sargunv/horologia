@@ -285,7 +285,7 @@ func TestRotationCronMultiSpawn(t *testing.T) {
 	taskID := jsonAs[string](t, task["id"])
 
 	// Run cron to process overdue tasks.
-	must(t, taskengine.ProcessOverdueTasks(t.Context(), env.db, nil))
+	must(t, taskengine.ProcessOverdueTasks(t.Context(), env.pool, nil))
 
 	// Original task should now be one_off with empty pool.
 	resp := doRequest(t, env, "GET", "/spaces/alpha/tasks/"+taskID, "")

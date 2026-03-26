@@ -4,11 +4,24 @@ import (
 	"context"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/teambition/rrule-go"
 
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
 )
+
+// copyOnSpawn returns true for relation kinds that should be copied when spawning
+// a new task from a fixed_accumulating template.
+func copyOnSpawn(k dbgen.StoredRelationKind) bool {
+	switch k {
+	case dbgen.StoredRelationKindParent, dbgen.StoredRelationKindBlocks, dbgen.StoredRelationKindTriggers, dbgen.StoredRelationKindRelatesTo:
+		return true
+	case dbgen.StoredRelationKindSpawns, dbgen.StoredRelationKindDuplicates:
+		return false
+	}
+	return false
+}
 
 // SpawnTaskFromTemplate creates a new task by copying user-settable fields from src.
 // The new task gets the provided recurrenceType, recurrenceRule, and dueAt.
@@ -20,15 +33,16 @@ func SpawnTaskFromTemplate(
 	ctx context.Context,
 	q *dbgen.Queries,
 	src dbgen.Task,
-	newRecurrenceType types.RecurrenceType,
-	newRecurrenceRule *string,
+	newRecurrenceType dbgen.RecurrenceType,
+	newRecurrenceRule pgtype.Text,
 	newDue *types.DueDate,
 	initialStatus string,
-	now types.EpochSeconds,
+	now time.Time,
 	overrideAssignees []int64,
 	srcPool []int64,
 ) (int64, error) {
 	dueAt, dueTz := types.DecomposeDueDate(newDue)
+	nowTz := pgtype.Timestamptz{Time: now, Valid: true}
 	newTask, err := q.CreateTask(ctx, dbgen.CreateTaskParams{
 		SpaceSlug:      src.SpaceSlug,
 		Title:          src.Title,
@@ -40,8 +54,8 @@ func SpawnTaskFromTemplate(
 		DueTz:          dueTz,
 		RecurrenceType: newRecurrenceType,
 		RecurrenceRule: newRecurrenceRule,
-		CreatedAt:      now,
-		UpdatedAt:      now,
+		CreatedAt:      nowTz,
+		UpdatedAt:      nowTz,
 	})
 	if err != nil {
 		return 0, err
@@ -59,7 +73,7 @@ func SpawnTaskFromTemplate(
 		if err := q.InsertTaskAssignee(ctx, dbgen.InsertTaskAssigneeParams{
 			TaskID:    newTask.ID,
 			UserID:    uid,
-			CreatedAt: now,
+			CreatedAt: nowTz,
 		}); err != nil {
 			return 0, err
 		}
@@ -75,7 +89,7 @@ func SpawnTaskFromTemplate(
 			SpaceSlug:  src.SpaceSlug,
 			Name:       name,
 			NameFolded: FoldTagName(name),
-			CreatedAt:  now,
+			CreatedAt:  nowTz,
 		})
 		if err != nil {
 			return 0, err
@@ -83,7 +97,7 @@ func SpawnTaskFromTemplate(
 		if err := q.InsertTaskTag(ctx, dbgen.InsertTaskTagParams{
 			TaskID:    newTask.ID,
 			TagID:     tag.ID,
-			CreatedAt: now,
+			CreatedAt: nowTz,
 		}); err != nil {
 			return 0, err
 		}
@@ -94,8 +108,8 @@ func SpawnTaskFromTemplate(
 		if err := q.InsertRotationPoolMember(ctx, dbgen.InsertRotationPoolMemberParams{
 			TaskID:    newTask.ID,
 			UserID:    uid,
-			Position:  int64(i),
-			CreatedAt: now,
+			Position:  int32(i),
+			CreatedAt: nowTz,
 		}); err != nil {
 			return 0, err
 		}
@@ -110,7 +124,7 @@ func SpawnTaskFromTemplate(
 		return 0, err
 	}
 	for _, r := range asSource {
-		if !r.Kind.CopyOnSpawn() {
+		if !copyOnSpawn(r.Kind) {
 			continue
 		}
 		if err := q.InsertTaskRelation(ctx, dbgen.InsertTaskRelationParams{
@@ -118,7 +132,7 @@ func SpawnTaskFromTemplate(
 			TargetTaskID: r.TargetTaskID,
 			SpaceSlug:    src.SpaceSlug,
 			Kind:         r.Kind,
-			CreatedAt:    now,
+			CreatedAt:    nowTz,
 		}); err != nil {
 			return 0, err
 		}
@@ -132,7 +146,7 @@ func SpawnTaskFromTemplate(
 		return 0, err
 	}
 	for _, r := range asTarget {
-		if !r.Kind.CopyOnSpawn() {
+		if !copyOnSpawn(r.Kind) {
 			continue
 		}
 		if err := q.InsertTaskRelation(ctx, dbgen.InsertTaskRelationParams{
@@ -140,7 +154,7 @@ func SpawnTaskFromTemplate(
 			TargetTaskID: newTask.ID,
 			SpaceSlug:    src.SpaceSlug,
 			Kind:         r.Kind,
-			CreatedAt:    now,
+			CreatedAt:    nowTz,
 		}); err != nil {
 			return 0, err
 		}
@@ -151,8 +165,8 @@ func SpawnTaskFromTemplate(
 		SourceTaskID: src.ID,
 		TargetTaskID: newTask.ID,
 		SpaceSlug:    src.SpaceSlug,
-		Kind:         types.RelationKindSpawns,
-		CreatedAt:    now,
+		Kind:         dbgen.StoredRelationKindSpawns,
+		CreatedAt:    nowTz,
 	}); err != nil {
 		return 0, err
 	}
@@ -166,7 +180,7 @@ const maxMissedOccurrences = 365
 
 // allOverdueOccurrences returns RRULE occurrences from dtstart up to and
 // including `until`, capped at maxMissedOccurrences.
-func allOverdueOccurrences(rule string, dtstart time.Time, until time.Time, loc *time.Location) ([]types.EpochSeconds, error) {
+func allOverdueOccurrences(rule string, dtstart time.Time, until time.Time, loc *time.Location) ([]time.Time, error) {
 	opt, err := rrule.StrToROption(rule)
 	if err != nil {
 		return nil, err
@@ -184,10 +198,10 @@ func allOverdueOccurrences(rule string, dtstart time.Time, until time.Time, loc 
 		occurrences = occurrences[len(occurrences)-maxMissedOccurrences:]
 	}
 
-	result := make([]types.EpochSeconds, 0, len(occurrences))
+	result := make([]time.Time, 0, len(occurrences))
 	for _, occ := range occurrences {
 		midnight := time.Date(occ.Year(), occ.Month(), occ.Day(), 0, 0, 0, 0, loc)
-		result = append(result, types.EpochSecondsFrom(midnight))
+		result = append(result, midnight)
 	}
 	return result, nil
 }
@@ -196,7 +210,7 @@ func allOverdueOccurrences(rule string, dtstart time.Time, until time.Time, loc 
 // existing transaction.
 func ProcessAccumulatingTask(ctx context.Context, q *dbgen.Queries, task dbgen.Task, now time.Time) error {
 	due := types.NewDueDate(task.DueAt, task.DueTz)
-	if due == nil || task.RecurrenceRule == nil {
+	if due == nil || !task.RecurrenceRule.Valid {
 		return nil
 	}
 
@@ -205,9 +219,9 @@ func ProcessAccumulatingTask(ctx context.Context, q *dbgen.Queries, task dbgen.T
 		return err
 	}
 
-	dtstart := due.At.Time().In(loc)
+	dtstart := due.Date.In(loc)
 
-	missed, err := allOverdueOccurrences(*task.RecurrenceRule, dtstart, now, loc)
+	missed, err := allOverdueOccurrences(task.RecurrenceRule.String, dtstart, now, loc)
 	if err != nil {
 		return err
 	}
@@ -217,21 +231,16 @@ func ProcessAccumulatingTask(ctx context.Context, q *dbgen.Queries, task dbgen.T
 		return err
 	}
 
-	nowEpoch := types.EpochSecondsFrom(now)
-
+	nowTz := pgtype.Timestamptz{Time: now, Valid: true}
 	result, err := q.ConvertAccumulatingToOneOff(ctx, dbgen.ConvertAccumulatingToOneOffParams{
-		UpdatedAt: nowEpoch,
+		UpdatedAt: nowTz,
 		ID:        task.ID,
 		SpaceSlug: task.SpaceSlug,
 	})
 	if err != nil {
 		return err
 	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if rowsAffected == 0 {
+	if result.RowsAffected() == 0 {
 		return nil
 	}
 
@@ -245,17 +254,17 @@ func ProcessAccumulatingTask(ctx context.Context, q *dbgen.Queries, task dbgen.T
 	}
 
 	for i, missedAt := range missed {
-		missedDue := &types.DueDate{At: missedAt, Tz: due.Tz}
+		missedDue := &types.DueDate{Date: missedAt, Tz: due.Tz}
 		overrideAssignees := AdvanceRotation(pool, currentAssignees, i)
 		if _, err := SpawnTaskFromTemplate(ctx, q, task,
-			types.RecurrenceTypeOneOff, nil, missedDue, initialStatus, nowEpoch,
+			dbgen.RecurrenceTypeOneOff, pgtype.Text{}, missedDue, initialStatus, now,
 			overrideAssignees, pool,
 		); err != nil {
 			return err
 		}
 	}
 
-	next, err := ComputeNextDueAt(types.RecurrenceTypeFixedAccumulating, task.RecurrenceRule, due, now)
+	next, err := ComputeNextDueAt(dbgen.RecurrenceTypeFixedAccumulating, task.RecurrenceRule, due, now)
 	if err != nil {
 		return err
 	}
@@ -263,7 +272,7 @@ func ProcessAccumulatingTask(ctx context.Context, q *dbgen.Queries, task dbgen.T
 	if next != nil {
 		overrideAssignees := AdvanceRotation(pool, currentAssignees, len(missed))
 		if _, err := SpawnTaskFromTemplate(ctx, q, task,
-			types.RecurrenceTypeFixedAccumulating, task.RecurrenceRule, next, initialStatus, nowEpoch,
+			dbgen.RecurrenceTypeFixedAccumulating, task.RecurrenceRule, next, initialStatus, now,
 			overrideAssignees, pool,
 		); err != nil {
 			return err

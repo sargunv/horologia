@@ -1,7 +1,6 @@
 # Go
 /server/tend-server
 /server/tmp/
-/server/tend.db*
 /cli/tend
 
 # Web

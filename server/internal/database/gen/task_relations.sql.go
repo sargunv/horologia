@@ -7,26 +7,25 @@ package gen
 
 import (
 	"context"
-	"database/sql"
-	"strings"
 
-	"github.com/sargunv/tend/server/internal/types"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const deleteTaskRelation = `-- name: DeleteTaskRelation :execresult
 DELETE FROM task_relations
-WHERE source_task_id = ? AND target_task_id = ? AND kind = ? AND space_slug = ?
+WHERE source_task_id = $1 AND target_task_id = $2 AND kind = $3 AND space_slug = $4
 `
 
 type DeleteTaskRelationParams struct {
 	SourceTaskID int64
 	TargetTaskID int64
-	Kind         types.StoredRelationKind
+	Kind         StoredRelationKind
 	SpaceSlug    string
 }
 
-func (q *Queries) DeleteTaskRelation(ctx context.Context, arg DeleteTaskRelationParams) (sql.Result, error) {
-	return q.db.ExecContext(ctx, deleteTaskRelation,
+func (q *Queries) DeleteTaskRelation(ctx context.Context, arg DeleteTaskRelationParams) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, deleteTaskRelation,
 		arg.SourceTaskID,
 		arg.TargetTaskID,
 		arg.Kind,
@@ -36,19 +35,19 @@ func (q *Queries) DeleteTaskRelation(ctx context.Context, arg DeleteTaskRelation
 
 const insertTaskRelation = `-- name: InsertTaskRelation :exec
 INSERT INTO task_relations (source_task_id, target_task_id, space_slug, kind, created_at)
-VALUES (?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5)
 `
 
 type InsertTaskRelationParams struct {
 	SourceTaskID int64
 	TargetTaskID int64
 	SpaceSlug    string
-	Kind         types.StoredRelationKind
-	CreatedAt    types.EpochSeconds
+	Kind         StoredRelationKind
+	CreatedAt    pgtype.Timestamptz
 }
 
 func (q *Queries) InsertTaskRelation(ctx context.Context, arg InsertTaskRelationParams) error {
-	_, err := q.db.ExecContext(ctx, insertTaskRelation,
+	_, err := q.db.Exec(ctx, insertTaskRelation,
 		arg.SourceTaskID,
 		arg.TargetTaskID,
 		arg.SpaceSlug,
@@ -62,7 +61,7 @@ const listRelationsByTaskAsSource = `-- name: ListRelationsByTaskAsSource :many
 
 SELECT source_task_id, target_task_id, kind, created_at
 FROM task_relations
-WHERE source_task_id = ? AND space_slug = ?
+WHERE source_task_id = $1 AND space_slug = $2
 ORDER BY created_at ASC
 `
 
@@ -74,15 +73,15 @@ type ListRelationsByTaskAsSourceParams struct {
 type ListRelationsByTaskAsSourceRow struct {
 	SourceTaskID int64
 	TargetTaskID int64
-	Kind         types.StoredRelationKind
-	CreatedAt    types.EpochSeconds
+	Kind         StoredRelationKind
+	CreatedAt    pgtype.Timestamptz
 }
 
 // Two single-task queries instead of one with OR, so each can use its own index
 // (PK for source, idx_task_relations_target for target). Used by fetchTask for
 // single-task reads; the batch ListRelationsByTasks is used for list endpoints.
 func (q *Queries) ListRelationsByTaskAsSource(ctx context.Context, arg ListRelationsByTaskAsSourceParams) ([]ListRelationsByTaskAsSourceRow, error) {
-	rows, err := q.db.QueryContext(ctx, listRelationsByTaskAsSource, arg.SourceTaskID, arg.SpaceSlug)
+	rows, err := q.db.Query(ctx, listRelationsByTaskAsSource, arg.SourceTaskID, arg.SpaceSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -100,9 +99,6 @@ func (q *Queries) ListRelationsByTaskAsSource(ctx context.Context, arg ListRelat
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -112,7 +108,7 @@ func (q *Queries) ListRelationsByTaskAsSource(ctx context.Context, arg ListRelat
 const listRelationsByTaskAsTarget = `-- name: ListRelationsByTaskAsTarget :many
 SELECT source_task_id, target_task_id, kind, created_at
 FROM task_relations
-WHERE target_task_id = ? AND space_slug = ?
+WHERE target_task_id = $1 AND space_slug = $2
 ORDER BY created_at ASC
 `
 
@@ -124,12 +120,12 @@ type ListRelationsByTaskAsTargetParams struct {
 type ListRelationsByTaskAsTargetRow struct {
 	SourceTaskID int64
 	TargetTaskID int64
-	Kind         types.StoredRelationKind
-	CreatedAt    types.EpochSeconds
+	Kind         StoredRelationKind
+	CreatedAt    pgtype.Timestamptz
 }
 
 func (q *Queries) ListRelationsByTaskAsTarget(ctx context.Context, arg ListRelationsByTaskAsTargetParams) ([]ListRelationsByTaskAsTargetRow, error) {
-	rows, err := q.db.QueryContext(ctx, listRelationsByTaskAsTarget, arg.TargetTaskID, arg.SpaceSlug)
+	rows, err := q.db.Query(ctx, listRelationsByTaskAsTarget, arg.TargetTaskID, arg.SpaceSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -147,9 +143,6 @@ func (q *Queries) ListRelationsByTaskAsTarget(ctx context.Context, arg ListRelat
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -159,9 +152,9 @@ func (q *Queries) ListRelationsByTaskAsTarget(ctx context.Context, arg ListRelat
 const listRelationsByTasks = `-- name: ListRelationsByTasks :many
 SELECT source_task_id, target_task_id, kind, created_at
 FROM task_relations
-WHERE space_slug = ?
-  AND (source_task_id IN (/*SLICE:source_task_ids*/?)
-    OR target_task_id IN (/*SLICE:target_task_ids*/?))
+WHERE space_slug = $1
+  AND (source_task_id = ANY($2::bigint[])
+    OR target_task_id = ANY($3::bigint[]))
 ORDER BY created_at ASC
 `
 
@@ -174,31 +167,12 @@ type ListRelationsByTasksParams struct {
 type ListRelationsByTasksRow struct {
 	SourceTaskID int64
 	TargetTaskID int64
-	Kind         types.StoredRelationKind
-	CreatedAt    types.EpochSeconds
+	Kind         StoredRelationKind
+	CreatedAt    pgtype.Timestamptz
 }
 
 func (q *Queries) ListRelationsByTasks(ctx context.Context, arg ListRelationsByTasksParams) ([]ListRelationsByTasksRow, error) {
-	query := listRelationsByTasks
-	var queryParams []interface{}
-	queryParams = append(queryParams, arg.SpaceSlug)
-	if len(arg.SourceTaskIds) > 0 {
-		for _, v := range arg.SourceTaskIds {
-			queryParams = append(queryParams, v)
-		}
-		query = strings.Replace(query, "/*SLICE:source_task_ids*/?", strings.Repeat(",?", len(arg.SourceTaskIds))[1:], 1)
-	} else {
-		query = strings.Replace(query, "/*SLICE:source_task_ids*/?", "NULL", 1)
-	}
-	if len(arg.TargetTaskIds) > 0 {
-		for _, v := range arg.TargetTaskIds {
-			queryParams = append(queryParams, v)
-		}
-		query = strings.Replace(query, "/*SLICE:target_task_ids*/?", strings.Repeat(",?", len(arg.TargetTaskIds))[1:], 1)
-	} else {
-		query = strings.Replace(query, "/*SLICE:target_task_ids*/?", "NULL", 1)
-	}
-	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	rows, err := q.db.Query(ctx, listRelationsByTasks, arg.SpaceSlug, arg.SourceTaskIds, arg.TargetTaskIds)
 	if err != nil {
 		return nil, err
 	}
@@ -216,9 +190,6 @@ func (q *Queries) ListRelationsByTasks(ctx context.Context, arg ListRelationsByT
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -228,7 +199,7 @@ func (q *Queries) ListRelationsByTasks(ctx context.Context, arg ListRelationsByT
 const listTriggerTargets = `-- name: ListTriggerTargets :many
 SELECT target_task_id
 FROM task_relations
-WHERE source_task_id = ? AND space_slug = ? AND kind = 'triggers'
+WHERE source_task_id = $1 AND space_slug = $2 AND kind = 'triggers'
 `
 
 type ListTriggerTargetsParams struct {
@@ -237,7 +208,7 @@ type ListTriggerTargetsParams struct {
 }
 
 func (q *Queries) ListTriggerTargets(ctx context.Context, arg ListTriggerTargetsParams) ([]int64, error) {
-	rows, err := q.db.QueryContext(ctx, listTriggerTargets, arg.SourceTaskID, arg.SpaceSlug)
+	rows, err := q.db.Query(ctx, listTriggerTargets, arg.SourceTaskID, arg.SpaceSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -249,9 +220,6 @@ func (q *Queries) ListTriggerTargets(ctx context.Context, arg ListTriggerTargets
 			return nil, err
 		}
 		items = append(items, target_task_id)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

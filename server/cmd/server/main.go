@@ -61,8 +61,8 @@ func newLogger(cfg config) (*slog.Logger, error) {
 	return slog.New(handler), nil
 }
 
-func openDB(cfg config) (*sql.DB, *goose.Provider, error) {
-	db, err := database.Open(cfg.DB)
+func openMigrationDB(cfg config) (*sql.DB, *goose.Provider, error) {
+	db, err := database.OpenSQL(cfg.DB)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -97,22 +97,30 @@ var serveCmd = &cobra.Command{
 			return err
 		}
 
-		db, migrator, err := openDB(cfg)
+		// Run migrations via database/sql.
+		migrationDB, migrator, err := openMigrationDB(cfg)
 		if err != nil {
 			return err
 		}
-		defer func() { _ = db.Close() }()
-
 		if _, err := migrator.Up(context.Background()); err != nil {
+			_ = migrationDB.Close()
 			return fmt.Errorf("auto-migrate: %w", err)
 		}
+		_ = migrationDB.Close()
 
-		handler := &api.Handler{DB: db, Log: log}
+		// Open pgx pool for the application.
+		pool, err := database.OpenPool(context.Background(), cfg.DB)
+		if err != nil {
+			return err
+		}
+		defer pool.Close()
+
+		handler := &api.Handler{Pool: pool, Log: log}
 
 		// Start the fixed_accumulating cron job.
 		cronCtx, cronCancel := context.WithCancel(context.Background())
 		defer cronCancel()
-		go cron.RunAccumulatingCron(cronCtx, db, log, time.Minute)
+		go cron.RunAccumulatingCron(cronCtx, pool, log, time.Minute)
 
 		h, err := api.NewServer(handler, log)
 		if err != nil {
@@ -188,21 +196,29 @@ var createAdminCmd = &cobra.Command{
 			return err
 		}
 
-		db, migrator, err := openDB(cfg)
+		// Run migrations.
+		migrationDB, migrator, err := openMigrationDB(cfg)
 		if err != nil {
 			return err
 		}
-		defer func() { _ = db.Close() }()
-
 		if _, err := migrator.Up(context.Background()); err != nil {
+			_ = migrationDB.Close()
 			return fmt.Errorf("auto-migrate: %w", err)
 		}
+		_ = migrationDB.Close()
+
+		// Open pool for the operation.
+		pool, err := database.OpenPool(context.Background(), cfg.DB)
+		if err != nil {
+			return err
+		}
+		defer pool.Close()
 
 		email, _ := cmd.Flags().GetString("email")
 		name, _ := cmd.Flags().GetString("name")
 		password, _ := cmd.Flags().GetString("password")
 
-		user, err := taskengine.CreateUserWithPassword(context.Background(), db, email, name, password, true)
+		user, err := taskengine.CreateUserWithPassword(context.Background(), pool, email, name, password, true)
 		if err != nil {
 			return fmt.Errorf("create admin: %w", err)
 		}

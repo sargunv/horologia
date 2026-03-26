@@ -2,9 +2,11 @@ package api
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strconv"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 
 	apigen "github.com/sargunv/tend/server/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
@@ -161,11 +163,11 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 	if err := h.requireSpaceWrite(ctx, params.SpaceSlug); err != nil {
 		return nil, err
 	}
-	tx, err := h.DB.BeginTx(ctx, nil)
+	tx, err := h.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := dbgen.New(tx)
 
@@ -193,7 +195,7 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 		return nil, err
 	}
 
-	recurrenceType := types.RecurrenceType(req.RecurrenceType.Or(apigen.TaskRecurrenceTypeOneOff))
+	recurrenceType := dbgen.RecurrenceType(req.RecurrenceType.Or(apigen.TaskRecurrenceTypeOneOff))
 	recurrenceRule := optStringToDB(req.RecurrenceRule)
 
 	due, err := dueToDB(req.Due)
@@ -201,11 +203,12 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 		return nil, err
 	}
 
-	ts := types.Now()
-	if err := taskengine.ValidateRecurrence(recurrenceType, recurrenceRule, ts.Time()); err != nil {
+	ts := time.Now()
+	if err := taskengine.ValidateRecurrence(recurrenceType, recurrenceRule, ts); err != nil {
 		return nil, err
 	}
 	dueAt, dueTz := types.DecomposeDueDate(due)
+	tstz := timeToTS(ts)
 	task, err := q.CreateTask(ctx, dbgen.CreateTaskParams{
 		SpaceSlug:      params.SpaceSlug,
 		Title:          req.Title,
@@ -217,8 +220,8 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 		DueTz:          dueTz,
 		RecurrenceType: recurrenceType,
 		RecurrenceRule: recurrenceRule,
-		CreatedAt:      ts,
-		UpdatedAt:      ts,
+		CreatedAt:      tstz,
+		UpdatedAt:      tstz,
 	})
 	if err != nil {
 		return nil, err
@@ -260,7 +263,7 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 
@@ -278,11 +281,11 @@ func (h *Handler) SpaceTasksList(ctx context.Context, params apigen.SpaceTasksLi
 
 	limit := clampLimit(params.Limit)
 
-	tx, err := h.DB.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := h.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := dbgen.New(tx)
 
@@ -315,11 +318,11 @@ func (h *Handler) SpaceTasksRead(ctx context.Context, params apigen.SpaceTasksRe
 	if err != nil {
 		return nil, badRequest(err.Error())
 	}
-	tx, err := h.DB.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := h.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := dbgen.New(tx)
 	return h.fetchTask(ctx, q, id, params.SpaceSlug)
@@ -334,11 +337,11 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 		return nil, badRequest(err.Error())
 	}
 
-	tx, err := h.DB.BeginTx(ctx, nil)
+	tx, err := h.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := dbgen.New(tx)
 	existing, err := q.GetTask(ctx, dbgen.GetTaskParams{ID: id, SpaceSlug: params.SpaceSlug})
@@ -361,13 +364,13 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 	}
 
 	// Merge recurrence fields. Auto-clear rule when switching to a no-rule type.
-	recurrenceType := types.RecurrenceType(req.RecurrenceType.Or(apigen.TaskRecurrenceType(existing.RecurrenceType)))
+	recurrenceType := dbgen.RecurrenceType(req.RecurrenceType.Or(apigen.TaskRecurrenceType(existing.RecurrenceType)))
 	recurrenceRule := optNilStringToDB(req.RecurrenceRule, existing.RecurrenceRule)
-	if recurrenceType == types.RecurrenceTypeOneOff || recurrenceType == types.RecurrenceTypeOnDependency {
-		recurrenceRule = nil
+	if recurrenceType == dbgen.RecurrenceTypeOneOff || recurrenceType == dbgen.RecurrenceTypeOnDependency {
+		recurrenceRule = pgtype.Text{}
 	}
-	now := types.Now()
-	if err := taskengine.ValidateRecurrence(recurrenceType, recurrenceRule, now.Time()); err != nil {
+	now := time.Now()
+	if err := taskengine.ValidateRecurrence(recurrenceType, recurrenceRule, now); err != nil {
 		return nil, err
 	}
 
@@ -399,7 +402,7 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 		RecurrenceType:  cr.RecurrenceType,
 		RecurrenceRule:  cr.RecurrenceRule,
 		LastCompletedAt: cr.LastCompletedAt,
-		UpdatedAt:       now,
+		UpdatedAt:       timeToTS(now),
 		ID:              id,
 		SpaceSlug:       params.SpaceSlug,
 	})
@@ -409,7 +412,7 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 
 	// Trigger dependents when a task is completed.
 	if cr.JustCompleted {
-		if err := taskengine.ApplyCompletionTriggers(ctx, q, id, params.SpaceSlug, now); err != nil {
+		if err := taskengine.ApplyCompletionTriggers(ctx, q, id, params.SpaceSlug, timeToTS(now)); err != nil {
 			return nil, err
 		}
 	}
@@ -450,7 +453,7 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 
@@ -465,7 +468,7 @@ func (h *Handler) SpaceTasksDelete(ctx context.Context, params apigen.SpaceTasks
 	if err != nil {
 		return badRequest(err.Error())
 	}
-	q := dbgen.New(h.DB)
+	q := dbgen.New(h.Pool)
 	result, err := q.DeleteTask(ctx, dbgen.DeleteTaskParams{ID: id, SpaceSlug: params.SpaceSlug})
 	if err != nil {
 		return err
@@ -532,12 +535,12 @@ func (h *Handler) setTaskAssignees(ctx context.Context, q *dbgen.Queries, taskID
 	if err := q.DeleteTaskAssignees(ctx, taskID); err != nil {
 		return err
 	}
-	ts := types.Now()
+	tstz := timeToTS(time.Now())
 	for _, uid := range userIDs {
 		if err := q.InsertTaskAssignee(ctx, dbgen.InsertTaskAssigneeParams{
 			TaskID:    taskID,
 			UserID:    uid,
-			CreatedAt: ts,
+			CreatedAt: tstz,
 		}); err != nil {
 			return err
 		}
@@ -558,13 +561,13 @@ func (h *Handler) setTaskRotationPool(ctx context.Context, q *dbgen.Queries, tas
 	if err := q.DeleteRotationPool(ctx, taskID); err != nil {
 		return err
 	}
-	ts := types.Now()
+	tstz := timeToTS(time.Now())
 	for i, uid := range userIDs {
 		if err := q.InsertRotationPoolMember(ctx, dbgen.InsertRotationPoolMemberParams{
 			TaskID:    taskID,
 			UserID:    uid,
-			Position:  int64(i),
-			CreatedAt: ts,
+			Position:  int32(i),
+			CreatedAt: tstz,
 		}); err != nil {
 			return err
 		}
@@ -604,14 +607,14 @@ func (h *Handler) setTaskTags(ctx context.Context, q *dbgen.Queries, taskID int6
 		entries = append(entries, tagEntry{displayName: name, foldedName: folded})
 	}
 
-	ts := types.Now()
+	tstz := timeToTS(time.Now())
 	for _, entry := range entries {
 		// Upsert the tag (no-op on conflict) and get its ID in one query.
 		tag, err := q.EnsureTag(ctx, dbgen.EnsureTagParams{
 			SpaceSlug:  spaceSlug,
 			Name:       entry.displayName,
 			NameFolded: entry.foldedName,
-			CreatedAt:  ts,
+			CreatedAt:  tstz,
 		})
 		if err != nil {
 			return err
@@ -620,7 +623,7 @@ func (h *Handler) setTaskTags(ctx context.Context, q *dbgen.Queries, taskID int6
 		if err := q.InsertTaskTag(ctx, dbgen.InsertTaskTagParams{
 			TaskID:    taskID,
 			TagID:     tag.ID,
-			CreatedAt: ts,
+			CreatedAt: tstz,
 		}); err != nil {
 			return err
 		}
@@ -628,8 +631,8 @@ func (h *Handler) setTaskTags(ctx context.Context, q *dbgen.Queries, taskID int6
 	return nil
 }
 
-func validateLevel[T any](ctx context.Context, name *string, label string, fetch func(context.Context) ([]T, error), getName func(T) string) error {
-	if name == nil {
+func validateLevel[T any](ctx context.Context, name pgtype.Text, label string, fetch func(context.Context) ([]T, error), getName func(T) string) error {
+	if !name.Valid {
 		return nil
 	}
 	levels, err := fetch(ctx)
@@ -637,9 +640,9 @@ func validateLevel[T any](ctx context.Context, name *string, label string, fetch
 		return err
 	}
 	for _, l := range levels {
-		if getName(l) == *name {
+		if getName(l) == name.String {
 			return nil
 		}
 	}
-	return badRequest(fmt.Sprintf("invalid %s %q", label, *name))
+	return badRequest(fmt.Sprintf("invalid %s %q", label, name.String))
 }

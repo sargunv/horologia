@@ -2,16 +2,18 @@ package taskengine
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/types"
 )
 
 var defaultStatuses = []dbgen.CreateTaskStatusParams{
-	{Name: "todo", Category: types.StatusCategoryInitial, Position: 0},
-	{Name: "done", Category: types.StatusCategoryCompletion, Position: 1},
+	{Name: "todo", Category: dbgen.StatusCategoryInitial, Position: 0},
+	{Name: "done", Category: dbgen.StatusCategoryCompletion, Position: 1},
 }
 
 var defaultEffortLevels = []dbgen.CreateTaskEffortLevelParams{
@@ -28,15 +30,15 @@ var defaultPriorityLevels = []dbgen.CreateTaskPriorityLevelParams{
 
 // CreateSpaceWithDefaults creates a space, its default statuses, effort levels,
 // and priority levels, and adds the creator as an admin member, all in a single transaction.
-func CreateSpaceWithDefaults(ctx context.Context, db *sql.DB, slug, name, description string, creatorUserID int64) (dbgen.Space, error) {
-	tx, err := db.BeginTx(ctx, nil)
+func CreateSpaceWithDefaults(ctx context.Context, pool *pgxpool.Pool, slug, name, description string, creatorUserID int64) (dbgen.Space, error) {
+	tx, err := pool.Begin(ctx)
 	if err != nil {
 		return dbgen.Space{}, fmt.Errorf("begin tx: %w", err)
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := dbgen.New(tx)
-	now := types.Now()
+	now := pgtype.Timestamptz{Time: time.Now(), Valid: true}
 
 	space, err := q.CreateSpace(ctx, dbgen.CreateSpaceParams{
 		Slug:        slug,
@@ -74,13 +76,13 @@ func CreateSpaceWithDefaults(ctx context.Context, db *sql.DB, slug, name, descri
 	if _, err := q.CreateSpaceMember(ctx, dbgen.CreateSpaceMemberParams{
 		SpaceSlug: space.Slug,
 		UserID:    creatorUserID,
-		Role:      types.SpaceRoleAdmin,
+		Role:      dbgen.SpaceRoleAdmin,
 		CreatedAt: now,
 	}); err != nil {
 		return dbgen.Space{}, fmt.Errorf("create admin member: %w", err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		return dbgen.Space{}, fmt.Errorf("commit: %w", err)
 	}
 
