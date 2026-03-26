@@ -187,7 +187,7 @@ permanently. A recurring task in a completion status immediately bounces back to
 
 ```
 tend/
-  api/          # OpenAPI spec (source of truth)
+  api/          # TypeSpec API definition (generates OpenAPI spec)
   server/       # tend-server binary
   cli/          # tend binary (client CLI only)
   web/          # SPA source (built → embedded in server)
@@ -200,7 +200,7 @@ tend/
 │  ┌─────────────────────────┐  │
 │  │     Service layer       │  │
 │  │  (all business logic)   │  │
-│  │       SQLite            │  │
+│  │     PostgreSQL          │  │
 │  └────┬────────────────┬───┘  │
 │       │                │      │
 │  ┌────┴─────────┐ ┌───┴───┐  │
@@ -219,10 +219,10 @@ tend/
 
 **Two Go binaries in a monorepo. Shared OpenAPI spec and generated types.**
 
-- **`tend-server`** — the server. Owns the service layer, SQLite, REST API, MCP endpoint, and
+- **`tend-server`** — the server. Owns the service layer, PostgreSQL, REST API, MCP endpoint, and
   embedded web SPA.
-  - `tend-server serve` — runs the HTTP server (REST API + MCP endpoint + SPA). SQLite location set
-    by `TEND_DB` (required, no default).
+  - `tend-server serve` — runs the HTTP server (REST API + MCP endpoint + SPA). PostgreSQL
+    connection configured via `TEND_DATABASE_URL`.
   - `tend-server migrate up` — apply pending database migrations
   - `tend-server migrate status` — show migration status
   - `tend-server create-admin` — bootstrap first admin user
@@ -232,7 +232,8 @@ tend/
   - `tend login` — obtains an API token (via browser-based OIDC flow or username/password prompt)
     and stores it in the OS keychain
   - Configured via `TEND_SERVER=https://tend.local`
-- **REST API** — OpenAPI spec as source of truth. Typed clients generated for TS, Kotlin, Swift, Go.
+- **REST API** — TypeSpec definition as source of truth, compiled to OpenAPI. Typed clients
+  generated for TS, Kotlin, Swift, Go.
 - **MCP endpoint** — Streamable HTTP on `tend-server` (e.g., `https://tend.local/mcp`). Auth via
   OAuth 2.1, delegating to the configured OIDC provider. No binary installation needed for MCP
   clients.
@@ -240,8 +241,7 @@ tend/
   Calls the API on the same origin. No Node.js in production.
 - **Tauri app** — bundles the same SPA static files. User configures the server URL on first launch.
   Separate build artifact.
-- **Database** — SQLite. Single file, easy backup, self-hosted friendly. Designed so Postgres could
-  be added later if needed.
+- **Database** — PostgreSQL. Deployed as a separate container alongside `tend-server`.
 - **Auth** — OIDC support (for use behind Authelia, Authentik, etc.) + username/password. CLI auth
   via API tokens stored in OS keychain. MCP auth via OAuth 2.1. The `create-admin` command creates a
   **global owner** — a user with `isOwner: true` who bypasses space membership checks and can access
@@ -250,7 +250,7 @@ tend/
   a token are attributed to the user but tagged with the token name (e.g., "Sargun (via Claude)").
   Every action records `user_id` + nullable `token_id`. No separate bot accounts — tokens inherit
   the user's permissions. OIDC users can create tokens; admins can create username/password users.
-- **Deployment** — single Docker container running `tend-server`. Volume-mount for the SQLite file.
+- **Deployment** — Docker Compose with `tend-server` and PostgreSQL containers.
 
 ### Future platforms (post v0.1)
 
@@ -262,8 +262,6 @@ tend/
   collections (e.g., retro handhelds). Items have quantity, condition, maintenance schedules. Links
   to tasks (e.g., "replace air filter" triggered when inventory count is low, or recurring
   maintenance tasks tied to an item).
-- **Offline support** — local SQLite + sync protocol. v0.1 is online-only but the API is designed
-  with idempotent operations and timestamps to support offline later.
 - **Notifications** — email, webhooks, push via relay service. Not in v0.1.
 
 ### v0.1 Scope
@@ -286,7 +284,7 @@ tend/
 - Markdown descriptions
 - Today view (unified dashboard)
 - OIDC + username/password auth
-- Single container Docker deployment
+- Docker Compose deployment (server + PostgreSQL)
 
 **Out of scope for v0.1:**
 
@@ -294,7 +292,6 @@ tend/
 - Task templates
 - Custom fields / space-defined schemas
 - Native mobile and desktop apps
-- Offline support and sync
 - Notifications (email, push, webhooks)
 - Fractional indexing for manual ordering (sort by due date/staleness for now)
 - Structured integrations (GitHub, etc.)
