@@ -3,6 +3,7 @@ version: "2"
 linters:
   default: standard
   enable:
+    - depguard
     - errchkjson
     - exhaustive
     - forbidigo
@@ -15,3 +16,26 @@ linters:
     - sloglint
     - unconvert
     - usestdlibvars
+
+  settings:
+    depguard:
+      rules:
+        # Only cmd/server may import the api and cron orchestration layers
+        no-orchestration:
+          list-mode: lax
+          files:
+            - "!${config-path}/cmd/server/*.go"
+            - "!$test"
+          deny:
+            - pkg: "github.com/sargunv/tend/server/internal/api"
+              desc: "only cmd/server may import the api layer"
+            - pkg: "github.com/sargunv/tend/server/internal/cron"
+              desc: "only cmd/server may import the cron layer"
+        # Only internal/api may import the generated API types
+        no-apigen:
+          list-mode: lax
+          files:
+            - "!${config-path}/internal/api/*.go"
+          deny:
+            - pkg: "github.com/sargunv/tend/server/api/gen"
+              desc: "only internal/api may import apigen; use domain types from internal/types"

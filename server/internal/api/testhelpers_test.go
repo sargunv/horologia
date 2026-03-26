@@ -155,6 +155,14 @@ func createAndAddMember(t *testing.T, env *testEnv, spaceSlug, email, name, pass
 	return token, userID
 }
 
+// must fails the test if err is non-nil.
+func must(t *testing.T, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 // jsonAs is a generic helper that performs a checked type assertion in tests.
 func jsonAs[T any](t *testing.T, v any) T {
 	t.Helper()

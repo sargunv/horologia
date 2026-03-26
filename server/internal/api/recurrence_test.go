@@ -1,10 +1,11 @@
 package api_test
 
 import (
-	"context"
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/sargunv/tend/server/internal/taskengine"
 )
 
 // dueAtFromResponse extracts the "at" string from a task's nested "due" field.
@@ -913,7 +914,7 @@ func TestFixedAccumulatingCronBackfill(t *testing.T) {
 	taskID := jsonAs[string](t, task["id"])
 
 	// Directly call processOverdueTasks to simulate the cron.
-	env.Handler.ProcessOverdueTasksForTest(context.Background())
+	must(t, taskengine.ProcessOverdueTasks(t.Context(), env.db, nil))
 
 	// Fetch the original task — should now be one_off.
 	resp := doRequest(t, env, "GET", "/spaces/fa-cron/tasks/"+taskID, "")
@@ -975,8 +976,8 @@ func TestFixedAccumulatingCronIdempotent(t *testing.T) {
 		`{"title":"Weekly","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY","due":{"at":"2026-03-10T00:00:00Z","timezone":"UTC"}}`)
 
 	// Run the cron twice.
-	env.Handler.ProcessOverdueTasksForTest(context.Background())
-	env.Handler.ProcessOverdueTasksForTest(context.Background())
+	must(t, taskengine.ProcessOverdueTasks(t.Context(), env.db, nil))
+	must(t, taskengine.ProcessOverdueTasks(t.Context(), env.db, nil))
 
 	// List all tasks — second run should not have created duplicates.
 	resp := doRequest(t, env, "GET", "/spaces/fa-idem/tasks?limit=100", "")
@@ -1007,7 +1008,7 @@ func TestFixedAccumulatingCronExhaustedRule(t *testing.T) {
 		`{"title":"Expired","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY;UNTIL=20260310T000000Z","due":{"at":"2026-03-03T00:00:00Z","timezone":"UTC"}}`)
 	taskID := jsonAs[string](t, task["id"])
 
-	env.Handler.ProcessOverdueTasksForTest(context.Background())
+	must(t, taskengine.ProcessOverdueTasks(t.Context(), env.db, nil))
 
 	// The original should be converted to one_off.
 	resp := doRequest(t, env, "GET", "/spaces/fa-exh/tasks/"+taskID, "")
@@ -1030,7 +1031,7 @@ func TestFixedAccumulatingCronNonUTCTimezone(t *testing.T) {
 		`{"title":"Weekly Eastern","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY","due":{"at":"2026-03-09T05:00:00Z","timezone":"America/New_York"}}`)
 	taskID := jsonAs[string](t, task["id"])
 
-	env.Handler.ProcessOverdueTasksForTest(context.Background())
+	must(t, taskengine.ProcessOverdueTasks(t.Context(), env.db, nil))
 
 	// Original should be one_off.
 	resp := doRequest(t, env, "GET", "/spaces/fa-tz/tasks/"+taskID, "")
@@ -1095,7 +1096,7 @@ func TestFixedAccumulatingCronAfterCompletion(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 
 	// Now run the cron — it should NOT re-process the original (already one_off).
-	env.Handler.ProcessOverdueTasksForTest(context.Background())
+	must(t, taskengine.ProcessOverdueTasks(t.Context(), env.db, nil))
 
 	// Count tasks — should be exactly 2 (original one_off + 1 spawned by completion).
 	resp2 := doRequest(t, env, "GET", "/spaces/fa-race/tasks?limit=100", "")

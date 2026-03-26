@@ -1,10 +1,11 @@
 package api_test
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"testing"
+
+	"github.com/sargunv/tend/server/internal/taskengine"
 )
 
 func TestRotationPoolRoundTrip(t *testing.T) {
@@ -284,7 +285,7 @@ func TestRotationCronMultiSpawn(t *testing.T) {
 	taskID := jsonAs[string](t, task["id"])
 
 	// Run cron to process overdue tasks.
-	env.Handler.ProcessOverdueTasksForTest(context.Background())
+	must(t, taskengine.ProcessOverdueTasks(t.Context(), env.db, nil))
 
 	// Original task should now be one_off with empty pool.
 	resp := doRequest(t, env, "GET", "/spaces/alpha/tasks/"+taskID, "")
