@@ -43,6 +43,11 @@ Packages (`api`, `cli`, `server`, `web`) have their own tasks scoped by name, e.
 - Our concerns are layout, functionality, and correct use of Skeleton components — not bespoke
   styling.
 - Use `/frontend-design` when building UI to ensure high quality.
+- Use `createLink()` from TanStack Router to wrap Skeleton components for client-side navigation. Do
+  not use Skeleton's `element` render prop for router integration — it's a power-user escape hatch
+  that doesn't forward children and is not needed for normal usage.
+- Read Skeleton's component docs before hand-rolling UI. Check whether a Skeleton component already
+  exists for the pattern (e.g. Navigation, AppBar) rather than building it from raw HTML + Tailwind.
 
 ## Browser Automation
 
