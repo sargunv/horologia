@@ -67,17 +67,20 @@ func hashToken(token string) string {
 }
 
 // createSessionToken generates a token, stores it in the DB, and returns the raw value.
+// The token expires after sessionMaxAge seconds, matching the session cookie lifetime.
 func createSessionToken(ctx context.Context, q *dbgen.Queries, userID int64) (string, error) {
 	raw, hash, err := generateToken()
 	if err != nil {
 		return "", err
 	}
+	now := time.Now()
 	_, err = q.CreateAuthToken(ctx, dbgen.CreateAuthTokenParams{
 		UserID:    userID,
 		TokenHash: hash,
 		Name:      "",
 		Kind:      dbgen.AuthTokenKindSession,
-		CreatedAt: types.Timestamptz(time.Now()),
+		ExpiresAt: types.Timestamptz(now.Add(sessionMaxAge * time.Second)),
+		CreatedAt: types.Timestamptz(now),
 	})
 	return raw, err
 }

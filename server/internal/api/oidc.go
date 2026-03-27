@@ -96,7 +96,7 @@ func NewOIDCHandler(ctx context.Context, cfg OIDCConfig, handler *Handler) (http
 			http.SetCookie(w, &http.Cookie{
 				Name:     oidcRedirectCookieName,
 				Value:    rd,
-				Path:     "/auth/oidc/callback",
+				Path:     "/",
 				MaxAge:   300,
 				HttpOnly: true,
 				Secure:   handler.SecureCookies,
