@@ -59,16 +59,16 @@ function LoginPage() {
 
   return (
     <div className="flex min-h-svh items-center justify-center p-4">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="space-y-1 text-center">
-          <h1 className="h2">Tend</h1>
+      <div className="flex w-full max-w-sm flex-col gap-4">
+        <div className="flex flex-col items-center gap-1">
+          <h1 className="h1">Tend</h1>
           <p className="text-surface-600-400 text-sm">Sign in to your account</p>
         </div>
 
-        <div className="card preset-outlined-surface-200-800 space-y-6 p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <label className="space-y-1">
-              <span className="text-surface-300 text-sm font-medium">Email</span>
+        <div className="card preset-outlined-surface-200-800 flex flex-col gap-6 p-6">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <label className="flex flex-col gap-1">
+              <span className="text-surface-600-400 text-sm font-medium">Email</span>
               <input
                 type="email"
                 required
@@ -81,8 +81,8 @@ function LoginPage() {
               />
             </label>
 
-            <label className="space-y-1">
-              <span className="text-surface-300 text-sm font-medium">Password</span>
+            <label className="flex flex-col gap-1">
+              <span className="text-surface-600-400 text-sm font-medium">Password</span>
               <input
                 type="password"
                 required
@@ -96,7 +96,21 @@ function LoginPage() {
             </label>
 
             {error && (
-              <div className="preset-tonal-error rounded-base px-3 py-2 text-sm">{error}</div>
+              <div className="preset-filled-error-500 flex items-center gap-2 rounded-base px-3 py-2 text-sm">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  className="size-4 shrink-0"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                {error}
+              </div>
             )}
 
             <button
