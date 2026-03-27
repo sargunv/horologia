@@ -24,7 +24,7 @@ export function UserMenu({ user }: { user: User }) {
 
   return (
     <Menu>
-      <Menu.Trigger className="flex w-full items-center gap-2.5 rounded-md px-2 py-2 outline-none cursor-pointer hover:bg-surface-200-800 transition-colors">
+      <Menu.Trigger className="btn preset-tonal-surface w-full gap-2.5">
         <div className="flex-1 min-w-0 text-left">
           <div className="text-sm font-medium truncate">{user.name}</div>
           <div className="text-surface-600-400 text-xs truncate">{user.email}</div>
@@ -45,17 +45,23 @@ export function UserMenu({ user }: { user: User }) {
       <Portal>
         <Menu.Positioner>
           <Menu.Content>
-            <Menu.Item value="settings">
-              <Link to="/settings">
-                <Menu.ItemText>Settings</Menu.ItemText>
-              </Link>
-            </Menu.Item>
-            {user.isOwner && (
-              <Menu.Item value="admin">
-                <Link to="/admin">
-                  <Menu.ItemText>Admin</Menu.ItemText>
+            <Menu.Item
+              value="settings"
+              element={(attrs) => (
+                <Link {...attrs} to="/settings">
+                  <Menu.ItemText>Settings</Menu.ItemText>
                 </Link>
-              </Menu.Item>
+              )}
+            />
+            {user.isOwner && (
+              <Menu.Item
+                value="admin"
+                element={(attrs) => (
+                  <Link {...attrs} to="/admin">
+                    <Menu.ItemText>Admin</Menu.ItemText>
+                  </Link>
+                )}
+              />
             )}
             <Menu.Separator />
             <Menu.Item value="logout" onClick={handleLogout}>
