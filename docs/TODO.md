@@ -3,7 +3,7 @@
 ## Web App Roadmap
 
 - [x] Browser automation for agent feedback loop (agent-browser)
-- [ ] Login page
+- [x] Login page
 - [ ] App shell (layout, nav, auth guard, logout)
 - [ ] Space list and create
 - [ ] Task list view within a space
@@ -30,8 +30,7 @@
 
 1. **OIDC auto-linking by email** — require user consent before linking OIDC identity to existing
    account
-2. **Rate limiting on password login** — prevent brute-force attacks
-3. **Invalidate sessions on password change** — revoke all tokens for the user
+2. **Invalidate sessions on password change** — revoke all tokens for the user
 
 ## Infrastructure
 

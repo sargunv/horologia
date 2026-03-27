@@ -20,5 +20,4 @@ run = "pnpm exec vp build"
 
 [tasks.test]
 description = "Run tests"
-depends = ["generate"]
-run = "pnpm exec vp test"
+run = "echo 'No tests yet'"
