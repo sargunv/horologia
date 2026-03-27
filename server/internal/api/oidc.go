@@ -129,6 +129,16 @@ func (h *Handler) handleOIDCCallback(w http.ResponseWriter, r *http.Request, tok
 		return
 	}
 
+	emailVerified := info.EmailVerified
+	if !emailVerified {
+		emailVerified = tokens.IDTokenClaims.EmailVerified
+	}
+	if !emailVerified {
+		h.Log.ErrorContext(ctx, "oidc: email not verified", "subject", subject)
+		http.Error(w, "OIDC provider email is not verified", http.StatusBadRequest)
+		return
+	}
+
 	email := info.Email
 	if email == "" {
 		email = tokens.IDTokenClaims.Email

@@ -21,14 +21,18 @@
 3. **Web feature parity with backend and CLI**
 4. **Markdown rendering** — render descriptions as Markdown in web UI
 
+## Testing
+
+1. **OIDC integration tests** — use `github.com/oauth2-proxy/mockoidc` to test the full OIDC
+   callback flow (email_verified rejection, auto-linking, user creation)
+
 ## Security
 
 1. **OIDC auto-linking by email** — require user consent before linking OIDC identity to existing
    account
-2. **Check `email_verified` on OIDC claims** — reject unverified emails from OIDC providers
-3. **Login CSRF** — validate `Content-Type: application/json` on `POST /auth/web-login`
-4. **Rate limiting on password login** — prevent brute-force attacks
-5. **Invalidate sessions on password change** — revoke all tokens for the user
+2. **Login CSRF** — validate `Content-Type: application/json` on `POST /auth/web-login`
+3. **Rate limiting on password login** — prevent brute-force attacks
+4. **Invalidate sessions on password change** — revoke all tokens for the user
 
 ## Infrastructure
 
