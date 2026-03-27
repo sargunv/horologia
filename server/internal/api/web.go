@@ -157,9 +157,24 @@ func (h *Handler) clearSessionCookie(w http.ResponseWriter) {
 	})
 }
 
+// AuthConfigHandler returns an http.Handler for GET /auth/config.
+// It exposes public (no-auth) configuration the SPA needs before login.
+func AuthConfigHandler(handler *Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"oidc": map[string]any{
+				"enabled": handler.OIDCEnabled,
+				"label":   handler.OIDCLabel,
+			},
+		})
+	})
+}
+
 // MountWebAuth wraps the base handler with cookie-based auth routes and middleware.
 func MountWebAuth(base http.Handler, handler *Handler) http.Handler {
 	mux := http.NewServeMux()
+	mux.Handle("GET /auth/config", AuthConfigHandler(handler))
 	mux.Handle("POST /auth/web-login", WebLoginHandler(handler))
 	mux.Handle("POST /auth/web-logout", WebLogoutHandler(handler))
 	mux.Handle("/", CookieAuthMiddleware(base))

@@ -16,4 +16,5 @@ dist/
 .dprint/
 
 # typespec
-tsp-output/
+tsp-output/.playwright-cli/
+.playwright/

@@ -12,7 +12,8 @@
     "server/internal/api/gen",
     "server/internal/database/gen",
     "web/src/api/schema.d.ts",
-    "web/src/routeTree.gen.ts"
+    "web/src/routeTree.gen.ts",
+    "api/tsp-output"
   ],
   "markdown": {
     "textWrap": "always"

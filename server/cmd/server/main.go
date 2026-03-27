@@ -106,7 +106,13 @@ var serveCmd = &cobra.Command{
 		}
 		defer pool.Close()
 
-		handler := &api.Handler{Pool: pool, Log: log, SecureCookies: cfg.SecureCookies}
+		handler := &api.Handler{
+			Pool:          pool,
+			Log:           log,
+			SecureCookies: cfg.SecureCookies,
+			OIDCEnabled:   cfg.OIDCIssuer != "",
+			OIDCLabel:     cfg.OIDCLabel,
+		}
 
 		// Start the fixed_accumulating cron job.
 		cronCtx, cronCancel := context.WithCancel(cmd.Context())

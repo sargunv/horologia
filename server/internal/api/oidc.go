@@ -8,10 +8,12 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/zitadel/oidc/v3/pkg/client/rp"
 	zhttp "github.com/zitadel/oidc/v3/pkg/http"
 	"github.com/zitadel/oidc/v3/pkg/oidc"
@@ -19,6 +21,13 @@ import (
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
 )
+
+const oidcRedirectCookieName = "tend_oidc_redirect" //nolint:gosec // cookie name, not a credential
+
+// isValidRedirect checks that a redirect path is safe (relative, no open redirect).
+func isValidRedirect(path string) bool {
+	return path != "" && strings.HasPrefix(path, "/") && !strings.HasPrefix(path, "//")
+}
 
 // OIDCConfig holds the configuration for the OIDC relying party.
 type OIDCConfig struct {
@@ -36,7 +45,7 @@ type OIDCConfig struct {
 //
 // Returns nil if OIDC is not configured.
 func NewOIDCHandler(ctx context.Context, cfg OIDCConfig, handler *Handler) (http.Handler, error) {
-	// Generate separate keys for HMAC authentication and AES encryption of OIDC state cookies.
+	// Generate keys for HMAC authentication and AES encryption of OIDC state cookies.
 	hashKey := make([]byte, 32)
 	if _, err := rand.Read(hashKey); err != nil {
 		return nil, fmt.Errorf("generate oidc hash key: %w", err)
@@ -45,7 +54,11 @@ func NewOIDCHandler(ctx context.Context, cfg OIDCConfig, handler *Handler) (http
 	if _, err := rand.Read(encKey); err != nil {
 		return nil, fmt.Errorf("generate oidc encryption key: %w", err)
 	}
-	cookieHandler := zhttp.NewCookieHandler(hashKey, encKey)
+	cookieOpts := []zhttp.CookieHandlerOpt{}
+	if !handler.SecureCookies {
+		cookieOpts = append(cookieOpts, zhttp.WithUnsecure())
+	}
+	cookieHandler := zhttp.NewCookieHandler(hashKey, encKey, cookieOpts...)
 
 	options := []rp.Option{
 		rp.WithCookieHandler(cookieHandler),
@@ -66,16 +79,32 @@ func NewOIDCHandler(ctx context.Context, cfg OIDCConfig, handler *Handler) (http
 	mux := http.NewServeMux()
 
 	// GET /auth/oidc → redirect to IdP.
-	// The AuthURLHandler callback only returns a string, so there's no way to
-	// propagate an error. rand.Read failing indicates a broken OS RNG, which is
-	// a fatal condition — panic is appropriate here.
-	mux.Handle("GET /auth/oidc", rp.AuthURLHandler(func() string {
+	// Wraps AuthURLHandler to preserve an optional ?redirect= param in a
+	// short-lived cookie so the callback can send the user to the right page.
+	// Note: the redirect cookie has the same Safari/ITP limitation as the state
+	// cookie — it may not survive the round-trip through a dev proxy. In dev
+	// mode the redirect falls back to "/" which is acceptable.
+	authURLHandler := rp.AuthURLHandler(func() string {
 		b := make([]byte, 16)
 		if _, err := rand.Read(b); err != nil {
 			panic("generate oidc state: " + err.Error())
 		}
 		return hex.EncodeToString(b)
-	}, provider))
+	}, provider)
+	mux.Handle("GET /auth/oidc", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if rd := r.URL.Query().Get("redirect"); isValidRedirect(rd) {
+			http.SetCookie(w, &http.Cookie{
+				Name:     oidcRedirectCookieName,
+				Value:    rd,
+				Path:     "/auth/oidc/callback",
+				MaxAge:   300,
+				HttpOnly: true,
+				Secure:   handler.SecureCookies,
+				SameSite: http.SameSiteLaxMode,
+			})
+		}
+		authURLHandler.ServeHTTP(w, r)
+	}))
 
 	// GET /auth/oidc/callback → exchange code, find/create user, issue token.
 	marshalToken := func(w http.ResponseWriter, r *http.Request, tokens *oidc.Tokens[*oidc.IDTokenClaims], state string, relyingParty rp.RelyingParty) {
@@ -194,7 +223,23 @@ func (h *Handler) handleOIDCCallback(w http.ResponseWriter, r *http.Request, tok
 	}
 
 	h.setSessionCookie(w, raw)
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+
+	// Read and clear the OIDC redirect cookie.
+	redirectTo := "/"
+	if c, err := r.Cookie(oidcRedirectCookieName); err == nil && isValidRedirect(c.Value) {
+		redirectTo = c.Value
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     oidcRedirectCookieName,
+		Value:    "",
+		Path:     "/auth/oidc/callback",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   h.SecureCookies,
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	http.Redirect(w, r, redirectTo, http.StatusSeeOther)
 }
 
 // MountOIDC wraps an ogen handler with optional OIDC routes.

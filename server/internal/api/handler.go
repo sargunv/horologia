@@ -21,6 +21,8 @@ type Handler struct {
 	Pool          *pgxpool.Pool
 	Log           *slog.Logger
 	SecureCookies bool
+	OIDCEnabled   bool
+	OIDCLabel     string
 }
 
 func (h *Handler) NewError(ctx context.Context, err error) *apigen.ApiErrorStatusCode {

@@ -11,6 +11,7 @@ common_env = {
     "TEND_OIDC_CLIENT_ID": "tend",
     "TEND_OIDC_CLIENT_SECRET": "tend-dev-secret",
     "TEND_OIDC_REDIRECT_URL": "http://localhost:%d/api/auth/oidc/callback" % WEB_PORT,
+    "TEND_SECURE_COOKIES": "false",
 }
 
 docker_compose("docker-compose.yml")

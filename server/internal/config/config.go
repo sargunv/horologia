@@ -20,6 +20,7 @@ type Config struct {
 	OIDCClientID     string `koanf:"oidc_client_id"`
 	OIDCClientSecret string `koanf:"oidc_client_secret"`
 	OIDCRedirectURL  string `koanf:"oidc_redirect_url"`
+	OIDCLabel        string `koanf:"oidc_label"`
 }
 
 func Load() (Config, error) {
@@ -36,6 +37,7 @@ func Load() (Config, error) {
 		LogFormat:     "text",
 		LogLevel:      "info",
 		SecureCookies: true,
+		OIDCLabel:     "OIDC",
 	}
 
 	if err := k.Unmarshal("", &cfg); err != nil {
