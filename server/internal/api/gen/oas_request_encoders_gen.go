@@ -24,20 +24,6 @@ func encodeAuthCreateTokenRequest(
 	return nil
 }
 
-func encodeAuthLoginRequest(
-	req *LoginRequest,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
 func encodeSpaceMembersCreateRequest(
 	req *SpaceMemberCreate,
 	r *http.Request,

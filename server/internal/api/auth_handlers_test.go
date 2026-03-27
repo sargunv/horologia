@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"net/http"
-	"strings"
 	"testing"
 	"time"
 
@@ -13,41 +12,6 @@ import (
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/types"
 )
-
-func TestAuthLoginSuccess(t *testing.T) {
-	env := setupTestServer(t)
-
-	// Login doesn't need auth header, but doRequest always adds one. Use a raw request.
-	req, _ := http.NewRequestWithContext(t.Context(), http.MethodPost, env.Server.URL+"/auth/login", strings.NewReader(`{"email":"test@example.com","password":"password"}`))
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		t.Fatalf("do request: %v", err)
-	}
-	assertStatus(t, resp, http.StatusOK)
-
-	var result map[string]any
-	readJSON(t, resp, &result)
-	if result["token"] == nil || result["token"] == "" {
-		t.Error("expected a token in response")
-	}
-	user := jsonAs[map[string]any](t, result["user"])
-	if user["email"] != "test@example.com" {
-		t.Errorf("email = %v, want test@example.com", user["email"])
-	}
-}
-
-func TestAuthLoginBadPassword(t *testing.T) {
-	env := setupTestServer(t)
-
-	req, _ := http.NewRequestWithContext(t.Context(), http.MethodPost, env.Server.URL+"/auth/login", strings.NewReader(`{"email":"test@example.com","password":"wrong"}`))
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		t.Fatalf("do request: %v", err)
-	}
-	assertStatusClose(t, resp, http.StatusBadRequest)
-}
 
 func TestUnauthenticatedRequest(t *testing.T) {
 	env := setupTestServer(t)
@@ -59,13 +23,6 @@ func TestUnauthenticatedRequest(t *testing.T) {
 		t.Fatalf("do request: %v", err)
 	}
 	assertStatusClose(t, resp, http.StatusUnauthorized)
-}
-
-func TestAuthLoginUnknownEmail(t *testing.T) {
-	env := setupTestServer(t)
-
-	resp := doRequestAs(t, env, "", "POST", "/auth/login", `{"email":"nobody@example.com","password":"anything"}`)
-	assertStatusClose(t, resp, http.StatusBadRequest)
 }
 
 func TestAuthTokenCreate(t *testing.T) {

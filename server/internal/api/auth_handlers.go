@@ -11,29 +11,6 @@ import (
 	"github.com/sargunv/tend/server/internal/types"
 )
 
-// --- Auth: Login ---
-
-func (h *Handler) AuthLogin(ctx context.Context, req *apigen.LoginRequest) (*apigen.LoginResponse, error) {
-	q := dbgen.New(h.Pool)
-
-	user, err := validatePassword(ctx, q, req.Email, req.Password)
-	if err != nil {
-		return nil, badRequest("invalid email or password")
-	}
-
-	raw, err := createSessionToken(ctx, q, user.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	apiUser := userFromDB(user)
-
-	return &apigen.LoginResponse{
-		Token: raw,
-		User:  *apiUser,
-	}, nil
-}
-
 // --- Auth: Tokens ---
 
 func (h *Handler) AuthListTokens(ctx context.Context, params apigen.AuthListTokensParams) (*apigen.AuthTokenPage, error) {

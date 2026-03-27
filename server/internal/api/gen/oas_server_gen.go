@@ -20,10 +20,6 @@ type Handler interface {
 	//
 	// GET /auth/tokens
 	AuthListTokens(ctx context.Context, params AuthListTokensParams) (*AuthTokenPage, error)
-	// AuthLogin implements Auth_login operation.
-	//
-	// POST /auth/login
-	AuthLogin(ctx context.Context, req *LoginRequest) (*LoginResponse, error)
 	// SpaceActivityList implements SpaceActivity_list operation.
 	//
 	// GET /spaces/{spaceSlug}/activity

@@ -93,7 +93,7 @@ func setupTestServer(t *testing.T) *testEnv {
 		t.Fatalf("new server: %v", err)
 	}
 
-	srv := httptest.NewServer(h)
+	srv := httptest.NewServer(api.MountWebAuth(h, handler))
 	t.Cleanup(srv.Close)
 
 	return &testEnv{
@@ -132,7 +132,7 @@ func doRequest(t *testing.T, env *testEnv, method, path, body string) *http.Resp
 	return doRequestAs(t, env, env.Token, method, path, body)
 }
 
-// createTestUser creates a non-owner user via the DB and logs them in to get a token.
+// createTestUser creates a non-owner user via the DB and logs them in to get a session token.
 func createTestUser(t *testing.T, env *testEnv, email, name, password string) string {
 	t.Helper()
 	_, err := taskengine.CreateUserWithPassword(t.Context(), env.pool, email, name, password, false)
@@ -140,7 +140,7 @@ func createTestUser(t *testing.T, env *testEnv, email, name, password string) st
 		t.Fatalf("create test user: %v", err)
 	}
 
-	// Login to get a token.
+	// Login via web endpoint to get a session cookie.
 	resp := doRequestAs(t, env, "", "POST", "/auth/login",
 		`{"email":"`+email+`","password":"`+password+`"}`)
 	if resp.StatusCode != http.StatusOK {
@@ -148,9 +148,16 @@ func createTestUser(t *testing.T, env *testEnv, email, name, password string) st
 		_ = resp.Body.Close()
 		t.Fatalf("login test user: got status %d; body: %s", resp.StatusCode, data)
 	}
-	var result map[string]any
-	readJSON(t, resp, &result)
-	return jsonAs[string](t, result["token"])
+	_ = resp.Body.Close()
+
+	// Extract the session token from the Set-Cookie header.
+	for _, c := range resp.Cookies() {
+		if c.Name == "tend_session" {
+			return c.Value
+		}
+	}
+	t.Fatal("login response missing tend_session cookie")
+	return ""
 }
 
 // getUserID calls GET /users/me with the given token and returns the user ID.

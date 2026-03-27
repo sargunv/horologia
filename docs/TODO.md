@@ -30,7 +30,7 @@
 
 1. **OIDC auto-linking by email** — require user consent before linking OIDC identity to existing
    account
-2. **Login CSRF** — validate `Content-Type: application/json` on `POST /auth/web-login`
+2. **Login CSRF** — validate `Content-Type: application/json` on `POST /auth/login`
 3. **Rate limiting on password login** — prevent brute-force attacks
 4. **Invalidate sessions on password change** — revoke all tokens for the user
 

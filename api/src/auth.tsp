@@ -4,16 +4,6 @@ using Http;
 
 namespace Tend;
 
-model LoginRequest {
-  email: string;
-  password: string;
-}
-
-model LoginResponse {
-  token: string;
-  user: User;
-}
-
 enum AuthTokenKind {
   session,
   api,
@@ -40,11 +30,6 @@ model AuthTokenPage is Page<AuthToken>;
 @route("/auth")
 @tag("Auth")
 interface Auth {
-  @useAuth(NoAuth)
-  @post
-  @route("/login")
-  login(@body body: LoginRequest): LoginResponse | ApiError;
-
   @get
   @route("/tokens")
   listTokens(...PageParams): AuthTokenPage | ApiError;

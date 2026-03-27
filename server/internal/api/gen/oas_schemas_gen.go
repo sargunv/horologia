@@ -560,58 +560,6 @@ func (s *BearerAuth) SetRoles(val []string) {
 	s.Roles = val
 }
 
-// Ref: #/components/schemas/LoginRequest
-type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
-// GetEmail returns the value of Email.
-func (s *LoginRequest) GetEmail() string {
-	return s.Email
-}
-
-// GetPassword returns the value of Password.
-func (s *LoginRequest) GetPassword() string {
-	return s.Password
-}
-
-// SetEmail sets the value of Email.
-func (s *LoginRequest) SetEmail(val string) {
-	s.Email = val
-}
-
-// SetPassword sets the value of Password.
-func (s *LoginRequest) SetPassword(val string) {
-	s.Password = val
-}
-
-// Ref: #/components/schemas/LoginResponse
-type LoginResponse struct {
-	Token string `json:"token"`
-	User  User   `json:"user"`
-}
-
-// GetToken returns the value of Token.
-func (s *LoginResponse) GetToken() string {
-	return s.Token
-}
-
-// GetUser returns the value of User.
-func (s *LoginResponse) GetUser() User {
-	return s.User
-}
-
-// SetToken sets the value of Token.
-func (s *LoginResponse) SetToken(val string) {
-	s.Token = val
-}
-
-// SetUser sets the value of User.
-func (s *LoginResponse) SetUser(val User) {
-	s.User = val
-}
-
 // NewNilDateTime returns new NilDateTime with value set to v.
 func NewNilDateTime(v time.Time) NilDateTime {
 	return NilDateTime{

@@ -175,8 +175,8 @@ func AuthConfigHandler(handler *Handler) http.Handler {
 func MountWebAuth(base http.Handler, handler *Handler) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("GET /auth/config", AuthConfigHandler(handler))
-	mux.Handle("POST /auth/web-login", WebLoginHandler(handler))
-	mux.Handle("POST /auth/web-logout", WebLogoutHandler(handler))
+	mux.Handle("POST /auth/login", WebLoginHandler(handler))
+	mux.Handle("POST /auth/logout", WebLogoutHandler(handler))
 	mux.Handle("/", CookieAuthMiddleware(base))
 	return mux
 }

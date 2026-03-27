@@ -34,13 +34,6 @@ func (UnimplementedHandler) AuthListTokens(ctx context.Context, params AuthListT
 	return r, ht.ErrNotImplemented
 }
 
-// AuthLogin implements Auth_login operation.
-//
-// POST /auth/login
-func (UnimplementedHandler) AuthLogin(ctx context.Context, req *LoginRequest) (r *LoginResponse, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // SpaceActivityList implements SpaceActivity_list operation.
 //
 // GET /spaces/{spaceSlug}/activity
