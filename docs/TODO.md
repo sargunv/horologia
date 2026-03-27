@@ -2,7 +2,7 @@
 
 ## Web App Roadmap
 
-- [ ] Browser automation for agent feedback loop (Playwright MCP or similar)
+- [x] Browser automation for agent feedback loop (agent-browser)
 - [ ] Login page
 - [ ] App shell (layout, nav, auth guard, logout)
 - [ ] Space list and create

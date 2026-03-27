@@ -6,10 +6,10 @@ Tend is a self-hosted task manager. See `docs/BRIEF.md` for the full product bri
 
 ## Roadmap
 
-`docs/ROADMAP.md` tracks v0.1 progress. When you complete a roadmap item, move it from its current
+`docs/TODO.md` tracks v0.1 progress. When you complete a roadmap item, move it from its current
 section into the "Done" section.
 
-## Local Development
+## Development
 
 This project uses `mise` for tooling and task orchestration. Run `mise tasks` to see all available
 tasks. Key commands:
@@ -22,7 +22,7 @@ tasks. Key commands:
 Packages (`api`, `cli`, `server`, `web`) have their own tasks scoped by name, e.g.
 `mise run server:generate`, `mise run server:build`, `mise run server:test`.
 
-## Architecture
+## Packages
 
 - ./api - TypeSpec definition for API.
 - ./server - Golang backend service and API implementation.
@@ -36,14 +36,21 @@ Packages (`api`, `cli`, `server`, `web`) have their own tasks scoped by name, e.
 
 ## Web App Conventions
 
-- Use [Skeleton (React)](https://www.skeleton.dev) as the design system. Prefer Skeleton components
-  over custom implementations wherever possible.
+- Use [Skeleton (React)](https://www.skeleton.dev/llms-react.txt) as the design system. Prefer
+  Skeleton components over custom implementations wherever possible.
 - Lean on Skeleton's built-in theming for all styling. Do not hand-roll colors, typography, or
   spacing tokens.
 - Our concerns are layout, functionality, and correct use of Skeleton components — not bespoke
   styling.
 - Use `/frontend-design` when building UI to ensure high quality.
 
-## Documentation
+## Browser Automation
 
-- [Skeleton design system](https://www.skeleton.dev/llms-react.txt)
+Use `agent-browser` for web automation. Run `agent-browser --help` for all commands.
+
+Core workflow:
+
+1. `agent-browser open <url>` - Navigate to page
+2. `agent-browser snapshot -i` - Get interactive elements with refs (@e1, @e2)
+3. `agent-browser click @e1` / `fill @e2 "text"` - Interact using refs
+4. Re-snapshot after page changes
