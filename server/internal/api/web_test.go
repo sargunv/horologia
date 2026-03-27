@@ -58,6 +58,87 @@ func TestLoginUnknownEmail(t *testing.T) {
 	assertStatusClose(t, resp, http.StatusBadRequest)
 }
 
+func TestLoginRejectsFormContentType(t *testing.T) {
+	env := setupTestServer(t)
+
+	req, _ := http.NewRequestWithContext(t.Context(), http.MethodPost, env.Server.URL+"/auth/login",
+		strings.NewReader(`email=test@example.com&password=password`))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("do request: %v", err)
+	}
+	assertStatus(t, resp, http.StatusUnsupportedMediaType)
+}
+
+func TestLoginRejectsMissingContentType(t *testing.T) {
+	env := setupTestServer(t)
+
+	req, _ := http.NewRequestWithContext(t.Context(), http.MethodPost, env.Server.URL+"/auth/login",
+		strings.NewReader(`{"email":"test@example.com","password":"password"}`))
+	// No Content-Type header set.
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("do request: %v", err)
+	}
+	assertStatus(t, resp, http.StatusUnsupportedMediaType)
+}
+
+func postLogout(t *testing.T, env *testEnv, sessionToken string) *http.Response {
+	t.Helper()
+	req, _ := http.NewRequestWithContext(t.Context(), http.MethodPost, env.Server.URL+"/auth/logout", nil)
+	if sessionToken != "" {
+		req.AddCookie(&http.Cookie{Name: "tend_session", Value: sessionToken})
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("do request: %v", err)
+	}
+	return resp
+}
+
+func TestLogoutWithSession(t *testing.T) {
+	env := setupTestServer(t)
+
+	// Login to get a session cookie.
+	loginResp := postLogin(t, env, `{"email":"test@example.com","password":"password"}`)
+	assertStatus(t, loginResp, http.StatusOK)
+	var sessionToken string
+	for _, c := range loginResp.Cookies() {
+		if c.Name == "tend_session" {
+			sessionToken = c.Value
+		}
+	}
+	_ = loginResp.Body.Close()
+	if sessionToken == "" {
+		t.Fatal("no session cookie from login")
+	}
+
+	// Verify the session token works.
+	assertStatusClose(t, doRequestAs(t, env, sessionToken, "GET", "/users/me", ""), http.StatusOK)
+
+	// Logout.
+	logoutResp := postLogout(t, env, sessionToken)
+	assertStatusClose(t, logoutResp, http.StatusNoContent)
+
+	// Cookie should be cleared (MaxAge < 0).
+	for _, c := range logoutResp.Cookies() {
+		if c.Name == "tend_session" && c.MaxAge >= 0 {
+			t.Error("expected tend_session cookie to be cleared (MaxAge < 0)")
+		}
+	}
+
+	// The token should no longer work.
+	assertStatusClose(t, doRequestAs(t, env, sessionToken, "GET", "/users/me", ""), http.StatusUnauthorized)
+}
+
+func TestLogoutWithoutSession(t *testing.T) {
+	env := setupTestServer(t)
+
+	resp := postLogout(t, env, "")
+	assertStatusClose(t, resp, http.StatusNoContent)
+}
+
 func TestWebErrorCodeIsSnakeCase(t *testing.T) {
 	env := setupTestServer(t)
 

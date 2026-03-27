@@ -46,11 +46,18 @@ func CookieAuthMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// WebLoginHandler returns an http.Handler for POST /auth/web-login.
+// WebLoginHandler returns an http.Handler for POST /auth/login.
 // It validates credentials, creates a session token, sets an httpOnly cookie,
 // and returns the user as JSON (without the raw token).
 func WebLoginHandler(handler *Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Reject non-JSON content types to prevent cross-site form POST (login CSRF).
+		ct := r.Header.Get("Content-Type")
+		if ct == "" || !strings.HasPrefix(strings.TrimSpace(strings.ToLower(ct)), "application/json") {
+			writeJSONError(w, http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+			return
+		}
+
 		var req struct {
 			Email    string `json:"email"`
 			Password string `json:"password"`
@@ -71,7 +78,7 @@ func WebLoginHandler(handler *Handler) http.Handler {
 
 		raw, err := createSessionToken(ctx, q, user.ID)
 		if err != nil {
-			handler.Log.ErrorContext(ctx, "web-login: create session", "error", err)
+			handler.Log.ErrorContext(ctx, "login: create session", "error", err)
 			writeJSONError(w, http.StatusInternalServerError, "internal error")
 			return
 		}
@@ -85,7 +92,7 @@ func WebLoginHandler(handler *Handler) http.Handler {
 	})
 }
 
-// WebLogoutHandler returns an http.Handler for POST /auth/web-logout.
+// WebLogoutHandler returns an http.Handler for POST /auth/logout.
 // It reads the session cookie, deletes the token from the DB, and clears the cookie.
 func WebLogoutHandler(handler *Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
