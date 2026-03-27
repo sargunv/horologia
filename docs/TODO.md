@@ -4,7 +4,7 @@
 
 - [x] Browser automation for agent feedback loop (agent-browser)
 - [x] Login page
-- [ ] App shell (layout, nav, auth guard, logout)
+- [x] App shell (layout, nav, auth guard, logout)
 - [ ] Space list and create
 - [ ] Task list view within a space
 - [ ] Task create and edit

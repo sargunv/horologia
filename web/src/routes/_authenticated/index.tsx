@@ -1,14 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/")({
-  component: IndexPage,
+  component: HomePage,
 });
 
-function IndexPage() {
+function HomePage() {
   return (
-    <div className="p-8">
-      <h1 className="h1">Tend</h1>
-      <p className="text-surface-600-400">Task manager — coming soon.</p>
+    <div className="p-6">
+      <h1 className="h3">Home</h1>
+      <p className="text-surface-600-400 mt-1">
+        Your unified task dashboard across all spaces will appear here.
+      </p>
     </div>
   );
 }

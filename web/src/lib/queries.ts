@@ -26,3 +26,12 @@ export const currentUserQueryOptions = queryOptions({
     return data;
   },
 });
+
+export const spacesQueryOptions = queryOptions({
+  queryKey: ["spaces"],
+  queryFn: async () => {
+    const { data, error } = await apiClient.GET("/spaces");
+    if (error) throw error;
+    return data.items;
+  },
+});
