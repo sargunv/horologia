@@ -1,8 +1,10 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { createLink, useNavigate } from "@tanstack/react-router";
 import { ChevronsUpDown } from "lucide-react";
 import { Menu, Portal } from "@skeletonlabs/skeleton-react";
 import type { components } from "../api/schema.d.ts";
+
+const MenuItemLink = createLink(Menu.Item);
 
 type User = components["schemas"]["User"];
 
@@ -35,23 +37,13 @@ export function UserMenu({ user }: { user: User }) {
       <Portal>
         <Menu.Positioner>
           <Menu.Content>
-            <Menu.Item
-              value="settings"
-              element={(attrs) => (
-                <Link {...attrs} to="/settings">
-                  <Menu.ItemText>Settings</Menu.ItemText>
-                </Link>
-              )}
-            />
+            <MenuItemLink to="/settings" value="settings">
+              <Menu.ItemText>Settings</Menu.ItemText>
+            </MenuItemLink>
             {user.isOwner && (
-              <Menu.Item
-                value="admin"
-                element={(attrs) => (
-                  <Link {...attrs} to="/admin">
-                    <Menu.ItemText>Admin</Menu.ItemText>
-                  </Link>
-                )}
-              />
+              <MenuItemLink to="/admin" value="admin">
+                <Menu.ItemText>Admin</Menu.ItemText>
+              </MenuItemLink>
             )}
             <Menu.Separator />
             <Menu.Item value="logout" onClick={handleLogout}>
