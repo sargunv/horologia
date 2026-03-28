@@ -14,10 +14,11 @@ const ROLES: [SpaceRole, string][] = [
   ["viewer", "Viewer"],
 ];
 
-const ROLE_LABELS: Record<SpaceRole, string> = Object.fromEntries(ROLES) as Record<
-  SpaceRole,
-  string
->;
+const ROLE_LABELS: Record<SpaceRole, string> = {
+  admin: "Admin",
+  member: "Member",
+  viewer: "Viewer",
+};
 
 function RoleOptions() {
   return (
@@ -120,15 +121,13 @@ function MemberRow({
       });
       if (apiError) {
         setError((apiError as { message?: string }).message ?? "Failed to remove member");
-        setConfirmingRemove(false);
         return;
       }
-      setConfirmingRemove(false);
       await queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "members"] });
     } catch {
       setError("Something went wrong. Please try again.");
-      setConfirmingRemove(false);
     } finally {
+      setConfirmingRemove(false);
       setRemovePending(false);
     }
   }

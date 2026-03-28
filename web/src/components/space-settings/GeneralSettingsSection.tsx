@@ -120,8 +120,11 @@ function GeneralSettingsForm({
       </label>
 
       {error && (
-        <div className="preset-filled-error-500 flex items-center gap-2 rounded-base px-3 py-2 text-sm">
-          <CircleAlert className="size-4 shrink-0" />
+        <div
+          role="alert"
+          className="preset-filled-error-500 flex items-center gap-2 rounded-base px-3 py-2 text-sm"
+        >
+          <CircleAlert className="size-4 shrink-0" aria-hidden="true" />
           {error}
         </div>
       )}
