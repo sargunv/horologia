@@ -1,7 +1,11 @@
 import tailwindcss from "@tailwindcss/vite";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
+import { env } from "node:process";
 import { defineConfig } from "vite-plus";
+
+const serverPort = env.SERVER_PORT!;
+const webPort = env.WEB_PORT!;
 
 export default defineConfig({
   plugins: [TanStackRouterVite({ routesDirectory: "./src/routes" }), react(), tailwindcss()],
@@ -22,9 +26,11 @@ export default defineConfig({
     },
   },
   server: {
+    port: Number(webPort),
+    strictPort: true,
     proxy: {
       "/api": {
-        target: "http://localhost:8080",
+        target: `http://localhost:${serverPort}`,
         rewrite: (path) => path.replace(/^\/api/, ""),
       },
     },
