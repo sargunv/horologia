@@ -419,7 +419,7 @@ func (s *SpaceMemberCreate) Validate() error {
 	return nil
 }
 
-func (s *SpaceMemberPage) Validate() error {
+func (s *SpaceMemberList) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
 	}

@@ -118,16 +118,9 @@ SELECT
     u.email AS user_email
 FROM space_members sm
 JOIN users u ON u.id = sm.user_id
-WHERE sm.space_slug = $1 AND sm.user_id > $2
+WHERE sm.space_slug = $1
 ORDER BY sm.user_id ASC
-LIMIT $3
 `
-
-type ListSpaceMembersBySpaceParams struct {
-	SpaceSlug string
-	UserID    int64
-	Limit     int32
-}
 
 type ListSpaceMembersBySpaceRow struct {
 	SpaceSlug string
@@ -138,8 +131,8 @@ type ListSpaceMembersBySpaceRow struct {
 	UserEmail string
 }
 
-func (q *Queries) ListSpaceMembersBySpace(ctx context.Context, arg ListSpaceMembersBySpaceParams) ([]ListSpaceMembersBySpaceRow, error) {
-	rows, err := q.db.Query(ctx, listSpaceMembersBySpace, arg.SpaceSlug, arg.UserID, arg.Limit)
+func (q *Queries) ListSpaceMembersBySpace(ctx context.Context, spaceSlug string) ([]ListSpaceMembersBySpaceRow, error) {
+	rows, err := q.db.Query(ctx, listSpaceMembersBySpace, spaceSlug)
 	if err != nil {
 		return nil, err
 	}

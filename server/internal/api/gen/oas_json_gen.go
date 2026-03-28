@@ -2208,14 +2208,14 @@ func (s *SpaceMemberCreate) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
-func (s *SpaceMemberPage) Encode(e *jx.Encoder) {
+func (s *SpaceMemberList) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
 	e.ObjEnd()
 }
 
 // encodeFields encodes fields.
-func (s *SpaceMemberPage) encodeFields(e *jx.Encoder) {
+func (s *SpaceMemberList) encodeFields(e *jx.Encoder) {
 	{
 		e.FieldStart("items")
 		e.ArrStart()
@@ -2224,21 +2224,16 @@ func (s *SpaceMemberPage) encodeFields(e *jx.Encoder) {
 		}
 		e.ArrEnd()
 	}
-	{
-		e.FieldStart("nextCursor")
-		s.NextCursor.Encode(e)
-	}
 }
 
-var jsonFieldsNameOfSpaceMemberPage = [2]string{
+var jsonFieldsNameOfSpaceMemberList = [1]string{
 	0: "items",
-	1: "nextCursor",
 }
 
-// Decode decodes SpaceMemberPage from json.
-func (s *SpaceMemberPage) Decode(d *jx.Decoder) error {
+// Decode decodes SpaceMemberList from json.
+func (s *SpaceMemberList) Decode(d *jx.Decoder) error {
 	if s == nil {
-		return errors.New("invalid: unable to decode SpaceMemberPage to nil")
+		return errors.New("invalid: unable to decode SpaceMemberList to nil")
 	}
 	var requiredBitSet [1]uint8
 
@@ -2262,27 +2257,17 @@ func (s *SpaceMemberPage) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"items\"")
 			}
-		case "nextCursor":
-			requiredBitSet[0] |= 1 << 1
-			if err := func() error {
-				if err := s.NextCursor.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"nextCursor\"")
-			}
 		default:
 			return d.Skip()
 		}
 		return nil
 	}); err != nil {
-		return errors.Wrap(err, "decode SpaceMemberPage")
+		return errors.Wrap(err, "decode SpaceMemberList")
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000011,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -2294,8 +2279,8 @@ func (s *SpaceMemberPage) Decode(d *jx.Decoder) error {
 				bitIdx := bits.TrailingZeros8(result)
 				fieldIdx := i*8 + bitIdx
 				var name string
-				if fieldIdx < len(jsonFieldsNameOfSpaceMemberPage) {
-					name = jsonFieldsNameOfSpaceMemberPage[fieldIdx]
+				if fieldIdx < len(jsonFieldsNameOfSpaceMemberList) {
+					name = jsonFieldsNameOfSpaceMemberList[fieldIdx]
 				} else {
 					name = strconv.Itoa(fieldIdx)
 				}
@@ -2316,14 +2301,14 @@ func (s *SpaceMemberPage) Decode(d *jx.Decoder) error {
 }
 
 // MarshalJSON implements stdjson.Marshaler.
-func (s *SpaceMemberPage) MarshalJSON() ([]byte, error) {
+func (s *SpaceMemberList) MarshalJSON() ([]byte, error) {
 	e := jx.Encoder{}
 	s.Encode(&e)
 	return e.Bytes(), nil
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *SpaceMemberPage) UnmarshalJSON(data []byte) error {
+func (s *SpaceMemberList) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

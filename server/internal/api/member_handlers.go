@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"errors"
-	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -14,43 +13,24 @@ import (
 	"github.com/sargunv/tend/server/internal/types"
 )
 
-func (h *Handler) SpaceMembersList(ctx context.Context, params apigen.SpaceMembersListParams) (*apigen.SpaceMemberPage, error) {
+func (h *Handler) SpaceMembersList(ctx context.Context, params apigen.SpaceMembersListParams) (*apigen.SpaceMemberList, error) {
 	if err := h.requireSpaceRead(ctx, params.SpaceSlug); err != nil {
 		return nil, err
 	}
 
-	cursorID, err := decodeCursorInt64(params.Cursor)
-	if err != nil {
-		return nil, badRequest(err.Error())
-	}
-
-	limit := clampLimit(params.Limit)
-
 	q := dbgen.New(h.Pool)
 
-	rows, err := q.ListSpaceMembersBySpace(ctx, dbgen.ListSpaceMembersBySpaceParams{
-		SpaceSlug: params.SpaceSlug,
-		UserID:    cursorID,
-		Limit:     limit + 1,
-	})
+	rows, err := q.ListSpaceMembersBySpace(ctx, params.SpaceSlug)
 	if err != nil {
 		return nil, err
 	}
 
-	items, nextCursor, err := paginate(rows, limit, func(rows []dbgen.ListSpaceMembersBySpaceRow) ([]apigen.SpaceMember, error) {
-		items := make([]apigen.SpaceMember, len(rows))
-		for i, r := range rows {
-			items[i] = *memberToAPI(r.UserID, r.UserName, r.UserEmail, r.Role, r.CreatedAt)
-		}
-		return items, nil
-	}, func(r dbgen.ListSpaceMembersBySpaceRow) string {
-		return strconv.FormatInt(r.UserID, 10)
-	})
-	if err != nil {
-		return nil, err
+	items := make([]apigen.SpaceMember, len(rows))
+	for i, r := range rows {
+		items[i] = *memberToAPI(r.UserID, r.UserName, r.UserEmail, r.Role, r.CreatedAt)
 	}
 
-	return &apigen.SpaceMemberPage{Items: items, NextCursor: nextCursor}, nil
+	return &apigen.SpaceMemberList{Items: items}, nil
 }
 
 func (h *Handler) SpaceMembersCreate(ctx context.Context, req *apigen.SpaceMemberCreate, params apigen.SpaceMembersCreateParams) (*apigen.SpaceMember, error) {

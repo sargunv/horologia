@@ -48,53 +48,15 @@ func TestSpaceMembersList(t *testing.T) {
 
 	resp := doRequest(t, env, "GET", "/spaces/home/members", "")
 	assertStatus(t, resp, http.StatusOK)
-	var page map[string]any
-	readJSON(t, resp, &page)
-	items := jsonAs[[]any](t, page["items"])
+	var list map[string]any
+	readJSON(t, resp, &list)
+	items := jsonAs[[]any](t, list["items"])
 	// Creator is auto-added as admin.
 	if len(items) != 1 {
 		t.Fatalf("got %d members, want 1", len(items))
 	}
 	if jsonAs[map[string]any](t, items[0])["role"] != "admin" {
 		t.Errorf("role = %v, want admin", jsonAs[map[string]any](t, items[0])["role"])
-	}
-}
-
-func TestSpaceMembersListPagination(t *testing.T) {
-	env := setupTestServer(t)
-
-	createSpace(t, env, "home", "Home")
-	// Space creator is auto-added as admin (1 member already).
-	// Add 3 more members for a total of 4.
-	createAndAddMember(t, env, "home", "b@example.com", "B", "pass123", "member")
-	createAndAddMember(t, env, "home", "c@example.com", "C", "pass123", "member")
-	createAndAddMember(t, env, "home", "d@example.com", "D", "pass123", "member")
-
-	// Page 1: limit=2, should return 2 items with a cursor.
-	resp := doRequest(t, env, "GET", "/spaces/home/members?limit=2", "")
-	assertStatus(t, resp, http.StatusOK)
-	var page1 map[string]any
-	readJSON(t, resp, &page1)
-	items1 := jsonAs[[]any](t, page1["items"])
-	if len(items1) != 2 {
-		t.Fatalf("page 1: got %d items, want 2", len(items1))
-	}
-	cursor := page1["nextCursor"]
-	if cursor == nil {
-		t.Fatal("page 1: expected nextCursor")
-	}
-
-	// Page 2: should return remaining 2 items with null cursor.
-	resp2 := doRequest(t, env, "GET", "/spaces/home/members?limit=2&cursor="+jsonAs[string](t, cursor), "")
-	assertStatus(t, resp2, http.StatusOK)
-	var page2 map[string]any
-	readJSON(t, resp2, &page2)
-	items2 := jsonAs[[]any](t, page2["items"])
-	if len(items2) != 2 {
-		t.Fatalf("page 2: got %d items, want 2", len(items2))
-	}
-	if page2["nextCursor"] != nil {
-		t.Error("page 2: expected null nextCursor")
 	}
 }
 

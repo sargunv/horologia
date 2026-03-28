@@ -17,9 +17,8 @@ SELECT
     u.email AS user_email
 FROM space_members sm
 JOIN users u ON u.id = sm.user_id
-WHERE sm.space_slug = $1 AND sm.user_id > $2
-ORDER BY sm.user_id ASC
-LIMIT $3;
+WHERE sm.space_slug = $1
+ORDER BY sm.user_id ASC;
 
 -- name: ListSpacesByUser :many
 SELECT s.* FROM spaces s

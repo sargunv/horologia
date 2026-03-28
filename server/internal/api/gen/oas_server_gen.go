@@ -35,7 +35,7 @@ type Handler interface {
 	// SpaceMembersList implements SpaceMembers_list operation.
 	//
 	// GET /spaces/{spaceSlug}/members
-	SpaceMembersList(ctx context.Context, params SpaceMembersListParams) (*SpaceMemberPage, error)
+	SpaceMembersList(ctx context.Context, params SpaceMembersListParams) (*SpaceMemberList, error)
 	// SpaceMembersUpdate implements SpaceMembers_update operation.
 	//
 	// PATCH /spaces/{spaceSlug}/members/{userId}

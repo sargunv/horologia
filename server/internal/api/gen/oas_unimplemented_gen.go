@@ -58,7 +58,7 @@ func (UnimplementedHandler) SpaceMembersDelete(ctx context.Context, params Space
 // SpaceMembersList implements SpaceMembers_list operation.
 //
 // GET /spaces/{spaceSlug}/members
-func (UnimplementedHandler) SpaceMembersList(ctx context.Context, params SpaceMembersListParams) (r *SpaceMemberPage, _ error) {
+func (UnimplementedHandler) SpaceMembersList(ctx context.Context, params SpaceMembersListParams) (r *SpaceMemberList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

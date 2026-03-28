@@ -1385,7 +1385,7 @@ func (s *Server) handleSpaceMembersListRequest(args [1]string, argsEscaped bool,
 
 	var rawBody []byte
 
-	var response *SpaceMemberPage
+	var response *SpaceMemberList
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -1399,14 +1399,6 @@ func (s *Server) handleSpaceMembersListRequest(args [1]string, argsEscaped bool,
 					Name: "spaceSlug",
 					In:   "path",
 				}: params.SpaceSlug,
-				{
-					Name: "cursor",
-					In:   "query",
-				}: params.Cursor,
-				{
-					Name: "limit",
-					In:   "query",
-				}: params.Limit,
 			},
 			Raw: r,
 		}
@@ -1414,7 +1406,7 @@ func (s *Server) handleSpaceMembersListRequest(args [1]string, argsEscaped bool,
 		type (
 			Request  = struct{}
 			Params   = SpaceMembersListParams
-			Response = *SpaceMemberPage
+			Response = *SpaceMemberList
 		)
 		response, err = middleware.HookMiddleware[
 			Request,

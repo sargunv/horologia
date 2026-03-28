@@ -548,8 +548,6 @@ func decodeSpaceMembersDeleteParams(args [2]string, argsEscaped bool, r *http.Re
 // SpaceMembersListParams is parameters of SpaceMembers_list operation.
 type SpaceMembersListParams struct {
 	SpaceSlug string
-	Cursor    OptString `json:",omitempty,omitzero"`
-	Limit     OptInt32  `json:",omitempty,omitzero"`
 }
 
 func unpackSpaceMembersListParams(packed middleware.Parameters) (params SpaceMembersListParams) {
@@ -560,29 +558,10 @@ func unpackSpaceMembersListParams(packed middleware.Parameters) (params SpaceMem
 		}
 		params.SpaceSlug = packed[key].(string)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "cursor",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.Cursor = v.(OptString)
-		}
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "limit",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.Limit = v.(OptInt32)
-		}
-	}
 	return params
 }
 
 func decodeSpaceMembersListParams(args [1]string, argsEscaped bool, r *http.Request) (params SpaceMembersListParams, _ error) {
-	q := uri.NewQueryDecoder(r.URL.Query())
 	// Decode path: spaceSlug.
 	if err := func() error {
 		param := args[0]
@@ -625,88 +604,6 @@ func decodeSpaceMembersListParams(args [1]string, argsEscaped bool, r *http.Requ
 		return params, &ogenerrors.DecodeParamError{
 			Name: "spaceSlug",
 			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode query: cursor.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "cursor",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotCursorVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotCursorVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.Cursor.SetTo(paramsDotCursorVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "cursor",
-			In:   "query",
-			Err:  err,
-		}
-	}
-	// Decode query: limit.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "limit",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotLimitVal int32
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToInt32(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotLimitVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.Limit.SetTo(paramsDotLimitVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "limit",
-			In:   "query",
 			Err:  err,
 		}
 	}
