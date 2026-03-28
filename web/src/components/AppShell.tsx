@@ -9,6 +9,7 @@ type User = components["schemas"]["User"];
 type Space = components["schemas"]["Space"];
 
 const NavLink = createLink(Navigation.TriggerAnchor);
+const PlainLink = createLink("a");
 
 function DesktopSidebar({ user, spaces }: { user: User; spaces: Space[] }) {
   return (
@@ -38,14 +39,16 @@ function DesktopSidebar({ user, spaces }: { user: User; spaces: Space[] }) {
 
         <Navigation.Group>
           <div className="flex items-center justify-between">
-            <Navigation.Label>Spaces</Navigation.Label>
-            <NavLink
+            <PlainLink to="/spaces" className="unstyled">
+              <Navigation.Label>Spaces</Navigation.Label>
+            </PlainLink>
+            <PlainLink
               to="/spaces/new"
               className="text-surface-600-400 hover:text-surface-900-100 transition-colors"
               aria-label="Create space"
             >
               <Plus className="size-4" />
-            </NavLink>
+            </PlainLink>
           </div>
           <Navigation.Menu>
             {spaces.map((space) => (

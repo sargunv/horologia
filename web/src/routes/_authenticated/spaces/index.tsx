@@ -41,9 +41,7 @@ function SpacesPage() {
                 <LayoutGrid className="text-primary-500 size-6 shrink-0" />
                 <div className="min-w-0">
                   <p className="font-medium">{space.name}</p>
-                  {space.description && (
-                    <p className="text-surface-600-400 truncate text-sm">{space.description}</p>
-                  )}
+                  <p className="text-surface-600-400 truncate text-sm">{space.slug}</p>
                 </div>
               </SpaceLink>
             ))}
