@@ -1,4 +1,4 @@
-import { queryOptions } from "@tanstack/react-query";
+import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import { apiClient } from "../api/client.ts";
 
 export interface AuthConfig {
@@ -57,5 +57,70 @@ export const spaceMembersQueryOptions = (spaceSlug: string) =>
       });
       if (error) throw error;
       return data.items;
+    },
+  });
+
+export const spaceTaskStatusesQueryOptions = (spaceSlug: string) =>
+  queryOptions({
+    queryKey: ["spaces", spaceSlug, "taskStatuses"],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET("/spaces/{spaceSlug}/task-statuses", {
+        params: { path: { spaceSlug } },
+      });
+      if (error) throw error;
+      return data.items;
+    },
+  });
+
+export const spaceEffortLevelsQueryOptions = (spaceSlug: string) =>
+  queryOptions({
+    queryKey: ["spaces", spaceSlug, "effortLevels"],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET("/spaces/{spaceSlug}/task-effort-levels", {
+        params: { path: { spaceSlug } },
+      });
+      if (error) throw error;
+      return data.items;
+    },
+  });
+
+export const spacePriorityLevelsQueryOptions = (spaceSlug: string) =>
+  queryOptions({
+    queryKey: ["spaces", spaceSlug, "priorityLevels"],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET("/spaces/{spaceSlug}/task-priority-levels", {
+        params: { path: { spaceSlug } },
+      });
+      if (error) throw error;
+      return data.items;
+    },
+  });
+
+export const spaceTasksInfiniteQueryOptions = (spaceSlug: string) =>
+  infiniteQueryOptions({
+    queryKey: ["spaces", spaceSlug, "tasks", "list"],
+    queryFn: async ({ pageParam }) => {
+      const { data, error } = await apiClient.GET("/spaces/{spaceSlug}/tasks", {
+        params: {
+          path: { spaceSlug },
+          query: { ...(pageParam ? { cursor: pageParam } : {}), limit: 50 },
+        },
+      });
+      if (error) throw error;
+      return data;
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+  });
+
+export const spaceTaskQueryOptions = (spaceSlug: string, taskId: string) =>
+  queryOptions({
+    queryKey: ["spaces", spaceSlug, "tasks", taskId],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET("/spaces/{spaceSlug}/tasks/{taskId}", {
+        params: { path: { spaceSlug, taskId } },
+      });
+      if (error) throw error;
+      return data;
     },
   });
