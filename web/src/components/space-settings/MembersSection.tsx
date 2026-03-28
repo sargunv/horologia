@@ -1,4 +1,4 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CircleAlert, UserPlus, Users, X } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { apiClient } from "../../api/client.ts";
@@ -77,13 +77,8 @@ function MemberRow({
   isSelf: boolean;
 }) {
   const queryClient = useQueryClient();
-  const [error, setError] = useState<string | null>(null);
-  const [rolePending, setRolePending] = useState(false);
-  const [removePending, setRemovePending] = useState(false);
   const [confirmingRemove, setConfirmingRemove] = useState(false);
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
-
-  const pending = rolePending || removePending;
 
   useEffect(() => {
     if (confirmingRemove) {
@@ -91,45 +86,48 @@ function MemberRow({
     }
   }, [confirmingRemove]);
 
-  async function handleRoleChange(newRole: SpaceRole) {
-    if (newRole === member.role) return;
-    setError(null);
-    setRolePending(true);
-    try {
-      const { error: apiError } = await apiClient.PATCH("/spaces/{spaceSlug}/members/{userId}", {
+  const roleMutation = useMutation({
+    mutationFn: async (newRole: SpaceRole) => {
+      const { error } = await apiClient.PATCH("/spaces/{spaceSlug}/members/{userId}", {
         params: { path: { spaceSlug, userId: member.userId } },
         body: { role: newRole },
       });
-      if (apiError) {
-        setError((apiError as { message?: string }).message ?? "Failed to update role");
-        return;
-      }
+      if (error)
+        throw new Error((error as { message?: string }).message ?? "Failed to update role");
+    },
+    onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "members"] });
-    } catch {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setRolePending(false);
-    }
-  }
+    },
+  });
 
-  async function handleRemove() {
-    setError(null);
-    setRemovePending(true);
-    try {
-      const { error: apiError } = await apiClient.DELETE("/spaces/{spaceSlug}/members/{userId}", {
+  const removeMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await apiClient.DELETE("/spaces/{spaceSlug}/members/{userId}", {
         params: { path: { spaceSlug, userId: member.userId } },
       });
-      if (apiError) {
-        setError((apiError as { message?: string }).message ?? "Failed to remove member");
-        return;
-      }
+      if (error)
+        throw new Error((error as { message?: string }).message ?? "Failed to remove member");
+    },
+    onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "members"] });
-    } catch {
-      setError("Something went wrong. Please try again.");
-    } finally {
+    },
+    onSettled: () => {
       setConfirmingRemove(false);
-      setRemovePending(false);
-    }
+    },
+  });
+
+  const pending = roleMutation.isPending || removeMutation.isPending;
+  const error = roleMutation.error ?? removeMutation.error;
+
+  function handleRoleChange(newRole: SpaceRole) {
+    if (newRole === member.role) return;
+    removeMutation.reset();
+    roleMutation.mutate(newRole);
+  }
+
+  function handleRemove() {
+    roleMutation.reset();
+    removeMutation.mutate();
   }
 
   return (
@@ -161,15 +159,15 @@ function MemberRow({
                   ref={confirmButtonRef}
                   type="button"
                   onClick={handleRemove}
-                  disabled={removePending}
+                  disabled={removeMutation.isPending}
                   className="btn btn-sm preset-filled-error-500 text-xs"
                 >
-                  {removePending ? "Removing..." : "Confirm"}
+                  {removeMutation.isPending ? "Removing..." : "Confirm"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setConfirmingRemove(false)}
-                  disabled={removePending}
+                  disabled={removeMutation.isPending}
                   className="btn-icon btn-icon-sm preset-outlined-surface-200-800"
                   aria-label="Cancel remove"
                 >
@@ -180,7 +178,8 @@ function MemberRow({
               <button
                 type="button"
                 onClick={() => {
-                  setError(null);
+                  roleMutation.reset();
+                  removeMutation.reset();
                   setConfirmingRemove(true);
                 }}
                 disabled={pending}
@@ -201,7 +200,7 @@ function MemberRow({
           className="preset-filled-error-500 flex items-center gap-2 rounded-base px-3 py-2 text-sm"
         >
           <CircleAlert className="size-4 shrink-0" aria-hidden="true" />
-          {error}
+          {error.message}
         </div>
       )}
     </div>
@@ -212,31 +211,25 @@ function AddMemberForm({ spaceSlug }: { spaceSlug: string }) {
   const queryClient = useQueryClient();
   const [userId, setUserId] = useState("");
   const [role, setRole] = useState<SpaceRole>("member");
-  const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setPending(true);
-
-    try {
-      const { error: apiError } = await apiClient.POST("/spaces/{spaceSlug}/members", {
+  const addMutation = useMutation({
+    mutationFn: async (body: { userId: string; role: SpaceRole }) => {
+      const { error } = await apiClient.POST("/spaces/{spaceSlug}/members", {
         params: { path: { spaceSlug } },
-        body: { userId: userId.trim(), role },
+        body,
       });
-      if (apiError) {
-        setError((apiError as { message?: string }).message ?? "Failed to add member");
-        return;
-      }
+      if (error) throw new Error((error as { message?: string }).message ?? "Failed to add member");
+    },
+    onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "members"] });
       setUserId("");
       setRole("member");
-    } catch {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setPending(false);
-    }
+    },
+  });
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    addMutation.mutate({ userId: userId.trim(), role });
   }
 
   return (
@@ -252,7 +245,7 @@ function AddMemberForm({ spaceSlug }: { spaceSlug: string }) {
             onChange={(e) => setUserId(e.target.value)}
             className="input preset-outlined-surface-200-800 w-full"
             placeholder="U123"
-            disabled={pending}
+            disabled={addMutation.isPending}
           />
         </label>
         <label className="flex flex-col gap-1">
@@ -260,7 +253,7 @@ function AddMemberForm({ spaceSlug }: { spaceSlug: string }) {
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as SpaceRole)}
-            disabled={pending}
+            disabled={addMutation.isPending}
             className="select preset-outlined-surface-200-800 w-28"
           >
             <RoleOptions />
@@ -268,10 +261,10 @@ function AddMemberForm({ spaceSlug }: { spaceSlug: string }) {
         </label>
         <button
           type="submit"
-          disabled={pending || !userId.trim()}
+          disabled={addMutation.isPending || !userId.trim()}
           className="btn preset-filled-primary-500"
         >
-          {pending ? (
+          {addMutation.isPending ? (
             "Adding..."
           ) : (
             <>
@@ -282,13 +275,13 @@ function AddMemberForm({ spaceSlug }: { spaceSlug: string }) {
         </button>
       </form>
 
-      {error && (
+      {addMutation.error && (
         <div
           role="alert"
           className="preset-filled-error-500 flex items-center gap-2 rounded-base px-3 py-2 text-sm"
         >
           <CircleAlert className="size-4 shrink-0" aria-hidden="true" />
-          {error}
+          {addMutation.error.message}
         </div>
       )}
     </div>

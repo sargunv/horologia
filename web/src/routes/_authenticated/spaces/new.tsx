@@ -1,4 +1,4 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, createLink, useNavigate } from "@tanstack/react-router";
 import { CircleAlert } from "lucide-react";
 import { type FormEvent, useState } from "react";
@@ -27,8 +27,23 @@ function NewSpacePage() {
   const [slug, setSlug] = useState("");
   const [slugEdited, setSlugEdited] = useState(false);
   const [description, setDescription] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+
+  const createMutation = useMutation({
+    mutationFn: async (body: { name: string; slug: string; description?: string }) => {
+      const { data, error } = await apiClient.POST("/spaces", { body });
+      if (error)
+        throw new Error((error as { message?: string }).message ?? "Failed to create space");
+      return data;
+    },
+    onSuccess: async (data) => {
+      try {
+        await queryClient.invalidateQueries({ queryKey: ["spaces"] });
+      } catch (err) {
+        console.error("Failed to refresh after space creation:", err);
+      }
+      void navigate({ to: "/spaces/$spaceSlug", params: { spaceSlug: data.slug } });
+    },
+  });
 
   function handleNameChange(value: string) {
     setName(value);
@@ -42,26 +57,9 @@ function NewSpacePage() {
     setSlugEdited(true);
   }
 
-  async function handleSubmit(e: FormEvent) {
+  function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setError(null);
-    setPending(true);
-
-    try {
-      const { data, error: apiError } = await apiClient.POST("/spaces", {
-        body: { name, slug, ...(description ? { description } : {}) },
-      });
-      if (apiError) {
-        setError((apiError as { message?: string }).message ?? "Failed to create space");
-        return;
-      }
-      await queryClient.invalidateQueries({ queryKey: ["spaces"] });
-      void navigate({ to: "/spaces/$spaceSlug", params: { spaceSlug: data.slug } });
-    } catch {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setPending(false);
-    }
+    createMutation.mutate({ name, slug, ...(description ? { description } : {}) });
   }
 
   return (
@@ -83,7 +81,7 @@ function NewSpacePage() {
               className="input preset-outlined-surface-200-800 w-full"
               placeholder="My Project"
               maxLength={200}
-              disabled={pending}
+              disabled={createMutation.isPending}
             />
           </label>
 
@@ -97,7 +95,7 @@ function NewSpacePage() {
               className="input preset-outlined-surface-200-800 w-full"
               placeholder="my-project"
               maxLength={100}
-              disabled={pending}
+              disabled={createMutation.isPending}
             />
             <span className="text-surface-500 text-xs">
               Used in URLs. Auto-derived from name, but you can customize it.
@@ -115,24 +113,24 @@ function NewSpacePage() {
               placeholder="What is this space for?"
               rows={3}
               maxLength={1000}
-              disabled={pending}
+              disabled={createMutation.isPending}
             />
           </label>
 
-          {error && (
+          {createMutation.error && (
             <div className="preset-filled-error-500 flex items-center gap-2 rounded-base px-3 py-2 text-sm">
               <CircleAlert className="size-4 shrink-0" />
-              {error}
+              {createMutation.error.message}
             </div>
           )}
 
           <div className="flex gap-3">
             <button
               type="submit"
-              disabled={pending}
+              disabled={createMutation.isPending}
               className="btn preset-filled-primary-500 flex-1"
             >
-              {pending ? "Creating..." : "Create space"}
+              {createMutation.isPending ? "Creating..." : "Create space"}
             </button>
             <CancelLink to="/spaces" className="btn preset-outlined-surface-200-800">
               Cancel

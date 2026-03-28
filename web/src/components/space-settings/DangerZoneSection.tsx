@@ -1,50 +1,48 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Dialog, Portal } from "@skeletonlabs/skeleton-react";
 import { CircleAlert, Trash2, XIcon } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { apiClient } from "../../api/client.ts";
+import type { components } from "../../api/schema.d.ts";
 import { SettingsSection } from "./SettingsSection.tsx";
 
-export function DangerZoneSection({ space }: { space: { slug: string; name: string } }) {
+type Space = components["schemas"]["Space"];
+
+export function DangerZoneSection({ space }: { space: Pick<Space, "slug" | "name"> }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const [open, setOpen] = useState(false);
   const [confirmation, setConfirmation] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+  const cancelRef = useRef<HTMLButtonElement>(null);
 
   const confirmed = confirmation.trim() === space.slug;
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await apiClient.DELETE("/spaces/{spaceSlug}", {
+        params: { path: { spaceSlug: space.slug } },
+      });
+      if (error)
+        throw new Error((error as { message?: string }).message ?? "Failed to delete space");
+    },
+    onSuccess: async () => {
+      try {
+        queryClient.removeQueries({ queryKey: ["spaces", space.slug] });
+        await queryClient.invalidateQueries({ queryKey: ["spaces"] });
+      } catch (err) {
+        console.error("Failed to refresh after space deletion:", err);
+      }
+      void navigate({ to: "/spaces" });
+    },
+  });
 
   function handleOpenChange(details: { open: boolean }) {
     setOpen(details.open);
     if (!details.open) {
       setConfirmation("");
-      setError(null);
-      setPending(false);
-    }
-  }
-
-  async function handleDelete() {
-    setError(null);
-    setPending(true);
-
-    try {
-      const { error: apiError } = await apiClient.DELETE("/spaces/{spaceSlug}", {
-        params: { path: { spaceSlug: space.slug } },
-      });
-      if (apiError) {
-        setError((apiError as { message?: string }).message ?? "Failed to delete space");
-        return;
-      }
-      queryClient.removeQueries({ queryKey: ["spaces", space.slug] });
-      await queryClient.invalidateQueries({ queryKey: ["spaces"] });
-      void navigate({ to: "/spaces" });
-    } catch {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setPending(false);
+      deleteMutation.reset();
     }
   }
 
@@ -64,7 +62,12 @@ export function DangerZoneSection({ space }: { space: { slug: string; name: stri
             Permanently delete this space and all of its data. This cannot be undone.
           </p>
         </div>
-        <Dialog role="alertdialog" open={open} onOpenChange={handleOpenChange}>
+        <Dialog
+          role="alertdialog"
+          open={open}
+          onOpenChange={handleOpenChange}
+          initialFocusEl={() => cancelRef.current}
+        >
           <Dialog.Trigger className="btn preset-filled-error-500 shrink-0">
             Delete space
           </Dialog.Trigger>
@@ -98,30 +101,33 @@ export function DangerZoneSection({ space }: { space: { slug: string; name: stri
                     onChange={(e) => setConfirmation(e.target.value)}
                     className="input preset-outlined-surface-200-800 w-full"
                     placeholder={space.slug}
-                    disabled={pending}
+                    disabled={deleteMutation.isPending}
                     autoComplete="off"
                   />
                 </label>
-                {error && (
+                {deleteMutation.error && (
                   <div
                     role="alert"
                     className="preset-filled-error-500 flex items-center gap-2 rounded-base px-3 py-2 text-sm"
                   >
                     <CircleAlert className="size-4 shrink-0" aria-hidden="true" />
-                    {error}
+                    {deleteMutation.error.message}
                   </div>
                 )}
                 <footer className="flex justify-end gap-2">
-                  <Dialog.CloseTrigger className="btn preset-outlined-surface-200-800">
+                  <Dialog.CloseTrigger
+                    ref={cancelRef}
+                    className="btn preset-outlined-surface-200-800"
+                  >
                     Cancel
                   </Dialog.CloseTrigger>
                   <button
                     type="button"
-                    disabled={!confirmed || pending}
-                    onClick={handleDelete}
+                    disabled={!confirmed || deleteMutation.isPending}
+                    onClick={() => deleteMutation.mutate()}
                     className="btn preset-filled-error-500"
                   >
-                    {pending ? "Deleting..." : "Delete space"}
+                    {deleteMutation.isPending ? "Deleting..." : "Delete space"}
                   </button>
                 </footer>
               </Dialog.Content>

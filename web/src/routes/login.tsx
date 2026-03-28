@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { CircleAlert } from "lucide-react";
 import { type FormEvent, useState } from "react";
@@ -23,15 +23,9 @@ function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setPending(true);
-
-    try {
+  const loginMutation = useMutation({
+    mutationFn: async ({ email, password }: { email: string; password: string }) => {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -40,15 +34,17 @@ function LoginPage() {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        setError(body?.message ?? "Invalid email or password");
-        return;
+        throw new Error(body?.message ?? "Invalid email or password");
       }
+    },
+    onSuccess: () => {
       void navigate({ to: redirect ?? "/" });
-    } catch {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setPending(false);
-    }
+    },
+  });
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    loginMutation.mutate({ email, password });
   }
 
   function handleOIDCLogin() {
@@ -78,7 +74,7 @@ function LoginPage() {
                 className="input preset-outlined-surface-200-800 w-full"
                 placeholder="you@example.com"
                 autoComplete="email"
-                disabled={pending}
+                disabled={loginMutation.isPending}
               />
             </label>
 
@@ -92,23 +88,23 @@ function LoginPage() {
                 className="input preset-outlined-surface-200-800 w-full"
                 placeholder="Enter your password"
                 autoComplete="current-password"
-                disabled={pending}
+                disabled={loginMutation.isPending}
               />
             </label>
 
-            {error && (
+            {loginMutation.error && (
               <div className="preset-filled-error-500 flex items-center gap-2 rounded-base px-3 py-2 text-sm">
                 <CircleAlert className="size-4 shrink-0" />
-                {error}
+                {loginMutation.error.message}
               </div>
             )}
 
             <button
               type="submit"
-              disabled={pending}
+              disabled={loginMutation.isPending}
               className="btn preset-filled-primary-500 w-full"
             >
-              {pending ? "Signing in..." : "Sign in"}
+              {loginMutation.isPending ? "Signing in..." : "Sign in"}
             </button>
           </form>
 
@@ -123,7 +119,7 @@ function LoginPage() {
               <button
                 type="button"
                 onClick={handleOIDCLogin}
-                disabled={pending}
+                disabled={loginMutation.isPending}
                 className="btn preset-outlined-surface-200-800 w-full"
               >
                 Sign in with {authConfig.oidc.label}
