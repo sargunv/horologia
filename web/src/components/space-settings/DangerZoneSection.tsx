@@ -1,10 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Dialog, Portal } from "@skeletonlabs/skeleton-react";
-import { CircleAlert, Trash2, XIcon } from "lucide-react";
+import { Trash2, XIcon } from "lucide-react";
 import { useRef, useState } from "react";
 import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
+import { ErrorAlert } from "./ErrorAlert.tsx";
 import { SettingsSection } from "./SettingsSection.tsx";
 
 type Space = components["schemas"]["Space"];
@@ -105,15 +106,7 @@ export function DangerZoneSection({ space }: { space: Pick<Space, "slug" | "name
                     autoComplete="off"
                   />
                 </label>
-                {deleteMutation.error && (
-                  <div
-                    role="alert"
-                    className="preset-filled-error-500 flex items-center gap-2 rounded-base px-3 py-2 text-sm"
-                  >
-                    <CircleAlert className="size-4 shrink-0" aria-hidden="true" />
-                    {deleteMutation.error.message}
-                  </div>
-                )}
+                {deleteMutation.error && <ErrorAlert message={deleteMutation.error.message} />}
                 <footer className="flex justify-end gap-2">
                   <Dialog.CloseTrigger
                     ref={cancelRef}

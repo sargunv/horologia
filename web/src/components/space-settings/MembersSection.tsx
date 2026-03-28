@@ -1,8 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CircleAlert, UserPlus, Users, X } from "lucide-react";
+import { UserPlus, Users, X } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
+import { ErrorAlert } from "./ErrorAlert.tsx";
 import { SettingsSection } from "./SettingsSection.tsx";
 
 type SpaceMember = components["schemas"]["SpaceMember"];
@@ -96,7 +97,11 @@ function MemberRow({
         throw new Error((error as { message?: string }).message ?? "Failed to update role");
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "members"] });
+      try {
+        await queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "members"] });
+      } catch (err) {
+        console.error("Failed to refresh after role update:", err);
+      }
     },
   });
 
@@ -109,7 +114,11 @@ function MemberRow({
         throw new Error((error as { message?: string }).message ?? "Failed to remove member");
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "members"] });
+      try {
+        await queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "members"] });
+      } catch (err) {
+        console.error("Failed to refresh after member removal:", err);
+      }
     },
     onSettled: () => {
       setConfirmingRemove(false);
@@ -148,7 +157,7 @@ function MemberRow({
               value={member.role}
               onChange={(e) => handleRoleChange(e.target.value as SpaceRole)}
               disabled={pending}
-              className="select preset-outlined-surface-200-800 w-28 py-1.5 text-sm"
+              className="select preset-outlined-surface-200-800 w-28"
             >
               <RoleOptions />
             </select>
@@ -194,15 +203,7 @@ function MemberRow({
         )}
       </div>
 
-      {error && (
-        <div
-          role="alert"
-          className="preset-filled-error-500 flex items-center gap-2 rounded-base px-3 py-2 text-sm"
-        >
-          <CircleAlert className="size-4 shrink-0" aria-hidden="true" />
-          {error.message}
-        </div>
-      )}
+      {error && <ErrorAlert message={error.message} />}
     </div>
   );
 }
@@ -221,9 +222,13 @@ function AddMemberForm({ spaceSlug }: { spaceSlug: string }) {
       if (error) throw new Error((error as { message?: string }).message ?? "Failed to add member");
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "members"] });
       setUserId("");
       setRole("member");
+      try {
+        await queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "members"] });
+      } catch (err) {
+        console.error("Failed to refresh after adding member:", err);
+      }
     },
   });
 
@@ -275,15 +280,7 @@ function AddMemberForm({ spaceSlug }: { spaceSlug: string }) {
         </button>
       </form>
 
-      {addMutation.error && (
-        <div
-          role="alert"
-          className="preset-filled-error-500 flex items-center gap-2 rounded-base px-3 py-2 text-sm"
-        >
-          <CircleAlert className="size-4 shrink-0" aria-hidden="true" />
-          {addMutation.error.message}
-        </div>
-      )}
+      {addMutation.error && <ErrorAlert message={addMutation.error.message} />}
     </div>
   );
 }
