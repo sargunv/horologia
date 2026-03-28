@@ -4,6 +4,14 @@ import "package://github.com/jdx/hk/releases/download/v1.38.0/hk@1.38.0#/Builtin
 
 local allSteps = new Mapping<String, Step> {
   ["dprint"] = Builtins.dprint
+  ["generate-schema"] {
+    glob = List("api/**/*.tsp", "web/src/api/schema.d.ts")
+    fix = "cd api && pnpm exec tsp compile . && cd ../web && pnpm exec openapi-typescript ../api/tsp-output/schema/openapi.yaml -o src/api/schema.d.ts"
+  }
+  ["generate-routes"] {
+    glob = List("web/src/routes/**/*.tsx", "web/src/routes/**/*.ts", "web/src/routeTree.gen.ts")
+    fix = "cd web && pnpm exec tsr generate"
+  }
   ["jvl"] {
     glob = List("**/*.json", "**/*.jsonc")
     check = "jvl check {{files}}"
