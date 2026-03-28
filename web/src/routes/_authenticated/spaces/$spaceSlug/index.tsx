@@ -1,8 +1,15 @@
-import { useSuspenseInfiniteQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, createLink } from "@tanstack/react-router";
+import { Dialog, Portal } from "@skeletonlabs/skeleton-react";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseInfiniteQuery,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
+import { createFileRoute, createLink, useNavigate } from "@tanstack/react-router";
 import {
   Calendar,
   ChevronDown,
+  CircleAlert,
   Gauge,
   ListChecks,
   Plus,
@@ -11,7 +18,8 @@ import {
   Tag,
   Users,
 } from "lucide-react";
-import { useMemo } from "react";
+import { type FormEvent, useMemo, useState } from "react";
+import { apiClient } from "../../../../api/client.ts";
 import type { components } from "../../../../api/schema.d.ts";
 import { useSpaceMemberMap } from "../../../../lib/hooks.ts";
 import {
@@ -128,6 +136,117 @@ function TaskRow({
   );
 }
 
+function CreateTaskDialog({ spaceSlug }: { spaceSlug: string }) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+
+  const createMutation = useMutation({
+    mutationFn: async (body: { title: string }) => {
+      const { data, error } = await apiClient.POST("/spaces/{spaceSlug}/tasks", {
+        params: { path: { spaceSlug } },
+        body,
+      });
+      if (error)
+        throw new Error((error as { message?: string }).message ?? "Failed to create task");
+      return data;
+    },
+    onSuccess: async (data) => {
+      setOpen(false);
+      setTitle("");
+      // Best-effort cache refresh — navigate to new task even if invalidation fails
+      try {
+        await queryClient.invalidateQueries({
+          queryKey: ["spaces", spaceSlug, "tasks", "list"],
+        });
+      } catch (err) {
+        console.error("Failed to refresh after task creation:", err);
+      }
+      try {
+        await navigate({
+          to: "/spaces/$spaceSlug/tasks/$taskId",
+          params: { spaceSlug, taskId: data.id },
+        });
+      } catch (err) {
+        console.error("Failed to navigate after task creation:", err);
+      }
+    },
+  });
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    const trimmed = title.trim();
+    if (!trimmed || createMutation.isPending) return;
+    createMutation.mutate({ title: trimmed });
+  }
+
+  function handleOpenChange(details: { open: boolean }) {
+    setOpen(details.open);
+    if (!details.open) {
+      setTitle("");
+      createMutation.reset();
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <Dialog.Trigger className="btn preset-filled-primary-500 flex items-center gap-2">
+        <Plus className="size-4" />
+        Create task
+      </Dialog.Trigger>
+      <Portal>
+        <Dialog.Backdrop className="fixed inset-0 z-50 bg-surface-50-950/50" />
+        <Dialog.Positioner className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <Dialog.Content className="card bg-surface-100-900 w-full max-w-md space-y-4 p-6">
+            <Dialog.Title className="h4">Create task</Dialog.Title>
+            <Dialog.Description className="text-surface-600-400 text-sm">
+              Add a new task to this space.
+            </Dialog.Description>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <label className="flex flex-col gap-1">
+                <span className="text-surface-600-400 text-sm font-medium">Title</span>
+                <input
+                  type="text"
+                  required
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="input preset-outlined-surface-200-800 w-full"
+                  placeholder="What needs to be done?"
+                  maxLength={500}
+                  disabled={createMutation.isPending}
+                />
+              </label>
+
+              <div role="alert" aria-live="assertive">
+                {createMutation.error && (
+                  <div className="preset-filled-error-500 flex items-center gap-2 rounded-base px-3 py-2 text-sm">
+                    <CircleAlert className="size-4 shrink-0" aria-hidden="true" />
+                    {createMutation.error.message}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={createMutation.isPending || !title.trim()}
+                  className="btn preset-filled-primary-500 flex-1"
+                >
+                  {createMutation.isPending ? "Creating..." : "Create task"}
+                </button>
+                <Dialog.CloseTrigger className="btn preset-outlined-surface-200-800">
+                  Cancel
+                </Dialog.CloseTrigger>
+              </div>
+            </form>
+          </Dialog.Content>
+        </Dialog.Positioner>
+      </Portal>
+    </Dialog>
+  );
+}
+
 function SpacePage() {
   const { spaceSlug } = Route.useParams();
   const { data: space } = useSuspenseQuery(spaceQueryOptions(spaceSlug));
@@ -152,14 +271,7 @@ function SpacePage() {
       <div className="flex items-center justify-between">
         <h1 className="h3">{space.name}</h1>
         <div className="flex items-center gap-2">
-          <button
-            className="btn preset-filled-primary-500 flex items-center gap-2"
-            disabled
-            title="Coming soon"
-          >
-            <Plus className="size-4" />
-            Create task
-          </button>
+          <CreateTaskDialog spaceSlug={spaceSlug} />
           <SettingsLink
             to="/spaces/$spaceSlug/settings"
             params={{ spaceSlug }}
