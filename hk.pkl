@@ -25,8 +25,8 @@ local allSteps = new Mapping<String, Step> {
   ["golangci-lint"] {
     glob = List("**/*.go")
     workspace_indicator = "go.mod"
-    check = "cd {{workspace}} && golangci-lint run ./..."
-    fix = "cd {{workspace}} && golangci-lint run --fix ./..."
+    check = "cd {{workspace}} && golangci-lint run --allow-parallel-runners ./..."
+    fix = "cd {{workspace}} && golangci-lint run --allow-parallel-runners --fix ./..."
   }
   ["vp-check"] {
     glob = List("**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx")
