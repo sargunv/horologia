@@ -1,6 +1,5 @@
-import { createLink } from "@tanstack/react-router";
+import { createLink, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
 import { LayoutGrid, Plus } from "lucide-react";
 import { spacesQueryOptions } from "../../../lib/queries.ts";
 

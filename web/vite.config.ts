@@ -7,6 +7,15 @@ export default defineConfig({
   plugins: [TanStackRouterVite({ routesDirectory: "./src/routes" }), react(), tailwindcss()],
   lint: {
     ignorePatterns: ["dist/**", "src/routeTree.gen.ts"],
+    plugins: ["import"],
+    rules: {
+      "import/no-duplicates": "error",
+      "import/no-self-import": "error",
+      "import/no-empty-named-blocks": "error",
+      "import/first": "error",
+      "import/no-mutable-exports": "error",
+      "import/no-cycle": "error",
+    },
     options: {
       typeAware: true,
       typeCheck: true,
