@@ -60,7 +60,7 @@ When running as a headless autonomous agent (e.g. via Stokowski), capture a walk
 implementing UI changes so the human reviewer can see the result:
 
 1. Start the dev environment: `mise run dev` (wait for all services to be healthy)
-2. Open the browser: `playwright-cli open http://localhost:5173`
+2. Open the browser: `playwright-cli open http://localhost:$WEB_PORT`
 3. Log in: navigate to login, fill credentials (`admin@localhost` / `password`)
 4. Start recording: `playwright-cli video-start`
 5. Walk through the implemented feature — navigate to relevant pages, interact with new UI
