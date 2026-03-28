@@ -1,21 +1,30 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, createLink } from "@tanstack/react-router";
-import { ArrowLeft, Gauge, Shield, SignalHigh } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { DangerZoneSection } from "../../../../components/space-settings/DangerZoneSection.tsx";
+import { EffortLevelsSection } from "../../../../components/space-settings/EffortLevelsSection.tsx";
 import { GeneralSettingsSection } from "../../../../components/space-settings/GeneralSettingsSection.tsx";
 import { MembersSection } from "../../../../components/space-settings/MembersSection.tsx";
-import { SettingsSection } from "../../../../components/space-settings/SettingsSection.tsx";
+import { PriorityLevelsSection } from "../../../../components/space-settings/PriorityLevelsSection.tsx";
+import { TaskStatusesSection } from "../../../../components/space-settings/TaskStatusesSection.tsx";
 import {
   currentUserQueryOptions,
+  spaceEffortLevelsQueryOptions,
   spaceMembersQueryOptions,
+  spacePriorityLevelsQueryOptions,
   spaceQueryOptions,
+  spaceTaskStatusesQueryOptions,
 } from "../../../../lib/queries.ts";
 
 export const Route = createFileRoute("/_authenticated/spaces/$spaceSlug/settings")({
   loader: ({ context: { queryClient }, params: { spaceSlug } }) =>
     Promise.all([
+      queryClient.ensureQueryData(currentUserQueryOptions),
       queryClient.ensureQueryData(spaceQueryOptions(spaceSlug)),
       queryClient.ensureQueryData(spaceMembersQueryOptions(spaceSlug)),
+      queryClient.ensureQueryData(spaceTaskStatusesQueryOptions(spaceSlug)),
+      queryClient.ensureQueryData(spaceEffortLevelsQueryOptions(spaceSlug)),
+      queryClient.ensureQueryData(spacePriorityLevelsQueryOptions(spaceSlug)),
     ]),
   component: SpaceSettingsPage,
 });
@@ -26,6 +35,9 @@ function SpaceSettingsPage() {
   const { spaceSlug } = Route.useParams();
   const { data: space } = useSuspenseQuery(spaceQueryOptions(spaceSlug));
   const { data: members } = useSuspenseQuery(spaceMembersQueryOptions(spaceSlug));
+  const { data: taskStatuses } = useSuspenseQuery(spaceTaskStatusesQueryOptions(spaceSlug));
+  const { data: effortLevels } = useSuspenseQuery(spaceEffortLevelsQueryOptions(spaceSlug));
+  const { data: priorityLevels } = useSuspenseQuery(spacePriorityLevelsQueryOptions(spaceSlug));
   const { data: currentUser } = useSuspenseQuery(currentUserQueryOptions);
 
   const isAdmin = members.some((m) => m.userId === currentUser.id && m.role === "admin");
@@ -54,29 +66,11 @@ function SpaceSettingsPage() {
           currentUserId={currentUser.id}
         />
 
-        <SettingsSection
-          icon={<Shield className="size-5" />}
-          title="Task Statuses"
-          description="Configure the workflow statuses for tasks in this space."
-        >
-          <p className="text-surface-500 text-sm">Coming soon.</p>
-        </SettingsSection>
+        {isAdmin && <TaskStatusesSection spaceSlug={spaceSlug} taskStatuses={taskStatuses} />}
 
-        <SettingsSection
-          icon={<Gauge className="size-5" />}
-          title="Effort Levels"
-          description="Define effort levels for estimating task complexity."
-        >
-          <p className="text-surface-500 text-sm">Coming soon.</p>
-        </SettingsSection>
+        {isAdmin && <EffortLevelsSection spaceSlug={spaceSlug} effortLevels={effortLevels} />}
 
-        <SettingsSection
-          icon={<SignalHigh className="size-5" />}
-          title="Priority Levels"
-          description="Configure priority levels for organizing tasks."
-        >
-          <p className="text-surface-500 text-sm">Coming soon.</p>
-        </SettingsSection>
+        {isAdmin && <PriorityLevelsSection spaceSlug={spaceSlug} priorityLevels={priorityLevels} />}
 
         {isAdmin && <DangerZoneSection space={space} />}
       </div>

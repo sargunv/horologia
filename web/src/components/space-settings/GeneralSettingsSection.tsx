@@ -1,9 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { CircleAlert, SquareKanban } from "lucide-react";
+import { SquareKanban } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
+import { ErrorAlert } from "./ErrorAlert.tsx";
 import { SettingsSection } from "./SettingsSection.tsx";
 
 type Space = components["schemas"]["Space"];
@@ -77,7 +78,10 @@ function GeneralSettingsForm({ space }: { space: Pick<Space, "slug" | "name" | "
           type="text"
           required
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            updateMutation.reset();
+            setName(e.target.value);
+          }}
           className="input preset-outlined-surface-200-800 w-full"
           placeholder="My Project"
           maxLength={200}
@@ -91,7 +95,10 @@ function GeneralSettingsForm({ space }: { space: Pick<Space, "slug" | "name" | "
           type="text"
           required
           value={slug}
-          onChange={(e) => setSlug(e.target.value)}
+          onChange={(e) => {
+            updateMutation.reset();
+            setSlug(e.target.value);
+          }}
           className="input preset-outlined-surface-200-800 w-full"
           placeholder="my-project"
           maxLength={100}
@@ -108,8 +115,11 @@ function GeneralSettingsForm({ space }: { space: Pick<Space, "slug" | "name" | "
         </span>
         <textarea
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="input preset-outlined-surface-200-800 w-full resize-none"
+          onChange={(e) => {
+            updateMutation.reset();
+            setDescription(e.target.value);
+          }}
+          className="textarea preset-outlined-surface-200-800 w-full resize-none"
           placeholder="What is this space for?"
           rows={3}
           maxLength={1000}
@@ -117,15 +127,7 @@ function GeneralSettingsForm({ space }: { space: Pick<Space, "slug" | "name" | "
         />
       </label>
 
-      {updateMutation.error && (
-        <div
-          role="alert"
-          className="preset-filled-error-500 flex items-center gap-2 rounded-base px-3 py-2 text-sm"
-        >
-          <CircleAlert className="size-4 shrink-0" aria-hidden="true" />
-          {updateMutation.error.message}
-        </div>
-      )}
+      {updateMutation.error && <ErrorAlert message={updateMutation.error.message} />}
 
       <div className="flex justify-end">
         <button
