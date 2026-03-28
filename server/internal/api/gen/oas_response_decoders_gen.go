@@ -483,7 +483,7 @@ func decodeSpaceMembersDeleteResponse(resp *http.Response) (res *SpaceMembersDel
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeSpaceMembersListResponse(resp *http.Response) (res *SpaceMemberPage, _ error) {
+func decodeSpaceMembersListResponse(resp *http.Response) (res *SpaceMemberList, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -499,7 +499,7 @@ func decodeSpaceMembersListResponse(resp *http.Response) (res *SpaceMemberPage, 
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response SpaceMemberPage
+			var response SpaceMemberList
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err

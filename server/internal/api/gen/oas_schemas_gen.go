@@ -1155,30 +1155,19 @@ func (s *SpaceMemberCreate) SetRole(val SpaceRole) {
 	s.Role = val
 }
 
-// Ref: #/components/schemas/SpaceMemberPage
-type SpaceMemberPage struct {
-	Items      []SpaceMember `json:"items"`
-	NextCursor NilString     `json:"nextCursor"`
+// Ref: #/components/schemas/SpaceMemberList
+type SpaceMemberList struct {
+	Items []SpaceMember `json:"items"`
 }
 
 // GetItems returns the value of Items.
-func (s *SpaceMemberPage) GetItems() []SpaceMember {
+func (s *SpaceMemberList) GetItems() []SpaceMember {
 	return s.Items
 }
 
-// GetNextCursor returns the value of NextCursor.
-func (s *SpaceMemberPage) GetNextCursor() NilString {
-	return s.NextCursor
-}
-
 // SetItems sets the value of Items.
-func (s *SpaceMemberPage) SetItems(val []SpaceMember) {
+func (s *SpaceMemberList) SetItems(val []SpaceMember) {
 	s.Items = val
-}
-
-// SetNextCursor sets the value of NextCursor.
-func (s *SpaceMemberPage) SetNextCursor(val NilString) {
-	s.NextCursor = val
 }
 
 // Ref: #/components/schemas/SpaceMemberUpdate

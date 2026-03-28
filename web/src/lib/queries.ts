@@ -47,3 +47,15 @@ export const spaceQueryOptions = (spaceSlug: string) =>
       return data;
     },
   });
+
+export const spaceMembersQueryOptions = (spaceSlug: string) =>
+  queryOptions({
+    queryKey: ["spaces", spaceSlug, "members"],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET("/spaces/{spaceSlug}/members", {
+        params: { path: { spaceSlug } },
+      });
+      if (error) throw error;
+      return data.items;
+    },
+  });

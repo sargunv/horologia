@@ -27,12 +27,14 @@ model SpaceMemberUpdate {
   role: SpaceRole;
 }
 
-model SpaceMemberPage is Page<SpaceMember>;
+model SpaceMemberList {
+  items: SpaceMember[];
+}
 
 @route("/spaces/{spaceSlug}/members")
 @tag("SpaceMembers")
 interface SpaceMembers {
-  @get list(@path spaceSlug: string, ...PageParams): SpaceMemberPage | ApiError;
+  @get list(@path spaceSlug: string): SpaceMemberList | ApiError;
 
   @post create(@path spaceSlug: string, @body body: SpaceMemberCreate): {
     @statusCode statusCode: 201;

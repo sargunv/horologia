@@ -391,9 +391,8 @@ export interface components {
             userId: string;
             role: components["schemas"]["SpaceRole"];
         };
-        SpaceMemberPage: {
+        SpaceMemberList: {
             items: components["schemas"]["SpaceMember"][];
-            nextCursor: string | null;
         };
         SpaceMemberUpdate: {
             role: components["schemas"]["SpaceRole"];
@@ -844,10 +843,7 @@ export interface operations {
     };
     SpaceMembers_list: {
         parameters: {
-            query?: {
-                cursor?: components["parameters"]["PageParams.cursor"];
-                limit?: components["parameters"]["PageParams.limit"];
-            };
+            query?: never;
             header?: never;
             path: {
                 spaceSlug: string;
@@ -862,7 +858,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SpaceMemberPage"];
+                    "application/json": components["schemas"]["SpaceMemberList"];
                 };
             };
             /** @description An unexpected error response. */
