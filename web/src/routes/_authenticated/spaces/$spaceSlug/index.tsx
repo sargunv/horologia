@@ -35,11 +35,6 @@ export const Route = createFileRoute("/_authenticated/spaces/$spaceSlug/")({
 const SettingsLink = createLink("a");
 const TaskLink = createLink("a");
 
-function formatTaskId(id: string): string {
-  const num = id.split("_").pop();
-  return `T${num}`;
-}
-
 const statusCategoryPreset: Record<TaskStatusCategory, string> = {
   initial: "preset-tonal-surface",
   intermediate: "preset-tonal-warning",
@@ -83,7 +78,7 @@ function TaskRow({
     >
       {/* Task ID + Title */}
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        <span className="text-surface-500 shrink-0 font-mono text-xs">{formatTaskId(task.id)}</span>
+        <span className="text-surface-500 shrink-0 font-mono text-xs">{task.id}</span>
         <span className="truncate font-medium">{task.title}</span>
       </div>
 
