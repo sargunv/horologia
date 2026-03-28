@@ -28,6 +28,7 @@ tilt = "0.37.0"
 
 [hooks]
 postinstall = [
+  "corepack enable pnpm",
   "hk install --mise",
   "pnpm install",
   "go mod download",
