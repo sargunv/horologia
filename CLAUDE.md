@@ -54,17 +54,17 @@ Package-scoped tasks use a `//` prefix, e.g. `mise run //server:generate`,
 
 Use `playwright-cli` for web automation. Run `playwright-cli --help` for available commands.
 
-### Capturing UI evidence (headless agents)
+### Capturing UI evidence
 
-When running as a headless autonomous agent (e.g. via Stokowski), capture a walkthrough video after
-implementing UI changes so the human reviewer can see the result:
+After implementing UI changes, capture a walkthrough video before committing to verify the feature
+works end-to-end and provide visual evidence for the PR:
 
 1. Start the dev environment: `mise run dev` (wait for all services to be healthy)
 2. Open the browser: `playwright-cli open http://localhost:$WEB_PORT`
 3. Log in: navigate to login, fill credentials (`admin@localhost` / `password`)
 4. Start recording: `playwright-cli video-start`
 5. Walk through the implemented feature — navigate to relevant pages, interact with new UI
-6. Stop recording: `playwright-cli video-stop --filename=walkthrough.webm`
+6. Stop recording: `playwright-cli video-stop --filename=/tmp/walkthrough.webm`
 7. Upload the video to the PR: `gh pr comment <number> --body "## UI Walkthrough" --edit-last` or
    attach via:
    `gh api repos/{owner}/{repo}/issues/{number}/comments -f body="![walkthrough](video-url)"`
