@@ -15,12 +15,14 @@ This project uses `mise` for tooling and task orchestration. Run `mise tasks` to
 tasks. Key commands:
 
 - `mise run dev` — start local dev environment (Tilt)
+- `mise run generate` — run all code generation (required before check/test on a fresh clone)
+- `mise run check` — run all linting/checks (hk); depends on `generate` automatically
 - `mise run test` — run all tests across all packages
-- `mise run check` — run all linting/checks (hk)
 - `mise run fix` — auto-fix linting issues
+- `mise run ci` — run the full suite: generate → check → test
 
-Packages (`api`, `cli`, `server`, `web`) have their own tasks scoped by name, e.g.
-`mise run server:generate`, `mise run server:build`, `mise run server:test`.
+Package-scoped tasks use a `//` prefix, e.g. `mise run //server:generate`,
+`mise run //server:build`, `mise run //server:test`.
 
 ## Packages
 
