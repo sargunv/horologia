@@ -10,10 +10,11 @@ export const Route = createFileRoute("/_authenticated/spaces/new")({
 
 const CancelLink = createLink("a");
 
+// Keep in sync with backend: api/src/spaces.tsp (SpaceCreate/SpaceUpdate slug @pattern)
 function toSlug(name: string): string {
   return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
+    .toLocaleLowerCase()
+    .replace(/[^\p{L}0-9]+/gu, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 100);
 }
@@ -37,7 +38,7 @@ function NewSpacePage() {
   }
 
   function handleSlugChange(value: string) {
-    setSlug(value.toLowerCase().replace(/[^a-z0-9-]/g, ""));
+    setSlug(value);
     setSlugEdited(true);
   }
 

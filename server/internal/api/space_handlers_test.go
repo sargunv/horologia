@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
 )
@@ -27,6 +28,43 @@ func TestSpacesCreate(t *testing.T) {
 	}
 	if space["updatedAt"] == nil || space["updatedAt"] == "" {
 		t.Error("updatedAt should be set")
+	}
+}
+
+func TestSpacesCreateSlugValid(t *testing.T) {
+	slugs := []string{
+		"home",
+		"my-project",
+		"abc123",
+		"プロジェクト",
+		"my-プロジェクト",
+		"café",
+	}
+	for i, slug := range slugs {
+		t.Run(fmt.Sprintf("case%d", i), func(t *testing.T) {
+			env := setupTestServer(t)
+			resp := doRequest(t, env, "POST", "/spaces", `{"slug":"`+slug+`","name":"Test"}`)
+			assertStatusClose(t, resp, http.StatusCreated)
+		})
+	}
+}
+
+func TestSpacesCreateSlugInvalid(t *testing.T) {
+	slugs := []string{
+		"",
+		"-leading",
+		"trailing-",
+		"double--hyphen",
+		"has space",
+		"has.dot",
+		"-",
+	}
+	for i, slug := range slugs {
+		t.Run(fmt.Sprintf("case%d", i), func(t *testing.T) {
+			env := setupTestServer(t)
+			resp := doRequest(t, env, "POST", "/spaces", `{"slug":"`+slug+`","name":"Test"}`)
+			assertStatusClose(t, resp, http.StatusBadRequest)
+		})
 	}
 }
 
