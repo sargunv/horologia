@@ -13,13 +13,23 @@ model Space {
 }
 
 model SpaceCreate {
-  @minLength(1) @maxLength(100) slug: string;
+  // Keep in sync with frontend: web/src/routes/_authenticated/spaces/new.tsx (toSlug)
+  @minLength(1)
+  @maxLength(100)
+  @pattern("^[\\p{L}0-9]+(?:-[\\p{L}0-9]+)*$")
+  slug: string;
+
   @minLength(1) @maxLength(200) name: string;
   @maxLength(1000) description?: string;
 }
 
 model SpaceUpdate {
-  @minLength(1) @maxLength(100) slug?: string;
+  // Keep in sync with frontend: web/src/routes/_authenticated/spaces/new.tsx (toSlug)
+  @minLength(1)
+  @maxLength(100)
+  @pattern("^[\\p{L}0-9]+(?:-[\\p{L}0-9]+)*$")
+  slug?: string;
+
   @minLength(1) @maxLength(200) name?: string;
   @maxLength(1000) description?: string;
 }
