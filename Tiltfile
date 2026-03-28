@@ -1,11 +1,17 @@
-POSTGRES_PORT = int(os.environ["POSTGRES_PORT"])
 OIDC_PORT = int(os.environ["OIDC_PORT"])
 SERVER_PORT = int(os.environ["SERVER_PORT"])
 WEB_PORT = int(os.environ["WEB_PORT"])
 
+tend_db = os.environ.get("TEND_DB", "")
+manage_postgres = tend_db == ""
+
+if manage_postgres:
+    POSTGRES_PORT = int(os.environ["POSTGRES_PORT"])
+    tend_db = "postgres://postgres:postgres@localhost:%d/tend?sslmode=disable" % POSTGRES_PORT
+
 common_env = {
     "TEND_ADDR": ":%d" % SERVER_PORT,
-    "TEND_DB": "postgres://postgres:postgres@localhost:%d/tend?sslmode=disable" % POSTGRES_PORT,
+    "TEND_DB": tend_db,
     "TEND_LOG_FORMAT": "text",
     "TEND_LOG_LEVEL": "debug",
     "TEND_OIDC_ISSUER": "http://localhost:%d/" % OIDC_PORT,
@@ -15,8 +21,9 @@ common_env = {
     "TEND_SECURE_COOKIES": "false",
 }
 
-docker_compose("docker-compose.yml")
-dc_resource("postgres", labels=["infra"])
+if manage_postgres:
+    docker_compose("docker-compose.yml")
+    dc_resource("postgres", labels=["infra"])
 
 local_resource(
     "oidc",
@@ -36,12 +43,16 @@ local_resource(
     labels=["infra"],
 )
 
+server_resource_deps = ["oidc"]
+if manage_postgres:
+    server_resource_deps.append("postgres")
+
 local_resource(
     "server",
     serve_cmd="mise run //server:run",
     serve_env=common_env,
     deps=["server"],
-    resource_deps=["oidc", "postgres"],
+    resource_deps=server_resource_deps,
     readiness_probe=probe(
         exec=exec_action(["nc", "-z", "localhost", str(SERVER_PORT)]),
         initial_delay_secs=2,
