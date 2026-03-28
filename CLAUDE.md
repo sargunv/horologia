@@ -64,7 +64,7 @@ implementing UI changes so the human reviewer can see the result:
 3. Log in: navigate to login, fill credentials (`admin@localhost` / `password`)
 4. Start recording: `playwright-cli video-start`
 5. Walk through the implemented feature — navigate to relevant pages, interact with new UI
-6. Stop recording: `playwright-cli video-stop`
+6. Stop recording: `playwright-cli video-stop --filename=walkthrough.webm`
 7. Upload the video to the PR: `gh pr comment <number> --body "## UI Walkthrough" --edit-last` or
    attach via:
    `gh api repos/{owner}/{repo}/issues/{number}/comments -f body="![walkthrough](video-url)"`
