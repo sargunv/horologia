@@ -55,8 +55,8 @@ description = "Fix all auto-fixable issues"
 run = "hk fix --all"
 
 [tasks.ci]
-description = "Run the full suite: generate → check → test"
-run = "mise run generate && mise run check && mise run test"
+description = "Run the full suite: generate → fix → test"
+run = "mise run generate && mise run fix && mise run test"
 
 [tasks.dev]
 description = "Start local dev environment"
