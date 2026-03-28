@@ -1,3 +1,5 @@
+.env.local
+
 # Go
 /server/tend-server
 /server/dev-oidc

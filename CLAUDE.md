@@ -6,8 +6,7 @@ Tend is a self-hosted task manager. See `docs/BRIEF.md` for the full product bri
 
 ## Roadmap
 
-`docs/TODO.md` tracks v0.1 progress. When you complete a roadmap item, move it from its current
-section into the "Done" section.
+Progress is tracked in Linear (project: Tend).
 
 ## Development
 
