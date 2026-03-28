@@ -1,14 +1,17 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { CircleAlert, SquareKanban } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { apiClient } from "../../api/client.ts";
+import type { components } from "../../api/schema.d.ts";
 import { SettingsSection } from "./SettingsSection.tsx";
+
+type Space = components["schemas"]["Space"];
 
 export function GeneralSettingsSection({
   space,
 }: {
-  space: { slug: string; name: string; description: string };
+  space: Pick<Space, "slug" | "name" | "description">;
 }) {
   return (
     <SettingsSection
@@ -21,54 +24,49 @@ export function GeneralSettingsSection({
   );
 }
 
-function GeneralSettingsForm({
-  space,
-}: {
-  space: { slug: string; name: string; description: string };
-}) {
+function GeneralSettingsForm({ space }: { space: Pick<Space, "slug" | "name" | "description"> }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const [name, setName] = useState(space.name);
   const [slug, setSlug] = useState(space.slug);
   const [description, setDescription] = useState(space.description);
-  const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
 
   const hasChanges =
     name !== space.name || slug !== space.slug || description !== space.description;
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setPending(true);
+  const updateMutation = useMutation({
+    mutationFn: async (body: { name?: string; slug?: string; description?: string }) => {
+      const { data, error } = await apiClient.PATCH("/spaces/{spaceSlug}", {
+        params: { path: { spaceSlug: space.slug } },
+        body,
+      });
+      if (error)
+        throw new Error((error as { message?: string }).message ?? "Failed to update space");
+      return data;
+    },
+    onSuccess: async (data) => {
+      try {
+        if (data.slug !== space.slug) {
+          queryClient.removeQueries({ queryKey: ["spaces", space.slug] });
+        }
+        await queryClient.invalidateQueries({ queryKey: ["spaces"] });
+      } catch (err) {
+        console.error("Failed to refresh after space update:", err);
+      }
+      if (data.slug !== space.slug) {
+        void navigate({ to: "/spaces/$spaceSlug/settings", params: { spaceSlug: data.slug } });
+      }
+    },
+  });
 
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
     const body: { name?: string; slug?: string; description?: string } = {};
     if (name !== space.name) body.name = name;
     if (slug !== space.slug) body.slug = slug;
     if (description !== space.description) body.description = description;
-
-    try {
-      const { data, error: apiError } = await apiClient.PATCH("/spaces/{spaceSlug}", {
-        params: { path: { spaceSlug: space.slug } },
-        body,
-      });
-      if (apiError) {
-        setError((apiError as { message?: string }).message ?? "Failed to update space");
-        return;
-      }
-      if (data.slug !== space.slug) {
-        queryClient.removeQueries({ queryKey: ["spaces", space.slug] });
-      }
-      await queryClient.invalidateQueries({ queryKey: ["spaces"] });
-      if (data.slug !== space.slug) {
-        void navigate({ to: "/spaces/$spaceSlug/settings", params: { spaceSlug: data.slug } });
-      }
-    } catch {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setPending(false);
-    }
+    updateMutation.mutate(body);
   }
 
   return (
@@ -83,7 +81,7 @@ function GeneralSettingsForm({
           className="input preset-outlined-surface-200-800 w-full"
           placeholder="My Project"
           maxLength={200}
-          disabled={pending}
+          disabled={updateMutation.isPending}
         />
       </label>
 
@@ -97,7 +95,7 @@ function GeneralSettingsForm({
           className="input preset-outlined-surface-200-800 w-full"
           placeholder="my-project"
           maxLength={100}
-          disabled={pending}
+          disabled={updateMutation.isPending}
         />
         <span className="text-surface-500 text-xs">
           Used in URLs. Changing this will update all links to this space.
@@ -115,24 +113,27 @@ function GeneralSettingsForm({
           placeholder="What is this space for?"
           rows={3}
           maxLength={1000}
-          disabled={pending}
+          disabled={updateMutation.isPending}
         />
       </label>
 
-      {error && (
-        <div className="preset-filled-error-500 flex items-center gap-2 rounded-base px-3 py-2 text-sm">
-          <CircleAlert className="size-4 shrink-0" />
-          {error}
+      {updateMutation.error && (
+        <div
+          role="alert"
+          className="preset-filled-error-500 flex items-center gap-2 rounded-base px-3 py-2 text-sm"
+        >
+          <CircleAlert className="size-4 shrink-0" aria-hidden="true" />
+          {updateMutation.error.message}
         </div>
       )}
 
       <div className="flex justify-end">
         <button
           type="submit"
-          disabled={pending || !hasChanges}
+          disabled={updateMutation.isPending || !hasChanges}
           className="btn preset-filled-primary-500"
         >
-          {pending ? "Saving..." : "Save changes"}
+          {updateMutation.isPending ? "Saving..." : "Save changes"}
         </button>
       </div>
     </form>

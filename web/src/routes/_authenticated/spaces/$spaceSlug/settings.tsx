@@ -1,6 +1,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, createLink } from "@tanstack/react-router";
-import { ArrowLeft, Gauge, Shield, SignalHigh, Trash2 } from "lucide-react";
+import { ArrowLeft, Gauge, Shield, SignalHigh } from "lucide-react";
+import { DangerZoneSection } from "../../../../components/space-settings/DangerZoneSection.tsx";
 import { GeneralSettingsSection } from "../../../../components/space-settings/GeneralSettingsSection.tsx";
 import { MembersSection } from "../../../../components/space-settings/MembersSection.tsx";
 import { SettingsSection } from "../../../../components/space-settings/SettingsSection.tsx";
@@ -77,13 +78,7 @@ function SpaceSettingsPage() {
           <p className="text-surface-500 text-sm">Coming soon.</p>
         </SettingsSection>
 
-        <SettingsSection
-          icon={<Trash2 className="size-5" />}
-          title="Danger Zone"
-          description="Irreversible actions for this space."
-        >
-          <p className="text-surface-500 text-sm">Coming soon.</p>
-        </SettingsSection>
+        {isAdmin && <DangerZoneSection space={space} />}
       </div>
     </div>
   );
