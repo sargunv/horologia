@@ -51,7 +51,8 @@ function DesktopSidebar({ user, spaces }: { user: User; spaces: Space[] }) {
             {spaces.map((space) => (
               <NavLink
                 key={space.slug}
-                to={`/spaces/${space.slug}`}
+                to="/spaces/$spaceSlug"
+                params={{ spaceSlug: space.slug }}
                 activeProps={{ className: "preset-filled-primary-500" }}
               >
                 <LayoutGrid className="size-5" />

@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, createLink, useNavigate } from "@tanstack/react-router";
 import { CircleAlert } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { apiClient } from "../../../api/client.ts";
@@ -7,6 +7,8 @@ import { apiClient } from "../../../api/client.ts";
 export const Route = createFileRoute("/_authenticated/spaces/new")({
   component: NewSpacePage,
 });
+
+const CancelLink = createLink("a");
 
 function toSlug(name: string): string {
   return name
@@ -35,7 +37,7 @@ function NewSpacePage() {
   }
 
   function handleSlugChange(value: string) {
-    setSlug(value);
+    setSlug(value.toLowerCase().replace(/[^a-z0-9-]/g, ""));
     setSlugEdited(true);
   }
 
@@ -124,13 +126,18 @@ function NewSpacePage() {
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={pending}
-              className="btn preset-filled-primary-500 w-full"
-            >
-              {pending ? "Creating..." : "Create space"}
-            </button>
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                disabled={pending}
+                className="btn preset-filled-primary-500 flex-1"
+              >
+                {pending ? "Creating..." : "Create space"}
+              </button>
+              <CancelLink to="/spaces" className="btn preset-outlined-surface-200-800">
+                Cancel
+              </CancelLink>
+            </div>
           </form>
         </div>
       </div>

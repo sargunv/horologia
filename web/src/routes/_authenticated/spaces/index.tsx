@@ -11,7 +11,7 @@ export const Route = createFileRoute("/_authenticated/spaces/")({
 const SpaceLink = createLink("a");
 
 function SpacesPage() {
-  const { data: spaces } = useQuery(spacesQueryOptions);
+  const { data: spaces, isLoading } = useQuery(spacesQueryOptions);
 
   return (
     <div className="p-6">
@@ -27,12 +27,15 @@ function SpacesPage() {
       </div>
 
       <div className="mt-6">
-        {spaces && spaces.length > 0 ? (
+        {isLoading ? (
+          <div className="text-surface-600-400 text-sm">Loading...</div>
+        ) : spaces && spaces.length > 0 ? (
           <div className="flex flex-col gap-3">
             {spaces.map((space) => (
               <SpaceLink
                 key={space.slug}
-                to={`/spaces/${space.slug}`}
+                to="/spaces/$spaceSlug"
+                params={{ spaceSlug: space.slug }}
                 className="card preset-outlined-surface-200-800 flex items-center gap-4 p-4 transition-colors hover:preset-filled-surface-100-900"
               >
                 <LayoutGrid className="text-primary-500 size-6 shrink-0" />
