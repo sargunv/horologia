@@ -16,7 +16,9 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedSpacesIndexRouteImport } from './routes/_authenticated/spaces/index'
 import { Route as AuthenticatedSpacesNewRouteImport } from './routes/_authenticated/spaces/new'
-import { Route as AuthenticatedSpacesSpaceSlugRouteImport } from './routes/_authenticated/spaces/$spaceSlug'
+import { Route as AuthenticatedSpacesSpaceSlugRouteRouteImport } from './routes/_authenticated/spaces/$spaceSlug/route'
+import { Route as AuthenticatedSpacesSpaceSlugIndexRouteImport } from './routes/_authenticated/spaces/$spaceSlug/index'
+import { Route as AuthenticatedSpacesSpaceSlugSettingsRouteImport } from './routes/_authenticated/spaces/$spaceSlug/settings'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -53,11 +55,23 @@ const AuthenticatedSpacesNewRoute = AuthenticatedSpacesNewRouteImport.update({
   path: '/spaces/new',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedSpacesSpaceSlugRoute =
-  AuthenticatedSpacesSpaceSlugRouteImport.update({
+const AuthenticatedSpacesSpaceSlugRouteRoute =
+  AuthenticatedSpacesSpaceSlugRouteRouteImport.update({
     id: '/spaces/$spaceSlug',
     path: '/spaces/$spaceSlug',
     getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedSpacesSpaceSlugIndexRoute =
+  AuthenticatedSpacesSpaceSlugIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedSpacesSpaceSlugRouteRoute,
+  } as any)
+const AuthenticatedSpacesSpaceSlugSettingsRoute =
+  AuthenticatedSpacesSpaceSlugSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedSpacesSpaceSlugRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -65,18 +79,21 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/settings': typeof AuthenticatedSettingsRoute
-  '/spaces/$spaceSlug': typeof AuthenticatedSpacesSpaceSlugRoute
+  '/spaces/$spaceSlug': typeof AuthenticatedSpacesSpaceSlugRouteRouteWithChildren
   '/spaces/new': typeof AuthenticatedSpacesNewRoute
   '/spaces/': typeof AuthenticatedSpacesIndexRoute
+  '/spaces/$spaceSlug/settings': typeof AuthenticatedSpacesSpaceSlugSettingsRoute
+  '/spaces/$spaceSlug/': typeof AuthenticatedSpacesSpaceSlugIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/': typeof AuthenticatedIndexRoute
-  '/spaces/$spaceSlug': typeof AuthenticatedSpacesSpaceSlugRoute
   '/spaces/new': typeof AuthenticatedSpacesNewRoute
   '/spaces': typeof AuthenticatedSpacesIndexRoute
+  '/spaces/$spaceSlug/settings': typeof AuthenticatedSpacesSpaceSlugSettingsRoute
+  '/spaces/$spaceSlug': typeof AuthenticatedSpacesSpaceSlugIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -85,9 +102,11 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
-  '/_authenticated/spaces/$spaceSlug': typeof AuthenticatedSpacesSpaceSlugRoute
+  '/_authenticated/spaces/$spaceSlug': typeof AuthenticatedSpacesSpaceSlugRouteRouteWithChildren
   '/_authenticated/spaces/new': typeof AuthenticatedSpacesNewRoute
   '/_authenticated/spaces/': typeof AuthenticatedSpacesIndexRoute
+  '/_authenticated/spaces/$spaceSlug/settings': typeof AuthenticatedSpacesSpaceSlugSettingsRoute
+  '/_authenticated/spaces/$spaceSlug/': typeof AuthenticatedSpacesSpaceSlugIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -99,15 +118,18 @@ export interface FileRouteTypes {
     | '/spaces/$spaceSlug'
     | '/spaces/new'
     | '/spaces/'
+    | '/spaces/$spaceSlug/settings'
+    | '/spaces/$spaceSlug/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
     | '/admin'
     | '/settings'
     | '/'
-    | '/spaces/$spaceSlug'
     | '/spaces/new'
     | '/spaces'
+    | '/spaces/$spaceSlug/settings'
+    | '/spaces/$spaceSlug'
   id:
     | '__root__'
     | '/_authenticated'
@@ -118,6 +140,8 @@ export interface FileRouteTypes {
     | '/_authenticated/spaces/$spaceSlug'
     | '/_authenticated/spaces/new'
     | '/_authenticated/spaces/'
+    | '/_authenticated/spaces/$spaceSlug/settings'
+    | '/_authenticated/spaces/$spaceSlug/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -180,17 +204,49 @@ declare module '@tanstack/react-router' {
       id: '/_authenticated/spaces/$spaceSlug'
       path: '/spaces/$spaceSlug'
       fullPath: '/spaces/$spaceSlug'
-      preLoaderRoute: typeof AuthenticatedSpacesSpaceSlugRouteImport
+      preLoaderRoute: typeof AuthenticatedSpacesSpaceSlugRouteRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/spaces/$spaceSlug/': {
+      id: '/_authenticated/spaces/$spaceSlug/'
+      path: '/'
+      fullPath: '/spaces/$spaceSlug/'
+      preLoaderRoute: typeof AuthenticatedSpacesSpaceSlugIndexRouteImport
+      parentRoute: typeof AuthenticatedSpacesSpaceSlugRouteRoute
+    }
+    '/_authenticated/spaces/$spaceSlug/settings': {
+      id: '/_authenticated/spaces/$spaceSlug/settings'
+      path: '/settings'
+      fullPath: '/spaces/$spaceSlug/settings'
+      preLoaderRoute: typeof AuthenticatedSpacesSpaceSlugSettingsRouteImport
+      parentRoute: typeof AuthenticatedSpacesSpaceSlugRouteRoute
     }
   }
 }
+
+interface AuthenticatedSpacesSpaceSlugRouteRouteChildren {
+  AuthenticatedSpacesSpaceSlugSettingsRoute: typeof AuthenticatedSpacesSpaceSlugSettingsRoute
+  AuthenticatedSpacesSpaceSlugIndexRoute: typeof AuthenticatedSpacesSpaceSlugIndexRoute
+}
+
+const AuthenticatedSpacesSpaceSlugRouteRouteChildren: AuthenticatedSpacesSpaceSlugRouteRouteChildren =
+  {
+    AuthenticatedSpacesSpaceSlugSettingsRoute:
+      AuthenticatedSpacesSpaceSlugSettingsRoute,
+    AuthenticatedSpacesSpaceSlugIndexRoute:
+      AuthenticatedSpacesSpaceSlugIndexRoute,
+  }
+
+const AuthenticatedSpacesSpaceSlugRouteRouteWithChildren =
+  AuthenticatedSpacesSpaceSlugRouteRoute._addFileChildren(
+    AuthenticatedSpacesSpaceSlugRouteRouteChildren,
+  )
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
-  AuthenticatedSpacesSpaceSlugRoute: typeof AuthenticatedSpacesSpaceSlugRoute
+  AuthenticatedSpacesSpaceSlugRouteRoute: typeof AuthenticatedSpacesSpaceSlugRouteRouteWithChildren
   AuthenticatedSpacesNewRoute: typeof AuthenticatedSpacesNewRoute
   AuthenticatedSpacesIndexRoute: typeof AuthenticatedSpacesIndexRoute
 }
@@ -199,7 +255,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
-  AuthenticatedSpacesSpaceSlugRoute: AuthenticatedSpacesSpaceSlugRoute,
+  AuthenticatedSpacesSpaceSlugRouteRoute:
+    AuthenticatedSpacesSpaceSlugRouteRouteWithChildren,
   AuthenticatedSpacesNewRoute: AuthenticatedSpacesNewRoute,
   AuthenticatedSpacesIndexRoute: AuthenticatedSpacesIndexRoute,
 }

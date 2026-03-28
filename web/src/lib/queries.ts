@@ -35,3 +35,15 @@ export const spacesQueryOptions = queryOptions({
     return data.items;
   },
 });
+
+export const spaceQueryOptions = (spaceSlug: string) =>
+  queryOptions({
+    queryKey: ["spaces", spaceSlug],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET("/spaces/{spaceSlug}", {
+        params: { path: { spaceSlug } },
+      });
+      if (error) throw error;
+      return data;
+    },
+  });
