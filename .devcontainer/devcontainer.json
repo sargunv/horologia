@@ -1,0 +1,38 @@
+{
+  "name": "Tend",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "features": {
+    "ghcr.io/devcontainers-extra/features/mise:1": {}
+  },
+  "postCreateCommand": "mise install",
+  "forwardPorts": [5173, 8080, 10350],
+  "portsAttributes": {
+    "5173": {
+      "label": "Web",
+      "onAutoForward": "openBrowser"
+    },
+    "8080": {
+      "label": "API"
+    },
+    "10350": {
+      "label": "Tilt"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "hverlin.mise-vscode",
+        "dprint.dprint",
+        "golang.Go",
+        "VoidZero.vite-plus-extension-pack",
+        "vitest.explorer"
+      ],
+      "settings": {
+        "editor.defaultFormatter": "dprint.dprint",
+        "editor.formatOnSave": true
+      }
+    }
+  }
+}
