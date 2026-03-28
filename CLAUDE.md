@@ -15,8 +15,8 @@ This project uses `mise` for tooling and task orchestration. Run `mise tasks` to
 tasks. Key commands:
 
 - `mise run dev` — start local dev environment (Tilt)
-- `mise run generate` — run all code generation (required before check/test on a fresh clone)
-- `mise run check` — run all linting/checks (hk); depends on `generate` automatically
+- `mise run generate` — run all code generation (run after changing TypeSpec or route files)
+- `mise run check` — run all linting/checks (hk)
 - `mise run test` — run all tests across all packages
 - `mise run fix` — auto-fix linting issues
 - `mise run ci` — run the full suite: generate → check → test

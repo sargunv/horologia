@@ -48,7 +48,6 @@ depends = ["//*:test"]
 
 [tasks.check]
 description = "Run all checks"
-depends = ["generate"]
 run = "hk check --all"
 
 [tasks.fix]
@@ -56,8 +55,8 @@ description = "Fix all auto-fixable issues"
 run = "hk fix --all"
 
 [tasks.ci]
-description = "Run generate, checks, and tests (full CI suite)"
-depends = ["generate", "check", "test"]
+description = "Run the full suite: generate → check → test"
+run = "mise run generate && mise run check && mise run test"
 
 [tasks.dev]
 description = "Start local dev environment"
