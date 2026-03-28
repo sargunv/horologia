@@ -15,8 +15,6 @@ import { useMemo } from "react";
 import type { components } from "../../../../api/schema.d.ts";
 import { useSpaceMemberMap } from "../../../../lib/hooks.ts";
 import {
-  spaceEffortLevelsQueryOptions,
-  spacePriorityLevelsQueryOptions,
   spaceQueryOptions,
   spaceTaskStatusesQueryOptions,
   spaceTasksInfiniteQueryOptions,
@@ -25,10 +23,11 @@ import {
 type Task = components["schemas"]["Task"];
 type TaskStatus = components["schemas"]["TaskStatus"];
 type TaskStatusCategory = components["schemas"]["TaskStatusCategory"];
+type SpaceMember = components["schemas"]["SpaceMember"];
 
 export const Route = createFileRoute("/_authenticated/spaces/$spaceSlug/")({
   loader: ({ context: { queryClient }, params: { spaceSlug } }) =>
-    queryClient.prefetchInfiniteQuery(spaceTasksInfiniteQueryOptions(spaceSlug)),
+    queryClient.ensureInfiniteQueryData(spaceTasksInfiniteQueryOptions(spaceSlug)),
   component: SpacePage,
 });
 
@@ -66,7 +65,7 @@ function TaskRow({
   task: Task;
   spaceSlug: string;
   statusMap: Map<string, TaskStatus>;
-  memberMap: Map<string, components["schemas"]["SpaceMember"]>;
+  memberMap: Map<string, SpaceMember>;
 }) {
   const assigneeNames = task.assigneeIds.map((id) => memberMap.get(id)?.userName ?? id).join(", ");
 
@@ -76,13 +75,11 @@ function TaskRow({
       params={{ spaceSlug, taskId: task.id }}
       className="group flex items-center gap-4 border-b border-surface-200-800 px-4 py-3 transition-colors last:border-b-0 hover:bg-surface-100-900"
     >
-      {/* Task ID + Title */}
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <span className="text-surface-500 shrink-0 font-mono text-xs">{task.id}</span>
         <span className="truncate font-medium">{task.title}</span>
       </div>
 
-      {/* Metadata pills — right side */}
       <div className="flex shrink-0 items-center gap-3">
         <StatusBadge status={task.status} statusMap={statusMap} />
 
@@ -137,10 +134,6 @@ function SpacePage() {
   const { data: statuses } = useSuspenseQuery(spaceTaskStatusesQueryOptions(spaceSlug));
   const memberMap = useSpaceMemberMap(spaceSlug);
 
-  // Pre-fetch these so they're cached for future use, even if not displayed directly
-  useSuspenseQuery(spaceEffortLevelsQueryOptions(spaceSlug));
-  useSuspenseQuery(spacePriorityLevelsQueryOptions(spaceSlug));
-
   const statusMap = useMemo(() => new Map(statuses.map((s) => [s.name, s])), [statuses]);
 
   const {
@@ -148,13 +141,14 @@ function SpacePage() {
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
+    error,
+    isError,
   } = useSuspenseInfiniteQuery(spaceTasksInfiniteQueryOptions(spaceSlug));
 
-  const tasks = taskPages.pages.flatMap((p) => p.items);
+  const tasks = useMemo(() => taskPages.pages.flatMap((p) => p.items), [taskPages]);
 
   return (
     <div className="p-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="h3">{space.name}</h1>
         <div className="flex items-center gap-2">
@@ -177,7 +171,6 @@ function SpacePage() {
         </div>
       </div>
 
-      {/* Task list */}
       <div className="mt-6">
         {tasks.length > 0 ? (
           <div className="card preset-outlined-surface-200-800 divide-surface-200-800 overflow-hidden">
@@ -201,6 +194,12 @@ function SpacePage() {
               </p>
             </div>
           </div>
+        )}
+
+        {isError && (
+          <p className="text-error-500 mt-4 text-center text-sm">
+            Failed to load more tasks: {error?.message ?? "Unknown error"}
+          </p>
         )}
 
         {hasNextPage && (
