@@ -1327,30 +1327,19 @@ func (s *TagCreate) SetName(val string) {
 	s.Name = val
 }
 
-// Ref: #/components/schemas/TagPage
-type TagPage struct {
-	Items      []Tag     `json:"items"`
-	NextCursor NilString `json:"nextCursor"`
+// Ref: #/components/schemas/TagList
+type TagList struct {
+	Items []Tag `json:"items"`
 }
 
 // GetItems returns the value of Items.
-func (s *TagPage) GetItems() []Tag {
+func (s *TagList) GetItems() []Tag {
 	return s.Items
 }
 
-// GetNextCursor returns the value of NextCursor.
-func (s *TagPage) GetNextCursor() NilString {
-	return s.NextCursor
-}
-
 // SetItems sets the value of Items.
-func (s *TagPage) SetItems(val []Tag) {
+func (s *TagList) SetItems(val []Tag) {
 	s.Items = val
-}
-
-// SetNextCursor sets the value of NextCursor.
-func (s *TagPage) SetNextCursor(val NilString) {
-	s.NextCursor = val
 }
 
 // Ref: #/components/schemas/TagUpdate

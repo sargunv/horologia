@@ -51,7 +51,7 @@ type Handler interface {
 	// SpaceTagsList implements SpaceTags_list operation.
 	//
 	// GET /spaces/{spaceSlug}/tags
-	SpaceTagsList(ctx context.Context, params SpaceTagsListParams) (*TagPage, error)
+	SpaceTagsList(ctx context.Context, params SpaceTagsListParams) (*TagList, error)
 	// SpaceTagsUpdate implements SpaceTags_update operation.
 	//
 	// PATCH /spaces/{spaceSlug}/tags/{tagName}

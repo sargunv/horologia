@@ -2215,7 +2215,7 @@ func (s *Server) handleSpaceTagsListRequest(args [1]string, argsEscaped bool, w 
 
 	var rawBody []byte
 
-	var response *TagPage
+	var response *TagList
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -2229,14 +2229,6 @@ func (s *Server) handleSpaceTagsListRequest(args [1]string, argsEscaped bool, w 
 					Name: "spaceSlug",
 					In:   "path",
 				}: params.SpaceSlug,
-				{
-					Name: "cursor",
-					In:   "query",
-				}: params.Cursor,
-				{
-					Name: "limit",
-					In:   "query",
-				}: params.Limit,
 			},
 			Raw: r,
 		}
@@ -2244,7 +2236,7 @@ func (s *Server) handleSpaceTagsListRequest(args [1]string, argsEscaped bool, w 
 		type (
 			Request  = struct{}
 			Params   = SpaceTagsListParams
-			Response = *TagPage
+			Response = *TagList
 		)
 		response, err = middleware.HookMiddleware[
 			Request,

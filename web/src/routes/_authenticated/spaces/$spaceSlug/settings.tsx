@@ -6,6 +6,7 @@ import { EffortLevelsSection } from "../../../../components/space-settings/Effor
 import { GeneralSettingsSection } from "../../../../components/space-settings/GeneralSettingsSection.tsx";
 import { MembersSection } from "../../../../components/space-settings/MembersSection.tsx";
 import { PriorityLevelsSection } from "../../../../components/space-settings/PriorityLevelsSection.tsx";
+import { TagsSection } from "../../../../components/space-settings/TagsSection.tsx";
 import { TaskStatusesSection } from "../../../../components/space-settings/TaskStatusesSection.tsx";
 import {
   currentUserQueryOptions,
@@ -13,6 +14,7 @@ import {
   spaceMembersQueryOptions,
   spacePriorityLevelsQueryOptions,
   spaceQueryOptions,
+  spaceTagsQueryOptions,
   spaceTaskStatusesQueryOptions,
 } from "../../../../lib/queries.ts";
 
@@ -20,11 +22,7 @@ export const Route = createFileRoute("/_authenticated/spaces/$spaceSlug/settings
   loader: ({ context: { queryClient }, params: { spaceSlug } }) =>
     Promise.all([
       queryClient.ensureQueryData(currentUserQueryOptions),
-      queryClient.ensureQueryData(spaceQueryOptions(spaceSlug)),
-      queryClient.ensureQueryData(spaceMembersQueryOptions(spaceSlug)),
-      queryClient.ensureQueryData(spaceTaskStatusesQueryOptions(spaceSlug)),
-      queryClient.ensureQueryData(spaceEffortLevelsQueryOptions(spaceSlug)),
-      queryClient.ensureQueryData(spacePriorityLevelsQueryOptions(spaceSlug)),
+      queryClient.ensureQueryData(spaceTagsQueryOptions(spaceSlug)),
     ]),
   component: SpaceSettingsPage,
 });
@@ -38,6 +36,7 @@ function SpaceSettingsPage() {
   const { data: taskStatuses } = useSuspenseQuery(spaceTaskStatusesQueryOptions(spaceSlug));
   const { data: effortLevels } = useSuspenseQuery(spaceEffortLevelsQueryOptions(spaceSlug));
   const { data: priorityLevels } = useSuspenseQuery(spacePriorityLevelsQueryOptions(spaceSlug));
+  const { data: tags } = useSuspenseQuery(spaceTagsQueryOptions(spaceSlug));
   const { data: currentUser } = useSuspenseQuery(currentUserQueryOptions);
 
   const isAdmin = members.some((m) => m.userId === currentUser.id && m.role === "admin");
@@ -71,6 +70,8 @@ function SpaceSettingsPage() {
         {isAdmin && <EffortLevelsSection spaceSlug={spaceSlug} effortLevels={effortLevels} />}
 
         {isAdmin && <PriorityLevelsSection spaceSlug={spaceSlug} priorityLevels={priorityLevels} />}
+
+        {isAdmin && <TagsSection spaceSlug={spaceSlug} tags={tags} />}
 
         {isAdmin && <DangerZoneSection space={space} />}
       </div>

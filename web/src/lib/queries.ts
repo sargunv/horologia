@@ -100,6 +100,18 @@ export const spacePriorityLevelsQueryOptions = (spaceSlug: string) =>
     },
   });
 
+export const spaceTagsQueryOptions = (spaceSlug: string) =>
+  queryOptions({
+    queryKey: ["spaces", spaceSlug, "tags"],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET("/spaces/{spaceSlug}/tags", {
+        params: { path: { spaceSlug } },
+      });
+      if (error) throw error;
+      return data.items;
+    },
+  });
+
 export const spaceTasksInfiniteQueryOptions = (spaceSlug: string) =>
   infiniteQueryOptions({
     queryKey: ["spaces", spaceSlug, "tasks", "list"],

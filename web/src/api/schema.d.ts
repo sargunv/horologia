@@ -412,9 +412,8 @@ export interface components {
         TagCreate: {
             name: string;
         };
-        TagPage: {
+        TagList: {
             items: components["schemas"]["Tag"][];
-            nextCursor: string | null;
         };
         TagUpdate: {
             name: string;
@@ -975,10 +974,7 @@ export interface operations {
     };
     SpaceTags_list: {
         parameters: {
-            query?: {
-                cursor?: components["parameters"]["PageParams.cursor"];
-                limit?: components["parameters"]["PageParams.limit"];
-            };
+            query?: never;
             header?: never;
             path: {
                 spaceSlug: string;
@@ -993,7 +989,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TagPage"];
+                    "application/json": components["schemas"]["TagList"];
                 };
             };
             /** @description An unexpected error response. */

@@ -114,21 +114,14 @@ func (q *Queries) GetTagByFoldedName(ctx context.Context, arg GetTagByFoldedName
 	return i, err
 }
 
-const listTagsBySpace = `-- name: ListTagsBySpace :many
+const listAllTagsBySpace = `-- name: ListAllTagsBySpace :many
 SELECT id, space_slug, name, name_folded, created_at FROM tags
-WHERE space_slug = $1 AND id > $2
-ORDER BY id ASC
-LIMIT $3
+WHERE space_slug = $1
+ORDER BY name ASC
 `
 
-type ListTagsBySpaceParams struct {
-	SpaceSlug string
-	ID        int64
-	Limit     int32
-}
-
-func (q *Queries) ListTagsBySpace(ctx context.Context, arg ListTagsBySpaceParams) ([]Tag, error) {
-	rows, err := q.db.Query(ctx, listTagsBySpace, arg.SpaceSlug, arg.ID, arg.Limit)
+func (q *Queries) ListAllTagsBySpace(ctx context.Context, spaceSlug string) ([]Tag, error) {
+	rows, err := q.db.Query(ctx, listAllTagsBySpace, spaceSlug)
 	if err != nil {
 		return nil, err
 	}

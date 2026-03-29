@@ -15,12 +15,14 @@ model TagCreate {
 
 model TagUpdate is TagCreate;
 
-model TagPage is Page<Tag>;
+model TagList {
+  items: Tag[];
+}
 
 @route("/spaces/{spaceSlug}/tags")
 @tag("Tags")
 interface SpaceTags {
-  @get list(@path spaceSlug: string, ...PageParams): TagPage | ApiError;
+  @get list(@path spaceSlug: string): TagList | ApiError;
 
   @post create(@path spaceSlug: string, @body body: TagCreate): {
     @statusCode statusCode: 201;

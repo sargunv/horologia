@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"strconv"
 	"time"
 
 	"github.com/sargunv/tend/server/internal/activitylog"
@@ -12,35 +11,19 @@ import (
 	"github.com/sargunv/tend/server/internal/types"
 )
 
-func (h *Handler) SpaceTagsList(ctx context.Context, params apigen.SpaceTagsListParams) (*apigen.TagPage, error) {
+func (h *Handler) SpaceTagsList(ctx context.Context, params apigen.SpaceTagsListParams) (*apigen.TagList, error) {
 	if err := h.requireSpaceRead(ctx, params.SpaceSlug); err != nil {
 		return nil, err
 	}
 
-	cursorID, err := decodeCursorInt64(params.Cursor)
-	if err != nil {
-		return nil, badRequest(err.Error())
-	}
-
-	limit := clampLimit(params.Limit)
-
 	q := dbgen.New(h.Pool)
 
-	rows, err := q.ListTagsBySpace(ctx, dbgen.ListTagsBySpaceParams{
-		SpaceSlug: params.SpaceSlug,
-		ID:        cursorID,
-		Limit:     limit + 1,
-	})
+	rows, err := q.ListAllTagsBySpace(ctx, params.SpaceSlug)
 	if err != nil {
 		return nil, err
 	}
 
-	items, nextCursor, err := paginate(rows, limit, convertEach(tagFromDB), tagCursorKey)
-	if err != nil {
-		return nil, err
-	}
-
-	return &apigen.TagPage{Items: items, NextCursor: nextCursor}, nil
+	return &apigen.TagList{Items: convertAll(rows, tagFromDB)}, nil
 }
 
 func (h *Handler) SpaceTagsCreate(ctx context.Context, req *apigen.TagCreate, params apigen.SpaceTagsCreateParams) (*apigen.Tag, error) {
@@ -163,16 +146,6 @@ func (h *Handler) SpaceTagsDelete(ctx context.Context, params apigen.SpaceTagsDe
 		return err
 	}
 
-	now := time.Now()
-	if err := activitylog.Log(ctx, tx, activitylog.Entry{
-		SpaceSlug:  params.SpaceSlug,
-		EntityType: activitylog.EntityTag,
-		EntityID:   existing.Name,
-		Action:     activitylog.ActionDeleted,
-	}, now); err != nil {
-		return err
-	}
-
 	result, err := q.DeleteTag(ctx, dbgen.DeleteTagParams{
 		SpaceSlug:  params.SpaceSlug,
 		NameFolded: taskengine.FoldTagName(params.TagName),
@@ -184,9 +157,15 @@ func (h *Handler) SpaceTagsDelete(ctx context.Context, params apigen.SpaceTagsDe
 		return err
 	}
 
-	return tx.Commit(ctx)
-}
+	now := time.Now()
+	if err := activitylog.Log(ctx, tx, activitylog.Entry{
+		SpaceSlug:  params.SpaceSlug,
+		EntityType: activitylog.EntityTag,
+		EntityID:   existing.Name,
+		Action:     activitylog.ActionDeleted,
+	}, now); err != nil {
+		return err
+	}
 
-func tagCursorKey(t dbgen.Tag) string {
-	return strconv.FormatInt(t.ID, 10)
+	return tx.Commit(ctx)
 }
