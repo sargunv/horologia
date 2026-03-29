@@ -65,5 +65,7 @@ RUN CGO_ENABLED=0 go build \
 # --- Stage 6: Minimal runtime image ---
 FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=server-build /tend-server /tend-server
+HEALTHCHECK --start-period=15s --interval=10s --timeout=5s --retries=3 \
+    CMD ["/tend-server", "healthcheck"]
 ENTRYPOINT ["/tend-server"]
 CMD ["serve"]

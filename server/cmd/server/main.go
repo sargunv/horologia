@@ -143,8 +143,8 @@ var serveCmd = &cobra.Command{
 		// Mount web auth routes (cookie login/logout) and cookie-to-bearer middleware.
 		finalHandler = api.MountWebAuth(finalHandler, handler)
 
-		// Mount API under /api prefix and SPA at root.
-		finalHandler = api.MountRoot(finalHandler)
+		// Mount API under /api prefix, health check, and SPA at root.
+		finalHandler = api.MountRoot(finalHandler, pool)
 
 		// Bootstrap initial owner if configured and no users exist yet.
 		if cfg.InitOwnerEmail != "" {
@@ -224,6 +224,49 @@ var createAdminCmd = &cobra.Command{
 	},
 }
 
+var healthcheckCmd = &cobra.Command{
+	Use:   "healthcheck",
+	Short: "Check server health (for use in Docker HEALTHCHECK)",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := config.Load()
+		if err != nil {
+			return err
+		}
+
+		addr := cfg.Addr
+		// Default host to localhost if addr is just a port (e.g. ":8080").
+		host, port, err := net.SplitHostPort(addr)
+		if err != nil {
+			return fmt.Errorf("parse TEND_ADDR %q: %w", addr, err)
+		}
+		if host == "" {
+			host = "localhost"
+		}
+
+		url := fmt.Sprintf("http://%s/healthz", net.JoinHostPort(host, port))
+
+		ctx, cancel := context.WithTimeout(cmd.Context(), 5*time.Second)
+		defer cancel()
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+		if err != nil {
+			return err
+		}
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return fmt.Errorf("health check failed: %w", err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("health check returned status %d", resp.StatusCode)
+		}
+
+		return nil
+	},
+}
+
 func init() {
 	createAdminCmd.Flags().String("email", "", "admin email (required)")
 	createAdminCmd.Flags().String("name", "", "admin display name (required)")
@@ -266,7 +309,7 @@ func bootstrapOwner(ctx context.Context, pool *pgxpool.Pool, log *slog.Logger, c
 
 func main() {
 	migrateCmd.AddCommand(migrateUpCmd, migrateStatusCmd)
-	rootCmd.AddCommand(serveCmd, migrateCmd, createAdminCmd)
+	rootCmd.AddCommand(serveCmd, migrateCmd, createAdminCmd, healthcheckCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
