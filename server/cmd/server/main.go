@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
@@ -143,8 +144,8 @@ var serveCmd = &cobra.Command{
 		// Mount web auth routes (cookie login/logout) and cookie-to-bearer middleware.
 		finalHandler = api.MountWebAuth(finalHandler, handler)
 
-		// Mount API under /api prefix, health check, and SPA at root.
-		finalHandler = api.MountRoot(finalHandler, pool)
+		// Mount health check at /healthz, API under /api prefix, and SPA at root.
+		finalHandler = api.MountRoot(finalHandler, pool, log)
 
 		// Bootstrap initial owner if configured and no users exist yet.
 		if cfg.InitOwnerEmail != "" {
@@ -260,7 +261,8 @@ var healthcheckCmd = &cobra.Command{
 		defer func() { _ = resp.Body.Close() }()
 
 		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("health check returned status %d", resp.StatusCode)
+			body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+			return fmt.Errorf("health check returned status %d: %s", resp.StatusCode, string(body))
 		}
 
 		return nil
