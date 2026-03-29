@@ -155,7 +155,6 @@ function CreateTaskDialog({ spaceSlug }: { spaceSlug: string }) {
     onSuccess: async (data) => {
       setOpen(false);
       setTitle("");
-      // Best-effort cache refresh — navigate to new task even if invalidation fails
       try {
         await queryClient.invalidateQueries({
           queryKey: ["spaces", spaceSlug, "tasks", "list"],
@@ -163,14 +162,10 @@ function CreateTaskDialog({ spaceSlug }: { spaceSlug: string }) {
       } catch (err) {
         console.error("Failed to refresh after task creation:", err);
       }
-      try {
-        await navigate({
-          to: "/spaces/$spaceSlug/tasks/$taskId",
-          params: { spaceSlug, taskId: data.id },
-        });
-      } catch (err) {
-        console.error("Failed to navigate after task creation:", err);
-      }
+      await navigate({
+        to: "/spaces/$spaceSlug/tasks/$taskId",
+        params: { spaceSlug, taskId: data.id },
+      });
     },
   });
 

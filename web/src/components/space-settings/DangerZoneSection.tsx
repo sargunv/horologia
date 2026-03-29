@@ -29,13 +29,9 @@ export function DangerZoneSection({ space }: { space: Pick<Space, "slug" | "name
         throw new Error((error as { message?: string }).message ?? "Failed to delete space");
     },
     onSuccess: async () => {
-      try {
-        queryClient.removeQueries({ queryKey: ["spaces", space.slug] });
-        await queryClient.invalidateQueries({ queryKey: ["spaces"] });
-      } catch (err) {
-        console.error("Failed to refresh after space deletion:", err);
-      }
-      void navigate({ to: "/spaces" });
+      queryClient.removeQueries({ queryKey: ["spaces", space.slug] });
+      await queryClient.invalidateQueries({ queryKey: ["spaces"] });
+      await navigate({ to: "/spaces" });
     },
   });
 
