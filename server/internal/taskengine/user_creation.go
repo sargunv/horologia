@@ -31,3 +31,19 @@ func CreateUserWithPassword(ctx context.Context, db database.DB, email, name, pa
 		UpdatedAt:    now,
 	})
 }
+
+// CreateUserWithoutPassword creates a user with no password hash, suitable
+// for OIDC-only deployments where password auth is disabled.
+func CreateUserWithoutPassword(ctx context.Context, db database.DB, email, name string, isOwner bool) (dbgen.User, error) {
+	now := types.Timestamptz(time.Now())
+
+	q := dbgen.New(db)
+	return q.CreateUser(ctx, dbgen.CreateUserParams{
+		Email:        email,
+		Name:         name,
+		PasswordHash: pgtype.Text{Valid: false},
+		IsOwner:      isOwner,
+		CreatedAt:    now,
+		UpdatedAt:    now,
+	})
+}

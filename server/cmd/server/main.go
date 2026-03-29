@@ -22,6 +22,7 @@ import (
 	"github.com/sargunv/tend/server/internal/config"
 	"github.com/sargunv/tend/server/internal/cron"
 	"github.com/sargunv/tend/server/internal/database"
+	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/taskengine"
 )
 
@@ -108,11 +109,13 @@ var serveCmd = &cobra.Command{
 		defer pool.Close()
 
 		handler := &api.Handler{
-			Pool:          pool,
-			Log:           log,
-			SecureCookies: cfg.SecureCookies,
-			OIDCEnabled:   cfg.OIDCIssuer != "",
-			OIDCLabel:     cfg.OIDCLabel,
+			Pool:                pool,
+			Log:                 log,
+			SecureCookies:       cfg.SecureCookies,
+			OIDCEnabled:         cfg.OIDCIssuer != "",
+			OIDCLabel:           cfg.OIDCLabel,
+			OIDCAutoRedirect:    cfg.OIDCAutoRedirect,
+			PasswordAuthEnabled: cfg.PasswordAuthEnabled,
 		}
 
 		// Start the fixed_accumulating cron job.
@@ -239,25 +242,31 @@ func init() {
 // constraint on email causes the second insert to fail, which is treated as success.
 func bootstrapOwner(ctx context.Context, pool *pgxpool.Pool, log *slog.Logger, cfg config.Config) error {
 	var count int64
-	err := pool.QueryRow(ctx, "SELECT count(*) FROM users").Scan(&count)
+	err := pool.QueryRow(ctx, "SELECT count(*) FROM users WHERE is_owner = true").Scan(&count)
 	if err != nil {
 		return fmt.Errorf("count users: %w", err)
 	}
 
 	if count > 0 {
-		log.Info("skipping owner bootstrap: users already exist")
+		log.Info("skipping owner bootstrap: owner already exists")
 		return nil
 	}
 
-	user, err := taskengine.CreateUserWithPassword(ctx, pool, cfg.InitOwnerEmail, cfg.InitOwnerName, cfg.InitOwnerPassword, true)
-	if err != nil {
+	var user dbgen.User
+	var createErr error
+	if cfg.PasswordAuthEnabled {
+		user, createErr = taskengine.CreateUserWithPassword(ctx, pool, cfg.InitOwnerEmail, cfg.InitOwnerName, cfg.InitOwnerPassword, true)
+	} else {
+		user, createErr = taskengine.CreateUserWithoutPassword(ctx, pool, cfg.InitOwnerEmail, cfg.InitOwnerName, true)
+	}
+	if createErr != nil {
 		// Unique violation means another instance already created the user.
 		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+		if errors.As(createErr, &pgErr) && pgErr.Code == "23505" {
 			log.Info("owner already created by another instance")
 			return nil
 		}
-		return fmt.Errorf("create owner: %w", err)
+		return fmt.Errorf("create owner: %w", createErr)
 	}
 
 	log.Info("created initial owner", "id", user.ID, "email", user.Email, "name", user.Name)

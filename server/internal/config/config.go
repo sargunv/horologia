@@ -21,6 +21,9 @@ type Config struct {
 	OIDCClientSecret string `koanf:"oidc_client_secret"`
 	OIDCRedirectURL  string `koanf:"oidc_redirect_url"`
 	OIDCLabel        string `koanf:"oidc_label"`
+	OIDCAutoRedirect bool   `koanf:"oidc_auto_redirect"`
+
+	PasswordAuthEnabled bool `koanf:"password_auth_enabled"`
 
 	InitOwnerEmail    string `koanf:"init_owner_email"`
 	InitOwnerName     string `koanf:"init_owner_name"`
@@ -37,11 +40,12 @@ func Load() (Config, error) {
 	}
 
 	cfg := Config{
-		Addr:          ":8080",
-		LogFormat:     "text",
-		LogLevel:      "info",
-		SecureCookies: true,
-		OIDCLabel:     "OIDC",
+		Addr:                ":8080",
+		LogFormat:           "text",
+		LogLevel:            "info",
+		SecureCookies:       true,
+		OIDCLabel:           "OIDC",
+		PasswordAuthEnabled: true,
 	}
 
 	if err := k.Unmarshal("", &cfg); err != nil {
@@ -52,15 +56,37 @@ func Load() (Config, error) {
 		return Config{}, errors.New("TEND_DB is required")
 	}
 
-	// TEND_INIT_OWNER_* fields must all be set together or none set.
-	initOwnerSet := 0
-	for _, f := range []string{cfg.InitOwnerEmail, cfg.InitOwnerName, cfg.InitOwnerPassword} {
-		if f != "" {
-			initOwnerSet++
-		}
+	// Disabling password auth without OIDC would lock out all users.
+	if !cfg.PasswordAuthEnabled && cfg.OIDCIssuer == "" {
+		return Config{}, errors.New("TEND_PASSWORD_AUTH_ENABLED=false requires TEND_OIDC_ISSUER to be set")
 	}
-	if initOwnerSet != 0 && initOwnerSet != 3 {
-		return Config{}, errors.New("TEND_INIT_OWNER_EMAIL, TEND_INIT_OWNER_NAME, and TEND_INIT_OWNER_PASSWORD must all be set together")
+
+	// Auto-redirect requires OIDC to be configured and password auth to be disabled.
+	if cfg.OIDCAutoRedirect && cfg.OIDCIssuer == "" {
+		return Config{}, errors.New("TEND_OIDC_AUTO_REDIRECT=true requires TEND_OIDC_ISSUER to be set")
+	}
+	if cfg.OIDCAutoRedirect && cfg.PasswordAuthEnabled {
+		return Config{}, errors.New("TEND_OIDC_AUTO_REDIRECT=true requires TEND_PASSWORD_AUTH_ENABLED=false")
+	}
+
+	// TEND_INIT_OWNER_* validation depends on whether password auth is enabled.
+	if cfg.PasswordAuthEnabled {
+		initOwnerSet := 0
+		for _, f := range []string{cfg.InitOwnerEmail, cfg.InitOwnerName, cfg.InitOwnerPassword} {
+			if f != "" {
+				initOwnerSet++
+			}
+		}
+		if initOwnerSet != 0 && initOwnerSet != 3 {
+			return Config{}, errors.New("TEND_INIT_OWNER_EMAIL, TEND_INIT_OWNER_NAME, and TEND_INIT_OWNER_PASSWORD must all be set together")
+		}
+	} else {
+		if cfg.InitOwnerPassword != "" {
+			return Config{}, errors.New("TEND_INIT_OWNER_PASSWORD must not be set when TEND_PASSWORD_AUTH_ENABLED=false")
+		}
+		if (cfg.InitOwnerEmail != "") != (cfg.InitOwnerName != "") {
+			return Config{}, errors.New("TEND_INIT_OWNER_EMAIL and TEND_INIT_OWNER_NAME must both be set together")
+		}
 	}
 
 	return cfg, nil
