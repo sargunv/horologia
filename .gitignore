@@ -9,6 +9,10 @@
 node_modules/
 dist/
 
+# Embedded SPA (populated at build time)
+/server/internal/webui/dist/*
+!/server/internal/webui/dist/.gitkeep
+
 # tilt
 .tilt/
 

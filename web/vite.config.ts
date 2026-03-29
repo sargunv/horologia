@@ -4,8 +4,8 @@ import react from "@vitejs/plugin-react";
 import { env } from "node:process";
 import { defineConfig } from "vite-plus";
 
-const serverPort = env.SERVER_PORT!;
-const webPort = env.WEB_PORT!;
+const serverPort = env.SERVER_PORT ?? "8080";
+const webPort = env.WEB_PORT ?? "5173";
 
 export default defineConfig({
   plugins: [TanStackRouterVite({ routesDirectory: "./src/routes" }), react(), tailwindcss()],
@@ -31,7 +31,6 @@ export default defineConfig({
     proxy: {
       "/api": {
         target: `http://localhost:${serverPort}`,
-        rewrite: (path) => path.replace(/^\/api/, ""),
       },
     },
   },
