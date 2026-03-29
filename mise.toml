@@ -70,3 +70,13 @@ run = "mise run generate && mise run fix && mise run test"
 [tasks.dev]
 description = "Start local dev environment"
 run = "tilt up --stream --port $TILT_PORT"
+
+[tasks.docker-build]
+description = "Build Docker image with versions from mise.toml"
+run = """
+docker build \
+  --build-arg GO_VERSION=$(mise config get tools.go) \
+  --build-arg NODE_VERSION=$(mise config get tools.node) \
+  -t tend \
+  .
+"""

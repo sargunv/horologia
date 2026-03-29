@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pressly/goose/v3"
 	"github.com/spf13/cobra"
@@ -142,6 +143,16 @@ var serveCmd = &cobra.Command{
 		// Mount web auth routes (cookie login/logout) and cookie-to-bearer middleware.
 		finalHandler = api.MountWebAuth(finalHandler, handler)
 
+		// Mount API under /api prefix and SPA at root.
+		finalHandler = api.MountRoot(finalHandler)
+
+		// Bootstrap initial owner if configured and no users exist yet.
+		if cfg.InitOwnerEmail != "" {
+			if err := bootstrapOwner(cmd.Context(), pool, log, cfg); err != nil {
+				return fmt.Errorf("bootstrap owner: %w", err)
+			}
+		}
+
 		ln, err := net.Listen("tcp", cfg.Addr)
 		if err != nil {
 			return fmt.Errorf("listen: %w", err)
@@ -220,6 +231,37 @@ func init() {
 	_ = createAdminCmd.MarkFlagRequired("email")
 	_ = createAdminCmd.MarkFlagRequired("name")
 	_ = createAdminCmd.MarkFlagRequired("password")
+}
+
+// bootstrapOwner creates the initial owner user if no users exist yet.
+// This is a no-op when users are already present in the database.
+// Handles concurrent starts gracefully: if two instances race, the unique
+// constraint on email causes the second insert to fail, which is treated as success.
+func bootstrapOwner(ctx context.Context, pool *pgxpool.Pool, log *slog.Logger, cfg config.Config) error {
+	var count int64
+	err := pool.QueryRow(ctx, "SELECT count(*) FROM users").Scan(&count)
+	if err != nil {
+		return fmt.Errorf("count users: %w", err)
+	}
+
+	if count > 0 {
+		log.Info("skipping owner bootstrap: users already exist")
+		return nil
+	}
+
+	user, err := taskengine.CreateUserWithPassword(ctx, pool, cfg.InitOwnerEmail, cfg.InitOwnerName, cfg.InitOwnerPassword, true)
+	if err != nil {
+		// Unique violation means another instance already created the user.
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			log.Info("owner already created by another instance")
+			return nil
+		}
+		return fmt.Errorf("create owner: %w", err)
+	}
+
+	log.Info("created initial owner", "id", user.ID, "email", user.Email, "name", user.Name)
+	return nil
 }
 
 func main() {

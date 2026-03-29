@@ -242,7 +242,7 @@ func (h *Handler) handleOIDCCallback(w http.ResponseWriter, r *http.Request, tok
 	http.SetCookie(w, &http.Cookie{
 		Name:     oidcRedirectCookieName,
 		Value:    "",
-		Path:     "/auth/oidc/callback",
+		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
 		Secure:   h.SecureCookies,

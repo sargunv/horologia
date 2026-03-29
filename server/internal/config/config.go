@@ -21,6 +21,10 @@ type Config struct {
 	OIDCClientSecret string `koanf:"oidc_client_secret"`
 	OIDCRedirectURL  string `koanf:"oidc_redirect_url"`
 	OIDCLabel        string `koanf:"oidc_label"`
+
+	InitOwnerEmail    string `koanf:"init_owner_email"`
+	InitOwnerName     string `koanf:"init_owner_name"`
+	InitOwnerPassword string `koanf:"init_owner_password"`
 }
 
 func Load() (Config, error) {
@@ -46,6 +50,17 @@ func Load() (Config, error) {
 
 	if cfg.DB == "" {
 		return Config{}, errors.New("TEND_DB is required")
+	}
+
+	// TEND_INIT_OWNER_* fields must all be set together or none set.
+	initOwnerSet := 0
+	for _, f := range []string{cfg.InitOwnerEmail, cfg.InitOwnerName, cfg.InitOwnerPassword} {
+		if f != "" {
+			initOwnerSet++
+		}
+	}
+	if initOwnerSet != 0 && initOwnerSet != 3 {
+		return Config{}, errors.New("TEND_INIT_OWNER_EMAIL, TEND_INIT_OWNER_NAME, and TEND_INIT_OWNER_PASSWORD must all be set together")
 	}
 
 	return cfg, nil
