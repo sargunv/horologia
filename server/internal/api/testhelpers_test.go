@@ -87,7 +87,7 @@ func setupTestServer(t *testing.T) *testEnv {
 	}
 
 	log := slog.New(slog.DiscardHandler)
-	handler := &api.Handler{Pool: pool, Log: log}
+	handler := &api.Handler{Pool: pool, Log: log, PasswordAuthEnabled: true}
 	h, err := api.NewServer(handler, log)
 	if err != nil {
 		t.Fatalf("new server: %v", err)

@@ -5,6 +5,10 @@ export interface AuthConfig {
   oidc: {
     enabled: boolean;
     label: string;
+    autoRedirect: boolean;
+  };
+  password: {
+    enabled: boolean;
   };
 }
 

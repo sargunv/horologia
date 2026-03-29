@@ -18,11 +18,13 @@ import (
 // Handler implements the generated API interface.
 type Handler struct {
 	apigen.UnimplementedHandler
-	Pool          *pgxpool.Pool
-	Log           *slog.Logger
-	SecureCookies bool
-	OIDCEnabled   bool
-	OIDCLabel     string
+	Pool                *pgxpool.Pool
+	Log                 *slog.Logger
+	SecureCookies       bool
+	OIDCEnabled         bool
+	OIDCLabel           string
+	OIDCAutoRedirect    bool
+	PasswordAuthEnabled bool
 }
 
 func (h *Handler) NewError(ctx context.Context, err error) *apigen.ApiErrorStatusCode {

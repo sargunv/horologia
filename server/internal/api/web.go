@@ -171,8 +171,12 @@ func AuthConfigHandler(handler *Handler) http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"oidc": map[string]any{
-				"enabled": handler.OIDCEnabled,
-				"label":   handler.OIDCLabel,
+				"enabled":      handler.OIDCEnabled,
+				"label":        handler.OIDCLabel,
+				"autoRedirect": handler.OIDCAutoRedirect,
+			},
+			"password": map[string]any{
+				"enabled": handler.PasswordAuthEnabled,
 			},
 		})
 	})
@@ -182,7 +186,9 @@ func AuthConfigHandler(handler *Handler) http.Handler {
 func MountWebAuth(base http.Handler, handler *Handler) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("GET /auth/config", AuthConfigHandler(handler))
-	mux.Handle("POST /auth/login", WebLoginHandler(handler))
+	if handler.PasswordAuthEnabled {
+		mux.Handle("POST /auth/login", WebLoginHandler(handler))
+	}
 	mux.Handle("POST /auth/logout", WebLogoutHandler(handler))
 	mux.Handle("/", CookieAuthMiddleware(base))
 	return mux
