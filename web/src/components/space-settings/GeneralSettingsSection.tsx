@@ -56,7 +56,7 @@ function GeneralSettingsForm({ space }: { space: Pick<Space, "slug" | "name" | "
         console.error("Failed to refresh after space update:", err);
       }
       if (data.slug !== space.slug) {
-        void navigate({ to: "/spaces/$spaceSlug/settings", params: { spaceSlug: data.slug } });
+        await navigate({ to: "/spaces/$spaceSlug/settings", params: { spaceSlug: data.slug } });
       }
     },
   });
