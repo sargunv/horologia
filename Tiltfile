@@ -54,7 +54,7 @@ local_resource(
     deps=["server"],
     resource_deps=server_resource_deps,
     readiness_probe=probe(
-        exec=exec_action(["nc", "-z", "localhost", str(SERVER_PORT)]),
+        http_get=http_get_action(port=SERVER_PORT, path="/healthz"),
         initial_delay_secs=2,
         period_secs=5,
         failure_threshold=10,
