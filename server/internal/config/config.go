@@ -22,6 +22,7 @@ type Config struct {
 	OIDCRedirectURL  string `koanf:"oidc_redirect_url"`
 	OIDCLabel        string `koanf:"oidc_label"`
 	OIDCAutoRedirect bool   `koanf:"oidc_auto_redirect"`
+	OIDCLinkConsent  bool   `koanf:"oidc_link_consent"`
 
 	PasswordAuthEnabled bool `koanf:"password_auth_enabled"`
 	HIBPEnabled         bool `koanf:"hibp_enabled"`
@@ -46,6 +47,7 @@ func Load() (Config, error) {
 		LogLevel:            "info",
 		SecureCookies:       true,
 		OIDCLabel:           "OIDC",
+		OIDCLinkConsent:     true,
 		PasswordAuthEnabled: true,
 		HIBPEnabled:         true,
 	}

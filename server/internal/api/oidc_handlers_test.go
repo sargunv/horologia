@@ -381,3 +381,163 @@ func TestOIDCLoginMissingEmail(t *testing.T) {
 		t.Error("session cookie should not be set when email is missing")
 	}
 }
+
+// setupOIDCConsentEnv returns a test environment with OIDC and link consent enabled.
+func setupOIDCConsentEnv(t *testing.T) *testEnv {
+	t.Helper()
+	return setupTestServer(t, withOIDC(), withOIDCLinkConsent())
+}
+
+func TestOIDCLinkConsent(t *testing.T) {
+	env := setupOIDCConsentEnv(t)
+
+	// Create a password-based user with no OIDC subject.
+	existingUser, err := taskengine.CreateUserWithPassword(t.Context(), env.pool, "consent@example.com", "Consent User", "password123", false, nil)
+	if err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	env.addOIDCUser("consent-subject", "consent@example.com", true)
+
+	// Drive OIDC flow — should redirect to /link-account instead of auto-linking.
+	client := newOIDCClient(t)
+	stopAfterCallback(client, env.Server.URL)
+
+	resp := driveOIDCFlow(t, env, client, "consent-subject", "/spaces")
+	_ = resp.Body.Close()
+
+	if resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("got status %d, want 303", resp.StatusCode)
+	}
+	loc := resp.Header.Get("Location")
+	if loc != "/link-account" {
+		t.Fatalf("redirect location = %q, want /link-account", loc)
+	}
+
+	// No session cookie should be set yet.
+	if tok := extractSessionCookie(t, client, env.Server.URL); tok != "" {
+		t.Error("session cookie should not be set before consent")
+	}
+
+	// Verify the pending link info is accessible.
+	pendingReq, err := http.NewRequestWithContext(t.Context(), http.MethodGet, env.Server.URL+"/auth/link/pending", nil)
+	if err != nil {
+		t.Fatalf("new request: %v", err)
+	}
+	pendingResp, err := client.Do(pendingReq)
+	if err != nil {
+		t.Fatalf("get pending: %v", err)
+	}
+	assertStatus(t, pendingResp, http.StatusOK)
+	var pending map[string]string
+	readJSON(t, pendingResp, &pending)
+	if pending["email"] != "consent@example.com" {
+		t.Errorf("pending email = %v, want consent@example.com", pending["email"])
+	}
+
+	// Submit password to complete the link.
+	linkReq, err := http.NewRequestWithContext(t.Context(), http.MethodPost,
+		env.Server.URL+"/auth/link",
+		strings.NewReader(`{"password":"password123"}`))
+	if err != nil {
+		t.Fatalf("new request: %v", err)
+	}
+	linkReq.Header.Set("Content-Type", "application/json")
+	linkResp, err := client.Do(linkReq)
+	if err != nil {
+		t.Fatalf("post link: %v", err)
+	}
+	assertStatus(t, linkResp, http.StatusOK)
+	var linkResult map[string]any
+	readJSON(t, linkResp, &linkResult)
+	if linkResult["linked"] != true {
+		t.Errorf("linked = %v, want true", linkResult["linked"])
+	}
+	if linkResult["redirectTo"] != "/spaces" {
+		t.Errorf("redirectTo = %v, want /spaces", linkResult["redirectTo"])
+	}
+
+	// Session cookie should now be set.
+	sessionToken := extractSessionCookie(t, client, env.Server.URL)
+	if sessionToken == "" {
+		t.Fatal("expected tend_session cookie after link")
+	}
+
+	// Verify the session works and the user is the existing one.
+	meResp := doRequestAs(t, env, sessionToken, "GET", "/users/me", "")
+	assertStatus(t, meResp, http.StatusOK)
+	var me map[string]any
+	readJSON(t, meResp, &me)
+	if me["email"] != "consent@example.com" {
+		t.Errorf("email = %v, want consent@example.com", me["email"])
+	}
+	meID, err := types.ParseUserID(jsonAs[string](t, me["id"]))
+	if err != nil {
+		t.Fatalf("parse user id: %v", err)
+	}
+	if meID != existingUser.ID {
+		t.Errorf("user ID = %d, want %d (should reuse existing user)", meID, existingUser.ID)
+	}
+
+	// Verify the OIDC subject was linked in the DB.
+	q := dbgen.New(env.pool)
+	user, err := q.GetUserByOIDCSubject(t.Context(), pgtype.Text{String: "consent-subject", Valid: true})
+	if err != nil {
+		t.Fatalf("get user by oidc subject: %v", err)
+	}
+	if user.Email != "consent@example.com" {
+		t.Errorf("db email = %v, want consent@example.com", user.Email)
+	}
+}
+
+func TestOIDCLinkConsentWrongPassword(t *testing.T) {
+	env := setupOIDCConsentEnv(t)
+
+	_, err := taskengine.CreateUserWithPassword(t.Context(), env.pool, "wrong@example.com", "Wrong User", "correctpassword", false, nil)
+	if err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	env.addOIDCUser("wrong-pw-subject", "wrong@example.com", true)
+
+	client := newOIDCClient(t)
+	stopAfterCallback(client, env.Server.URL)
+
+	resp := driveOIDCFlow(t, env, client, "wrong-pw-subject", "")
+	_ = resp.Body.Close()
+
+	if resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("got status %d, want 303", resp.StatusCode)
+	}
+
+	// Submit wrong password.
+	linkReq, err := http.NewRequestWithContext(t.Context(), http.MethodPost,
+		env.Server.URL+"/auth/link",
+		strings.NewReader(`{"password":"wrongpassword"}`))
+	if err != nil {
+		t.Fatalf("new request: %v", err)
+	}
+	linkReq.Header.Set("Content-Type", "application/json")
+	linkResp, err := client.Do(linkReq)
+	if err != nil {
+		t.Fatalf("post link: %v", err)
+	}
+	defer func() { _ = linkResp.Body.Close() }()
+
+	if linkResp.StatusCode != http.StatusBadRequest {
+		body, _ := io.ReadAll(linkResp.Body)
+		t.Fatalf("got status %d, want 400; body: %s", linkResp.StatusCode, body)
+	}
+
+	// No session cookie should be set.
+	if tok := extractSessionCookie(t, client, env.Server.URL); tok != "" {
+		t.Error("session cookie should not be set after wrong password")
+	}
+
+	// OIDC subject should NOT be linked.
+	q := dbgen.New(env.pool)
+	_, err = q.GetUserByOIDCSubject(t.Context(), pgtype.Text{String: "wrong-pw-subject", Valid: true})
+	if !errors.Is(err, pgx.ErrNoRows) {
+		t.Errorf("OIDC subject should not be linked after wrong password, got err: %v", err)
+	}
+}

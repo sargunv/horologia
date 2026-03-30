@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ogen-go/ogen/ogenerrors"
+	zhttp "github.com/zitadel/oidc/v3/pkg/http"
 
 	apigen "github.com/sargunv/tend/server/internal/api/gen"
 	"github.com/sargunv/tend/server/internal/pwdcheck"
@@ -19,14 +20,16 @@ import (
 // Handler implements the generated API interface.
 type Handler struct {
 	apigen.UnimplementedHandler
-	Pool                *pgxpool.Pool
-	Log                 *slog.Logger
-	SecureCookies       bool
-	OIDCEnabled         bool
-	OIDCLabel           string
-	OIDCAutoRedirect    bool
-	PasswordAuthEnabled bool
-	PasswordChecker     pwdcheck.Checker
+	Pool                   *pgxpool.Pool
+	Log                    *slog.Logger
+	SecureCookies          bool
+	OIDCEnabled            bool
+	OIDCLabel              string
+	OIDCAutoRedirect       bool
+	OIDCLinkConsentEnabled bool
+	LinkCookieHandler      *zhttp.CookieHandler
+	PasswordAuthEnabled    bool
+	PasswordChecker        pwdcheck.Checker
 }
 
 func (h *Handler) NewError(ctx context.Context, err error) *apigen.ApiErrorStatusCode {

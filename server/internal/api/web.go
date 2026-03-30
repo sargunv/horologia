@@ -25,6 +25,8 @@ var sentinelHash = func() []byte {
 	return h
 }()
 
+var errInvalidCredentials = errors.New("invalid credentials")
+
 const (
 	sessionCookieName = "tend_session"
 	sessionCookiePath = "/"
@@ -120,7 +122,7 @@ func validatePassword(ctx context.Context, q *dbgen.Queries, email, password str
 	user, err := q.GetUserByEmail(ctx, email)
 	if errors.Is(err, pgx.ErrNoRows) {
 		_ = bcrypt.CompareHashAndPassword(sentinelHash, []byte(password))
-		return dbgen.User{}, errors.New("invalid credentials")
+		return dbgen.User{}, errInvalidCredentials
 	}
 	if err != nil {
 		return dbgen.User{}, err
@@ -130,11 +132,11 @@ func validatePassword(ctx context.Context, q *dbgen.Queries, email, password str
 		// OIDC-only user — no password login allowed. Run bcrypt against
 		// the sentinel hash to prevent timing-based enumeration.
 		_ = bcrypt.CompareHashAndPassword(sentinelHash, []byte(password))
-		return dbgen.User{}, errors.New("invalid credentials")
+		return dbgen.User{}, errInvalidCredentials
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash.String), []byte(password)); err != nil {
-		return dbgen.User{}, errors.New("invalid credentials")
+		return dbgen.User{}, errInvalidCredentials
 	}
 
 	return user, nil
@@ -188,6 +190,10 @@ func MountWebAuth(base http.Handler, handler *Handler) http.Handler {
 	mux.Handle("GET /auth/config", AuthConfigHandler(handler))
 	if handler.PasswordAuthEnabled {
 		mux.Handle("POST /auth/login", WebLoginHandler(handler))
+	}
+	if handler.OIDCLinkConsentEnabled {
+		mux.Handle("GET /auth/link/pending", WebLinkPendingHandler(handler))
+		mux.Handle("POST /auth/link", WebLinkHandler(handler))
 	}
 	mux.Handle("POST /auth/logout", WebLogoutHandler(handler))
 	mux.Handle("/", CookieAuthMiddleware(base))

@@ -113,14 +113,23 @@ var serveCmd = &cobra.Command{
 		checker := buildPasswordChecker(cfg)
 
 		handler := &api.Handler{
-			Pool:                pool,
-			Log:                 log,
-			SecureCookies:       cfg.SecureCookies,
-			OIDCEnabled:         cfg.OIDCIssuer != "",
-			OIDCLabel:           cfg.OIDCLabel,
-			OIDCAutoRedirect:    cfg.OIDCAutoRedirect,
-			PasswordAuthEnabled: cfg.PasswordAuthEnabled,
-			PasswordChecker:     checker,
+			Pool:                   pool,
+			Log:                    log,
+			SecureCookies:          cfg.SecureCookies,
+			OIDCEnabled:            cfg.OIDCIssuer != "",
+			OIDCLabel:              cfg.OIDCLabel,
+			OIDCAutoRedirect:       cfg.OIDCAutoRedirect,
+			OIDCLinkConsentEnabled: cfg.OIDCIssuer != "" && cfg.PasswordAuthEnabled && cfg.OIDCLinkConsent,
+			PasswordAuthEnabled:    cfg.PasswordAuthEnabled,
+			PasswordChecker:        checker,
+		}
+
+		if handler.OIDCLinkConsentEnabled {
+			linkCH, err := api.NewLinkCookieHandler(cfg.SecureCookies)
+			if err != nil {
+				return fmt.Errorf("setup link consent cookie: %w", err)
+			}
+			handler.LinkCookieHandler = linkCH
 		}
 
 		// Start the fixed_accumulating cron job.
