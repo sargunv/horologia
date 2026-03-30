@@ -148,8 +148,7 @@ function CreateTaskDialog({ spaceSlug }: { spaceSlug: string }) {
         params: { path: { spaceSlug } },
         body,
       });
-      if (error)
-        throw new Error((error as { message?: string }).message ?? "Failed to create task");
+      if (error) throw new Error(error.message ?? "Failed to create task");
       return data;
     },
     onSuccess: async (data) => {

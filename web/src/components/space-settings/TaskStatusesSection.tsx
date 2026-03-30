@@ -115,10 +115,7 @@ function TaskStatusesForm({
         params: { path: { spaceSlug } },
         body: { items },
       });
-      if (error)
-        throw new Error(
-          (error as { message?: string }).message ?? "Failed to update task statuses",
-        );
+      if (error) throw new Error(error.message ?? "Failed to update task statuses");
       return data;
     },
     onSuccess: async (data) => {

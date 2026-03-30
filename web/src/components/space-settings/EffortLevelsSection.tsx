@@ -29,10 +29,7 @@ export function EffortLevelsSection({
             params: { path: { spaceSlug } },
             body: { items },
           });
-          if (error)
-            throw new Error(
-              (error as { message?: string }).message ?? "Failed to update effort levels",
-            );
+          if (error) throw new Error(error.message ?? "Failed to update effort levels");
           if (!data) throw new Error("Failed to update effort levels");
           return data;
         }}

@@ -112,10 +112,11 @@ export const spaceTagsQueryOptions = (spaceSlug: string) =>
     },
   });
 
-export const spaceTasksInfiniteQueryOptions = (spaceSlug: string) =>
-  infiniteQueryOptions({
+export const spaceTasksInfiniteQueryOptions = (spaceSlug: string) => {
+  const initialPageParam: string | null = null;
+  return infiniteQueryOptions({
     queryKey: ["spaces", spaceSlug, "tasks", "list"],
-    queryFn: async ({ pageParam }) => {
+    queryFn: async ({ pageParam }: { pageParam: string | null }) => {
       const { data, error } = await apiClient.GET("/spaces/{spaceSlug}/tasks", {
         params: {
           path: { spaceSlug },
@@ -125,9 +126,10 @@ export const spaceTasksInfiniteQueryOptions = (spaceSlug: string) =>
       if (error) throw error;
       return data;
     },
-    initialPageParam: null as string | null,
+    initialPageParam,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
   });
+};
 
 export const spaceTaskQueryOptions = (spaceSlug: string, taskId: string) =>
   queryOptions({

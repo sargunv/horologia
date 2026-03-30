@@ -29,10 +29,7 @@ export function PriorityLevelsSection({
             params: { path: { spaceSlug } },
             body: { items },
           });
-          if (error)
-            throw new Error(
-              (error as { message?: string }).message ?? "Failed to update priority levels",
-            );
+          if (error) throw new Error(error.message ?? "Failed to update priority levels");
           if (!data) throw new Error("Failed to update priority levels");
           return data;
         }}
