@@ -11,7 +11,7 @@ export default defineConfig({
   plugins: [TanStackRouterVite({ routesDirectory: "./src/routes" }), react(), tailwindcss()],
   lint: {
     ignorePatterns: ["dist/**", "src/routeTree.gen.ts"],
-    plugins: ["import", "typescript"],
+    plugins: ["eslint", "typescript", "unicorn", "oxc", "import", "react", "promise", "vitest"],
     rules: {
       "import/no-duplicates": "error",
       "import/no-self-import": "error",
