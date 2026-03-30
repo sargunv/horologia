@@ -42,8 +42,7 @@ function GeneralSettingsForm({ space }: { space: Pick<Space, "slug" | "name" | "
         params: { path: { spaceSlug: space.slug } },
         body,
       });
-      if (error)
-        throw new Error((error as { message?: string }).message ?? "Failed to update space");
+      if (error) throw new Error(error.message ?? "Failed to update space");
       return data;
     },
     onSuccess: async (data) => {

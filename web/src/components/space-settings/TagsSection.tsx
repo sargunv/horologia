@@ -26,7 +26,7 @@ export function TagsSection({ spaceSlug, tags }: { spaceSlug: string; tags: Tag[
         params: { path: { spaceSlug } },
         body: { name },
       });
-      if (error) throw new Error((error as { message?: string }).message ?? "Failed to create tag");
+      if (error) throw new Error(error.message ?? "Failed to create tag");
       return data;
     },
     onSuccess: async () => {
@@ -41,7 +41,7 @@ export function TagsSection({ spaceSlug, tags }: { spaceSlug: string; tags: Tag[
       const { error } = await apiClient.DELETE("/spaces/{spaceSlug}/tags/{tagName}", {
         params: { path: { spaceSlug, tagName } },
       });
-      if (error) throw new Error((error as { message?: string }).message ?? "Failed to delete tag");
+      if (error) throw new Error(error.message ?? "Failed to delete tag");
     },
     onSuccess: async () => {
       setDeleteTarget(null);
@@ -230,7 +230,7 @@ function TagRow({
         params: { path: { spaceSlug, tagName: oldName } },
         body: { name: newName },
       });
-      if (error) throw new Error((error as { message?: string }).message ?? "Failed to rename tag");
+      if (error) throw new Error(error.message ?? "Failed to rename tag");
       return data;
     },
     onSuccess: async () => {

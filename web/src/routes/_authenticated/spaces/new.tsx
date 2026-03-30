@@ -31,8 +31,7 @@ function NewSpacePage() {
   const createMutation = useMutation({
     mutationFn: async (body: { name: string; slug: string; description?: string }) => {
       const { data, error } = await apiClient.POST("/spaces", { body });
-      if (error)
-        throw new Error((error as { message?: string }).message ?? "Failed to create space");
+      if (error) throw new Error(error.message ?? "Failed to create space");
       return data;
     },
     onSuccess: async (data) => {

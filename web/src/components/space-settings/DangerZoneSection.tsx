@@ -25,8 +25,7 @@ export function DangerZoneSection({ space }: { space: Pick<Space, "slug" | "name
       const { error } = await apiClient.DELETE("/spaces/{spaceSlug}", {
         params: { path: { spaceSlug: space.slug } },
       });
-      if (error)
-        throw new Error((error as { message?: string }).message ?? "Failed to delete space");
+      if (error) throw new Error(error.message ?? "Failed to delete space");
     },
     onSuccess: async () => {
       queryClient.removeQueries({ queryKey: ["spaces", space.slug] });

@@ -64,6 +64,10 @@ const RECURRENCE_TYPE_LABELS: Record<TaskRecurrenceType, string> = {
   on_dependency: "On dependency",
 };
 
+function isTaskRecurrenceType(value: string): value is TaskRecurrenceType {
+  return value in RECURRENCE_TYPE_LABELS;
+}
+
 const RECURRENCE_TYPES_WITH_RULE = new Set<TaskRecurrenceType>([
   "completion_based",
   "fixed_non_accumulating",
@@ -78,8 +82,7 @@ function useTaskPatch(spaceSlug: string, taskId: string) {
         params: { path: { spaceSlug, taskId } },
         body,
       });
-      if (error)
-        throw new Error((error as { message?: string }).message ?? "Failed to update task");
+      if (error) throw new Error(error.message ?? "Failed to update task");
       return data;
     },
     onSuccess: async () => {
@@ -512,7 +515,7 @@ function DueDateField({
       <div
         className="flex items-center gap-2"
         onBlur={(e) => {
-          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+          if (!(e.relatedTarget instanceof Node) || !e.currentTarget.contains(e.relatedTarget)) {
             save(draftAt, draftTz);
           }
         }}
@@ -576,7 +579,8 @@ function RecurrenceTypeField({
         value={value}
         aria-label="Recurrence type"
         onChange={(e) => {
-          const newType = e.target.value as TaskRecurrenceType;
+          const newType = e.target.value;
+          if (!isTaskRecurrenceType(newType)) return;
           mutation.reset();
           const body: TaskUpdate = { recurrenceType: newType };
           // Clear rule if switching away from a rule-bearing type
@@ -588,13 +592,11 @@ function RecurrenceTypeField({
         disabled={mutation.isPending}
         className="select preset-outlined-surface-200-800 w-full"
       >
-        {(Object.entries(RECURRENCE_TYPE_LABELS) as [TaskRecurrenceType, string][]).map(
-          ([type, label]) => (
-            <option key={type} value={type}>
-              {label}
-            </option>
-          ),
-        )}
+        {Object.entries(RECURRENCE_TYPE_LABELS).map(([type, label]) => (
+          <option key={type} value={type}>
+            {label}
+          </option>
+        ))}
       </select>
       {mutation.error && <ErrorAlert message={mutation.error.message} />}
     </div>
@@ -712,8 +714,7 @@ function DeleteTaskSection({ spaceSlug, taskId }: { spaceSlug: string; taskId: s
       const { error } = await apiClient.DELETE("/spaces/{spaceSlug}/tasks/{taskId}", {
         params: { path: { spaceSlug, taskId } },
       });
-      if (error)
-        throw new Error((error as { message?: string }).message ?? "Failed to delete task");
+      if (error) throw new Error(error.message ?? "Failed to delete task");
     },
     onSuccess: async () => {
       queryClient.removeQueries({ queryKey: ["spaces", spaceSlug, "tasks", taskId] });

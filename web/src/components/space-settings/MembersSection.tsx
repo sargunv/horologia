@@ -21,6 +21,10 @@ const ROLE_LABELS: Record<SpaceRole, string> = {
   viewer: "Viewer",
 };
 
+function isSpaceRole(value: string): value is SpaceRole {
+  return value in ROLE_LABELS;
+}
+
 function RoleOptions() {
   return (
     <>
@@ -93,8 +97,7 @@ function MemberRow({
         params: { path: { spaceSlug, userId: member.userId } },
         body: { role: newRole },
       });
-      if (error)
-        throw new Error((error as { message?: string }).message ?? "Failed to update role");
+      if (error) throw new Error(error.message ?? "Failed to update role");
     },
     onSuccess: async () => {
       try {
@@ -110,8 +113,7 @@ function MemberRow({
       const { error } = await apiClient.DELETE("/spaces/{spaceSlug}/members/{userId}", {
         params: { path: { spaceSlug, userId: member.userId } },
       });
-      if (error)
-        throw new Error((error as { message?: string }).message ?? "Failed to remove member");
+      if (error) throw new Error(error.message ?? "Failed to remove member");
     },
     onSuccess: async () => {
       try {
@@ -155,7 +157,9 @@ function MemberRow({
             <select
               aria-label={`Role for ${member.userName}`}
               value={member.role}
-              onChange={(e) => handleRoleChange(e.target.value as SpaceRole)}
+              onChange={(e) => {
+                if (isSpaceRole(e.target.value)) handleRoleChange(e.target.value);
+              }}
               disabled={pending}
               className="select preset-outlined-surface-200-800 w-28"
             >
@@ -219,7 +223,7 @@ function AddMemberForm({ spaceSlug }: { spaceSlug: string }) {
         params: { path: { spaceSlug } },
         body,
       });
-      if (error) throw new Error((error as { message?: string }).message ?? "Failed to add member");
+      if (error) throw new Error(error.message ?? "Failed to add member");
     },
     onSuccess: async () => {
       setUserId("");
@@ -257,7 +261,9 @@ function AddMemberForm({ spaceSlug }: { spaceSlug: string }) {
           <span className="text-surface-600-400 text-sm font-medium">Role</span>
           <select
             value={role}
-            onChange={(e) => setRole(e.target.value as SpaceRole)}
+            onChange={(e) => {
+              if (isSpaceRole(e.target.value)) setRole(e.target.value);
+            }}
             disabled={addMutation.isPending}
             className="select preset-outlined-surface-200-800 w-28"
           >
