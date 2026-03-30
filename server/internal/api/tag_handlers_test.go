@@ -65,43 +65,6 @@ func TestSpaceTagsList(t *testing.T) {
 	}
 }
 
-func TestSpaceTagsListPagination(t *testing.T) {
-	env := setupTestServer(t)
-	createSpace(t, env, "tag-page", "Tag Page")
-
-	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-page/tags", `{"name":"Alpha"}`), http.StatusCreated)
-	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-page/tags", `{"name":"Beta"}`), http.StatusCreated)
-	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-page/tags", `{"name":"Gamma"}`), http.StatusCreated)
-	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-page/tags", `{"name":"Delta"}`), http.StatusCreated)
-
-	// Page 1: limit=2.
-	resp := doRequest(t, env, "GET", "/spaces/tag-page/tags?limit=2", "")
-	assertStatus(t, resp, http.StatusOK)
-	var page1 map[string]any
-	readJSON(t, resp, &page1)
-	items1 := jsonAs[[]any](t, page1["items"])
-	if len(items1) != 2 {
-		t.Fatalf("page 1: got %d items, want 2", len(items1))
-	}
-	cursor := page1["nextCursor"]
-	if cursor == nil {
-		t.Fatal("page 1: expected nextCursor")
-	}
-
-	// Page 2: should return remaining 2 with null cursor.
-	resp2 := doRequest(t, env, "GET", "/spaces/tag-page/tags?limit=2&cursor="+jsonAs[string](t, cursor), "")
-	assertStatus(t, resp2, http.StatusOK)
-	var page2 map[string]any
-	readJSON(t, resp2, &page2)
-	items2 := jsonAs[[]any](t, page2["items"])
-	if len(items2) != 2 {
-		t.Fatalf("page 2: got %d items, want 2", len(items2))
-	}
-	if page2["nextCursor"] != nil {
-		t.Error("page 2: expected null nextCursor")
-	}
-}
-
 func TestSpaceTagsListEmpty(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "tag-le", "Tag List Empty")

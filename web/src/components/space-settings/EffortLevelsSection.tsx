@@ -1,6 +1,7 @@
 import { Gauge } from "lucide-react";
 import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
+import { spaceEffortLevelsQueryOptions } from "../../lib/queries.ts";
 import { OrderedNameListForm } from "./OrderedNameListForm.tsx";
 import { SettingsSection } from "./SettingsSection.tsx";
 
@@ -22,7 +23,7 @@ export function EffortLevelsSection({
       <OrderedNameListForm
         key={effortLevels.map((l) => l.name).join(",")}
         items={effortLevels}
-        queryKey={["spaces", spaceSlug, "effortLevels"]}
+        queryKey={spaceEffortLevelsQueryOptions(spaceSlug).queryKey}
         mutationFn={async (items) => {
           const { data, error } = await apiClient.PUT("/spaces/{spaceSlug}/task-effort-levels", {
             params: { path: { spaceSlug } },

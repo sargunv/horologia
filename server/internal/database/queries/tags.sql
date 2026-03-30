@@ -16,11 +16,10 @@ RETURNING *;
 SELECT * FROM tags
 WHERE space_slug = $1 AND name_folded = $2;
 
--- name: ListTagsBySpace :many
+-- name: ListAllTagsBySpace :many
 SELECT * FROM tags
-WHERE space_slug = $1 AND id > $2
-ORDER BY id ASC
-LIMIT $3;
+WHERE space_slug = $1
+ORDER BY name ASC;
 
 -- name: UpdateTag :one
 UPDATE tags

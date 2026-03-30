@@ -632,7 +632,7 @@ func (s *TagCreate) Validate() error {
 	return nil
 }
 
-func (s *TagPage) Validate() error {
+func (s *TagList) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
 	}

@@ -2756,14 +2756,14 @@ func (s *TagCreate) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
-func (s *TagPage) Encode(e *jx.Encoder) {
+func (s *TagList) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
 	e.ObjEnd()
 }
 
 // encodeFields encodes fields.
-func (s *TagPage) encodeFields(e *jx.Encoder) {
+func (s *TagList) encodeFields(e *jx.Encoder) {
 	{
 		e.FieldStart("items")
 		e.ArrStart()
@@ -2772,21 +2772,16 @@ func (s *TagPage) encodeFields(e *jx.Encoder) {
 		}
 		e.ArrEnd()
 	}
-	{
-		e.FieldStart("nextCursor")
-		s.NextCursor.Encode(e)
-	}
 }
 
-var jsonFieldsNameOfTagPage = [2]string{
+var jsonFieldsNameOfTagList = [1]string{
 	0: "items",
-	1: "nextCursor",
 }
 
-// Decode decodes TagPage from json.
-func (s *TagPage) Decode(d *jx.Decoder) error {
+// Decode decodes TagList from json.
+func (s *TagList) Decode(d *jx.Decoder) error {
 	if s == nil {
-		return errors.New("invalid: unable to decode TagPage to nil")
+		return errors.New("invalid: unable to decode TagList to nil")
 	}
 	var requiredBitSet [1]uint8
 
@@ -2810,27 +2805,17 @@ func (s *TagPage) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"items\"")
 			}
-		case "nextCursor":
-			requiredBitSet[0] |= 1 << 1
-			if err := func() error {
-				if err := s.NextCursor.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"nextCursor\"")
-			}
 		default:
 			return d.Skip()
 		}
 		return nil
 	}); err != nil {
-		return errors.Wrap(err, "decode TagPage")
+		return errors.Wrap(err, "decode TagList")
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000011,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -2842,8 +2827,8 @@ func (s *TagPage) Decode(d *jx.Decoder) error {
 				bitIdx := bits.TrailingZeros8(result)
 				fieldIdx := i*8 + bitIdx
 				var name string
-				if fieldIdx < len(jsonFieldsNameOfTagPage) {
-					name = jsonFieldsNameOfTagPage[fieldIdx]
+				if fieldIdx < len(jsonFieldsNameOfTagList) {
+					name = jsonFieldsNameOfTagList[fieldIdx]
 				} else {
 					name = strconv.Itoa(fieldIdx)
 				}
@@ -2864,14 +2849,14 @@ func (s *TagPage) Decode(d *jx.Decoder) error {
 }
 
 // MarshalJSON implements stdjson.Marshaler.
-func (s *TagPage) MarshalJSON() ([]byte, error) {
+func (s *TagList) MarshalJSON() ([]byte, error) {
 	e := jx.Encoder{}
 	s.Encode(&e)
 	return e.Bytes(), nil
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *TagPage) UnmarshalJSON(data []byte) error {
+func (s *TagList) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

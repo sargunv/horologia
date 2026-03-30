@@ -86,7 +86,7 @@ func (UnimplementedHandler) SpaceTagsDelete(ctx context.Context, params SpaceTag
 // SpaceTagsList implements SpaceTags_list operation.
 //
 // GET /spaces/{spaceSlug}/tags
-func (UnimplementedHandler) SpaceTagsList(ctx context.Context, params SpaceTagsListParams) (r *TagPage, _ error) {
+func (UnimplementedHandler) SpaceTagsList(ctx context.Context, params SpaceTagsListParams) (r *TagList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

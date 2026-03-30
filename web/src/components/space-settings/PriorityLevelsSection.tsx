@@ -1,6 +1,7 @@
 import { SignalHigh } from "lucide-react";
 import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
+import { spacePriorityLevelsQueryOptions } from "../../lib/queries.ts";
 import { OrderedNameListForm } from "./OrderedNameListForm.tsx";
 import { SettingsSection } from "./SettingsSection.tsx";
 
@@ -22,7 +23,7 @@ export function PriorityLevelsSection({
       <OrderedNameListForm
         key={priorityLevels.map((l) => l.name).join(",")}
         items={priorityLevels}
-        queryKey={["spaces", spaceSlug, "priorityLevels"]}
+        queryKey={spacePriorityLevelsQueryOptions(spaceSlug).queryKey}
         mutationFn={async (items) => {
           const { data, error } = await apiClient.PUT("/spaces/{spaceSlug}/task-priority-levels", {
             params: { path: { spaceSlug } },

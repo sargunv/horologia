@@ -17,10 +17,11 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { GripVertical, ListChecks, Plus, Trash2 } from "lucide-react";
-import { type FormEvent, type SetStateAction, useMemo, useState } from "react";
+import { GripVertical, ListChecks, Pencil, Plus, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
 import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
+import { spaceTaskStatusesQueryOptions } from "../../lib/queries.ts";
 import { ErrorAlert } from "./ErrorAlert.tsx";
 import { SettingsSection } from "./SettingsSection.tsx";
 
@@ -33,16 +34,28 @@ interface StatusItem {
   category: TaskStatusCategory;
 }
 
-function toItems(statuses: TaskStatus[], category: TaskStatusCategory): StatusItem[] {
+function toItems(
+  statuses: TaskStatus[],
+  category: TaskStatusCategory,
+  existing?: StatusItem[],
+): StatusItem[] {
   return statuses
     .filter((s) => s.category === category)
-    .map((s) => ({ id: crypto.randomUUID(), name: s.name, category }));
+    .map((s, i) => ({ id: existing?.[i]?.id ?? crypto.randomUUID(), name: s.name, category }));
 }
 
-function arraysEqual(a: StatusItem[], b: TaskStatus[], category: TaskStatusCategory): boolean {
-  const filtered = b.filter((s) => s.category === category);
-  if (a.length !== filtered.length) return false;
-  return a.every((item, i) => item.name === filtered[i]?.name);
+function allEqual(
+  initial: StatusItem[],
+  intermediate: StatusItem[],
+  completion: StatusItem[],
+  serverStatuses: TaskStatus[],
+): boolean {
+  const merged = [...initial, ...intermediate, ...completion];
+  if (merged.length !== serverStatuses.length) return false;
+  return merged.every(
+    (item, i) =>
+      item.name.trim() === serverStatuses[i]?.name && item.category === serverStatuses[i]?.category,
+  );
 }
 
 const CATEGORY_LABELS: Record<TaskStatusCategory, string> = {
@@ -87,17 +100,14 @@ function TaskStatusesForm({
   taskStatuses: TaskStatus[];
 }) {
   const queryClient = useQueryClient();
+  const queryKey = spaceTaskStatusesQueryOptions(spaceSlug).queryKey;
 
   const [initialItems, setInitialItems] = useState(() => toItems(taskStatuses, "initial"));
   const [intermediateItems, setIntermediateItems] = useState(() =>
     toItems(taskStatuses, "intermediate"),
   );
   const [completionItems, setCompletionItems] = useState(() => toItems(taskStatuses, "completion"));
-
-  const hasChanges =
-    !arraysEqual(initialItems, taskStatuses, "initial") ||
-    !arraysEqual(intermediateItems, taskStatuses, "intermediate") ||
-    !arraysEqual(completionItems, taskStatuses, "completion");
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const saveMutation = useMutation({
     mutationFn: async (items: { name: string; category: TaskStatusCategory }[]) => {
@@ -112,27 +122,19 @@ function TaskStatusesForm({
       return data;
     },
     onSuccess: async (data) => {
-      setInitialItems(toItems(data.items, "initial"));
-      setIntermediateItems(toItems(data.items, "intermediate"));
-      setCompletionItems(toItems(data.items, "completion"));
-      try {
-        await queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "taskStatuses"] });
-      } catch (err) {
-        console.error("Failed to refresh after task statuses update:", err);
-      }
+      setInitialItems((prev) => toItems(data.items, "initial", prev));
+      setIntermediateItems((prev) => toItems(data.items, "intermediate", prev));
+      setCompletionItems((prev) => toItems(data.items, "completion", prev));
+      await queryClient.invalidateQueries({ queryKey });
     },
   });
 
-  // Fix #3: Clear mutation error when user edits the form
-  function wrapSetter<T>(setter: React.Dispatch<SetStateAction<T>>) {
-    return (value: SetStateAction<T>) => {
-      saveMutation.reset();
-      setter(value);
-    };
-  }
-
-  function validate(): string | null {
-    const allItems = [...initialItems, ...intermediateItems, ...completionItems];
+  function validate(
+    initial: StatusItem[],
+    intermediate: StatusItem[],
+    completion: StatusItem[],
+  ): string | null {
+    const allItems = [...initial, ...intermediate, ...completion];
     for (const item of allItems) {
       const trimmed = item.name.trim();
       if (trimmed.length === 0) return "All statuses must have a name.";
@@ -141,31 +143,46 @@ function TaskStatusesForm({
     const names = allItems.map((i) => i.name.trim().toLowerCase());
     const uniqueNames = new Set(names);
     if (uniqueNames.size !== names.length) return "Status names must be unique.";
-    if (initialItems.length !== 1) return "There must be exactly one initial status.";
-    if (completionItems.length < 1) return "There must be at least one completion status.";
+    if (initial.length !== 1) return "There must be exactly one initial status.";
+    if (completion.length < 1) return "There must be at least one completion status.";
     return null;
   }
 
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    const validationError = validate();
-    if (validationError) return;
-    const items = [...initialItems, ...intermediateItems, ...completionItems].map((item) => ({
-      name: item.name.trim(),
-      category: item.category,
-    }));
-    saveMutation.mutate(items);
+  function handleCategorySave(category: TaskStatusCategory, updatedItems: StatusItem[]) {
+    const initial = category === "initial" ? updatedItems : initialItems;
+    const intermediate = category === "intermediate" ? updatedItems : intermediateItems;
+    const completion = category === "completion" ? updatedItems : completionItems;
+
+    const error = validate(initial, intermediate, completion);
+    setValidationError(error);
+    if (error) return;
+    if (allEqual(initial, intermediate, completion, taskStatuses)) return;
+
+    saveMutation.mutate(
+      [...initial, ...intermediate, ...completion].map((item) => ({
+        name: item.name.trim(),
+        category: item.category,
+      })),
+    );
   }
 
-  const validationError = validate();
+  function clearErrors() {
+    setValidationError(null);
+    saveMutation.reset();
+  }
+
   const pending = saveMutation.isPending;
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <CategoryGroup
         category="initial"
         items={initialItems}
-        setItems={wrapSetter(setInitialItems)}
+        setItems={(value) => {
+          clearErrors();
+          setInitialItems(value);
+        }}
+        onSave={(items) => handleCategorySave("initial", items)}
         canAdd={false}
         minItems={1}
         disabled={pending}
@@ -174,7 +191,11 @@ function TaskStatusesForm({
       <CategoryGroup
         category="intermediate"
         items={intermediateItems}
-        setItems={wrapSetter(setIntermediateItems)}
+        setItems={(value) => {
+          clearErrors();
+          setIntermediateItems(value);
+        }}
+        onSave={(items) => handleCategorySave("intermediate", items)}
         canAdd={true}
         minItems={0}
         disabled={pending}
@@ -183,28 +204,19 @@ function TaskStatusesForm({
       <CategoryGroup
         category="completion"
         items={completionItems}
-        setItems={wrapSetter(setCompletionItems)}
+        setItems={(value) => {
+          clearErrors();
+          setCompletionItems(value);
+        }}
+        onSave={(items) => handleCategorySave("completion", items)}
         canAdd={true}
         minItems={1}
         disabled={pending}
       />
 
-      {validationError && hasChanges && (
-        <ErrorAlert key={validationError} message={validationError} />
-      )}
-
+      {validationError && <ErrorAlert key={validationError} message={validationError} />}
       {saveMutation.error && <ErrorAlert message={saveMutation.error.message} />}
-
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          disabled={pending || !hasChanges || validationError !== null}
-          className="btn preset-filled-primary-500"
-        >
-          {pending ? "Saving..." : "Save changes"}
-        </button>
-      </div>
-    </form>
+    </div>
   );
 }
 
@@ -212,24 +224,26 @@ function CategoryGroup({
   category,
   items,
   setItems,
+  onSave,
   canAdd,
   minItems,
   disabled,
 }: {
   category: TaskStatusCategory;
   items: StatusItem[];
-  setItems: (value: SetStateAction<StatusItem[]>) => void;
+  setItems: (value: StatusItem[]) => void;
+  onSave: (items: StatusItem[]) => void;
   canAdd: boolean;
   minItems: number;
   disabled: boolean;
 }) {
-  // Fix #1: Add distance constraint so PointerSensor doesn't interfere with text inputs
+  const [editingId, setEditingId] = useState<string | null>(null);
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  // Fix #2: Custom DnD announcements using status names instead of UUIDs
   const announcements = useMemo(() => {
     const getName = (id: UniqueIdentifier) => items.find((i) => i.id === id)?.name || "status";
     return {
@@ -266,24 +280,38 @@ function CategoryGroup({
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (over && active.id !== over.id) {
-      setItems((prev) => {
-        const oldIndex = prev.findIndex((i) => i.id === active.id);
-        const newIndex = prev.findIndex((i) => i.id === over.id);
-        return arrayMove(prev, oldIndex, newIndex);
-      });
+      const oldIndex = items.findIndex((i) => i.id === active.id);
+      const newIndex = items.findIndex((i) => i.id === over.id);
+      const reordered = arrayMove(items, oldIndex, newIndex);
+      setItems(reordered);
+      onSave(reordered);
     }
   }
 
   function handleAdd() {
-    setItems((prev) => [...prev, { id: crypto.randomUUID(), name: "", category }]);
+    const newId = crypto.randomUUID();
+    setItems([...items, { id: newId, name: "", category }]);
+    setEditingId(newId);
   }
 
   function handleRemove(id: string) {
-    setItems((prev) => prev.filter((i) => i.id !== id));
+    if (editingId === id) setEditingId(null);
+    const next = items.filter((i) => i.id !== id);
+    setItems(next);
+    onSave(next);
   }
 
   function handleRename(id: string, name: string) {
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, name } : i)));
+    setItems(items.map((i) => (i.id === id ? { ...i, name } : i)));
+  }
+
+  function handleEndEdit() {
+    setEditingId(null);
+    const cleaned = items.filter((i) => i.name.trim());
+    if (cleaned.length !== items.length) {
+      setItems(cleaned);
+    }
+    onSave(cleaned);
   }
 
   const canRemoveItem = items.length > minItems;
@@ -308,6 +336,9 @@ function CategoryGroup({
                 key={item.id}
                 item={item}
                 index={index}
+                isEditing={editingId === item.id}
+                onStartEdit={() => setEditingId(item.id)}
+                onEndEdit={handleEndEdit}
                 onRename={(name) => handleRename(item.id, name)}
                 onRemove={canRemoveItem ? () => handleRemove(item.id) : undefined}
                 disabled={disabled}
@@ -318,7 +349,7 @@ function CategoryGroup({
         </SortableContext>
       </DndContext>
 
-      {canAdd && (
+      {canAdd && !editingId && (
         <button
           type="button"
           onClick={handleAdd}
@@ -336,6 +367,9 @@ function CategoryGroup({
 function SortableStatusRow({
   item,
   index,
+  isEditing,
+  onStartEdit,
+  onEndEdit,
   onRename,
   onRemove,
   disabled,
@@ -343,6 +377,9 @@ function SortableStatusRow({
 }: {
   item: StatusItem;
   index: number;
+  isEditing: boolean;
+  onStartEdit: () => void;
+  onEndEdit: () => void;
   onRename: (name: string) => void;
   onRemove?: (() => void) | undefined;
   disabled: boolean;
@@ -358,8 +395,14 @@ function SortableStatusRow({
     transition,
   };
 
-  // Fix #4b: Strip redundant role from dnd-kit attributes (already a <button>)
   const { role: _role, ...handleAttributes } = attributes;
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter" || e.key === "Escape") {
+      e.preventDefault();
+      e.currentTarget.blur();
+    }
+  }
 
   return (
     <div
@@ -367,29 +410,43 @@ function SortableStatusRow({
       style={style}
       className={`flex items-center gap-2 rounded-base ${isDragging ? "opacity-50" : ""}`}
     >
-      {/* Fix #4a: Use preset-tonal-surface instead of hand-rolled colors */}
       <button
         type="button"
         className={`btn-icon btn-icon-sm shrink-0 ${draggable ? "preset-tonal-surface cursor-grab" : "cursor-default opacity-50"}`}
         disabled={!draggable || disabled}
-        aria-label={`Drag to reorder ${item.name || "status"}`}
-        {...handleAttributes}
-        {...listeners}
+        aria-label={`Drag to reorder ${item.name || `status ${index + 1}`}`}
+        {...(draggable && !disabled ? { ...handleAttributes, ...listeners } : {})}
       >
         <GripVertical className="size-4" aria-hidden="true" />
       </button>
 
-      <input
-        type="text"
-        value={item.name}
-        onChange={(e) => onRename(e.target.value)}
-        className="input preset-outlined-surface-200-800 flex-1"
-        placeholder="Status name"
-        maxLength={100}
-        required
-        disabled={disabled}
-        aria-label={`${CATEGORY_LABELS[item.category]} status name ${index + 1}`}
-      />
+      {isEditing ? (
+        <input
+          type="text"
+          value={item.name}
+          onChange={(e) => onRename(e.target.value)}
+          onBlur={onEndEdit}
+          onKeyDown={handleKeyDown}
+          className="input preset-outlined-surface-200-800 flex-1"
+          placeholder="Status name"
+          maxLength={100}
+          required
+          disabled={disabled}
+          aria-label={`${CATEGORY_LABELS[item.category]} status name ${index + 1}`}
+          autoFocus
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={onStartEdit}
+          disabled={disabled}
+          className="flex flex-1 items-center gap-2 truncate rounded-base px-3 py-2 text-left text-sm hover:bg-surface-200-800"
+          aria-label={`Edit ${item.name || "status"}`}
+        >
+          <span className="flex-1 truncate">{item.name || "Status name"}</span>
+          <Pencil className="text-surface-600-400 size-3.5 shrink-0" aria-hidden="true" />
+        </button>
+      )}
 
       {onRemove && (
         <button

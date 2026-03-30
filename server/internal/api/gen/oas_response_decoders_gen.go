@@ -801,7 +801,7 @@ func decodeSpaceTagsDeleteResponse(resp *http.Response) (res *SpaceTagsDeleteNoC
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeSpaceTagsListResponse(resp *http.Response) (res *TagPage, _ error) {
+func decodeSpaceTagsListResponse(resp *http.Response) (res *TagList, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -817,7 +817,7 @@ func decodeSpaceTagsListResponse(resp *http.Response) (res *TagPage, _ error) {
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response TagPage
+			var response TagList
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
