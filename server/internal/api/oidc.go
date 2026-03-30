@@ -42,8 +42,6 @@ type OIDCConfig struct {
 //
 //	GET /auth/oidc          → redirects to the OIDC provider
 //	GET /auth/oidc/callback → handles the callback, creates a user+token
-//
-// Returns nil if OIDC is not configured.
 func NewOIDCHandler(ctx context.Context, cfg OIDCConfig, handler *Handler) (http.Handler, error) {
 	// Generate keys for HMAC authentication and AES encryption of OIDC state cookies.
 	hashKey := make([]byte, 32)
@@ -54,7 +52,7 @@ func NewOIDCHandler(ctx context.Context, cfg OIDCConfig, handler *Handler) (http
 	if _, err := rand.Read(encKey); err != nil {
 		return nil, fmt.Errorf("generate oidc encryption key: %w", err)
 	}
-	cookieOpts := []zhttp.CookieHandlerOpt{}
+	var cookieOpts []zhttp.CookieHandlerOpt
 	if !handler.SecureCookies {
 		cookieOpts = append(cookieOpts, zhttp.WithUnsecure())
 	}
@@ -122,7 +120,9 @@ func (h *Handler) handleOIDCCallback(w http.ResponseWriter, r *http.Request, tok
 
 	// The ID token may not contain email/profile claims (per OIDC spec,
 	// they go in userinfo when an access token is issued). Fetch from userinfo.
-	info, err := rp.Userinfo[*oidc.UserInfo](ctx, tokens.AccessToken, tokens.TokenType, subject, relyingParty)
+	// Use tokens.Type() instead of tokens.TokenType to normalize the token type
+	// (e.g. "bearer" → "Bearer") per RFC 6750 case-insensitivity requirements.
+	info, err := rp.Userinfo[*oidc.UserInfo](ctx, tokens.AccessToken, tokens.Type(), subject, relyingParty)
 	if err != nil {
 		h.Log.ErrorContext(ctx, "oidc: userinfo request failed", "error", err)
 		http.Error(w, "failed to fetch user info", http.StatusInternalServerError)
@@ -188,8 +188,7 @@ func (h *Handler) handleOIDCCallback(w http.ResponseWriter, r *http.Request, tok
 		}
 		if errors.Is(err, pgx.ErrNoRows) {
 			// Completely new user — create one.
-			ts := time.Now()
-			tstz := types.Timestamptz(ts)
+			tstz := types.Timestamptz(time.Now())
 			user, err = q.CreateUser(ctx, dbgen.CreateUserParams{
 				Email:       email,
 				Name:        name,

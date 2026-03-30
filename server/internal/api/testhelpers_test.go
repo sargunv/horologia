@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/oauth2-proxy/mockoidc"
 
 	"github.com/sargunv/tend/server/internal/api"
 	"github.com/sargunv/tend/server/internal/database"
@@ -27,11 +29,30 @@ type testEnv struct {
 	Token   string
 	Handler *api.Handler
 	pool    *pgxpool.Pool
+	mock    *mockoidc.MockOIDC
 }
 
-func setupTestServer(t *testing.T) *testEnv {
+type testServerOption func(*testServerConfig)
+
+type testServerConfig struct {
+	oidcMock *mockoidc.MockOIDC
+}
+
+// withOIDC enables OIDC routes on the test server using the given mockoidc instance.
+func withOIDC(mock *mockoidc.MockOIDC) testServerOption {
+	return func(cfg *testServerConfig) {
+		cfg.oidcMock = mock
+	}
+}
+
+func setupTestServer(t *testing.T, opts ...testServerOption) *testEnv {
 	t.Helper()
 	ctx := t.Context()
+
+	var cfg testServerConfig
+	for _, opt := range opts {
+		opt(&cfg)
+	}
 
 	// Create a fresh database from the pre-migrated template.
 	dbName := "test_" + strings.ReplaceAll(strings.ToLower(t.Name()), "/", "_")
@@ -88,12 +109,45 @@ func setupTestServer(t *testing.T) *testEnv {
 
 	log := slog.New(slog.DiscardHandler)
 	handler := &api.Handler{Pool: pool, Log: log, PasswordAuthEnabled: true}
+
+	if cfg.oidcMock != nil {
+		handler.OIDCEnabled = true
+		handler.OIDCLabel = "Test OIDC"
+	}
+
 	h, err := api.NewServer(handler, log)
 	if err != nil {
 		t.Fatalf("new server: %v", err)
 	}
 
-	srv := httptest.NewServer(api.MountWebAuth(h, handler))
+	var srv *httptest.Server
+	if cfg.oidcMock != nil {
+		// Pre-allocate a listener so we know the server address before
+		// calling NewOIDCHandler (which performs OIDC discovery).
+		var lc net.ListenConfig
+		ln, err := lc.Listen(ctx, "tcp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatalf("listen: %v", err)
+		}
+		mockCfg := cfg.oidcMock.Config()
+		oidcCfg := api.OIDCConfig{
+			Issuer:       cfg.oidcMock.Issuer(),
+			ClientID:     mockCfg.ClientID,
+			ClientSecret: mockCfg.ClientSecret,
+			RedirectURL:  "http://" + ln.Addr().String() + "/auth/oidc/callback",
+		}
+		oidcHandler, err := api.NewOIDCHandler(ctx, oidcCfg, handler)
+		if err != nil {
+			_ = ln.Close()
+			t.Fatalf("new oidc handler: %v", err)
+		}
+		composed := api.MountWebAuth(api.MountOIDC(h, oidcHandler, log), handler)
+		srv = httptest.NewUnstartedServer(composed)
+		srv.Listener = ln
+		srv.Start()
+	} else {
+		srv = httptest.NewServer(api.MountWebAuth(h, handler))
+	}
 	t.Cleanup(srv.Close)
 
 	return &testEnv{
@@ -101,6 +155,7 @@ func setupTestServer(t *testing.T) *testEnv {
 		Token:   rawToken,
 		Handler: handler,
 		pool:    pool,
+		mock:    cfg.oidcMock,
 	}
 }
 
@@ -259,7 +314,7 @@ func createTask(t *testing.T, env *testEnv, spaceSlug, jsonBody string) map[stri
 	return result
 }
 
-// assertTaskRelation is a helper that GETs a task and asserts it has exactly
+// assertTaskRelations is a helper that GETs a task and asserts it has exactly
 // the expected number of relations, returning the relations slice.
 func assertTaskRelations(t *testing.T, env *testEnv, spaceSlug, taskID string, wantCount int) []any {
 	t.Helper()
