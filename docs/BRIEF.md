@@ -85,11 +85,27 @@ tasks.
    spawns a new task. Missed occurrences pile up as separate tasks. A server-side cron job creates
    tasks on schedule.
 4. **Fixed, non-accumulating** — cron schedule (e.g., "every Saturday"). One task, due date advances
-   to next occurrence on completion. Auto-advance on missed: configurable `auto_advance_after` —
-   `null` = stays overdue forever, `0` = advances to next occurrence immediately when past due,
-   `> 0` = advances after the grace duration.
+   to next occurrence on completion.
 5. **On-dependency** — recurs when a specific other task is completed. Enables chains (e.g., "load
    dishwasher" completion triggers "unload dishwasher", and vice versa).
+
+**Overdue actions:**
+
+Any recurring task can have an optional overdue action rule: `{ after: duration | null, action }`.
+The `after` field is the grace period after the due date before the action triggers — `null` or
+absent means no automatic action (stays overdue indefinitely), `0` means act immediately when past
+due, `> 0` means act after the grace duration. Available actions:
+
+- **Advance to next recurrence** — skip the missed occurrence and advance the due date to the next
+  one. Primary use case for fixed non-accumulating tasks (e.g., "every Saturday" — if missed, just
+  move to next Saturday instead of piling up overdue).
+- **Set status** — change the task's status to a specified value (e.g., move to "skipped" or
+  "cancelled"). Useful for tasks that should be explicitly marked rather than silently advanced.
+- **Clear due date** — remove the due date, effectively parking the task until manually rescheduled.
+
+Only one overdue action rule per task. The server-side cron job evaluates overdue action rules
+periodically and applies them. This replaces the earlier `auto_advance_after` concept with a more
+flexible system.
 
 **Staleness:**
 
