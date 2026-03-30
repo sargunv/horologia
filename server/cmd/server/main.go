@@ -24,6 +24,7 @@ import (
 	"github.com/sargunv/tend/server/internal/cron"
 	"github.com/sargunv/tend/server/internal/database"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/tend/server/internal/pwdcheck"
 	"github.com/sargunv/tend/server/internal/taskengine"
 )
 
@@ -109,6 +110,8 @@ var serveCmd = &cobra.Command{
 		}
 		defer pool.Close()
 
+		checker := buildPasswordChecker(cfg)
+
 		handler := &api.Handler{
 			Pool:                pool,
 			Log:                 log,
@@ -117,6 +120,7 @@ var serveCmd = &cobra.Command{
 			OIDCLabel:           cfg.OIDCLabel,
 			OIDCAutoRedirect:    cfg.OIDCAutoRedirect,
 			PasswordAuthEnabled: cfg.PasswordAuthEnabled,
+			PasswordChecker:     checker,
 		}
 
 		// Start the fixed_accumulating cron job.
@@ -152,7 +156,7 @@ var serveCmd = &cobra.Command{
 
 		// Bootstrap initial owner if configured and no users exist yet.
 		if cfg.InitOwnerEmail != "" {
-			if err := bootstrapOwner(cmd.Context(), pool, log, cfg); err != nil {
+			if err := bootstrapOwner(cmd.Context(), pool, log, cfg, checker); err != nil {
 				return fmt.Errorf("bootstrap owner: %w", err)
 			}
 		}
@@ -218,7 +222,8 @@ var createAdminCmd = &cobra.Command{
 		name, _ := cmd.Flags().GetString("name")
 		password, _ := cmd.Flags().GetString("password")
 
-		user, err := taskengine.CreateUserWithPassword(cmd.Context(), pool, email, name, password, true)
+		checker := buildPasswordChecker(cfg)
+		user, err := taskengine.CreateUserWithPassword(cmd.Context(), pool, email, name, password, true, checker)
 		if err != nil {
 			return fmt.Errorf("create admin: %w", err)
 		}
@@ -281,11 +286,18 @@ func init() {
 	_ = createAdminCmd.MarkFlagRequired("password")
 }
 
+func buildPasswordChecker(cfg config.Config) pwdcheck.Checker {
+	if !cfg.HIBPEnabled {
+		return nil
+	}
+	return pwdcheck.NewHIBPChecker(&http.Client{Timeout: 5 * time.Second})
+}
+
 // bootstrapOwner creates the initial owner user if no users exist yet.
 // This is a no-op when users are already present in the database.
 // Handles concurrent starts gracefully: if two instances race, the unique
 // constraint on email causes the second insert to fail, which is treated as success.
-func bootstrapOwner(ctx context.Context, pool *pgxpool.Pool, log *slog.Logger, cfg config.Config) error {
+func bootstrapOwner(ctx context.Context, pool *pgxpool.Pool, log *slog.Logger, cfg config.Config, checker pwdcheck.Checker) error {
 	var count int64
 	err := pool.QueryRow(ctx, "SELECT count(*) FROM users WHERE is_owner = true").Scan(&count)
 	if err != nil {
@@ -300,7 +312,7 @@ func bootstrapOwner(ctx context.Context, pool *pgxpool.Pool, log *slog.Logger, c
 	var user dbgen.User
 	var createErr error
 	if cfg.PasswordAuthEnabled {
-		user, createErr = taskengine.CreateUserWithPassword(ctx, pool, cfg.InitOwnerEmail, cfg.InitOwnerName, cfg.InitOwnerPassword, true)
+		user, createErr = taskengine.CreateUserWithPassword(ctx, pool, cfg.InitOwnerEmail, cfg.InitOwnerName, cfg.InitOwnerPassword, true, checker)
 	} else {
 		user, createErr = taskengine.CreateUserWithoutPassword(ctx, pool, cfg.InitOwnerEmail, cfg.InitOwnerName, true)
 	}

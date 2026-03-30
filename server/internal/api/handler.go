@@ -12,6 +12,7 @@ import (
 	"github.com/ogen-go/ogen/ogenerrors"
 
 	apigen "github.com/sargunv/tend/server/internal/api/gen"
+	"github.com/sargunv/tend/server/internal/pwdcheck"
 	"github.com/sargunv/tend/server/internal/types"
 )
 
@@ -25,6 +26,7 @@ type Handler struct {
 	OIDCLabel           string
 	OIDCAutoRedirect    bool
 	PasswordAuthEnabled bool
+	PasswordChecker     pwdcheck.Checker
 }
 
 func (h *Handler) NewError(ctx context.Context, err error) *apigen.ApiErrorStatusCode {

@@ -228,7 +228,7 @@ func TestNonMemberCannotAccessSpace(t *testing.T) {
 	env := setupTestServer(t)
 
 	createSpace(t, env, "secret", "Secret")
-	userToken := createTestUser(t, env, "bob@example.com", "Bob", "pass123")
+	userToken := createTestUser(t, env, "bob@example.com", "Bob", "pass1234")
 
 	// Non-member cannot read the space.
 	assertStatusClose(t, doRequestAs(t, env, userToken, "GET", "/spaces/secret", ""), http.StatusNotFound)
@@ -246,7 +246,7 @@ func TestViewerCannotWriteToSpace(t *testing.T) {
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
-	userToken, _ := createAndAddMember(t, env, "home", "viewer@example.com", "Viewer", "pass123", "viewer")
+	userToken, _ := createAndAddMember(t, env, "home", "viewer@example.com", "Viewer", "pass1234", "viewer")
 
 	// Viewer can read the space.
 	assertStatusClose(t, doRequestAs(t, env, userToken, "GET", "/spaces/home", ""), http.StatusOK)
@@ -264,7 +264,7 @@ func TestMemberCannotManageSpace(t *testing.T) {
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
-	userToken, userID := createAndAddMember(t, env, "home", "member@example.com", "Member", "pass123", "member")
+	userToken, userID := createAndAddMember(t, env, "home", "member@example.com", "Member", "pass1234", "member")
 
 	// Member can create tasks.
 	resp2 := doRequestAs(t, env, userToken, "POST", "/spaces/home/tasks", `{"title":"My task"}`)
@@ -284,7 +284,7 @@ func TestNonOwnerSpacesListFiltered(t *testing.T) {
 	createSpace(t, env, "beta", "Beta")
 	createSpace(t, env, "gamma", "Gamma")
 
-	userToken, _ := createAndAddMember(t, env, "beta", "user@example.com", "User", "pass123", "member")
+	userToken, _ := createAndAddMember(t, env, "beta", "user@example.com", "User", "pass1234", "member")
 
 	// Non-owner should only see "beta".
 	resp2 := doRequestAs(t, env, userToken, "GET", "/spaces", "")
