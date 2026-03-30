@@ -3,6 +3,7 @@ import {
   Dialog,
   Portal,
   TagsInput,
+  parseDate,
   useListCollection,
 } from "@skeletonlabs/skeleton-react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
@@ -24,7 +25,9 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiClient } from "../../../../../api/client.ts";
 import type { components } from "../../../../../api/schema.d.ts";
+import { DateField } from "../../../../../components/DateField.tsx";
 import { RecurrenceRuleEditor } from "../../../../../components/RecurrenceRuleEditor.tsx";
+import { TimezoneCombobox } from "../../../../../components/TimezoneCombobox.tsx";
 import { ErrorAlert } from "../../../../../components/space-settings/ErrorAlert.tsx";
 import { useSpaceMemberMap } from "../../../../../lib/hooks.ts";
 import {
@@ -459,6 +462,17 @@ function MemberMultiSelectField({
   );
 }
 
+const BROWSER_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+function safeParseDateString(value: string) {
+  if (!value) return null;
+  try {
+    return parseDate(value);
+  } catch {
+    return null;
+  }
+}
+
 function DueDateField({
   spaceSlug,
   taskId,
@@ -470,13 +484,13 @@ function DueDateField({
 }) {
   const mutation = useTaskPatch(spaceSlug, taskId);
   const [draftAt, setDraftAt] = useState(value?.at ?? "");
-  const [draftTz, setDraftTz] = useState(value?.timezone ?? "");
+  const [draftTz, setDraftTz] = useState(value?.timezone ?? BROWSER_TIMEZONE);
   const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     if (!editing) {
       setDraftAt(value?.at ?? "");
-      setDraftTz(value?.timezone ?? "");
+      setDraftTz(value?.timezone ?? BROWSER_TIMEZONE);
     }
   }, [value, editing]);
 
@@ -493,41 +507,29 @@ function DueDateField({
     }
   }
 
+  const draftDateValue = useMemo(() => safeParseDateString(draftAt), [draftAt]);
+
   return (
     <div className="flex flex-col gap-2">
-      <div
-        className="flex items-center gap-2"
-        onBlur={(e) => {
-          if (!(e.relatedTarget instanceof Node) || !e.currentTarget.contains(e.relatedTarget)) {
-            save(draftAt, draftTz);
-          }
-        }}
-      >
-        <input
-          type="date"
-          value={draftAt}
+      <div className="flex items-center gap-2">
+        <DateField
+          value={draftDateValue}
+          onChange={(dateValue) => {
+            const at = dateValue?.toString() ?? "";
+            setDraftAt(at);
+            save(at, draftTz);
+          }}
+          onOpenChange={(open) => {
+            if (open) setEditing(true);
+          }}
+          disabled={mutation.isPending}
           aria-label="Due date"
-          onFocus={() => setEditing(true)}
-          onChange={(e) => setDraftAt(e.target.value)}
-          className="input preset-outlined-surface-200-800"
-          disabled={mutation.isPending}
-        />
-        <input
-          type="text"
-          value={draftTz}
-          aria-label="Due date timezone"
-          onFocus={() => setEditing(true)}
-          onChange={(e) => setDraftTz(e.target.value)}
-          placeholder="Timezone (e.g. America/New_York)"
-          className="input preset-outlined-surface-200-800 flex-1"
-          disabled={mutation.isPending}
         />
         {value && (
           <button
             type="button"
             onClick={() => {
               setDraftAt("");
-              setDraftTz("");
               mutation.reset();
               mutation.mutate({ due: null });
             }}
@@ -540,6 +542,18 @@ function DueDateField({
           </button>
         )}
       </div>
+      <TimezoneCombobox
+        value={draftTz}
+        onChange={(tz) => {
+          setDraftTz(tz);
+          save(draftAt, tz);
+        }}
+        onOpenChange={(open) => {
+          if (open) setEditing(true);
+        }}
+        disabled={mutation.isPending}
+        aria-label="Due date timezone"
+      />
       {mutation.error && <ErrorAlert message={mutation.error.message} />}
     </div>
   );
