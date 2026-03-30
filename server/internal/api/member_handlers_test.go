@@ -9,7 +9,7 @@ func TestSpaceMembersCreate(t *testing.T) {
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
-	aliceToken := createTestUser(t, env, "alice@example.com", "Alice", "pass123")
+	aliceToken := createTestUser(t, env, "alice@example.com", "Alice", "pass1234")
 	userID := getUserID(t, env, aliceToken)
 
 	resp2 := doRequest(t, env, "POST", "/spaces/home/members", `{"userId":"`+userID+`","role":"member"}`)
@@ -31,7 +31,7 @@ func TestSpaceMembersCreateDuplicate(t *testing.T) {
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
-	aliceToken := createTestUser(t, env, "alice@example.com", "Alice", "pass123")
+	aliceToken := createTestUser(t, env, "alice@example.com", "Alice", "pass1234")
 	userID := getUserID(t, env, aliceToken)
 
 	// First add succeeds.
@@ -64,7 +64,7 @@ func TestSpaceMembersUpdate(t *testing.T) {
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
-	_, userID := createAndAddMember(t, env, "home", "bob@example.com", "Bob", "pass123", "member")
+	_, userID := createAndAddMember(t, env, "home", "bob@example.com", "Bob", "pass1234", "member")
 
 	// Promote to admin.
 	resp2 := doRequest(t, env, "PATCH", "/spaces/home/members/"+userID, `{"role":"admin"}`)
@@ -89,7 +89,7 @@ func TestSpaceMembersDelete(t *testing.T) {
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
-	userToken, userID := createAndAddMember(t, env, "home", "charlie@example.com", "Charlie", "pass123", "member")
+	userToken, userID := createAndAddMember(t, env, "home", "charlie@example.com", "Charlie", "pass1234", "member")
 
 	// Remove.
 	assertStatusClose(t, doRequest(t, env, "DELETE", "/spaces/home/members/"+userID, ""), http.StatusNoContent)
@@ -117,7 +117,7 @@ func TestMemberRemovalClearsAssignments(t *testing.T) {
 	createSpace(t, env, "home", "Home")
 
 	// Create a user and add as member.
-	_, bobID := createAndAddMember(t, env, "home", "bob@example.com", "Bob", "pass123", "member")
+	_, bobID := createAndAddMember(t, env, "home", "bob@example.com", "Bob", "pass1234", "member")
 
 	// Assign bob to a task.
 	task := createTask(t, env, "home", `{"title":"Bob's task","assigneeIds":["`+bobID+`"]}`)
@@ -152,7 +152,7 @@ func TestMemberRemovalIsolation(t *testing.T) {
 	createSpace(t, env, "beta", "Beta")
 
 	// Create bob and add to both spaces.
-	userToken := createTestUser(t, env, "bob@example.com", "Bob", "pass123")
+	userToken := createTestUser(t, env, "bob@example.com", "Bob", "pass1234")
 	bobID := getUserID(t, env, userToken)
 	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/alpha/members", `{"userId":"`+bobID+`","role":"member"}`), http.StatusCreated)
 	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/beta/members", `{"userId":"`+bobID+`","role":"member"}`), http.StatusCreated)

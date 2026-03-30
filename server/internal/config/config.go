@@ -24,6 +24,7 @@ type Config struct {
 	OIDCAutoRedirect bool   `koanf:"oidc_auto_redirect"`
 
 	PasswordAuthEnabled bool `koanf:"password_auth_enabled"`
+	HIBPEnabled         bool `koanf:"hibp_enabled"`
 
 	InitOwnerEmail    string `koanf:"init_owner_email"`
 	InitOwnerName     string `koanf:"init_owner_name"`
@@ -46,6 +47,7 @@ func Load() (Config, error) {
 		SecureCookies:       true,
 		OIDCLabel:           "OIDC",
 		PasswordAuthEnabled: true,
+		HIBPEnabled:         true,
 	}
 
 	if err := k.Unmarshal("", &cfg); err != nil {

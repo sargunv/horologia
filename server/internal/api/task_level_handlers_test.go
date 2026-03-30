@@ -177,7 +177,7 @@ func TestTaskStatusesReplaceNonAdminRejected(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "st", "Status Test")
 
-	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass123")
+	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass1234")
 	resp := doRequestAs(t, env, outsiderToken, "PUT", "/spaces/st/task-statuses", `{
 		"items": [
 			{"name": "todo", "category": "initial"},
@@ -246,7 +246,7 @@ func TestTaskStatusesListNonMemberRejected(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "st-acl", "Status ACL")
 
-	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass123")
+	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass1234")
 	assertStatusClose(t, doRequestAs(t, env, outsiderToken, "GET", "/spaces/st-acl/task-statuses", ""), http.StatusNotFound)
 }
 
@@ -359,7 +359,7 @@ func TestTaskEffortLevelsReplaceNonAdminRejected(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "eff", "Effort Test")
 
-	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass123")
+	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass1234")
 	resp := doRequestAs(t, env, outsiderToken, "PUT", "/spaces/eff/task-effort-levels", `{
 		"items": [{"name": "small"}]
 	}`)
@@ -475,7 +475,7 @@ func TestTaskPriorityLevelsReplaceNonAdminRejected(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "pri", "Priority Test")
 
-	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass123")
+	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass1234")
 	resp := doRequestAs(t, env, outsiderToken, "PUT", "/spaces/pri/task-priority-levels", `{
 		"items": [{"name": "low"}]
 	}`)
@@ -665,7 +665,7 @@ func TestTaskEffortLevelsNonMemberRejected(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "eff-acl", "Effort ACL")
 
-	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass123")
+	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass1234")
 	assertStatusClose(t, doRequestAs(t, env, outsiderToken, "GET", "/spaces/eff-acl/task-effort-levels", ""), http.StatusNotFound)
 }
 
@@ -673,7 +673,7 @@ func TestTaskPriorityLevelsNonMemberRejected(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "pri-acl", "Priority ACL")
 
-	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass123")
+	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass1234")
 	assertStatusClose(t, doRequestAs(t, env, outsiderToken, "GET", "/spaces/pri-acl/task-priority-levels", ""), http.StatusNotFound)
 }
 

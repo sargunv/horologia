@@ -149,8 +149,8 @@ func TestTaskActivityLog_CreateAndUpdateDetails(t *testing.T) {
 func TestTaskActivityLog_AssigneeDiff(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "ws", "WS")
-	_, aliceID := createAndAddMember(t, env, "ws", "alice@test.com", "Alice", "pass123", "member")
-	_, bobID := createAndAddMember(t, env, "ws", "bob@test.com", "Bob", "pass123", "member")
+	_, aliceID := createAndAddMember(t, env, "ws", "alice@test.com", "Alice", "pass1234", "member")
+	_, bobID := createAndAddMember(t, env, "ws", "bob@test.com", "Bob", "pass1234", "member")
 
 	task := createTask(t, env, "ws", `{"title":"Chore","assigneeIds":["`+aliceID+`"]}`)
 	taskID := jsonAs[string](t, task["id"])
@@ -252,7 +252,7 @@ func TestSpaceActivityLog_SurvivesSpaceDeletion(t *testing.T) {
 func TestUserActivityList_SelfAccess(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "ws", "WS")
-	aliceToken, aliceID := createAndAddMember(t, env, "ws", "alice@test.com", "Alice", "pass123", "member")
+	aliceToken, aliceID := createAndAddMember(t, env, "ws", "alice@test.com", "Alice", "pass1234", "member")
 
 	// Alice creates a task.
 	resp := doRequestAs(t, env, aliceToken, "POST", "/spaces/ws/tasks", `{"title":"Alice task"}`)
@@ -275,8 +275,8 @@ func TestUserActivityList_SelfAccess(t *testing.T) {
 func TestUserActivityList_NonOwnerForbiddenForOtherUser(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "ws", "WS")
-	aliceToken, _ := createAndAddMember(t, env, "ws", "alice@test.com", "Alice", "pass123", "member")
-	_, bobID := createAndAddMember(t, env, "ws", "bob@test.com", "Bob", "pass123", "member")
+	aliceToken, _ := createAndAddMember(t, env, "ws", "alice@test.com", "Alice", "pass1234", "member")
+	_, bobID := createAndAddMember(t, env, "ws", "bob@test.com", "Bob", "pass1234", "member")
 
 	resp := doRequestAs(t, env, aliceToken, "GET", "/users/"+bobID+"/activity", "")
 	assertStatusClose(t, resp, http.StatusForbidden)
@@ -288,7 +288,7 @@ func TestUserActivityList_CrossSpaceFiltering(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "visible", "Visible")
 	createSpace(t, env, "hidden", "Hidden")
-	aliceToken, aliceID := createAndAddMember(t, env, "visible", "alice@test.com", "Alice", "pass123", "member")
+	aliceToken, aliceID := createAndAddMember(t, env, "visible", "alice@test.com", "Alice", "pass1234", "member")
 
 	// Alice creates a task in 'visible'.
 	resp := doRequestAs(t, env, aliceToken, "POST", "/spaces/visible/tasks", `{"title":"Alice task"}`)
@@ -327,7 +327,7 @@ func TestUserActivityList_OwnerSeesAllSpaces(t *testing.T) {
 	ownerID := getUserID(t, env, env.Token)
 
 	// Alice creates a space where the owner is NOT a member.
-	aliceToken := createTestUser(t, env, "alice@test.com", "Alice", "pass123")
+	aliceToken := createTestUser(t, env, "alice@test.com", "Alice", "pass1234")
 	resp := doRequestAs(t, env, aliceToken, "POST", "/spaces",
 		`{"slug":"alice-only","name":"Alice Only"}`)
 	assertStatusClose(t, resp, http.StatusCreated)
@@ -485,7 +485,7 @@ func TestSpaceTaskActivityLog_NoUpdateEntryOnNoOp(t *testing.T) {
 func TestMemberActivity(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "ws", "WS")
-	_, aliceID := createAndAddMember(t, env, "ws", "alice@test.com", "Alice", "pass123", "member")
+	_, aliceID := createAndAddMember(t, env, "ws", "alice@test.com", "Alice", "pass1234", "member")
 
 	// Update Alice's role.
 	assertStatusClose(t, doRequest(t, env, "PATCH", "/spaces/ws/members/"+aliceID,

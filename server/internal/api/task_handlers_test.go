@@ -381,7 +381,7 @@ func TestTaskAssigneesUpdate(t *testing.T) {
 	ownerID := getUserID(t, env, env.Token)
 
 	// Create a second user and add as member.
-	_, bobID := createAndAddMember(t, env, "home", "bob@example.com", "Bob", "pass123", "member")
+	_, bobID := createAndAddMember(t, env, "home", "bob@example.com", "Bob", "pass1234", "member")
 
 	// Create task without assignees.
 	task := createTask(t, env, "home", `{"title":"Test"}`)
@@ -449,7 +449,7 @@ func TestTaskAssigneesNonMemberRejected(t *testing.T) {
 	createSpace(t, env, "home", "Home")
 
 	// Create a user but don't add them as a member.
-	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass123")
+	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass1234")
 	outsiderID := getUserID(t, env, outsiderToken)
 
 	// Try to assign the non-member.
@@ -466,7 +466,7 @@ func TestTaskAssigneesCrossSpaceRejected(t *testing.T) {
 	createSpace(t, env, "beta", "Beta")
 
 	// Create user and add to beta only.
-	_, bobID := createAndAddMember(t, env, "beta", "bob@example.com", "Bob", "pass123", "member")
+	_, bobID := createAndAddMember(t, env, "beta", "bob@example.com", "Bob", "pass1234", "member")
 
 	// Try to assign bob to a task in alpha (where he's not a member).
 	task := createTask(t, env, "alpha", `{"title":"Test"}`)

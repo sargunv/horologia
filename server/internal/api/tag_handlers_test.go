@@ -159,7 +159,7 @@ func TestSpaceTagsNonMemberRejected(t *testing.T) {
 	createSpace(t, env, "tag-acl", "Tag ACL")
 
 	// Non-member user.
-	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass123")
+	outsiderToken := createTestUser(t, env, "outsider@example.com", "Outsider", "pass1234")
 
 	// Cannot list tags.
 	assertStatusClose(t, doRequestAs(t, env, outsiderToken, "GET", "/spaces/tag-acl/tags", ""), http.StatusNotFound)
@@ -172,7 +172,7 @@ func TestSpaceTagsViewerCannotWrite(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "tag-vw", "Tag Viewer Write")
 
-	viewerToken, _ := createAndAddMember(t, env, "tag-vw", "viewer@example.com", "Viewer", "pass123", "viewer")
+	viewerToken, _ := createAndAddMember(t, env, "tag-vw", "viewer@example.com", "Viewer", "pass1234", "viewer")
 
 	// Viewer can list tags.
 	assertStatusClose(t, doRequestAs(t, env, viewerToken, "GET", "/spaces/tag-vw/tags", ""), http.StatusOK)

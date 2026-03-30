@@ -94,7 +94,7 @@ func TestAuthTokenDeleteOtherUser(t *testing.T) {
 	tokenID := jsonAs[string](t, jsonAs[map[string]any](t, result["authToken"])["id"])
 
 	// Second user tries to delete owner's token.
-	userToken := createTestUser(t, env, "other@example.com", "Other", "pass123")
+	userToken := createTestUser(t, env, "other@example.com", "Other", "pass1234")
 	assertStatusClose(t, doRequestAs(t, env, userToken, "DELETE", "/auth/tokens/"+tokenID, ""), http.StatusNotFound)
 }
 
@@ -105,7 +105,7 @@ func TestAuthTokenListIsolation(t *testing.T) {
 	assertStatusClose(t, doRequest(t, env, "POST", "/auth/tokens", `{"name":"owner-token"}`), http.StatusCreated)
 
 	// Second user creates a token.
-	userToken := createTestUser(t, env, "other@example.com", "Other", "pass123")
+	userToken := createTestUser(t, env, "other@example.com", "Other", "pass1234")
 	assertStatusClose(t, doRequestAs(t, env, userToken, "POST", "/auth/tokens", `{"name":"other-token"}`), http.StatusCreated)
 
 	// Second user lists tokens — should not see owner's tokens.
