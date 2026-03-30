@@ -24,6 +24,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiClient } from "../../../../../api/client.ts";
 import type { components } from "../../../../../api/schema.d.ts";
+import { RecurrenceRuleEditor } from "../../../../../components/RecurrenceRuleEditor.tsx";
 import { ErrorAlert } from "../../../../../components/space-settings/ErrorAlert.tsx";
 import { useSpaceMemberMap } from "../../../../../lib/hooks.ts";
 import {
@@ -55,24 +56,6 @@ export const Route = createFileRoute("/_authenticated/spaces/$spaceSlug/tasks/$t
 });
 
 const BackLink = createLink("a");
-
-const RECURRENCE_TYPE_LABELS: Record<TaskRecurrenceType, string> = {
-  one_off: "One-off",
-  completion_based: "Completion-based",
-  fixed_non_accumulating: "Fixed (non-accumulating)",
-  fixed_accumulating: "Fixed (accumulating)",
-  on_dependency: "On dependency",
-};
-
-function isTaskRecurrenceType(value: string): value is TaskRecurrenceType {
-  return value in RECURRENCE_TYPE_LABELS;
-}
-
-const RECURRENCE_TYPES_WITH_RULE = new Set<TaskRecurrenceType>([
-  "completion_based",
-  "fixed_non_accumulating",
-  "fixed_accumulating",
-]);
 
 function useTaskPatch(spaceSlug: string, taskId: string) {
   const queryClient = useQueryClient();
@@ -562,90 +545,28 @@ function DueDateField({
   );
 }
 
-function RecurrenceTypeField({
+function RecurrenceField({
   spaceSlug,
   taskId,
-  value,
+  recurrenceType,
+  recurrenceRule,
 }: {
   spaceSlug: string;
   taskId: string;
-  value: TaskRecurrenceType;
+  recurrenceType: TaskRecurrenceType;
+  recurrenceRule: string | null;
 }) {
   const mutation = useTaskPatch(spaceSlug, taskId);
 
   return (
     <div className="flex flex-col gap-1">
-      <select
-        value={value}
-        aria-label="Recurrence type"
-        onChange={(e) => {
-          const newType = e.target.value;
-          if (!isTaskRecurrenceType(newType)) return;
+      <RecurrenceRuleEditor
+        recurrenceType={recurrenceType}
+        recurrenceRule={recurrenceRule}
+        onSave={(update) => {
           mutation.reset();
-          const body: TaskUpdate = { recurrenceType: newType };
-          // Clear rule if switching away from a rule-bearing type
-          if (RECURRENCE_TYPES_WITH_RULE.has(value) && !RECURRENCE_TYPES_WITH_RULE.has(newType)) {
-            body.recurrenceRule = null;
-          }
-          mutation.mutate(body);
+          mutation.mutate(update);
         }}
-        disabled={mutation.isPending}
-        className="select preset-outlined-surface-200-800 w-full"
-      >
-        {Object.entries(RECURRENCE_TYPE_LABELS).map(([type, label]) => (
-          <option key={type} value={type}>
-            {label}
-          </option>
-        ))}
-      </select>
-      {mutation.error && <ErrorAlert message={mutation.error.message} />}
-    </div>
-  );
-}
-
-function RecurrenceRuleField({
-  spaceSlug,
-  taskId,
-  value,
-}: {
-  spaceSlug: string;
-  taskId: string;
-  value: string | null;
-}) {
-  const mutation = useTaskPatch(spaceSlug, taskId);
-  const [draft, setDraft] = useState(value ?? "");
-  const [editing, setEditing] = useState(false);
-
-  useEffect(() => {
-    if (!editing) setDraft(value ?? "");
-  }, [value, editing]);
-
-  function save() {
-    setEditing(false);
-    const trimmed = draft.trim();
-    if (trimmed !== (value ?? "")) {
-      mutation.reset();
-      mutation.mutate({ recurrenceRule: trimmed || null });
-    }
-  }
-
-  return (
-    <div className="flex flex-col gap-1">
-      <input
-        type="text"
-        aria-label="Recurrence rule"
-        value={draft}
-        onFocus={() => {
-          mutation.reset();
-          setEditing(true);
-        }}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={save}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") save();
-        }}
-        placeholder="RRULE (e.g. FREQ=WEEKLY;INTERVAL=1)"
-        className="input preset-outlined-surface-200-800 w-full"
         disabled={mutation.isPending}
       />
       {mutation.error && <ErrorAlert message={mutation.error.message} />}
@@ -787,8 +708,6 @@ function TaskDetailPage() {
   const { data: priorityLevels } = useSuspenseQuery(spacePriorityLevelsQueryOptions(spaceSlug));
   const memberMap = useSpaceMemberMap(spaceSlug);
 
-  const showRecurrenceRule = RECURRENCE_TYPES_WITH_RULE.has(task.recurrenceType);
-
   return (
     <div className="mx-auto max-w-3xl p-6">
       <BackLink
@@ -857,21 +776,13 @@ function TaskDetailPage() {
         </PropertyRow>
 
         <PropertyRow label="Recurrence" icon={<RefreshCw className="size-4" aria-hidden="true" />}>
-          <RecurrenceTypeField spaceSlug={spaceSlug} taskId={taskId} value={task.recurrenceType} />
+          <RecurrenceField
+            spaceSlug={spaceSlug}
+            taskId={taskId}
+            recurrenceType={task.recurrenceType}
+            recurrenceRule={task.recurrenceRule}
+          />
         </PropertyRow>
-
-        {showRecurrenceRule && (
-          <PropertyRow
-            label="Recurrence rule"
-            icon={<RefreshCw className="size-4" aria-hidden="true" />}
-          >
-            <RecurrenceRuleField
-              spaceSlug={spaceSlug}
-              taskId={taskId}
-              value={task.recurrenceRule}
-            />
-          </PropertyRow>
-        )}
 
         <PropertyRow label="Tags" icon={<Tag className="size-4" aria-hidden="true" />}>
           <TagsField spaceSlug={spaceSlug} taskId={taskId} value={task.tags} />
