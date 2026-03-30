@@ -1,5 +1,7 @@
+import { parseDate } from "@skeletonlabs/skeleton-react";
 import { AlertTriangle, X } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { DateField } from "./DateField.tsx";
 // TODO: Switch to rrule-temporal (https://www.npmjs.com/package/rrule-temporal)
 // for proper Temporal API support and better timezone handling.
 import { RRule, Weekday } from "rrule";
@@ -328,6 +330,7 @@ export function RecurrenceRuleEditor({
   const [parseFailed, setParseFailed] = useState(initialWarning != null && !recurrenceRule);
   const [editing, setEditing] = useState(false);
   const cancellingRef = useRef(false);
+  const datePickerOpenRef = useRef(false);
 
   // Normalize the saved value once for stable dirty comparison
   const [savedNormalized, setSavedNormalized] = useState(() => ({
@@ -395,6 +398,15 @@ export function RecurrenceRuleEditor({
     setRuleState((prev) => ({ ...prev, ...patch }));
   }
 
+  const untilDateValue = useMemo(() => {
+    if (!ruleState.until) return null;
+    try {
+      return parseDate(ruleState.until);
+    } catch {
+      return null;
+    }
+  }, [ruleState.until]);
+
   return (
     <div
       className="flex flex-col gap-3"
@@ -405,7 +417,7 @@ export function RecurrenceRuleEditor({
           return;
         }
         if (!(e.relatedTarget instanceof Node) || !e.currentTarget.contains(e.relatedTarget)) {
-          save();
+          if (!datePickerOpenRef.current) save();
         }
       }}
     >
@@ -511,11 +523,12 @@ export function RecurrenceRuleEditor({
           {/* Until row */}
           <div className="flex items-center gap-2">
             <span className="text-surface-600-400 text-sm">Until</span>
-            <input
-              type="date"
-              value={ruleState.until}
-              onChange={(e) => updateRule({ until: e.target.value })}
-              className="input preset-outlined-surface-200-800"
+            <DateField
+              value={untilDateValue}
+              onChange={(v) => updateRule({ until: v?.toString() ?? "" })}
+              onOpenChange={(open) => {
+                datePickerOpenRef.current = open;
+              }}
               disabled={disabled}
               aria-label="End date"
             />
