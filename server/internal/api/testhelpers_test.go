@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -11,12 +12,15 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/oauth2-proxy/mockoidc"
+	"github.com/zitadel/oidc/v3/example/server/exampleop"
+	"github.com/zitadel/oidc/v3/example/server/storage"
+	"golang.org/x/text/language"
 
 	"github.com/sargunv/tend/server/internal/api"
 	"github.com/sargunv/tend/server/internal/database"
@@ -24,24 +28,77 @@ import (
 	"github.com/sargunv/tend/server/internal/taskengine"
 )
 
+const (
+	testOIDCClientID     = "tend-test"
+	testOIDCClientSecret = "tend-test-secret" //nolint:gosec // test credentials
+	testOIDCUserPassword = "password"         //nolint:gosec // test credentials
+)
+
+// testOIDCUserStore implements storage.UserStore with dynamic user addition.
+// All methods are safe for concurrent use.
+type testOIDCUserStore struct {
+	mu    sync.RWMutex
+	users map[string]*storage.User
+}
+
+func (s *testOIDCUserStore) GetUserByID(id string) *storage.User {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.users[id]
+}
+
+func (s *testOIDCUserStore) GetUserByUsername(u string) *storage.User {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.users[u]
+}
+
+func (s *testOIDCUserStore) ExampleClientID() string { return testOIDCClientID }
+
+func (s *testOIDCUserStore) addUser(subject, email string, emailVerified bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	// Use subject as both ID and username so the OP can look up by either.
+	s.users[subject] = &storage.User{
+		ID:                subject,
+		Username:          subject,
+		Password:          testOIDCUserPassword,
+		FirstName:         "Test",
+		LastName:          "User",
+		Email:             email,
+		EmailVerified:     emailVerified,
+		PreferredLanguage: language.English,
+	}
+}
+
 type testEnv struct {
 	Server  *httptest.Server
 	Token   string
 	Handler *api.Handler
 	pool    *pgxpool.Pool
-	mock    *mockoidc.MockOIDC
+	oidc    *testOIDCUserStore
+}
+
+// addOIDCUser registers a user in the test OIDC provider's user store.
+// The user authenticates with the subject as username and "password" as password.
+// Panics if OIDC is not enabled on this test environment.
+func (e *testEnv) addOIDCUser(subject, email string, emailVerified bool) {
+	if e.oidc == nil {
+		panic("addOIDCUser called on testEnv without OIDC enabled (use withOIDC())")
+	}
+	e.oidc.addUser(subject, email, emailVerified)
 }
 
 type testServerOption func(*testServerConfig)
 
 type testServerConfig struct {
-	oidcMock *mockoidc.MockOIDC
+	oidc bool
 }
 
-// withOIDC enables OIDC routes on the test server using the given mockoidc instance.
-func withOIDC(mock *mockoidc.MockOIDC) testServerOption {
+// withOIDC enables OIDC routes on the test server using a zitadel example OP.
+func withOIDC() testServerOption {
 	return func(cfg *testServerConfig) {
-		cfg.oidcMock = mock
+		cfg.oidc = true
 	}
 }
 
@@ -110,7 +167,8 @@ func setupTestServer(t *testing.T, opts ...testServerOption) *testEnv {
 	log := slog.New(slog.DiscardHandler)
 	handler := &api.Handler{Pool: pool, Log: log, PasswordAuthEnabled: true}
 
-	if cfg.oidcMock != nil {
+	var oidcUserStore *testOIDCUserStore
+	if cfg.oidc {
 		handler.OIDCEnabled = true
 		handler.OIDCLabel = "Test OIDC"
 	}
@@ -121,29 +179,54 @@ func setupTestServer(t *testing.T, opts ...testServerOption) *testEnv {
 	}
 
 	var srv *httptest.Server
-	if cfg.oidcMock != nil {
-		// Pre-allocate a listener so we know the server address before
-		// calling NewOIDCHandler (which performs OIDC discovery).
+	if cfg.oidc {
+		// Start a zitadel example OP on a random port.
+		userStore := &testOIDCUserStore{users: make(map[string]*storage.User)}
+		clients := map[string]*storage.Client{}
+		// Pre-allocate a listener for the test server so we know the
+		// callback URL before starting the OP (which needs it for client registration).
 		var lc net.ListenConfig
-		ln, err := lc.Listen(ctx, "tcp", "127.0.0.1:0")
+		srvLn, err := lc.Listen(ctx, "tcp", "127.0.0.1:0")
 		if err != nil {
-			t.Fatalf("listen: %v", err)
+			t.Fatalf("listen for test server: %v", err)
 		}
-		mockCfg := cfg.oidcMock.Config()
+		callbackURL := "http://" + srvLn.Addr().String() + "/auth/oidc/callback"
+		clients[testOIDCClientID] = storage.WebClient(testOIDCClientID, testOIDCClientSecret, callbackURL)
+
+		// Start the OP on its own listener.
+		opLn, err := lc.Listen(ctx, "tcp", "127.0.0.1:0")
+		if err != nil {
+			_ = srvLn.Close()
+			t.Fatalf("listen for oidc op: %v", err)
+		}
+		opIssuer := "http://" + opLn.Addr().String() + "/"
+		stor := storage.NewStorageWithClients(userStore, clients)
+		opRouter := exampleop.SetupServer(opIssuer, stor, log, false)
+		opServer := &http.Server{Handler: opRouter, ReadHeaderTimeout: 10 * time.Second}
+		go func() {
+			if err := opServer.Serve(opLn); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				t.Errorf("oidc op server exited unexpectedly: %v", err)
+			}
+		}()
+		t.Cleanup(func() { _ = opServer.Close() })
+
+		oidcUserStore = userStore
+
+		// Configure the test server's OIDC handler to use the OP.
 		oidcCfg := api.OIDCConfig{
-			Issuer:       cfg.oidcMock.Issuer(),
-			ClientID:     mockCfg.ClientID,
-			ClientSecret: mockCfg.ClientSecret,
-			RedirectURL:  "http://" + ln.Addr().String() + "/auth/oidc/callback",
+			Issuer:       opIssuer,
+			ClientID:     testOIDCClientID,
+			ClientSecret: testOIDCClientSecret,
+			RedirectURL:  callbackURL,
 		}
 		oidcHandler, err := api.NewOIDCHandler(ctx, oidcCfg, handler)
 		if err != nil {
-			_ = ln.Close()
+			_ = srvLn.Close()
 			t.Fatalf("new oidc handler: %v", err)
 		}
 		composed := api.MountWebAuth(api.MountOIDC(h, oidcHandler, log), handler)
 		srv = httptest.NewUnstartedServer(composed)
-		srv.Listener = ln
+		srv.Listener = srvLn
 		srv.Start()
 	} else {
 		srv = httptest.NewServer(api.MountWebAuth(h, handler))
@@ -155,7 +238,7 @@ func setupTestServer(t *testing.T, opts ...testServerOption) *testEnv {
 		Token:   rawToken,
 		Handler: handler,
 		pool:    pool,
-		mock:    cfg.oidcMock,
+		oidc:    oidcUserStore,
 	}
 }
 
