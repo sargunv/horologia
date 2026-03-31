@@ -14,3 +14,21 @@ SELECT * FROM users WHERE oidc_subject = $1;
 
 -- name: SetUserOIDCSubject :exec
 UPDATE users SET oidc_subject = $1, updated_at = $2 WHERE id = $3;
+
+-- name: ListUsers :many
+SELECT * FROM users ORDER BY id ASC;
+
+-- name: UpdateUser :one
+UPDATE users
+SET name = $1, email = $2, is_owner = $3, updated_at = $4
+WHERE id = $5
+RETURNING *;
+
+-- name: UpdateUserPasswordHash :exec
+UPDATE users SET password_hash = $1, updated_at = $2 WHERE id = $3;
+
+-- name: DeleteUser :execresult
+DELETE FROM users WHERE id = $1;
+
+-- name: CountOwners :one
+SELECT COUNT(*) FROM users WHERE is_owner = TRUE;

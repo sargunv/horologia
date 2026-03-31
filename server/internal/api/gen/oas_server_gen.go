@@ -136,10 +136,30 @@ type Handler interface {
 	//
 	// GET /users/{userId}/activity
 	UserActivityList(ctx context.Context, params UserActivityListParams) (*ActivityLogPage, error)
+	// UsersCreate implements Users_create operation.
+	//
+	// POST /users
+	UsersCreate(ctx context.Context, req *UserCreate) (*User, error)
+	// UsersDelete implements Users_delete operation.
+	//
+	// DELETE /users/{userId}
+	UsersDelete(ctx context.Context, params UsersDeleteParams) error
+	// UsersGet implements Users_get operation.
+	//
+	// GET /users/{userId}
+	UsersGet(ctx context.Context, params UsersGetParams) (*User, error)
+	// UsersList implements Users_list operation.
+	//
+	// GET /users
+	UsersList(ctx context.Context) (*UserList, error)
 	// UsersMe implements Users_me operation.
 	//
 	// GET /users/me
 	UsersMe(ctx context.Context) (*User, error)
+	// UsersUpdate implements Users_update operation.
+	//
+	// PATCH /users/{userId}
+	UsersUpdate(ctx context.Context, req *UserUpdate, params UsersUpdateParams) (*User, error)
 	// NewError creates *ApiErrorStatusCode from error returned by handler.
 	//
 	// Used for common default response.

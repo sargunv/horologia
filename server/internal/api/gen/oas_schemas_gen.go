@@ -695,6 +695,52 @@ func (o NilTaskDue) Or(d TaskDue) TaskDue {
 	return d
 }
 
+// NewOptBool returns new OptBool with value set to v.
+func NewOptBool(v bool) OptBool {
+	return OptBool{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptBool is optional bool.
+type OptBool struct {
+	Value bool
+	Set   bool
+}
+
+// IsSet returns true if OptBool was set.
+func (o OptBool) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptBool) Reset() {
+	var v bool
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptBool) SetTo(v bool) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptBool) Get() (v bool, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptBool) Or(d bool) bool {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptInt32 returns new OptInt32 with value set to v.
 func NewOptInt32(v int32) OptInt32 {
 	return OptInt32{
@@ -2349,12 +2395,13 @@ func (s *TaskUpdate) SetDue(val OptNilTaskDue) {
 
 // Ref: #/components/schemas/User
 type User struct {
-	ID        string    `json:"id"`
-	Email     string    `json:"email"`
-	Name      string    `json:"name"`
-	IsOwner   bool      `json:"isOwner"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	ID          string    `json:"id"`
+	Email       string    `json:"email"`
+	Name        string    `json:"name"`
+	IsOwner     bool      `json:"isOwner"`
+	HasPassword bool      `json:"hasPassword"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
 // GetID returns the value of ID.
@@ -2375,6 +2422,11 @@ func (s *User) GetName() string {
 // GetIsOwner returns the value of IsOwner.
 func (s *User) GetIsOwner() bool {
 	return s.IsOwner
+}
+
+// GetHasPassword returns the value of HasPassword.
+func (s *User) GetHasPassword() bool {
+	return s.HasPassword
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -2407,6 +2459,11 @@ func (s *User) SetIsOwner(val bool) {
 	s.IsOwner = val
 }
 
+// SetHasPassword sets the value of HasPassword.
+func (s *User) SetHasPassword(val bool) {
+	s.HasPassword = val
+}
+
 // SetCreatedAt sets the value of CreatedAt.
 func (s *User) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
@@ -2416,3 +2473,128 @@ func (s *User) SetCreatedAt(val time.Time) {
 func (s *User) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
 }
+
+// Ref: #/components/schemas/UserCreate
+type UserCreate struct {
+	Name     string    `json:"name"`
+	Email    string    `json:"email"`
+	IsOwner  OptBool   `json:"isOwner"`
+	Password OptString `json:"password"`
+}
+
+// GetName returns the value of Name.
+func (s *UserCreate) GetName() string {
+	return s.Name
+}
+
+// GetEmail returns the value of Email.
+func (s *UserCreate) GetEmail() string {
+	return s.Email
+}
+
+// GetIsOwner returns the value of IsOwner.
+func (s *UserCreate) GetIsOwner() OptBool {
+	return s.IsOwner
+}
+
+// GetPassword returns the value of Password.
+func (s *UserCreate) GetPassword() OptString {
+	return s.Password
+}
+
+// SetName sets the value of Name.
+func (s *UserCreate) SetName(val string) {
+	s.Name = val
+}
+
+// SetEmail sets the value of Email.
+func (s *UserCreate) SetEmail(val string) {
+	s.Email = val
+}
+
+// SetIsOwner sets the value of IsOwner.
+func (s *UserCreate) SetIsOwner(val OptBool) {
+	s.IsOwner = val
+}
+
+// SetPassword sets the value of Password.
+func (s *UserCreate) SetPassword(val OptString) {
+	s.Password = val
+}
+
+// Ref: #/components/schemas/UserList
+type UserList struct {
+	Items []User `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *UserList) GetItems() []User {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *UserList) SetItems(val []User) {
+	s.Items = val
+}
+
+// Ref: #/components/schemas/UserUpdate
+type UserUpdate struct {
+	Name          OptString `json:"name"`
+	Email         OptString `json:"email"`
+	IsOwner       OptBool   `json:"isOwner"`
+	SetPassword   OptString `json:"setPassword"`
+	ClearPassword OptBool   `json:"clearPassword"`
+}
+
+// GetName returns the value of Name.
+func (s *UserUpdate) GetName() OptString {
+	return s.Name
+}
+
+// GetEmail returns the value of Email.
+func (s *UserUpdate) GetEmail() OptString {
+	return s.Email
+}
+
+// GetIsOwner returns the value of IsOwner.
+func (s *UserUpdate) GetIsOwner() OptBool {
+	return s.IsOwner
+}
+
+// GetSetPassword returns the value of SetPassword.
+func (s *UserUpdate) GetSetPassword() OptString {
+	return s.SetPassword
+}
+
+// GetClearPassword returns the value of ClearPassword.
+func (s *UserUpdate) GetClearPassword() OptBool {
+	return s.ClearPassword
+}
+
+// SetName sets the value of Name.
+func (s *UserUpdate) SetName(val OptString) {
+	s.Name = val
+}
+
+// SetEmail sets the value of Email.
+func (s *UserUpdate) SetEmail(val OptString) {
+	s.Email = val
+}
+
+// SetIsOwner sets the value of IsOwner.
+func (s *UserUpdate) SetIsOwner(val OptBool) {
+	s.IsOwner = val
+}
+
+// SetSetPassword sets the value of SetPassword.
+func (s *UserUpdate) SetSetPassword(val OptString) {
+	s.SetPassword = val
+}
+
+// SetClearPassword sets the value of ClearPassword.
+func (s *UserUpdate) SetClearPassword(val OptBool) {
+	s.ClearPassword = val
+}
+
+// UsersDeleteNoContent is response for UsersDelete operation.
+type UsersDeleteNoContent struct{}

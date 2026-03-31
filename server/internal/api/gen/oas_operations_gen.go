@@ -38,5 +38,10 @@ const (
 	SpacesReadOperation                     OperationName = "SpacesRead"
 	SpacesUpdateOperation                   OperationName = "SpacesUpdate"
 	UserActivityListOperation               OperationName = "UserActivityList"
+	UsersCreateOperation                    OperationName = "UsersCreate"
+	UsersDeleteOperation                    OperationName = "UsersDelete"
+	UsersGetOperation                       OperationName = "UsersGet"
+	UsersListOperation                      OperationName = "UsersList"
 	UsersMeOperation                        OperationName = "UsersMe"
+	UsersUpdateOperation                    OperationName = "UsersUpdate"
 )

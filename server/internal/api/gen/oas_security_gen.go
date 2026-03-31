@@ -66,7 +66,12 @@ var operationRolesBearerAuth = map[string][]string{
 	SpacesReadOperation:                     []string{},
 	SpacesUpdateOperation:                   []string{},
 	UserActivityListOperation:               []string{},
+	UsersCreateOperation:                    []string{},
+	UsersDeleteOperation:                    []string{},
+	UsersGetOperation:                       []string{},
+	UsersListOperation:                      []string{},
 	UsersMeOperation:                        []string{},
+	UsersUpdateOperation:                    []string{},
 }
 
 // GetRolesForBearerAuth returns the required roles for the given operation.

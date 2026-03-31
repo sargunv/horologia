@@ -77,7 +77,16 @@ var (
 		"DELETE": "Authorization",
 	}
 	rn35AllowedHeaders = map[string]string{
+		"GET":  "Authorization",
+		"POST": "Authorization,Content-Type",
+	}
+	rn36AllowedHeaders = map[string]string{
 		"GET": "Authorization",
+	}
+	rn33AllowedHeaders = map[string]string{
+		"DELETE": "Authorization",
+		"GET":    "Authorization",
+		"PATCH":  "Authorization,Content-Type",
 	}
 	rn34AllowedHeaders = map[string]string{
 		"GET": "Authorization",
@@ -809,83 +818,133 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 				}
 
-			case 'u': // Prefix: "users/"
+			case 'u': // Prefix: "users"
 
-				if l := len("users/"); len(elem) >= l && elem[0:l] == "users/" {
+				if l := len("users"); len(elem) >= l && elem[0:l] == "users" {
 					elem = elem[l:]
 				} else {
 					break
 				}
 
 				if len(elem) == 0 {
-					break
+					switch r.Method {
+					case "GET":
+						s.handleUsersListRequest([0]string{}, elemIsEscaped, w, r)
+					case "POST":
+						s.handleUsersCreateRequest([0]string{}, elemIsEscaped, w, r)
+					default:
+						s.notAllowed(w, r, notAllowedParams{
+							allowedMethods: "GET,POST",
+							allowedHeaders: rn35AllowedHeaders,
+							acceptPost:     "application/json",
+							acceptPatch:    "",
+						})
+					}
+
+					return
 				}
 				switch elem[0] {
-				case 'm': // Prefix: "me"
-					origElem := elem
-					if l := len("me"); len(elem) >= l && elem[0:l] == "me" {
+				case '/': // Prefix: "/"
+
+					if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 						elem = elem[l:]
 					} else {
 						break
 					}
 
 					if len(elem) == 0 {
-						// Leaf node.
-						switch r.Method {
-						case "GET":
-							s.handleUsersMeRequest([0]string{}, elemIsEscaped, w, r)
-						default:
-							s.notAllowed(w, r, notAllowedParams{
-								allowedMethods: "GET",
-								allowedHeaders: rn35AllowedHeaders,
-								acceptPost:     "",
-								acceptPatch:    "",
-							})
+						break
+					}
+					switch elem[0] {
+					case 'm': // Prefix: "me"
+						origElem := elem
+						if l := len("me"); len(elem) >= l && elem[0:l] == "me" {
+							elem = elem[l:]
+						} else {
+							break
 						}
 
-						return
+						if len(elem) == 0 {
+							// Leaf node.
+							switch r.Method {
+							case "GET":
+								s.handleUsersMeRequest([0]string{}, elemIsEscaped, w, r)
+							default:
+								s.notAllowed(w, r, notAllowedParams{
+									allowedMethods: "GET",
+									allowedHeaders: rn36AllowedHeaders,
+									acceptPost:     "",
+									acceptPatch:    "",
+								})
+							}
+
+							return
+						}
+
+						elem = origElem
 					}
-
-					elem = origElem
-				}
-				// Param: "userId"
-				// Match until "/"
-				idx := strings.IndexByte(elem, '/')
-				if idx < 0 {
-					idx = len(elem)
-				}
-				args[0] = elem[:idx]
-				elem = elem[idx:]
-
-				if len(elem) == 0 {
-					break
-				}
-				switch elem[0] {
-				case '/': // Prefix: "/activity"
-
-					if l := len("/activity"); len(elem) >= l && elem[0:l] == "/activity" {
-						elem = elem[l:]
-					} else {
-						break
+					// Param: "userId"
+					// Match until "/"
+					idx := strings.IndexByte(elem, '/')
+					if idx < 0 {
+						idx = len(elem)
 					}
+					args[0] = elem[:idx]
+					elem = elem[idx:]
 
 					if len(elem) == 0 {
-						// Leaf node.
 						switch r.Method {
+						case "DELETE":
+							s.handleUsersDeleteRequest([1]string{
+								args[0],
+							}, elemIsEscaped, w, r)
 						case "GET":
-							s.handleUserActivityListRequest([1]string{
+							s.handleUsersGetRequest([1]string{
+								args[0],
+							}, elemIsEscaped, w, r)
+						case "PATCH":
+							s.handleUsersUpdateRequest([1]string{
 								args[0],
 							}, elemIsEscaped, w, r)
 						default:
 							s.notAllowed(w, r, notAllowedParams{
-								allowedMethods: "GET",
-								allowedHeaders: rn34AllowedHeaders,
+								allowedMethods: "DELETE,GET,PATCH",
+								allowedHeaders: rn33AllowedHeaders,
 								acceptPost:     "",
-								acceptPatch:    "",
+								acceptPatch:    "application/json",
 							})
 						}
 
 						return
+					}
+					switch elem[0] {
+					case '/': // Prefix: "/activity"
+
+						if l := len("/activity"); len(elem) >= l && elem[0:l] == "/activity" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							// Leaf node.
+							switch r.Method {
+							case "GET":
+								s.handleUserActivityListRequest([1]string{
+									args[0],
+								}, elemIsEscaped, w, r)
+							default:
+								s.notAllowed(w, r, notAllowedParams{
+									allowedMethods: "GET",
+									allowedHeaders: rn34AllowedHeaders,
+									acceptPost:     "",
+									acceptPatch:    "",
+								})
+							}
+
+							return
+						}
+
 					}
 
 				}
@@ -1696,81 +1755,146 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 
 				}
 
-			case 'u': // Prefix: "users/"
+			case 'u': // Prefix: "users"
 
-				if l := len("users/"); len(elem) >= l && elem[0:l] == "users/" {
+				if l := len("users"); len(elem) >= l && elem[0:l] == "users" {
 					elem = elem[l:]
 				} else {
 					break
 				}
 
 				if len(elem) == 0 {
-					break
+					switch method {
+					case "GET":
+						r.name = UsersListOperation
+						r.summary = ""
+						r.operationID = "Users_list"
+						r.operationGroup = ""
+						r.pathPattern = "/users"
+						r.args = args
+						r.count = 0
+						return r, true
+					case "POST":
+						r.name = UsersCreateOperation
+						r.summary = ""
+						r.operationID = "Users_create"
+						r.operationGroup = ""
+						r.pathPattern = "/users"
+						r.args = args
+						r.count = 0
+						return r, true
+					default:
+						return
+					}
 				}
 				switch elem[0] {
-				case 'm': // Prefix: "me"
-					origElem := elem
-					if l := len("me"); len(elem) >= l && elem[0:l] == "me" {
+				case '/': // Prefix: "/"
+
+					if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 						elem = elem[l:]
 					} else {
 						break
 					}
 
 					if len(elem) == 0 {
-						// Leaf node.
-						switch method {
-						case "GET":
-							r.name = UsersMeOperation
-							r.summary = ""
-							r.operationID = "Users_me"
-							r.operationGroup = ""
-							r.pathPattern = "/users/me"
-							r.args = args
-							r.count = 0
-							return r, true
-						default:
-							return
+						break
+					}
+					switch elem[0] {
+					case 'm': // Prefix: "me"
+						origElem := elem
+						if l := len("me"); len(elem) >= l && elem[0:l] == "me" {
+							elem = elem[l:]
+						} else {
+							break
 						}
+
+						if len(elem) == 0 {
+							// Leaf node.
+							switch method {
+							case "GET":
+								r.name = UsersMeOperation
+								r.summary = ""
+								r.operationID = "Users_me"
+								r.operationGroup = ""
+								r.pathPattern = "/users/me"
+								r.args = args
+								r.count = 0
+								return r, true
+							default:
+								return
+							}
+						}
+
+						elem = origElem
 					}
-
-					elem = origElem
-				}
-				// Param: "userId"
-				// Match until "/"
-				idx := strings.IndexByte(elem, '/')
-				if idx < 0 {
-					idx = len(elem)
-				}
-				args[0] = elem[:idx]
-				elem = elem[idx:]
-
-				if len(elem) == 0 {
-					break
-				}
-				switch elem[0] {
-				case '/': // Prefix: "/activity"
-
-					if l := len("/activity"); len(elem) >= l && elem[0:l] == "/activity" {
-						elem = elem[l:]
-					} else {
-						break
+					// Param: "userId"
+					// Match until "/"
+					idx := strings.IndexByte(elem, '/')
+					if idx < 0 {
+						idx = len(elem)
 					}
+					args[0] = elem[:idx]
+					elem = elem[idx:]
 
 					if len(elem) == 0 {
-						// Leaf node.
 						switch method {
-						case "GET":
-							r.name = UserActivityListOperation
+						case "DELETE":
+							r.name = UsersDeleteOperation
 							r.summary = ""
-							r.operationID = "UserActivity_list"
+							r.operationID = "Users_delete"
 							r.operationGroup = ""
-							r.pathPattern = "/users/{userId}/activity"
+							r.pathPattern = "/users/{userId}"
+							r.args = args
+							r.count = 1
+							return r, true
+						case "GET":
+							r.name = UsersGetOperation
+							r.summary = ""
+							r.operationID = "Users_get"
+							r.operationGroup = ""
+							r.pathPattern = "/users/{userId}"
+							r.args = args
+							r.count = 1
+							return r, true
+						case "PATCH":
+							r.name = UsersUpdateOperation
+							r.summary = ""
+							r.operationID = "Users_update"
+							r.operationGroup = ""
+							r.pathPattern = "/users/{userId}"
 							r.args = args
 							r.count = 1
 							return r, true
 						default:
 							return
 						}
+					}
+					switch elem[0] {
+					case '/': // Prefix: "/activity"
+
+						if l := len("/activity"); len(elem) >= l && elem[0:l] == "/activity" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							// Leaf node.
+							switch method {
+							case "GET":
+								r.name = UserActivityListOperation
+								r.summary = ""
+								r.operationID = "UserActivity_list"
+								r.operationGroup = ""
+								r.pathPattern = "/users/{userId}/activity"
+								r.args = args
+								r.count = 1
+								return r, true
+							default:
+								return
+							}
+						}
+
 					}
 
 				}

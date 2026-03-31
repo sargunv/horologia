@@ -65,6 +65,7 @@ const (
 	ActivityEntityTypeEffortLevel   ActivityEntityType = "effort_level"
 	ActivityEntityTypePriorityLevel ActivityEntityType = "priority_level"
 	ActivityEntityTypeRelation      ActivityEntityType = "relation"
+	ActivityEntityTypeUser          ActivityEntityType = "user"
 )
 
 func (e *ActivityEntityType) Scan(src interface{}) error {

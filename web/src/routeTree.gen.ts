@@ -14,9 +14,11 @@ import { Route as LinkAccountRouteImport } from './routes/link-account'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
-import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
 import { Route as AuthenticatedSpacesIndexRouteImport } from './routes/_authenticated/spaces/index'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedSpacesNewRouteImport } from './routes/_authenticated/spaces/new'
+import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
 import { Route as AuthenticatedSpacesSpaceSlugRouteRouteImport } from './routes/_authenticated/spaces/$spaceSlug/route'
 import { Route as AuthenticatedSpacesSpaceSlugIndexRouteImport } from './routes/_authenticated/spaces/$spaceSlug/index'
 import { Route as AuthenticatedSpacesSpaceSlugSettingsRouteImport } from './routes/_authenticated/spaces/$spaceSlug/settings'
@@ -46,7 +48,7 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+const AuthenticatedAdminRouteRoute = AuthenticatedAdminRouteRouteImport.update({
   id: '/admin',
   path: '/admin',
   getParentRoute: () => AuthenticatedRoute,
@@ -57,10 +59,20 @@ const AuthenticatedSpacesIndexRoute =
     path: '/spaces/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAdminRouteRoute,
+} as any)
 const AuthenticatedSpacesNewRoute = AuthenticatedSpacesNewRouteImport.update({
   id: '/spaces/new',
   path: '/spaces/new',
   getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
 const AuthenticatedSpacesSpaceSlugRouteRoute =
   AuthenticatedSpacesSpaceSlugRouteRouteImport.update({
@@ -91,10 +103,12 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/link-account': typeof LinkAccountRoute
   '/login': typeof LoginRoute
-  '/admin': typeof AuthenticatedAdminRoute
+  '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
   '/spaces/$spaceSlug': typeof AuthenticatedSpacesSpaceSlugRouteRouteWithChildren
+  '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/spaces/new': typeof AuthenticatedSpacesNewRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
   '/spaces/': typeof AuthenticatedSpacesIndexRoute
   '/spaces/$spaceSlug/settings': typeof AuthenticatedSpacesSpaceSlugSettingsRoute
   '/spaces/$spaceSlug/': typeof AuthenticatedSpacesSpaceSlugIndexRoute
@@ -103,10 +117,11 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/link-account': typeof LinkAccountRoute
   '/login': typeof LoginRoute
-  '/admin': typeof AuthenticatedAdminRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/': typeof AuthenticatedIndexRoute
+  '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/spaces/new': typeof AuthenticatedSpacesNewRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
   '/spaces': typeof AuthenticatedSpacesIndexRoute
   '/spaces/$spaceSlug/settings': typeof AuthenticatedSpacesSpaceSlugSettingsRoute
   '/spaces/$spaceSlug': typeof AuthenticatedSpacesSpaceSlugIndexRoute
@@ -117,11 +132,13 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/link-account': typeof LinkAccountRoute
   '/login': typeof LoginRoute
-  '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/spaces/$spaceSlug': typeof AuthenticatedSpacesSpaceSlugRouteRouteWithChildren
+  '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/spaces/new': typeof AuthenticatedSpacesNewRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/spaces/': typeof AuthenticatedSpacesIndexRoute
   '/_authenticated/spaces/$spaceSlug/settings': typeof AuthenticatedSpacesSpaceSlugSettingsRoute
   '/_authenticated/spaces/$spaceSlug/': typeof AuthenticatedSpacesSpaceSlugIndexRoute
@@ -136,7 +153,9 @@ export interface FileRouteTypes {
     | '/admin'
     | '/settings'
     | '/spaces/$spaceSlug'
+    | '/admin/users'
     | '/spaces/new'
+    | '/admin/'
     | '/spaces/'
     | '/spaces/$spaceSlug/settings'
     | '/spaces/$spaceSlug/'
@@ -145,10 +164,11 @@ export interface FileRouteTypes {
   to:
     | '/link-account'
     | '/login'
-    | '/admin'
     | '/settings'
     | '/'
+    | '/admin/users'
     | '/spaces/new'
+    | '/admin'
     | '/spaces'
     | '/spaces/$spaceSlug/settings'
     | '/spaces/$spaceSlug'
@@ -162,7 +182,9 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/'
     | '/_authenticated/spaces/$spaceSlug'
+    | '/_authenticated/admin/users'
     | '/_authenticated/spaces/new'
+    | '/_authenticated/admin/'
     | '/_authenticated/spaces/'
     | '/_authenticated/spaces/$spaceSlug/settings'
     | '/_authenticated/spaces/$spaceSlug/'
@@ -216,7 +238,7 @@ declare module '@tanstack/react-router' {
       id: '/_authenticated/admin'
       path: '/admin'
       fullPath: '/admin'
-      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      preLoaderRoute: typeof AuthenticatedAdminRouteRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/spaces/': {
@@ -226,12 +248,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSpacesIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/spaces/new': {
       id: '/_authenticated/spaces/new'
       path: '/spaces/new'
       fullPath: '/spaces/new'
       preLoaderRoute: typeof AuthenticatedSpacesNewRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/admin/users': {
+      id: '/_authenticated/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/spaces/$spaceSlug': {
       id: '/_authenticated/spaces/$spaceSlug'
@@ -264,6 +300,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedAdminRouteRouteChildren {
+  AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+}
+
+const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren =
+  {
+    AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
+    AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+  }
+
+const AuthenticatedAdminRouteRouteWithChildren =
+  AuthenticatedAdminRouteRoute._addFileChildren(
+    AuthenticatedAdminRouteRouteChildren,
+  )
+
 interface AuthenticatedSpacesSpaceSlugRouteRouteChildren {
   AuthenticatedSpacesSpaceSlugSettingsRoute: typeof AuthenticatedSpacesSpaceSlugSettingsRoute
   AuthenticatedSpacesSpaceSlugIndexRoute: typeof AuthenticatedSpacesSpaceSlugIndexRoute
@@ -286,7 +338,7 @@ const AuthenticatedSpacesSpaceSlugRouteRouteWithChildren =
   )
 
 interface AuthenticatedRouteChildren {
-  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedAdminRouteRoute: typeof AuthenticatedAdminRouteRouteWithChildren
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedSpacesSpaceSlugRouteRoute: typeof AuthenticatedSpacesSpaceSlugRouteRouteWithChildren
@@ -295,7 +347,7 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedAdminRouteRoute: AuthenticatedAdminRouteRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedSpacesSpaceSlugRouteRoute:

@@ -23,6 +23,7 @@ const (
 	EntityEffortLevel   EntityType = "effort_level"
 	EntityPriorityLevel EntityType = "priority_level"
 	EntityRelation      EntityType = "relation"
+	EntityUser          EntityType = "user"
 )
 
 // Action identifies what kind of action an activity log entry records.

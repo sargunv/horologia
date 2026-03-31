@@ -237,10 +237,45 @@ func (UnimplementedHandler) UserActivityList(ctx context.Context, params UserAct
 	return r, ht.ErrNotImplemented
 }
 
+// UsersCreate implements Users_create operation.
+//
+// POST /users
+func (UnimplementedHandler) UsersCreate(ctx context.Context, req *UserCreate) (r *User, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UsersDelete implements Users_delete operation.
+//
+// DELETE /users/{userId}
+func (UnimplementedHandler) UsersDelete(ctx context.Context, params UsersDeleteParams) error {
+	return ht.ErrNotImplemented
+}
+
+// UsersGet implements Users_get operation.
+//
+// GET /users/{userId}
+func (UnimplementedHandler) UsersGet(ctx context.Context, params UsersGetParams) (r *User, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UsersList implements Users_list operation.
+//
+// GET /users
+func (UnimplementedHandler) UsersList(ctx context.Context) (r *UserList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // UsersMe implements Users_me operation.
 //
 // GET /users/me
 func (UnimplementedHandler) UsersMe(ctx context.Context) (r *User, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UsersUpdate implements Users_update operation.
+//
+// PATCH /users/{userId}
+func (UnimplementedHandler) UsersUpdate(ctx context.Context, req *UserUpdate, params UsersUpdateParams) (r *User, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
