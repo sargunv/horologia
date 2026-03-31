@@ -22,6 +22,23 @@ export const authConfigQueryOptions = queryOptions({
   staleTime: Infinity,
 });
 
+export interface LinkPendingInfo {
+  email: string;
+  name: string;
+}
+
+export const linkPendingQueryOptions = queryOptions({
+  queryKey: ["linkPending"],
+  queryFn: async (): Promise<LinkPendingInfo | null> => {
+    const res = await fetch("/api/auth/link/pending", { credentials: "include" });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error("Failed to fetch link state");
+    return res.json();
+  },
+  retry: false,
+  staleTime: Infinity,
+});
+
 export const currentUserQueryOptions = queryOptions({
   queryKey: ["currentUser"],
   queryFn: async () => {

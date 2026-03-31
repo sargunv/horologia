@@ -92,13 +92,21 @@ func (e *testEnv) addOIDCUser(subject, email string, emailVerified bool) {
 type testServerOption func(*testServerConfig)
 
 type testServerConfig struct {
-	oidc bool
+	oidc            bool
+	oidcLinkConsent bool
 }
 
 // withOIDC enables OIDC routes on the test server using a zitadel example OP.
 func withOIDC() testServerOption {
 	return func(cfg *testServerConfig) {
 		cfg.oidc = true
+	}
+}
+
+// withOIDCLinkConsent enables OIDC link consent on the test server.
+func withOIDCLinkConsent() testServerOption {
+	return func(cfg *testServerConfig) {
+		cfg.oidcLinkConsent = true
 	}
 }
 
@@ -171,6 +179,14 @@ func setupTestServer(t *testing.T, opts ...testServerOption) *testEnv {
 	if cfg.oidc {
 		handler.OIDCEnabled = true
 		handler.OIDCLabel = "Test OIDC"
+		if cfg.oidcLinkConsent {
+			handler.OIDCLinkConsentEnabled = true
+			linkCH, err := api.NewLinkCookieHandler(false)
+			if err != nil {
+				t.Fatalf("new link cookie handler: %v", err)
+			}
+			handler.LinkCookieHandler = linkCH
+		}
 	}
 
 	h, err := api.NewServer(handler, log)

@@ -29,6 +29,25 @@ func isValidRedirect(path string) bool {
 	return path != "" && strings.HasPrefix(path, "/") && !strings.HasPrefix(path, "//")
 }
 
+// readAndClearRedirectCookie reads the OIDC redirect cookie value and clears it.
+// Returns the redirect path, or fallback if the cookie is missing or invalid.
+func (h *Handler) readAndClearRedirectCookie(w http.ResponseWriter, r *http.Request, fallback string) string {
+	redirectTo := fallback
+	if c, err := r.Cookie(oidcRedirectCookieName); err == nil && isValidRedirect(c.Value) {
+		redirectTo = c.Value
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     oidcRedirectCookieName,
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   h.SecureCookies,
+		SameSite: http.SameSiteLaxMode,
+	})
+	return redirectTo
+}
+
 // OIDCConfig holds the configuration for the OIDC relying party.
 type OIDCConfig struct {
 	Issuer       string
@@ -176,17 +195,15 @@ func (h *Handler) handleOIDCCallback(w http.ResponseWriter, r *http.Request, tok
 	}
 	if errors.Is(err, pgx.ErrNoRows) {
 		// No user with this OIDC subject. Try matching by email to link
-		// an existing password-created account.
-		// TODO: Auto-linking by email means any trusted OIDC provider can claim
-		// an existing account without user consent. Consider requiring explicit
-		// user approval before linking OIDC identities to password-based accounts.
+		// an existing account.
 		user, err = q.GetUserByEmail(ctx, email)
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			h.Log.ErrorContext(ctx, "oidc: get user by email", "error", err)
 			http.Error(w, "failed to look up user", http.StatusInternalServerError)
 			return
 		}
-		if errors.Is(err, pgx.ErrNoRows) {
+		switch {
+		case errors.Is(err, pgx.ErrNoRows):
 			// Completely new user — create one.
 			tstz := types.Timestamptz(time.Now())
 			user, err = q.CreateUser(ctx, dbgen.CreateUserParams{
@@ -202,8 +219,33 @@ func (h *Handler) handleOIDCCallback(w http.ResponseWriter, r *http.Request, tok
 				return
 			}
 			h.Log.InfoContext(ctx, "oidc: created user", "email", email, "subject", subject)
-		} else {
-			// Existing user found by email — link the OIDC subject.
+		case h.OIDCLinkConsentEnabled:
+			// Existing user found by email — require consent before linking.
+			// The deferred tx.Rollback will clean up; linking happens in POST /auth/link.
+			redirectTo := h.readAndClearRedirectCookie(w, r, "")
+
+			if err := setPendingLinkCookie(w, h.LinkCookieHandler, pendingLinkState{
+				OIDCSubject: subject,
+				Email:       email,
+				Name:        name,
+				RedirectTo:  redirectTo,
+			}); err != nil {
+				h.Log.ErrorContext(ctx, "oidc: set pending link cookie", "error", err)
+				http.Error(w, "internal error", http.StatusInternalServerError)
+				return
+			}
+
+			h.Log.InfoContext(ctx, "oidc: consent required for link", "email", email, "subject", subject)
+			http.Redirect(w, r, "/link-account", http.StatusSeeOther)
+			return
+		default:
+			// Existing user found by email — link the OIDC subject directly.
+			// TODO: This unconditionally overwrites any existing OIDC subject on the
+			// matched user. If the user already has a different OIDC subject linked,
+			// a new OIDC identity with the same email can silently take over the account.
+			// This is acceptable when the admin has explicitly disabled consent (trusting
+			// the OIDC provider), but should be revisited when multi-provider support
+			// is added — at minimum, reject subject overwrites or require consent.
 			if err := q.SetUserOIDCSubject(ctx, dbgen.SetUserOIDCSubjectParams{
 				OidcSubject: subjectText,
 				UpdatedAt:   types.Timestamptz(time.Now()),
@@ -233,21 +275,7 @@ func (h *Handler) handleOIDCCallback(w http.ResponseWriter, r *http.Request, tok
 
 	h.setSessionCookie(w, raw)
 
-	// Read and clear the OIDC redirect cookie.
-	redirectTo := "/"
-	if c, err := r.Cookie(oidcRedirectCookieName); err == nil && isValidRedirect(c.Value) {
-		redirectTo = c.Value
-	}
-	http.SetCookie(w, &http.Cookie{
-		Name:     oidcRedirectCookieName,
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1,
-		HttpOnly: true,
-		Secure:   h.SecureCookies,
-		SameSite: http.SameSiteLaxMode,
-	})
-
+	redirectTo := h.readAndClearRedirectCookie(w, r, "/")
 	http.Redirect(w, r, redirectTo, http.StatusSeeOther)
 }
 
