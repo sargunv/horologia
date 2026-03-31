@@ -6,7 +6,7 @@ import { SettingsSection } from "../space-settings/SettingsSection.tsx";
 const healthQueryOptions = queryOptions({
   queryKey: ["health"],
   queryFn: async () => {
-    const res = await fetch("/api/healthz");
+    const res = await fetch("/healthz");
     if (!res.ok) return { status: "error" };
     const data: { status: string } = await res.json();
     return data;

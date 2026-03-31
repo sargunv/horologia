@@ -33,6 +33,9 @@ export default defineConfig({
       "/api": {
         target: `http://localhost:${serverPort}`,
       },
+      "/healthz": {
+        target: `http://localhost:${serverPort}`,
+      },
     },
   },
 });
