@@ -273,10 +273,46 @@ func TestUsersUpdate(t *testing.T) {
 		assertStatusClose(t, resp, http.StatusBadRequest)
 	})
 
-	t.Run("non-owner gets 403", func(t *testing.T) {
+	t.Run("non-owner cannot update other user", func(t *testing.T) {
 		token := createTestUser(t, env, "nonadmin@example.com", "NonAdmin", "password")
 		resp := doRequestAs(t, env, token, "PATCH", "/users/"+userID,
 			`{"name":"Hacked"}`)
+		assertStatusClose(t, resp, http.StatusForbidden)
+	})
+
+	t.Run("non-owner can update own name", func(t *testing.T) {
+		token := createTestUser(t, env, "selfupdate@example.com", "SelfUpdate", "password")
+		selfID := getUserID(t, env, token)
+		resp := doRequestAs(t, env, token, "PATCH", "/users/"+selfID,
+			`{"name":"New Name"}`)
+		assertStatus(t, resp, http.StatusOK)
+
+		var user map[string]any
+		readJSON(t, resp, &user)
+		if user["name"] != "New Name" {
+			t.Errorf("name = %v, want New Name", user["name"])
+		}
+	})
+
+	t.Run("non-owner can update own email", func(t *testing.T) {
+		token := createTestUser(t, env, "selfemail@example.com", "SelfEmail", "password")
+		selfID := getUserID(t, env, token)
+		resp := doRequestAs(t, env, token, "PATCH", "/users/"+selfID,
+			`{"email":"selfemail-new@example.com"}`)
+		assertStatus(t, resp, http.StatusOK)
+
+		var user map[string]any
+		readJSON(t, resp, &user)
+		if user["email"] != "selfemail-new@example.com" {
+			t.Errorf("email = %v, want selfemail-new@example.com", user["email"])
+		}
+	})
+
+	t.Run("non-owner cannot set isOwner on self", func(t *testing.T) {
+		token := createTestUser(t, env, "selfowner@example.com", "SelfOwner", "password")
+		selfID := getUserID(t, env, token)
+		resp := doRequestAs(t, env, token, "PATCH", "/users/"+selfID,
+			`{"isOwner":true}`)
 		assertStatusClose(t, resp, http.StatusForbidden)
 	})
 
@@ -328,10 +364,21 @@ func TestUsersDelete(t *testing.T) {
 		assertStatusClose(t, resp, http.StatusBadRequest)
 	})
 
-	t.Run("non-owner gets 403", func(t *testing.T) {
+	t.Run("non-owner can delete self", func(t *testing.T) {
+		token := createTestUser(t, env, "selfdelete@example.com", "SelfDelete", "password")
+		selfID := getUserID(t, env, token)
+		resp := doRequestAs(t, env, token, "DELETE", "/users/"+selfID, "")
+		assertStatusClose(t, resp, http.StatusNoContent)
+
+		// Their token should no longer work.
+		resp = doRequestAs(t, env, token, "GET", "/users/me", "")
+		assertStatusClose(t, resp, http.StatusUnauthorized)
+	})
+
+	t.Run("non-owner cannot delete other user", func(t *testing.T) {
 		token := createTestUser(t, env, "regular2@example.com", "Regular2", "password")
-		targetID := getUserID(t, env, token)
-		resp := doRequestAs(t, env, token, "DELETE", "/users/"+targetID, "")
+		ownerID := getUserID(t, env, env.Token)
+		resp := doRequestAs(t, env, token, "DELETE", "/users/"+ownerID, "")
 		assertStatusClose(t, resp, http.StatusForbidden)
 	})
 
