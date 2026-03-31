@@ -101,8 +101,9 @@ func TestRecurrenceCompletionBased(t *testing.T) {
 	createSpace(t, env, "rec-cb", "Rec CB")
 
 	// Create a completion-based task recurring weekly.
+	pastDue := time.Now().AddDate(0, 0, -7).Format(time.DateOnly)
 	task := createTask(t, env, "rec-cb",
-		`{"title":"Weekly chore","recurrenceType":"completion_based","recurrenceRule":"FREQ=WEEKLY","due":{"at":"2026-03-23","timezone":"UTC"}}`)
+		`{"title":"Weekly chore","recurrenceType":"completion_based","recurrenceRule":"FREQ=WEEKLY","due":{"at":"`+pastDue+`","timezone":"UTC"}}`)
 
 	if task["recurrenceType"] != "completion_based" {
 		t.Fatalf("got recurrenceType %v, want completion_based", task["recurrenceType"])
@@ -147,8 +148,14 @@ func TestRecurrenceFixedNonAccumulating(t *testing.T) {
 	createSpace(t, env, "rec-fna", "Rec FNA")
 
 	// Create a fixed non-accumulating task due every Saturday.
+	// Find a past Saturday that's at least 8 days ago so the next occurrence is strictly in the future.
+	pastSat := time.Now().AddDate(0, 0, -8)
+	for pastSat.Weekday() != time.Saturday {
+		pastSat = pastSat.AddDate(0, 0, -1)
+	}
+	pastSatStr := pastSat.Format(time.DateOnly)
 	task := createTask(t, env, "rec-fna",
-		`{"title":"Saturday task","recurrenceType":"fixed_non_accumulating","recurrenceRule":"FREQ=WEEKLY;BYDAY=SA","due":{"at":"2026-03-21","timezone":"UTC"}}`)
+		`{"title":"Saturday task","recurrenceType":"fixed_non_accumulating","recurrenceRule":"FREQ=WEEKLY;BYDAY=SA","due":{"at":"`+pastSatStr+`","timezone":"UTC"}}`)
 
 	taskID := jsonAs[string](t, task["id"])
 
@@ -209,8 +216,10 @@ func TestRecurrenceFixedAccumulatingCompletion(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-fa", "Rec FA")
 
+	nextMonth := time.Date(time.Now().Year(), time.Now().Month()+1, 1, 0, 0, 0, 0, time.UTC)
+	nextMonthStr := nextMonth.Format(time.DateOnly)
 	task := createTask(t, env, "rec-fa",
-		`{"title":"Monthly task","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=MONTHLY","due":{"at":"2026-04-01","timezone":"UTC"}}`)
+		`{"title":"Monthly task","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=MONTHLY","due":{"at":"`+nextMonthStr+`","timezone":"UTC"}}`)
 	taskID := jsonAs[string](t, task["id"])
 
 	// Complete the task.
@@ -269,8 +278,9 @@ func TestRecurrenceNoRetriggerOnNonTransition(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-nrt", "Rec No Retrigger")
 
+	pastDue := time.Now().AddDate(0, 0, -7).Format(time.DateOnly)
 	task := createTask(t, env, "rec-nrt",
-		`{"title":"Weekly chore","recurrenceType":"completion_based","recurrenceRule":"FREQ=WEEKLY","due":{"at":"2026-03-23","timezone":"UTC"}}`)
+		`{"title":"Weekly chore","recurrenceType":"completion_based","recurrenceRule":"FREQ=WEEKLY","due":{"at":"`+pastDue+`","timezone":"UTC"}}`)
 	taskID := jsonAs[string](t, task["id"])
 
 	// Complete the task.
@@ -433,8 +443,10 @@ func TestRecurrenceUntilExhaustion(t *testing.T) {
 
 	// Create a completion_based task with UNTIL in the past. The rule is
 	// already exhausted — the task should stay at the completion status.
+	pastDue := time.Now().AddDate(0, 0, -7).Format(time.DateOnly)
+	untilDate := time.Now().AddDate(0, 0, -30).Format("20060102T150405Z")
 	task := createTask(t, env, "rec-unt",
-		`{"title":"Expired","recurrenceType":"completion_based","recurrenceRule":"FREQ=WEEKLY;UNTIL=20200101T000000Z","due":{"at":"2026-03-23","timezone":"UTC"}}`)
+		`{"title":"Expired","recurrenceType":"completion_based","recurrenceRule":"FREQ=WEEKLY;UNTIL=`+untilDate+`","due":{"at":"`+pastDue+`","timezone":"UTC"}}`)
 	taskID := jsonAs[string](t, task["id"])
 
 	resp := doRequest(t, env, "PATCH", "/spaces/rec-unt/tasks/"+taskID, `{"status":"done"}`)
@@ -455,8 +467,9 @@ func TestRecurrenceDoubleCompletion(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-dbl", "Rec Double")
 
+	pastDue := time.Now().AddDate(0, 0, -7).Format(time.DateOnly)
 	task := createTask(t, env, "rec-dbl",
-		`{"title":"Every 3 days","recurrenceType":"completion_based","recurrenceRule":"FREQ=DAILY;INTERVAL=3","due":{"at":"2026-03-23","timezone":"UTC"}}`)
+		`{"title":"Every 3 days","recurrenceType":"completion_based","recurrenceRule":"FREQ=DAILY;INTERVAL=3","due":{"at":"`+pastDue+`","timezone":"UTC"}}`)
 	taskID := jsonAs[string](t, task["id"])
 
 	// First completion — should reset to todo with due date 3 days from now.
@@ -531,8 +544,10 @@ func TestRecurrenceFixedAccumulatingDueDateAdvances(t *testing.T) {
 	createSpace(t, env, "rec-fap", "Rec FA Advance")
 
 	// Use a past due date so the next occurrence is clearly in the future.
+	pastFirst := time.Date(time.Now().Year(), time.Now().Month()-3, 1, 0, 0, 0, 0, time.UTC)
+	pastFirstStr := pastFirst.Format(time.DateOnly)
 	task := createTask(t, env, "rec-fap",
-		`{"title":"Monthly","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=MONTHLY","due":{"at":"2026-01-01","timezone":"UTC"}}`)
+		`{"title":"Monthly","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=MONTHLY","due":{"at":"`+pastFirstStr+`","timezone":"UTC"}}`)
 	taskID := jsonAs[string](t, task["id"])
 
 	resp := doRequest(t, env, "PATCH", "/spaces/rec-fap/tasks/"+taskID, `{"status":"done"}`)
@@ -625,8 +640,9 @@ func TestRecurrenceCompletionBasedNonUTCTimezone(t *testing.T) {
 	createSpace(t, env, "rec-tz", "Rec TZ")
 
 	// Create a completion-based task with America/New_York timezone.
+	pastDue := time.Now().AddDate(0, 0, -7).Format(time.DateOnly)
 	task := createTask(t, env, "rec-tz",
-		`{"title":"Weekly chore","recurrenceType":"completion_based","recurrenceRule":"FREQ=WEEKLY","due":{"at":"2026-03-23","timezone":"America/New_York"}}`)
+		`{"title":"Weekly chore","recurrenceType":"completion_based","recurrenceRule":"FREQ=WEEKLY","due":{"at":"`+pastDue+`","timezone":"America/New_York"}}`)
 	taskID := jsonAs[string](t, task["id"])
 
 	// Verify timezone is stored and returned.
@@ -672,8 +688,14 @@ func TestRecurrenceFixedNonAccumulatingNonUTCTimezone(t *testing.T) {
 	createSpace(t, env, "rec-ftz", "Rec Fixed TZ")
 
 	// Create a fixed non-accumulating task recurring every Saturday in Los Angeles.
+	// Find a past Saturday that's at least 8 days ago so the next occurrence is strictly in the future.
+	pastSat := time.Now().AddDate(0, 0, -8)
+	for pastSat.Weekday() != time.Saturday {
+		pastSat = pastSat.AddDate(0, 0, -1)
+	}
+	pastSatStr := pastSat.Format(time.DateOnly)
 	task := createTask(t, env, "rec-ftz",
-		`{"title":"Saturday task","recurrenceType":"fixed_non_accumulating","recurrenceRule":"FREQ=WEEKLY;BYDAY=SA","due":{"at":"2026-03-21","timezone":"America/Los_Angeles"}}`)
+		`{"title":"Saturday task","recurrenceType":"fixed_non_accumulating","recurrenceRule":"FREQ=WEEKLY;BYDAY=SA","due":{"at":"`+pastSatStr+`","timezone":"America/Los_Angeles"}}`)
 	taskID := jsonAs[string](t, task["id"])
 
 	// Complete the task.
@@ -705,16 +727,17 @@ func TestDueTimezoneRoundTrip(t *testing.T) {
 	createSpace(t, env, "due-rt", "Due Round Trip")
 
 	// Create with a non-UTC timezone.
+	futureDate := time.Now().AddDate(0, 0, 30).Format(time.DateOnly)
 	task := createTask(t, env, "due-rt",
-		`{"title":"TZ task","due":{"at":"2026-06-15","timezone":"America/New_York"}}`)
+		`{"title":"TZ task","due":{"at":"`+futureDate+`","timezone":"America/New_York"}}`)
 
 	// Verify round-trip: both at and timezone returned correctly.
 	dueStr, ok := dueAtFromResponse(task)
 	if !ok {
 		t.Fatal("expected due to be set")
 	}
-	if dueStr != "2026-06-15" {
-		t.Fatalf("due.at = %v, want 2026-06-15", dueStr)
+	if dueStr != futureDate {
+		t.Fatalf("due.at = %v, want %s", dueStr, futureDate)
 	}
 	tz, ok := dueTzFromResponse(task)
 	if !ok || tz != "America/New_York" {
@@ -724,7 +747,7 @@ func TestDueTimezoneRoundTrip(t *testing.T) {
 	// Update to a different timezone.
 	taskID := jsonAs[string](t, task["id"])
 	resp := doRequest(t, env, "PATCH", "/spaces/due-rt/tasks/"+taskID,
-		`{"due":{"at":"2026-06-15","timezone":"America/Los_Angeles"}}`)
+		`{"due":{"at":"`+futureDate+`","timezone":"America/Los_Angeles"}}`)
 	assertStatus(t, resp, http.StatusOK)
 	var updated map[string]any
 	readJSON(t, resp, &updated)
@@ -749,9 +772,10 @@ func TestDueInvalidTimezoneRejected(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "due-inv", "Due Invalid TZ")
 
+	futureDate := time.Now().AddDate(0, 0, 30).Format(time.DateOnly)
 	assertStatusClose(t,
 		doRequest(t, env, "POST", "/spaces/due-inv/tasks",
-			`{"title":"Bad","due":{"at":"2026-06-15","timezone":"America/Bogus"}}`),
+			`{"title":"Bad","due":{"at":"`+futureDate+`","timezone":"America/Bogus"}}`),
 		http.StatusBadRequest)
 }
 
@@ -760,8 +784,10 @@ func TestFixedAccumulatingCompletionCopiesFields(t *testing.T) {
 	createSpace(t, env, "fa-copy", "FA Copy")
 
 	// Create task with all user-settable fields.
+	nextMonth := time.Date(time.Now().Year(), time.Now().Month()+1, 1, 0, 0, 0, 0, time.UTC)
+	nextMonthStr := nextMonth.Format(time.DateOnly)
 	task := createTask(t, env, "fa-copy",
-		`{"title":"Chore","description":"Do the thing","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY","due":{"at":"2026-04-01","timezone":"UTC"},"tags":["weekly"]}`)
+		`{"title":"Chore","description":"Do the thing","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY","due":{"at":"`+nextMonthStr+`","timezone":"UTC"},"tags":["weekly"]}`)
 	taskID := jsonAs[string](t, task["id"])
 
 	// Complete it.
@@ -826,8 +852,10 @@ func TestFixedAccumulatingCompletionCopiesRelations(t *testing.T) {
 	parentID := jsonAs[string](t, parent["id"])
 
 	// Create the accumulating task.
+	nextMonth := time.Date(time.Now().Year(), time.Now().Month()+1, 1, 0, 0, 0, 0, time.UTC)
+	nextMonthStr := nextMonth.Format(time.DateOnly)
 	task := createTask(t, env, "fa-rel",
-		`{"title":"Child","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY","due":{"at":"2026-04-01","timezone":"UTC"}}`)
+		`{"title":"Child","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY","due":{"at":"`+nextMonthStr+`","timezone":"UTC"}}`)
 	taskID := jsonAs[string](t, task["id"])
 
 	// Create a parent_of relation: parent -> task.
@@ -906,7 +934,7 @@ func TestFixedAccumulatingCronBackfill(t *testing.T) {
 	taskID := jsonAs[string](t, task["id"])
 
 	// Directly call processOverdueTasks to simulate the cron.
-	must(t, taskengine.ProcessOverdueTasks(t.Context(), env.pool, nil))
+	must(t, taskengine.ProcessOverdueTasks(t.Context(), env.pool, time.Now(), nil))
 
 	// Fetch the original task — should now be one_off.
 	resp := doRequest(t, env, "GET", "/spaces/fa-cron/tasks/"+taskID, "")
@@ -969,8 +997,8 @@ func TestFixedAccumulatingCronIdempotent(t *testing.T) {
 		`{"title":"Weekly","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY","due":{"at":"`+idemDue+`","timezone":"UTC"}}`)
 
 	// Run the cron twice.
-	must(t, taskengine.ProcessOverdueTasks(t.Context(), env.pool, nil))
-	must(t, taskengine.ProcessOverdueTasks(t.Context(), env.pool, nil))
+	must(t, taskengine.ProcessOverdueTasks(t.Context(), env.pool, time.Now(), nil))
+	must(t, taskengine.ProcessOverdueTasks(t.Context(), env.pool, time.Now(), nil))
 
 	// List all tasks — second run should not have created duplicates.
 	resp := doRequest(t, env, "GET", "/spaces/fa-idem/tasks?limit=100", "")
@@ -1003,7 +1031,7 @@ func TestFixedAccumulatingCronExhaustedRule(t *testing.T) {
 		`{"title":"Expired","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY;UNTIL=`+exhUntil+`","due":{"at":"`+exhDue+`","timezone":"UTC"}}`)
 	taskID := jsonAs[string](t, task["id"])
 
-	must(t, taskengine.ProcessOverdueTasks(t.Context(), env.pool, nil))
+	must(t, taskengine.ProcessOverdueTasks(t.Context(), env.pool, time.Now(), nil))
 
 	// The original should be converted to one_off.
 	resp := doRequest(t, env, "GET", "/spaces/fa-exh/tasks/"+taskID, "")
@@ -1027,7 +1055,7 @@ func TestFixedAccumulatingCronNonUTCTimezone(t *testing.T) {
 		`{"title":"Weekly Eastern","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY","due":{"at":"`+tzDue+`","timezone":"America/New_York"}}`)
 	taskID := jsonAs[string](t, task["id"])
 
-	must(t, taskengine.ProcessOverdueTasks(t.Context(), env.pool, nil))
+	must(t, taskengine.ProcessOverdueTasks(t.Context(), env.pool, time.Now(), nil))
 
 	// Original should be one_off.
 	resp := doRequest(t, env, "GET", "/spaces/fa-tz/tasks/"+taskID, "")
@@ -1091,7 +1119,7 @@ func TestFixedAccumulatingCronAfterCompletion(t *testing.T) {
 	assertStatus(t, resp, http.StatusOK)
 
 	// Now run the cron — it should NOT re-process the original (already one_off).
-	must(t, taskengine.ProcessOverdueTasks(t.Context(), env.pool, nil))
+	must(t, taskengine.ProcessOverdueTasks(t.Context(), env.pool, time.Now(), nil))
 
 	// Count tasks — should be exactly 2 (original one_off + 1 spawned by completion).
 	resp2 := doRequest(t, env, "GET", "/spaces/fa-race/tasks?limit=100", "")

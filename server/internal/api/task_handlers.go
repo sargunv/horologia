@@ -228,7 +228,7 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 		return nil, err
 	}
 
-	if err := h.applyTaskCollections(ctx, q, task.ID, params.SpaceSlug, req.AssigneeIds, req.RotationPool, req.Tags); err != nil {
+	if err := h.applyTaskCollections(ctx, q, task.ID, params.SpaceSlug, req.AssigneeIds, req.RotationPool, req.Tags, ts); err != nil {
 		return nil, err
 	}
 
@@ -473,7 +473,7 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 	// Intentionally after HandleCompletionTransition: if the user provides
 	// explicit assigneeIds in the same PATCH, they override the rotation result.
 	// See TestRotationExplicitAssigneesOverrideRotation.
-	if err := h.applyTaskCollections(ctx, q, id, params.SpaceSlug, req.AssigneeIds, req.RotationPool, req.Tags); err != nil {
+	if err := h.applyTaskCollections(ctx, q, id, params.SpaceSlug, req.AssigneeIds, req.RotationPool, req.Tags, now); err != nil {
 		return nil, err
 	}
 
@@ -550,7 +550,7 @@ func (h *Handler) SpaceTasksDelete(ctx context.Context, params apigen.SpaceTasks
 // applyTaskCollections replaces assignees, rotation pool, and tags for a task
 // when the corresponding slices are non-nil. It pre-fetches the member set once
 // if both assignees and rotation pool are provided.
-func (h *Handler) applyTaskCollections(ctx context.Context, q *dbgen.Queries, taskID int64, spaceSlug string, assigneeIDs, poolIDs, tagNames []string) error {
+func (h *Handler) applyTaskCollections(ctx context.Context, q *dbgen.Queries, taskID int64, spaceSlug string, assigneeIDs, poolIDs, tagNames []string, now time.Time) error {
 	var memberSet map[int64]struct{}
 	var err error
 	if len(assigneeIDs) > 0 || len(poolIDs) > 0 {
@@ -560,17 +560,17 @@ func (h *Handler) applyTaskCollections(ctx context.Context, q *dbgen.Queries, ta
 		}
 	}
 	if assigneeIDs != nil {
-		if err := h.setTaskAssignees(ctx, q, taskID, spaceSlug, assigneeIDs, memberSet); err != nil {
+		if err := h.setTaskAssignees(ctx, q, taskID, spaceSlug, assigneeIDs, memberSet, now); err != nil {
 			return err
 		}
 	}
 	if poolIDs != nil {
-		if err := h.setTaskRotationPool(ctx, q, taskID, spaceSlug, poolIDs, memberSet); err != nil {
+		if err := h.setTaskRotationPool(ctx, q, taskID, spaceSlug, poolIDs, memberSet, now); err != nil {
 			return err
 		}
 	}
 	if tagNames != nil {
-		if err := h.setTaskTags(ctx, q, taskID, spaceSlug, tagNames); err != nil {
+		if err := h.setTaskTags(ctx, q, taskID, spaceSlug, tagNames, now); err != nil {
 			return err
 		}
 	}
@@ -628,7 +628,7 @@ func parseAndValidateUserIDs(ctx context.Context, q *dbgen.Queries, spaceSlug st
 // instead of re-querying the database.
 // The caller must pass a transactional *dbgen.Queries to ensure atomicity.
 // Max array length is enforced by ogen's @maxItems(100) validation.
-func (h *Handler) setTaskAssignees(ctx context.Context, q *dbgen.Queries, taskID int64, spaceSlug string, assigneeIDs []string, memberSet map[int64]struct{}) error {
+func (h *Handler) setTaskAssignees(ctx context.Context, q *dbgen.Queries, taskID int64, spaceSlug string, assigneeIDs []string, memberSet map[int64]struct{}, now time.Time) error {
 	userIDs, err := parseAndValidateUserIDs(ctx, q, spaceSlug, assigneeIDs, memberSet)
 	if err != nil {
 		return err
@@ -636,7 +636,7 @@ func (h *Handler) setTaskAssignees(ctx context.Context, q *dbgen.Queries, taskID
 	if err := q.DeleteTaskAssignees(ctx, taskID); err != nil {
 		return err
 	}
-	tstz := types.Timestamptz(time.Now())
+	tstz := types.Timestamptz(now)
 	for _, uid := range userIDs {
 		if err := q.InsertTaskAssignee(ctx, dbgen.InsertTaskAssigneeParams{
 			TaskID:    taskID,
@@ -654,7 +654,7 @@ func (h *Handler) setTaskAssignees(ctx context.Context, q *dbgen.Queries, taskID
 // If memberSet is non-nil it is reused instead of re-querying the database.
 // The caller must pass a transactional *dbgen.Queries to ensure atomicity.
 // Max array length is enforced by ogen's @maxItems(100) validation.
-func (h *Handler) setTaskRotationPool(ctx context.Context, q *dbgen.Queries, taskID int64, spaceSlug string, poolIDs []string, memberSet map[int64]struct{}) error {
+func (h *Handler) setTaskRotationPool(ctx context.Context, q *dbgen.Queries, taskID int64, spaceSlug string, poolIDs []string, memberSet map[int64]struct{}, now time.Time) error {
 	userIDs, err := parseAndValidateUserIDs(ctx, q, spaceSlug, poolIDs, memberSet)
 	if err != nil {
 		return err
@@ -662,7 +662,7 @@ func (h *Handler) setTaskRotationPool(ctx context.Context, q *dbgen.Queries, tas
 	if err := q.DeleteRotationPool(ctx, taskID); err != nil {
 		return err
 	}
-	tstz := types.Timestamptz(time.Now())
+	tstz := types.Timestamptz(now)
 	for i, uid := range userIDs {
 		if err := q.InsertRotationPoolMember(ctx, dbgen.InsertRotationPoolMemberParams{
 			TaskID:    taskID,
@@ -679,7 +679,7 @@ func (h *Handler) setTaskRotationPool(ctx context.Context, q *dbgen.Queries, tas
 // setTaskTags replaces all tags for a task. Unknown tag names are auto-created
 // in the task's space. The caller must pass a transactional *dbgen.Queries.
 // Max array length is enforced by ogen's @maxItems(100) validation.
-func (h *Handler) setTaskTags(ctx context.Context, q *dbgen.Queries, taskID int64, spaceSlug string, tagNames []string) error {
+func (h *Handler) setTaskTags(ctx context.Context, q *dbgen.Queries, taskID int64, spaceSlug string, tagNames []string, now time.Time) error {
 	// Delete existing tags.
 	if err := q.DeleteTaskTags(ctx, taskID); err != nil {
 		return err
@@ -708,7 +708,7 @@ func (h *Handler) setTaskTags(ctx context.Context, q *dbgen.Queries, taskID int6
 		entries = append(entries, tagEntry{displayName: name, foldedName: folded})
 	}
 
-	tstz := types.Timestamptz(time.Now())
+	tstz := types.Timestamptz(now)
 	for _, entry := range entries {
 		// Upsert the tag (no-op on conflict) and get its ID in one query.
 		tag, err := q.EnsureTag(ctx, dbgen.EnsureTagParams{

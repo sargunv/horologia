@@ -30,7 +30,7 @@ var defaultPriorityLevels = []dbgen.CreateTaskPriorityLevelParams{
 
 // CreateSpaceWithDefaults creates a space, its default statuses, effort levels,
 // and priority levels, and adds the creator as an admin member, all in a single transaction.
-func CreateSpaceWithDefaults(ctx context.Context, db database.DB, slug, name, description string, creatorUserID int64) (dbgen.Space, error) {
+func CreateSpaceWithDefaults(ctx context.Context, db database.DB, slug, name, description string, creatorUserID int64, now time.Time) (dbgen.Space, error) {
 	tx, err := db.Begin(ctx)
 	if err != nil {
 		return dbgen.Space{}, fmt.Errorf("begin tx: %w", err)
@@ -38,14 +38,14 @@ func CreateSpaceWithDefaults(ctx context.Context, db database.DB, slug, name, de
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := dbgen.New(tx)
-	now := types.Timestamptz(time.Now())
+	nowTz := types.Timestamptz(now)
 
 	space, err := q.CreateSpace(ctx, dbgen.CreateSpaceParams{
 		Slug:        slug,
 		Name:        name,
 		Description: description,
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		CreatedAt:   nowTz,
+		UpdatedAt:   nowTz,
 	})
 	if err != nil {
 		return dbgen.Space{}, fmt.Errorf("create space: %w", err)
@@ -77,7 +77,7 @@ func CreateSpaceWithDefaults(ctx context.Context, db database.DB, slug, name, de
 		SpaceSlug: space.Slug,
 		UserID:    creatorUserID,
 		Role:      dbgen.SpaceRoleAdmin,
-		CreatedAt: now,
+		CreatedAt: nowTz,
 	}); err != nil {
 		return dbgen.Space{}, fmt.Errorf("create admin member: %w", err)
 	}
@@ -91,7 +91,7 @@ func CreateSpaceWithDefaults(ctx context.Context, db database.DB, slug, name, de
 		Details: []activitylog.Detail{
 			{Field: "name", To: new(space.Name)},
 		},
-	}, now.Time); err != nil {
+	}, now); err != nil {
 		return dbgen.Space{}, fmt.Errorf("log space creation: %w", err)
 	}
 

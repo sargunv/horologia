@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestTasksCreate(t *testing.T) {
@@ -43,7 +44,8 @@ func TestTasksCreateWithFields(t *testing.T) {
 
 	createSpace(t, env, "home", "Home")
 
-	body := `{"title":"Clean","description":"Deep clean","status":"done","due":{"at":"2025-06-15","timezone":"UTC"}}`
+	futureDate := time.Now().AddDate(0, 0, 30).Format(time.DateOnly)
+	body := `{"title":"Clean","description":"Deep clean","status":"done","due":{"at":"` + futureDate + `","timezone":"UTC"}}`
 	resp := doRequest(t, env, "POST", "/spaces/home/tasks", body)
 	assertStatus(t, resp, http.StatusCreated)
 
@@ -242,7 +244,8 @@ func TestTasksUpdateClearDue(t *testing.T) {
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
-	created := createTask(t, env, "home", `{"title":"Task","due":{"at":"2025-06-15","timezone":"UTC"}}`)
+	futureDate := time.Now().AddDate(0, 0, 30).Format(time.DateOnly)
+	created := createTask(t, env, "home", `{"title":"Task","due":{"at":"`+futureDate+`","timezone":"UTC"}}`)
 	id := jsonAs[string](t, created["id"])
 
 	// Verify the due date was actually set.

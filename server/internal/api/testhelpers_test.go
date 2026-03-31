@@ -150,7 +150,7 @@ func setupTestServer(t *testing.T, opts ...testServerOption) *testEnv {
 	})
 
 	// Create a test owner user.
-	user, err := taskengine.CreateUserWithPassword(ctx, pool, "test@example.com", "Test User", "password", true, nil)
+	user, err := taskengine.CreateUserWithPassword(ctx, pool, "test@example.com", "Test User", "password", true, nil, time.Now())
 	if err != nil {
 		t.Fatalf("create user: %v", err)
 	}
@@ -289,7 +289,7 @@ func doRequest(t *testing.T, env *testEnv, method, path, body string) *http.Resp
 // createTestUser creates a non-owner user via the DB and logs them in to get a session token.
 func createTestUser(t *testing.T, env *testEnv, email, name, password string) string {
 	t.Helper()
-	_, err := taskengine.CreateUserWithPassword(t.Context(), env.pool, email, name, password, false, nil)
+	_, err := taskengine.CreateUserWithPassword(t.Context(), env.pool, email, name, password, false, nil, time.Now())
 	if err != nil {
 		t.Fatalf("create test user: %v", err)
 	}

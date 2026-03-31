@@ -232,7 +232,7 @@ var createAdminCmd = &cobra.Command{
 		password, _ := cmd.Flags().GetString("password")
 
 		checker := buildPasswordChecker(cfg)
-		user, err := taskengine.CreateUserWithPassword(cmd.Context(), pool, email, name, password, true, checker)
+		user, err := taskengine.CreateUserWithPassword(cmd.Context(), pool, email, name, password, true, checker, time.Now())
 		if err != nil {
 			return fmt.Errorf("create admin: %w", err)
 		}
@@ -321,9 +321,9 @@ func bootstrapOwner(ctx context.Context, pool *pgxpool.Pool, log *slog.Logger, c
 	var user dbgen.User
 	var createErr error
 	if cfg.PasswordAuthEnabled {
-		user, createErr = taskengine.CreateUserWithPassword(ctx, pool, cfg.InitOwnerEmail, cfg.InitOwnerName, cfg.InitOwnerPassword, true, checker)
+		user, createErr = taskengine.CreateUserWithPassword(ctx, pool, cfg.InitOwnerEmail, cfg.InitOwnerName, cfg.InitOwnerPassword, true, checker, time.Now())
 	} else {
-		user, createErr = taskengine.CreateUserWithoutPassword(ctx, pool, cfg.InitOwnerEmail, cfg.InitOwnerName, true)
+		user, createErr = taskengine.CreateUserWithoutPassword(ctx, pool, cfg.InitOwnerEmail, cfg.InitOwnerName, true, time.Now())
 	}
 	if createErr != nil {
 		// Unique violation means another instance already created the user.
