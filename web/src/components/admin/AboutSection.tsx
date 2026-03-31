@@ -1,5 +1,5 @@
 import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { Check, ExternalLink, Heart, Info, Lock, X } from "lucide-react";
+import { Check, ExternalLink, Heart, Info, X } from "lucide-react";
 import { authConfigQueryOptions } from "../../lib/queries.ts";
 import { SettingsSection } from "../space-settings/SettingsSection.tsx";
 
@@ -61,30 +61,12 @@ export function AboutSection() {
     <div className="flex flex-col gap-6">
       <SettingsSection
         icon={<Info className="size-5" aria-hidden="true" />}
-        title="Instance"
-        description="Information about this Tend installation."
+        title="Status"
+        description="Instance health and configuration."
       >
         <InfoRow label="Database">
           <StatusBadge ok={health?.status === "ok"} />
         </InfoRow>
-        <InfoRow label="Source">
-          <a
-            href="https://github.com/sargunv/tend"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary-500 hover:text-primary-600 inline-flex items-center gap-1 text-sm transition-colors"
-          >
-            github.com/sargunv/tend
-            <ExternalLink className="size-3" aria-hidden="true" />
-          </a>
-        </InfoRow>
-      </SettingsSection>
-
-      <SettingsSection
-        icon={<Lock className="size-5" aria-hidden="true" />}
-        title="Authentication"
-        description="Configured authentication methods."
-      >
         <InfoRow label="Password auth">
           <EnabledBadge enabled={authConfig.password.enabled} label="password authentication" />
         </InfoRow>
@@ -103,8 +85,18 @@ export function AboutSection() {
         )}
       </SettingsSection>
 
-      <div className="text-surface-500 flex items-center justify-center gap-1 py-4 text-xs">
-        Made with <Heart className="size-3" aria-hidden="true" /> as a self-hosted project
+      <div className="text-surface-500 flex items-center justify-center gap-1.5 py-4 text-xs">
+        <a
+          href="https://github.com/sargunv/tend"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:text-surface-700-300 inline-flex items-center gap-1 transition-colors"
+        >
+          Tend
+          <ExternalLink className="size-3" aria-hidden="true" />
+        </a>
+        <span>·</span>
+        Made with <Heart className="size-3" aria-hidden="true" /> for self-hosters
       </div>
     </div>
   );
