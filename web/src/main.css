@@ -2,6 +2,11 @@
 @import "@skeletonlabs/skeleton";
 @import "@skeletonlabs/skeleton-react";
 @import "@skeletonlabs/skeleton/themes/pine";
-@import "highlight.js/styles/default.css";
-@import "highlight.js/styles/dark.css" (prefers-color-scheme: dark);
-@plugin "@tailwindcss/typography";
+@import "highlight.js/styles/dark.css";
+@import "katex/dist/katex.min.css";
+
+pre code.hljs,
+code.hljs {
+  background: unset;
+  padding: unset;
+}
