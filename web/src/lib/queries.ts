@@ -48,6 +48,27 @@ export const currentUserQueryOptions = queryOptions({
   },
 });
 
+export const usersQueryOptions = queryOptions({
+  queryKey: ["users"],
+  queryFn: async () => {
+    const { data, error } = await apiClient.GET("/users");
+    if (error) throw error;
+    return data.items;
+  },
+});
+
+export const userQueryOptions = (userId: string) =>
+  queryOptions({
+    queryKey: ["users", userId],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET("/users/{userId}", {
+        params: { path: { userId } },
+      });
+      if (error) throw error;
+      return data;
+    },
+  });
+
 export const spacesQueryOptions = queryOptions({
   queryKey: ["spaces"],
   queryFn: async () => {

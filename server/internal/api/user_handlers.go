@@ -8,11 +8,6 @@ import (
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 )
 
-// TODO(SV-61): When user registration, password change, or admin user-management
-// endpoints are added, call pwdcheck.Validate(ctx, password, h.PasswordChecker)
-// before hashing. When a login endpoint detects a breached password, require a
-// password reset.
-
 func (h *Handler) UsersMe(ctx context.Context) (*apigen.User, error) {
 	authUser := auth.UserFromContext(ctx)
 	q := dbgen.New(h.Pool)

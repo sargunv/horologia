@@ -38,6 +38,18 @@ func (h *Handler) requireSpaceRole(ctx context.Context, spaceSlug string, roles 
 	return forbidden("insufficient permissions")
 }
 
+// requireOwner checks that the authenticated user is a global owner.
+func (h *Handler) requireOwner(ctx context.Context) error {
+	user := auth.UserFromContext(ctx)
+	if user == nil {
+		return &ogenerrors.SecurityError{Err: ogenerrors.ErrSecurityRequirementIsNotSatisfied}
+	}
+	if !user.IsOwner {
+		return forbidden("owner access required")
+	}
+	return nil
+}
+
 // requireSpaceWrite checks that the user has member or admin role.
 func (h *Handler) requireSpaceWrite(ctx context.Context, spaceSlug string) error {
 	return h.requireSpaceRole(ctx, spaceSlug, dbgen.SpaceRoleMember, dbgen.SpaceRoleAdmin)

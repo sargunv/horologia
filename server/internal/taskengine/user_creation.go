@@ -16,8 +16,6 @@ import (
 
 // CreateUserWithPassword creates a user with a bcrypt-hashed password.
 // The checker parameter is used for HIBP breach checking; nil disables it.
-// TODO: Future password-change and user-management endpoints should call
-// pwdcheck.Validate before any bcrypt hashing.
 func CreateUserWithPassword(ctx context.Context, db database.DB, email, name, password string, isOwner bool, checker pwdcheck.Checker) (dbgen.User, error) {
 	if err := pwdcheck.Validate(ctx, password, checker); err != nil {
 		return dbgen.User{}, err

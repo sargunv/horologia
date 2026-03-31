@@ -8,8 +8,20 @@ package gen
 import (
 	"context"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const countOwners = `-- name: CountOwners :one
+SELECT COUNT(*) FROM users WHERE is_owner = TRUE
+`
+
+func (q *Queries) CountOwners(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countOwners)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (email, name, password_hash, is_owner, oidc_subject, created_at, updated_at)
@@ -49,6 +61,14 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const deleteUser = `-- name: DeleteUser :execresult
+DELETE FROM users WHERE id = $1
+`
+
+func (q *Queries) DeleteUser(ctx context.Context, id int64) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, deleteUser, id)
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
@@ -111,6 +131,39 @@ func (q *Queries) GetUserByOIDCSubject(ctx context.Context, oidcSubject pgtype.T
 	return i, err
 }
 
+const listUsers = `-- name: ListUsers :many
+SELECT id, email, name, password_hash, is_owner, oidc_subject, created_at, updated_at FROM users ORDER BY id ASC
+`
+
+func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
+	rows, err := q.db.Query(ctx, listUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []User{}
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.Email,
+			&i.Name,
+			&i.PasswordHash,
+			&i.IsOwner,
+			&i.OidcSubject,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const setUserOIDCSubject = `-- name: SetUserOIDCSubject :exec
 UPDATE users SET oidc_subject = $1, updated_at = $2 WHERE id = $3
 `
@@ -123,5 +176,57 @@ type SetUserOIDCSubjectParams struct {
 
 func (q *Queries) SetUserOIDCSubject(ctx context.Context, arg SetUserOIDCSubjectParams) error {
 	_, err := q.db.Exec(ctx, setUserOIDCSubject, arg.OidcSubject, arg.UpdatedAt, arg.ID)
+	return err
+}
+
+const updateUser = `-- name: UpdateUser :one
+UPDATE users
+SET name = $1, email = $2, is_owner = $3, updated_at = $4
+WHERE id = $5
+RETURNING id, email, name, password_hash, is_owner, oidc_subject, created_at, updated_at
+`
+
+type UpdateUserParams struct {
+	Name      string
+	Email     string
+	IsOwner   bool
+	UpdatedAt pgtype.Timestamptz
+	ID        int64
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUser,
+		arg.Name,
+		arg.Email,
+		arg.IsOwner,
+		arg.UpdatedAt,
+		arg.ID,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Name,
+		&i.PasswordHash,
+		&i.IsOwner,
+		&i.OidcSubject,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateUserPasswordHash = `-- name: UpdateUserPasswordHash :exec
+UPDATE users SET password_hash = $1, updated_at = $2 WHERE id = $3
+`
+
+type UpdateUserPasswordHashParams struct {
+	PasswordHash pgtype.Text
+	UpdatedAt    pgtype.Timestamptz
+	ID           int64
+}
+
+func (q *Queries) UpdateUserPasswordHash(ctx context.Context, arg UpdateUserPasswordHashParams) error {
+	_, err := q.db.Exec(ctx, updateUserPasswordHash, arg.PasswordHash, arg.UpdatedAt, arg.ID)
 	return err
 }

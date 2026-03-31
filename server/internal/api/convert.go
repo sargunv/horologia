@@ -297,12 +297,13 @@ func parseTokenID(s string) (int64, error) {
 
 func userFromDB(u dbgen.User) *apigen.User {
 	return &apigen.User{
-		ID:        types.FormatUserID(u.ID),
-		Email:     u.Email,
-		Name:      u.Name,
-		IsOwner:   u.IsOwner,
-		CreatedAt: tsToTime(u.CreatedAt),
-		UpdatedAt: tsToTime(u.UpdatedAt),
+		ID:          types.FormatUserID(u.ID),
+		Email:       u.Email,
+		Name:        u.Name,
+		IsOwner:     u.IsOwner,
+		HasPassword: u.PasswordHash.Valid,
+		CreatedAt:   tsToTime(u.CreatedAt),
+		UpdatedAt:   tsToTime(u.UpdatedAt),
 	}
 }
 

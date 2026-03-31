@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/sargunv/tend/server/internal/taskengine"
 )
@@ -278,9 +279,10 @@ func TestRotationCronMultiSpawn(t *testing.T) {
 
 	// Create fixed_accumulating task with weekly recurrence, due 3 weeks ago.
 	// This should produce 3 missed occurrences + 1 continuation.
+	threeWeeksAgo := time.Now().UTC().AddDate(0, 0, -21).Format("2006-01-02")
 	task := createTask(t, env, "alpha", fmt.Sprintf(
-		`{"title":"Weekly","recurrenceType":"fixed_accumulating","recurrenceRule":"RRULE:FREQ=WEEKLY","due":{"at":"2026-03-03","timezone":"UTC"},"assigneeIds":[%q],"rotationPool":[%q,%q,%q]}`,
-		ownerID, ownerID, bobID, charlieID,
+		`{"title":"Weekly","recurrenceType":"fixed_accumulating","recurrenceRule":"RRULE:FREQ=WEEKLY","due":{"at":%q,"timezone":"UTC"},"assigneeIds":[%q],"rotationPool":[%q,%q,%q]}`,
+		threeWeeksAgo, ownerID, ownerID, bobID, charlieID,
 	))
 	taskID := jsonAs[string](t, task["id"])
 
