@@ -15,6 +15,7 @@ import {
   ChevronDown,
   CircleAlert,
   Gauge,
+  Pencil,
   RefreshCw,
   SignalHigh,
   Tag,
@@ -28,6 +29,7 @@ import type { components } from "../../../../../api/schema.d.ts";
 import { DateField } from "../../../../../components/DateField.tsx";
 import { RecurrenceRuleEditor } from "../../../../../components/RecurrenceRuleEditor.tsx";
 import { TimezoneCombobox } from "../../../../../components/TimezoneCombobox.tsx";
+import { MarkdownRenderer } from "../../../../../components/MarkdownRenderer.tsx";
 import { ErrorAlert } from "../../../../../components/space-settings/ErrorAlert.tsx";
 import { useSpaceMemberMap } from "../../../../../lib/hooks.ts";
 import {
@@ -264,21 +266,43 @@ function EditableDescription({
 
   return (
     <div className="mt-4">
-      <div
-        className="text-surface-600-400 cursor-pointer rounded px-2 py-1 -mx-2 text-sm whitespace-pre-wrap hover:bg-surface-100-900 transition-colors"
-        onClick={enterEditing}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
+      {value ? (
+        <div
+          className="group relative cursor-pointer rounded px-2 py-1 -mx-2 hover:bg-surface-100-900 transition-colors"
+          onClick={(e) => {
+            if (e.target instanceof HTMLElement && e.target.closest("a")) return;
             enterEditing();
-          }
-        }}
-        role="button"
-        tabIndex={0}
-        aria-label={value ? "Edit task description" : "Add a description"}
-      >
-        {value || "Add a description..."}
-      </div>
+          }}
+        >
+          <MarkdownRenderer>{value}</MarkdownRenderer>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              enterEditing();
+            }}
+            className="absolute top-1 right-1 p-1 rounded opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-surface-200-800 transition-opacity"
+            aria-label="Edit task description"
+          >
+            <Pencil className="size-3.5 text-surface-500" aria-hidden="true" />
+          </button>
+        </div>
+      ) : (
+        <div
+          className="text-surface-600-400 cursor-pointer rounded px-2 py-1 -mx-2 text-sm hover:bg-surface-100-900 transition-colors"
+          onClick={enterEditing}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              enterEditing();
+            }
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label="Add a description"
+        >
+          Add a description...
+        </div>
+      )}
       {mutation.error && <ErrorAlert message={mutation.error.message} />}
     </div>
   );
