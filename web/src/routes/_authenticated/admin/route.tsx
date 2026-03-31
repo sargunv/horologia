@@ -20,12 +20,16 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminLayout,
 });
 
+const TAB_ROUTES: Record<string, string> = {
+  users: "/admin/users",
+  about: "/admin/about",
+};
+
 function AdminLayout() {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  const activeTab = "users";
-  void pathname; // Will derive from pathname when more tabs are added.
+  const activeTab = pathname.startsWith("/admin/about") ? "about" : "users";
 
   return (
     <div className="p-6">
@@ -37,11 +41,13 @@ function AdminLayout() {
       <Tabs
         value={activeTab}
         onValueChange={(details) => {
-          if (details.value === "users") void navigate({ to: "/admin/users" });
+          const route = TAB_ROUTES[details.value];
+          if (route) void navigate({ to: route });
         }}
       >
         <Tabs.List>
           <Tabs.Trigger value="users">Users</Tabs.Trigger>
+          <Tabs.Trigger value="about">About</Tabs.Trigger>
           <Tabs.Indicator />
         </Tabs.List>
       </Tabs>
