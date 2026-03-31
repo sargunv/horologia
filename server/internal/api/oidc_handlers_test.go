@@ -209,7 +209,7 @@ func TestOIDCLoginEmailAutoLink(t *testing.T) {
 	env := setupOIDCEnv(t)
 
 	// Create a password-based user with no OIDC subject.
-	existingUser, err := taskengine.CreateUserWithPassword(t.Context(), env.pool, "link@example.com", "Link User", "password123", false, nil)
+	existingUser, err := taskengine.CreateUserWithPassword(t.Context(), env.pool, "link@example.com", "Link User", "password123", false, nil, time.Now())
 	if err != nil {
 		t.Fatalf("create user: %v", err)
 	}
@@ -392,7 +392,7 @@ func TestOIDCLinkConsent(t *testing.T) {
 	env := setupOIDCConsentEnv(t)
 
 	// Create a password-based user with no OIDC subject.
-	existingUser, err := taskengine.CreateUserWithPassword(t.Context(), env.pool, "consent@example.com", "Consent User", "password123", false, nil)
+	existingUser, err := taskengine.CreateUserWithPassword(t.Context(), env.pool, "consent@example.com", "Consent User", "password123", false, nil, time.Now())
 	if err != nil {
 		t.Fatalf("create user: %v", err)
 	}
@@ -493,7 +493,7 @@ func TestOIDCLinkConsent(t *testing.T) {
 func TestOIDCLinkConsentWrongPassword(t *testing.T) {
 	env := setupOIDCConsentEnv(t)
 
-	_, err := taskengine.CreateUserWithPassword(t.Context(), env.pool, "wrong@example.com", "Wrong User", "correctpassword", false, nil)
+	_, err := taskengine.CreateUserWithPassword(t.Context(), env.pool, "wrong@example.com", "Wrong User", "correctpassword", false, nil, time.Now())
 	if err != nil {
 		t.Fatalf("create user: %v", err)
 	}

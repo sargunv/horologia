@@ -16,7 +16,7 @@ import (
 
 // CreateUserWithPassword creates a user with a bcrypt-hashed password.
 // The checker parameter is used for HIBP breach checking; nil disables it.
-func CreateUserWithPassword(ctx context.Context, db database.DB, email, name, password string, isOwner bool, checker pwdcheck.Checker) (dbgen.User, error) {
+func CreateUserWithPassword(ctx context.Context, db database.DB, email, name, password string, isOwner bool, checker pwdcheck.Checker, now time.Time) (dbgen.User, error) {
 	if err := pwdcheck.Validate(ctx, password, checker); err != nil {
 		return dbgen.User{}, err
 	}
@@ -24,7 +24,7 @@ func CreateUserWithPassword(ctx context.Context, db database.DB, email, name, pa
 	if err != nil {
 		return dbgen.User{}, fmt.Errorf("hash password: %w", err)
 	}
-	now := types.Timestamptz(time.Now())
+	nowTz := types.Timestamptz(now)
 
 	q := dbgen.New(db)
 	return q.CreateUser(ctx, dbgen.CreateUserParams{
@@ -32,15 +32,15 @@ func CreateUserWithPassword(ctx context.Context, db database.DB, email, name, pa
 		Name:         name,
 		PasswordHash: pgtype.Text{String: string(hash), Valid: true},
 		IsOwner:      isOwner,
-		CreatedAt:    now,
-		UpdatedAt:    now,
+		CreatedAt:    nowTz,
+		UpdatedAt:    nowTz,
 	})
 }
 
 // CreateUserWithoutPassword creates a user with no password hash, suitable
 // for OIDC-only deployments where password auth is disabled.
-func CreateUserWithoutPassword(ctx context.Context, db database.DB, email, name string, isOwner bool) (dbgen.User, error) {
-	now := types.Timestamptz(time.Now())
+func CreateUserWithoutPassword(ctx context.Context, db database.DB, email, name string, isOwner bool, now time.Time) (dbgen.User, error) {
+	nowTz := types.Timestamptz(now)
 
 	q := dbgen.New(db)
 	return q.CreateUser(ctx, dbgen.CreateUserParams{
@@ -48,7 +48,7 @@ func CreateUserWithoutPassword(ctx context.Context, db database.DB, email, name 
 		Name:         name,
 		PasswordHash: pgtype.Text{Valid: false},
 		IsOwner:      isOwner,
-		CreatedAt:    now,
-		UpdatedAt:    now,
+		CreatedAt:    nowTz,
+		UpdatedAt:    nowTz,
 	})
 }

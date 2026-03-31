@@ -22,6 +22,7 @@ func (h *Handler) SpacesCreate(ctx context.Context, req *apigen.SpaceCreate) (*a
 		req.Name,
 		req.Description.Or(""),
 		user.ID,
+		time.Now(),
 	)
 	if err != nil {
 		return nil, err

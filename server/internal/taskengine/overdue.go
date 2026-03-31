@@ -13,9 +13,7 @@ import (
 // ProcessOverdueTasks finds all fixed_accumulating tasks with due_at <= now
 // and processes each one in its own transaction. Errors for individual tasks
 // are returned via the onError callback; processing continues for remaining tasks.
-func ProcessOverdueTasks(ctx context.Context, db database.DB, onError func(taskID int64, spaceSlug string, err error)) error {
-	now := time.Now()
-
+func ProcessOverdueTasks(ctx context.Context, db database.DB, now time.Time, onError func(taskID int64, spaceSlug string, err error)) error {
 	q := dbgen.New(db)
 	// The query caps results at 100 rows per tick for backpressure;
 	// remaining overdue tasks will be picked up in subsequent cron ticks.

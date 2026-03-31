@@ -216,8 +216,14 @@ func TestRotationFixedAccumulating(t *testing.T) {
 	ownerID := getUserID(t, env, env.Token)
 
 	// Create fixed_accumulating task.
+	// Find a past Saturday that's at least 8 days ago so the next occurrence is strictly in the future.
+	pastSat := time.Now().AddDate(0, 0, -8)
+	for pastSat.Weekday() != time.Saturday {
+		pastSat = pastSat.AddDate(0, 0, -1)
+	}
+	pastSatStr := pastSat.Format(time.DateOnly)
 	task := createTask(t, env, "alpha", fmt.Sprintf(
-		`{"title":"Accumulating","recurrenceType":"fixed_accumulating","recurrenceRule":"RRULE:FREQ=WEEKLY;BYDAY=SA","due":{"at":"2020-01-04","timezone":"UTC"},"assigneeIds":[%q],"rotationPool":[%q,%q]}`,
+		`{"title":"Accumulating","recurrenceType":"fixed_accumulating","recurrenceRule":"RRULE:FREQ=WEEKLY;BYDAY=SA","due":{"at":"`+pastSatStr+`","timezone":"UTC"},"assigneeIds":[%q],"rotationPool":[%q,%q]}`,
 		ownerID, ownerID, bobID,
 	))
 	taskID := jsonAs[string](t, task["id"])
@@ -287,7 +293,7 @@ func TestRotationCronMultiSpawn(t *testing.T) {
 	taskID := jsonAs[string](t, task["id"])
 
 	// Run cron to process overdue tasks.
-	must(t, taskengine.ProcessOverdueTasks(t.Context(), env.pool, nil))
+	must(t, taskengine.ProcessOverdueTasks(t.Context(), env.pool, time.Now(), nil))
 
 	// Original task should now be one_off with empty pool.
 	resp := doRequest(t, env, "GET", "/spaces/alpha/tasks/"+taskID, "")
@@ -418,8 +424,14 @@ func TestRotationOnFixedNonAccumulating(t *testing.T) {
 	ownerID := getUserID(t, env, env.Token)
 
 	// Create fixed_non_accumulating task: pool=[owner, bob, charlie], assignee=[owner].
+	// Find a past Saturday that's at least 8 days ago so the next occurrence is strictly in the future.
+	pastSat := time.Now().AddDate(0, 0, -8)
+	for pastSat.Weekday() != time.Saturday {
+		pastSat = pastSat.AddDate(0, 0, -1)
+	}
+	pastSatStr := pastSat.Format(time.DateOnly)
 	task := createTask(t, env, "alpha", fmt.Sprintf(
-		`{"title":"Weekly","recurrenceType":"fixed_non_accumulating","recurrenceRule":"RRULE:FREQ=WEEKLY;BYDAY=SA","due":{"at":"2026-03-21","timezone":"UTC"},"assigneeIds":[%q],"rotationPool":[%q,%q,%q]}`,
+		`{"title":"Weekly","recurrenceType":"fixed_non_accumulating","recurrenceRule":"RRULE:FREQ=WEEKLY;BYDAY=SA","due":{"at":"`+pastSatStr+`","timezone":"UTC"},"assigneeIds":[%q],"rotationPool":[%q,%q,%q]}`,
 		ownerID, ownerID, bobID, charlieID,
 	))
 	taskID := jsonAs[string](t, task["id"])

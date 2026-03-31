@@ -428,8 +428,9 @@ func TestSpaceTaskActivityLog_SystemNullActor(t *testing.T) {
 
 	// Create a fixed_accumulating task with a past due date so we can call
 	// ProcessAccumulatingTask to trigger system-driven spawn (null actor).
+	pastDate := time.Now().AddDate(0, 0, -365).Format(time.DateOnly)
 	task := createTask(t, env, "ws",
-		`{"title":"Weekly","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY;INTERVAL=1","due":{"at":"2020-01-01","timezone":"UTC"}}`)
+		`{"title":"Weekly","recurrenceType":"fixed_accumulating","recurrenceRule":"FREQ=WEEKLY;INTERVAL=1","due":{"at":"`+pastDate+`","timezone":"UTC"}}`)
 	taskID := jsonAs[string](t, task["id"])
 
 	// Directly invoke the overdue processing (simulates the cron).

@@ -34,6 +34,8 @@ Package-scoped tasks use a `//` prefix, e.g. `mise run //server:generate`,
 
 - Never use `context.Background()` when a context is available from a caller (e.g. `cmd.Context()`,
   function parameter). Thread contexts through from the top.
+- Never call `time.Now()` inside a function when a `now time.Time` is available from a caller.
+  Capture `time.Now()` once at the system boundary (HTTP handler, cron tick) and thread it through.
 
 ## Web App Conventions
 

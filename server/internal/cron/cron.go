@@ -30,7 +30,8 @@ func RunAccumulatingCron(ctx context.Context, pool *pgxpool.Pool, log *slog.Logg
 }
 
 func process(ctx context.Context, pool *pgxpool.Pool, log *slog.Logger) {
-	if err := taskengine.ProcessOverdueTasks(ctx, pool, func(taskID int64, spaceSlug string, err error) {
+	now := time.Now()
+	if err := taskengine.ProcessOverdueTasks(ctx, pool, now, func(taskID int64, spaceSlug string, err error) {
 		log.ErrorContext(ctx, "cron: process overdue task",
 			"task_id", taskID,
 			"space", spaceSlug,

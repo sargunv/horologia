@@ -47,17 +47,17 @@ func (h *Handler) UsersCreate(ctx context.Context, req *apigen.UserCreate) (*api
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
+	now := time.Now()
+
 	var user dbgen.User
 	if req.Password.IsSet() {
-		user, err = taskengine.CreateUserWithPassword(ctx, tx, req.Email, req.Name, req.Password.Value, isOwner, h.PasswordChecker)
+		user, err = taskengine.CreateUserWithPassword(ctx, tx, req.Email, req.Name, req.Password.Value, isOwner, h.PasswordChecker, now)
 	} else {
-		user, err = taskengine.CreateUserWithoutPassword(ctx, tx, req.Email, req.Name, isOwner)
+		user, err = taskengine.CreateUserWithoutPassword(ctx, tx, req.Email, req.Name, isOwner, now)
 	}
 	if err != nil {
 		return nil, err
 	}
-
-	now := time.Now()
 	ownerStr := strconv.FormatBool(user.IsOwner)
 	if err := activitylog.Log(ctx, tx, activitylog.Entry{
 		SpaceSlug:  "",
