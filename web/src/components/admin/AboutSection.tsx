@@ -64,9 +64,6 @@ export function AboutSection() {
         title="Instance"
         description="Information about this Tend installation."
       >
-        <InfoRow label="Service">
-          <span className="text-sm font-medium">Tend</span>
-        </InfoRow>
         <InfoRow label="Database">
           <StatusBadge ok={health?.status === "ok"} />
         </InfoRow>
