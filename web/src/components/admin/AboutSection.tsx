@@ -71,18 +71,22 @@ export function AboutSection() {
           <EnabledBadge enabled={authConfig.password.enabled} label="password authentication" />
         </InfoRow>
         <InfoRow label="OIDC">
-          <EnabledBadge enabled={authConfig.oidc.enabled} label="OIDC authentication" />
+          {authConfig.oidc.enabled ? (
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <EnabledBadge enabled label="OIDC authentication" />
+                <span className="text-surface-600-400 text-sm">via {authConfig.oidc.label}</span>
+              </div>
+              <span className="text-surface-500 text-xs">
+                {authConfig.oidc.autoRedirect
+                  ? "Users are automatically redirected to the identity provider."
+                  : "Users choose between OIDC and password login."}
+              </span>
+            </div>
+          ) : (
+            <EnabledBadge enabled={false} label="OIDC authentication" />
+          )}
         </InfoRow>
-        {authConfig.oidc.enabled && (
-          <>
-            <InfoRow label="OIDC provider">
-              <span className="text-sm">{authConfig.oidc.label}</span>
-            </InfoRow>
-            <InfoRow label="Auto-redirect">
-              <EnabledBadge enabled={authConfig.oidc.autoRedirect} label="OIDC auto-redirect" />
-            </InfoRow>
-          </>
-        )}
       </SettingsSection>
 
       <div className="text-surface-500 flex items-center justify-center gap-1.5 py-4 text-xs">
