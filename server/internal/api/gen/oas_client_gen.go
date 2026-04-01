@@ -39,7 +39,7 @@ type Invoker interface {
 	// AuthListTokens invokes Auth_listTokens operation.
 	//
 	// GET /auth/tokens
-	AuthListTokens(ctx context.Context, params AuthListTokensParams) (*AuthTokenPage, error)
+	AuthListTokens(ctx context.Context) (*AuthTokenList, error)
 	// SpaceActivityList invokes SpaceActivity_list operation.
 	//
 	// GET /spaces/{spaceSlug}/activity
@@ -457,12 +457,12 @@ func (c *Client) sendAuthDeleteToken(ctx context.Context, params AuthDeleteToken
 // AuthListTokens invokes Auth_listTokens operation.
 //
 // GET /auth/tokens
-func (c *Client) AuthListTokens(ctx context.Context, params AuthListTokensParams) (*AuthTokenPage, error) {
-	res, err := c.sendAuthListTokens(ctx, params)
+func (c *Client) AuthListTokens(ctx context.Context) (*AuthTokenList, error) {
+	res, err := c.sendAuthListTokens(ctx)
 	return res, err
 }
 
-func (c *Client) sendAuthListTokens(ctx context.Context, params AuthListTokensParams) (res *AuthTokenPage, err error) {
+func (c *Client) sendAuthListTokens(ctx context.Context) (res *AuthTokenList, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("Auth_listTokens"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -502,44 +502,6 @@ func (c *Client) sendAuthListTokens(ctx context.Context, params AuthListTokensPa
 	var pathParts [1]string
 	pathParts[0] = "/auth/tokens"
 	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "cursor" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "cursor",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Cursor.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "limit" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "limit",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Limit.Get(); ok {
-				return e.EncodeValue(conv.Int32ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "GET", u)

@@ -509,30 +509,19 @@ func (s *AuthTokenKind) UnmarshalText(data []byte) error {
 	}
 }
 
-// Ref: #/components/schemas/AuthTokenPage
-type AuthTokenPage struct {
-	Items      []AuthToken `json:"items"`
-	NextCursor NilString   `json:"nextCursor"`
+// Ref: #/components/schemas/AuthTokenList
+type AuthTokenList struct {
+	Items []AuthToken `json:"items"`
 }
 
 // GetItems returns the value of Items.
-func (s *AuthTokenPage) GetItems() []AuthToken {
+func (s *AuthTokenList) GetItems() []AuthToken {
 	return s.Items
 }
 
-// GetNextCursor returns the value of NextCursor.
-func (s *AuthTokenPage) GetNextCursor() NilString {
-	return s.NextCursor
-}
-
 // SetItems sets the value of Items.
-func (s *AuthTokenPage) SetItems(val []AuthToken) {
+func (s *AuthTokenList) SetItems(val []AuthToken) {
 	s.Items = val
-}
-
-// SetNextCursor sets the value of NextCursor.
-func (s *AuthTokenPage) SetNextCursor(val NilString) {
-	s.NextCursor = val
 }
 
 type BearerAuth struct {

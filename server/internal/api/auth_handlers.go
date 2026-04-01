@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"strconv"
 	"time"
 
 	apigen "github.com/sargunv/tend/server/internal/api/gen"
@@ -13,34 +12,25 @@ import (
 
 // --- Auth: Tokens ---
 
-func (h *Handler) AuthListTokens(ctx context.Context, params apigen.AuthListTokensParams) (*apigen.AuthTokenPage, error) {
+func (h *Handler) AuthListTokens(ctx context.Context) (*apigen.AuthTokenList, error) {
 	user := auth.UserFromContext(ctx)
+	now := time.Now()
 
-	cursorID, err := decodeCursorInt64(params.Cursor)
-	if err != nil {
-		return nil, badRequest(err.Error())
-	}
-
-	limit := clampLimit(params.Limit)
 	q := dbgen.New(h.Pool)
-
 	tokens, err := q.ListAuthTokensByUser(ctx, dbgen.ListAuthTokensByUserParams{
-		UserID: user.ID,
-		ID:     cursorID,
-		Limit:  limit + 1,
+		UserID:    user.ID,
+		ExpiresAt: types.Timestamptz(now),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	items, nextCursor, err := paginate(tokens, limit, convertEach(authTokenFromDB), func(t dbgen.AuthToken) string {
-		return strconv.FormatInt(t.ID, 10)
-	})
+	items, err := convertEach(authTokenFromDB)(tokens)
 	if err != nil {
 		return nil, err
 	}
 
-	return &apigen.AuthTokenPage{Items: items, NextCursor: nextCursor}, nil
+	return &apigen.AuthTokenList{Items: items}, nil
 }
 
 func (h *Handler) AuthCreateToken(ctx context.Context, req *apigen.AuthTokenCreate) (*apigen.AuthTokenCreateResponse, error) {

@@ -138,19 +138,18 @@ func (q *Queries) GetAuthTokenByHash(ctx context.Context, tokenHash string) (Get
 
 const listAuthTokensByUser = `-- name: ListAuthTokensByUser :many
 SELECT id, user_id, token_hash, name, kind, expires_at, created_at FROM auth_tokens
-WHERE user_id = $1 AND id > $2
+WHERE user_id = $1
+  AND (expires_at IS NULL OR expires_at > $2)
 ORDER BY id ASC
-LIMIT $3
 `
 
 type ListAuthTokensByUserParams struct {
-	UserID int64
-	ID     int64
-	Limit  int32
+	UserID    int64
+	ExpiresAt pgtype.Timestamptz
 }
 
 func (q *Queries) ListAuthTokensByUser(ctx context.Context, arg ListAuthTokensByUserParams) ([]AuthToken, error) {
-	rows, err := q.db.Query(ctx, listAuthTokensByUser, arg.UserID, arg.ID, arg.Limit)
+	rows, err := q.db.Query(ctx, listAuthTokensByUser, arg.UserID, arg.ExpiresAt)
 	if err != nil {
 		return nil, err
 	}

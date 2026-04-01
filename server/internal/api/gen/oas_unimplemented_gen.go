@@ -30,7 +30,7 @@ func (UnimplementedHandler) AuthDeleteToken(ctx context.Context, params AuthDele
 // AuthListTokens implements Auth_listTokens operation.
 //
 // GET /auth/tokens
-func (UnimplementedHandler) AuthListTokens(ctx context.Context, params AuthListTokensParams) (r *AuthTokenPage, _ error) {
+func (UnimplementedHandler) AuthListTokens(ctx context.Context) (r *AuthTokenList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

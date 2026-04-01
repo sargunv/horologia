@@ -51,6 +51,8 @@ Package-scoped tasks use a `//` prefix, e.g. `mise run //server:generate`,
   that doesn't forward children and is not needed for normal usage.
 - Read Skeleton's component docs before hand-rolling UI. Check whether a Skeleton component already
   exists for the pattern (e.g. Navigation, AppBar) rather than building it from raw HTML + Tailwind.
+- Extract `useMutation` hooks into `lib/mutations.ts` only when reused across multiple components.
+  One-off mutations with page-specific side effects belong inline in the component.
 
 ## Browser Automation
 

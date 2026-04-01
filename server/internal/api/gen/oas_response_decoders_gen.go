@@ -156,7 +156,7 @@ func decodeAuthDeleteTokenResponse(resp *http.Response) (res *AuthDeleteTokenNoC
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeAuthListTokensResponse(resp *http.Response) (res *AuthTokenPage, _ error) {
+func decodeAuthListTokensResponse(resp *http.Response) (res *AuthTokenList, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -172,7 +172,7 @@ func decodeAuthListTokensResponse(resp *http.Response) (res *AuthTokenPage, _ er
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response AuthTokenPage
+			var response AuthTokenList
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err

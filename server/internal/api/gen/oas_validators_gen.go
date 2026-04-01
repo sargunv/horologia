@@ -222,7 +222,7 @@ func (s AuthTokenKind) Validate() error {
 	}
 }
 
-func (s *AuthTokenPage) Validate() error {
+func (s *AuthTokenList) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
 	}

@@ -22,9 +22,9 @@ WHERE t.token_hash = $1;
 
 -- name: ListAuthTokensByUser :many
 SELECT * FROM auth_tokens
-WHERE user_id = $1 AND id > $2
-ORDER BY id ASC
-LIMIT $3;
+WHERE user_id = $1
+  AND (expires_at IS NULL OR expires_at > $2)
+ORDER BY id ASC;
 
 -- name: DeleteAuthToken :execresult
 DELETE FROM auth_tokens WHERE id = $1 AND user_id = $2;
