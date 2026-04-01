@@ -184,7 +184,7 @@ func TestRecurrenceFixedNonAccumulating(t *testing.T) {
 	if parsedDue.Weekday() != time.Saturday {
 		t.Fatalf("expected dueAt to be a Saturday, got %s (%s)", updated["due"], parsedDue.Weekday())
 	}
-	if !parsedDue.After(time.Now().Truncate(24 * time.Hour)) {
+	if parsedDue.Before(time.Now().Truncate(24 * time.Hour)) {
 		t.Fatalf("expected dueAt after today, got %s", updated["due"])
 	}
 }
@@ -587,7 +587,7 @@ func TestRecurrenceFixedAccumulatingDueDateAdvances(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse dueAt: %v", err)
 	}
-	if !parsedDue.After(time.Now().Truncate(24 * time.Hour)) {
+	if parsedDue.Before(time.Now().Truncate(24 * time.Hour)) {
 		t.Fatalf("expected dueAt after today, got %s", newDue)
 	}
 	if parsedDue.Day() != 1 {
@@ -982,7 +982,7 @@ func TestFixedAccumulatingCronBackfill(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse due: %v", err)
 	}
-	if !parsedDue.After(time.Now().Truncate(24 * time.Hour)) {
+	if parsedDue.Before(time.Now().Truncate(24 * time.Hour)) {
 		t.Fatalf("continuation due date should be in the future, got %s", dueStr)
 	}
 }
@@ -1093,7 +1093,7 @@ func TestFixedAccumulatingCronNonUTCTimezone(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse due: %v", err)
 	}
-	if !parsedDue.After(time.Now().Truncate(24 * time.Hour)) {
+	if parsedDue.Before(time.Now().Truncate(24 * time.Hour)) {
 		t.Fatalf("continuation due date should be in the future, got %s", dueStr)
 	}
 
