@@ -153,6 +153,14 @@ func (h *Handler) UsersUpdate(ctx context.Context, req *apigen.UserUpdate, param
 		if err := taskengine.SetUserPassword(ctx, tx, userID, req.SetPassword.Value, h.PasswordChecker, now); err != nil {
 			return nil, err
 		}
+		// Revoke all other session tokens for this user so stale sessions
+		// cannot survive a password change. API tokens are not affected.
+		if err := q.DeleteOtherSessionTokens(ctx, dbgen.DeleteOtherSessionTokensParams{
+			UserID:    userID,
+			TokenHash: authUser.SessionTokenHash,
+		}); err != nil {
+			return nil, err
+		}
 	} else if req.ClearPassword.Or(false) {
 		if err := taskengine.ClearUserPassword(ctx, tx, userID, now); err != nil {
 			return nil, err

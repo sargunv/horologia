@@ -351,6 +351,46 @@ func TestUsersUpdate(t *testing.T) {
 		_ = resp.Body.Close()
 	})
 
+	t.Run("password change revokes other sessions but keeps current", func(t *testing.T) {
+		// Create a user and log in twice to get two session tokens.
+		token1 := createTestUser(t, env, "sessiontest@example.com", "SessionTest", "password")
+		selfID := getUserID(t, env, token1)
+
+		// Log in again to get a second session.
+		resp := doRequestAs(t, env, "", "POST", "/auth/login",
+			`{"email":"sessiontest@example.com","password":"password"}`)
+		assertStatus(t, resp, http.StatusOK)
+		var token2 string
+		for _, c := range resp.Cookies() {
+			if c.Name == "tend_session" {
+				token2 = c.Value
+			}
+		}
+		_ = resp.Body.Close()
+		if token2 == "" {
+			t.Fatal("second login missing tend_session cookie")
+		}
+
+		// Both sessions should work.
+		resp = doRequestAs(t, env, token1, "GET", "/users/me", "")
+		assertStatusClose(t, resp, http.StatusOK)
+		resp = doRequestAs(t, env, token2, "GET", "/users/me", "")
+		assertStatusClose(t, resp, http.StatusOK)
+
+		// Change password using token1.
+		resp = doRequestAs(t, env, token1, "PATCH", "/users/"+selfID,
+			`{"setPassword":"changedpass123"}`)
+		assertStatusClose(t, resp, http.StatusOK)
+
+		// token1 (current session) should still work.
+		resp = doRequestAs(t, env, token1, "GET", "/users/me", "")
+		assertStatusClose(t, resp, http.StatusOK)
+
+		// token2 (other session) should be revoked.
+		resp = doRequestAs(t, env, token2, "GET", "/users/me", "")
+		assertStatusClose(t, resp, http.StatusUnauthorized)
+	})
+
 	t.Run("nonexistent user returns 404", func(t *testing.T) {
 		resp := doRequest(t, env, "PATCH", "/users/U999999",
 			`{"name":"Ghost"}`)
