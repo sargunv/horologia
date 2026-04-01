@@ -15,7 +15,6 @@ import {
   ChevronDown,
   CircleAlert,
   Gauge,
-  Pencil,
   RefreshCw,
   SignalHigh,
   Tag,
@@ -29,9 +28,10 @@ import type { components } from "../../../../../api/schema.d.ts";
 import { DateField } from "../../../../../components/DateField.tsx";
 import { RecurrenceRuleEditor } from "../../../../../components/RecurrenceRuleEditor.tsx";
 import { TimezoneCombobox } from "../../../../../components/TimezoneCombobox.tsx";
-import { MarkdownRenderer } from "../../../../../components/MarkdownRenderer.tsx";
+import { TaskDescriptionEditor } from "../../../../../components/TaskDescriptionEditor.tsx";
 import { ErrorAlert } from "../../../../../components/space-settings/ErrorAlert.tsx";
 import { useSpaceMemberMap } from "../../../../../lib/hooks.ts";
+import { useTaskPatch } from "../../../../../lib/mutations.ts";
 import {
   spaceEffortLevelsQueryOptions,
   spaceMembersQueryOptions,
@@ -42,7 +42,7 @@ import {
 } from "../../../../../lib/queries.ts";
 
 type Task = components["schemas"]["Task"];
-type TaskUpdate = components["schemas"]["TaskUpdate"];
+
 type TaskRecurrenceType = components["schemas"]["TaskRecurrenceType"];
 type TaskStatus = components["schemas"]["TaskStatus"];
 type SpaceMember = components["schemas"]["SpaceMember"];
@@ -61,30 +61,6 @@ export const Route = createFileRoute("/_authenticated/spaces/$spaceSlug/tasks/$t
 });
 
 const BackLink = createLink("a");
-
-function useTaskPatch(spaceSlug: string, taskId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (body: TaskUpdate) => {
-      const { data, error } = await apiClient.PATCH("/spaces/{spaceSlug}/tasks/{taskId}", {
-        params: { path: { spaceSlug, taskId } },
-        body,
-      });
-      if (error) throw new Error(error.message ?? "Failed to update task");
-      return data;
-    },
-    onSuccess: async () => {
-      try {
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", taskId] }),
-          queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", "list"] }),
-        ]);
-      } catch (err) {
-        console.error("Failed to refresh after task update:", err);
-      }
-    },
-  });
-}
 
 function PropertyRow({
   label,
@@ -186,123 +162,6 @@ function EditableTitle({
       >
         {value}
       </h1>
-      {mutation.error && <ErrorAlert message={mutation.error.message} />}
-    </div>
-  );
-}
-
-function EditableDescription({
-  spaceSlug,
-  taskId,
-  value,
-}: {
-  spaceSlug: string;
-  taskId: string;
-  value: string;
-}) {
-  const mutation = useTaskPatch(spaceSlug, taskId);
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(value);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    if (!editing) setDraft(value);
-  }, [value, editing]);
-
-  useEffect(() => {
-    if (editing && textareaRef.current) {
-      textareaRef.current.focus();
-      autoResize(textareaRef.current);
-    }
-  }, [editing]);
-
-  function autoResize(el: HTMLTextAreaElement) {
-    el.style.height = "auto";
-    el.style.height = el.scrollHeight + "px";
-  }
-
-  function save() {
-    setEditing(false);
-    if (draft !== value) {
-      mutation.reset();
-      mutation.mutate({ description: draft });
-    }
-  }
-
-  function enterEditing() {
-    mutation.reset();
-    setEditing(true);
-  }
-
-  if (editing) {
-    return (
-      <div className="mt-4">
-        <textarea
-          ref={textareaRef}
-          aria-label="Task description"
-          value={draft}
-          onChange={(e) => {
-            setDraft(e.target.value);
-            autoResize(e.target);
-          }}
-          onBlur={save}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") {
-              setDraft(value);
-              setEditing(false);
-            }
-          }}
-          className="textarea preset-outlined-surface-200-800 w-full resize-none"
-          style={{ overflow: "hidden" }}
-          rows={3}
-          maxLength={10000}
-          disabled={mutation.isPending}
-          placeholder="Add a description..."
-        />
-        {mutation.error && <ErrorAlert message={mutation.error.message} />}
-      </div>
-    );
-  }
-
-  return (
-    <div className="mt-4">
-      {value ? (
-        <div
-          className="group relative cursor-pointer rounded px-2 py-1 -mx-2 hover:bg-surface-100-900 transition-colors"
-          onClick={(e) => {
-            if (e.target instanceof HTMLElement && e.target.closest("a")) return;
-            enterEditing();
-          }}
-        >
-          <MarkdownRenderer>{value}</MarkdownRenderer>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              enterEditing();
-            }}
-            className="absolute top-1 right-1 p-1 rounded opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-surface-200-800 transition-opacity"
-            aria-label="Edit task description"
-          >
-            <Pencil className="size-3.5 text-surface-500" aria-hidden="true" />
-          </button>
-        </div>
-      ) : (
-        <div
-          className="text-surface-600-400 cursor-pointer rounded px-2 py-1 -mx-2 text-sm hover:bg-surface-100-900 transition-colors"
-          onClick={enterEditing}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              enterEditing();
-            }
-          }}
-          role="button"
-          tabIndex={0}
-          aria-label="Add a description"
-        >
-          Add a description...
-        </div>
-      )}
       {mutation.error && <ErrorAlert message={mutation.error.message} />}
     </div>
   );
@@ -764,7 +623,7 @@ function TaskDetailPage() {
         </div>
       </div>
 
-      <EditableDescription spaceSlug={spaceSlug} taskId={taskId} value={task.description} />
+      <TaskDescriptionEditor spaceSlug={spaceSlug} taskId={taskId} value={task.description} />
 
       <div className="card preset-outlined-surface-200-800 mt-6 p-4">
         <PropertyRow label="Status" icon={<CircleAlert className="size-4" aria-hidden="true" />}>
