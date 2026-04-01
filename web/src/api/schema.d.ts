@@ -390,9 +390,8 @@ export interface components {
         };
         /** @enum {string} */
         AuthTokenKind: "session" | "api";
-        AuthTokenPage: {
+        AuthTokenList: {
             items: components["schemas"]["AuthToken"][];
-            nextCursor: string | null;
         };
         Space: {
             slug: string;
@@ -606,10 +605,7 @@ export type $defs = Record<string, never>;
 export interface operations {
     Auth_listTokens: {
         parameters: {
-            query?: {
-                cursor?: components["parameters"]["PageParams.cursor"];
-                limit?: components["parameters"]["PageParams.limit"];
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -622,7 +618,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AuthTokenPage"];
+                    "application/json": components["schemas"]["AuthTokenList"];
                 };
             };
             /** @description An unexpected error response. */

@@ -549,20 +549,10 @@ func (s *Server) handleAuthListTokensRequest(args [0]string, argsEscaped bool, w
 			return
 		}
 	}
-	params, err := decodeAuthListTokensParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
 
 	var rawBody []byte
 
-	var response *AuthTokenPage
+	var response *AuthTokenList
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -571,23 +561,14 @@ func (s *Server) handleAuthListTokensRequest(args [0]string, argsEscaped bool, w
 			OperationID:      "Auth_listTokens",
 			Body:             nil,
 			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "cursor",
-					In:   "query",
-				}: params.Cursor,
-				{
-					Name: "limit",
-					In:   "query",
-				}: params.Limit,
-			},
-			Raw: r,
+			Params:           middleware.Parameters{},
+			Raw:              r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = AuthListTokensParams
-			Response = *AuthTokenPage
+			Params   = struct{}
+			Response = *AuthTokenList
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -596,14 +577,14 @@ func (s *Server) handleAuthListTokensRequest(args [0]string, argsEscaped bool, w
 		](
 			m,
 			mreq,
-			unpackAuthListTokensParams,
+			nil,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.AuthListTokens(ctx, params)
+				response, err = s.h.AuthListTokens(ctx)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.AuthListTokens(ctx, params)
+		response, err = s.h.AuthListTokens(ctx)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ApiErrorStatusCode](err); ok {

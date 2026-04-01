@@ -169,6 +169,15 @@ export const spaceTasksInfiniteQueryOptions = (spaceSlug: string) => {
   });
 };
 
+export const authTokensQueryOptions = queryOptions({
+  queryKey: ["authTokens"],
+  queryFn: async () => {
+    const { data, error } = await apiClient.GET("/auth/tokens");
+    if (error) throw error;
+    return data.items;
+  },
+});
+
 export const spaceTaskQueryOptions = (spaceSlug: string, taskId: string) =>
   queryOptions({
     queryKey: ["spaces", spaceSlug, "tasks", taskId],

@@ -1110,14 +1110,14 @@ func (s *AuthTokenKind) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
-func (s *AuthTokenPage) Encode(e *jx.Encoder) {
+func (s *AuthTokenList) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
 	e.ObjEnd()
 }
 
 // encodeFields encodes fields.
-func (s *AuthTokenPage) encodeFields(e *jx.Encoder) {
+func (s *AuthTokenList) encodeFields(e *jx.Encoder) {
 	{
 		e.FieldStart("items")
 		e.ArrStart()
@@ -1126,21 +1126,16 @@ func (s *AuthTokenPage) encodeFields(e *jx.Encoder) {
 		}
 		e.ArrEnd()
 	}
-	{
-		e.FieldStart("nextCursor")
-		s.NextCursor.Encode(e)
-	}
 }
 
-var jsonFieldsNameOfAuthTokenPage = [2]string{
+var jsonFieldsNameOfAuthTokenList = [1]string{
 	0: "items",
-	1: "nextCursor",
 }
 
-// Decode decodes AuthTokenPage from json.
-func (s *AuthTokenPage) Decode(d *jx.Decoder) error {
+// Decode decodes AuthTokenList from json.
+func (s *AuthTokenList) Decode(d *jx.Decoder) error {
 	if s == nil {
-		return errors.New("invalid: unable to decode AuthTokenPage to nil")
+		return errors.New("invalid: unable to decode AuthTokenList to nil")
 	}
 	var requiredBitSet [1]uint8
 
@@ -1164,27 +1159,17 @@ func (s *AuthTokenPage) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"items\"")
 			}
-		case "nextCursor":
-			requiredBitSet[0] |= 1 << 1
-			if err := func() error {
-				if err := s.NextCursor.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"nextCursor\"")
-			}
 		default:
 			return d.Skip()
 		}
 		return nil
 	}); err != nil {
-		return errors.Wrap(err, "decode AuthTokenPage")
+		return errors.Wrap(err, "decode AuthTokenList")
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000011,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -1196,8 +1181,8 @@ func (s *AuthTokenPage) Decode(d *jx.Decoder) error {
 				bitIdx := bits.TrailingZeros8(result)
 				fieldIdx := i*8 + bitIdx
 				var name string
-				if fieldIdx < len(jsonFieldsNameOfAuthTokenPage) {
-					name = jsonFieldsNameOfAuthTokenPage[fieldIdx]
+				if fieldIdx < len(jsonFieldsNameOfAuthTokenList) {
+					name = jsonFieldsNameOfAuthTokenList[fieldIdx]
 				} else {
 					name = strconv.Itoa(fieldIdx)
 				}
@@ -1218,14 +1203,14 @@ func (s *AuthTokenPage) Decode(d *jx.Decoder) error {
 }
 
 // MarshalJSON implements stdjson.Marshaler.
-func (s *AuthTokenPage) MarshalJSON() ([]byte, error) {
+func (s *AuthTokenList) MarshalJSON() ([]byte, error) {
 	e := jx.Encoder{}
 	s.Encode(&e)
 	return e.Bytes(), nil
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *AuthTokenPage) UnmarshalJSON(data []byte) error {
+func (s *AuthTokenList) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

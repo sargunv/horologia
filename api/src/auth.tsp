@@ -25,14 +25,16 @@ model AuthTokenCreateResponse {
   authToken: AuthToken;
 }
 
-model AuthTokenPage is Page<AuthToken>;
+model AuthTokenList {
+  items: AuthToken[];
+}
 
 @route("/auth")
 @tag("Auth")
 interface Auth {
   @get
   @route("/tokens")
-  listTokens(...PageParams): AuthTokenPage | ApiError;
+  listTokens(): AuthTokenList | ApiError;
 
   @post
   @route("/tokens")
