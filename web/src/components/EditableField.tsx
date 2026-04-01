@@ -26,9 +26,12 @@ export function EditableField({
     if (!editing) setDraft(value);
   }, [value, editing]);
 
-  useEffect(() => {
-    if (editing) inputRef.current?.focus();
-  }, [editing]);
+  function enterEditing() {
+    mutation.reset();
+    setEditing(true);
+    // Select text on enter so the user can start typing immediately.
+    requestAnimationFrame(() => inputRef.current?.select());
+  }
 
   function save() {
     if (mutation.isPending) return;
@@ -42,54 +45,33 @@ export function EditableField({
     }
   }
 
-  function enterEditing() {
-    mutation.reset();
-    setEditing(true);
-  }
-
-  if (editing) {
-    return (
-      <div>
-        <input
-          ref={inputRef}
-          type={type}
-          aria-label={label}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={save}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") save();
-            if (e.key === "Escape") {
-              setDraft(value);
-              setEditing(false);
-            }
-          }}
-          className="input preset-outlined-surface-200-800 w-full"
-          maxLength={maxLength}
-          disabled={mutation.isPending}
-        />
-        {mutation.error && <ErrorAlert message={mutation.error.message} />}
-      </div>
-    );
-  }
-
   return (
     <div>
-      <span
-        className="cursor-pointer rounded px-1 -mx-1 text-sm hover:bg-surface-100-900 transition-colors"
-        onClick={enterEditing}
+      <input
+        ref={inputRef}
+        type={type}
+        aria-label={editing ? label : `Edit ${label}`}
+        value={editing ? draft : value}
+        readOnly={!editing}
+        onFocus={enterEditing}
+        onBlur={save}
+        onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            enterEditing();
+          if (e.key === "Enter") inputRef.current?.blur();
+          if (e.key === "Escape") {
+            setDraft(value);
+            setEditing(false);
+            inputRef.current?.blur();
           }
         }}
-        role="button"
-        tabIndex={0}
-        aria-label={`Edit ${label}`}
-      >
-        {value}
-      </span>
+        className={
+          editing
+            ? "input preset-outlined-surface-200-800 w-full"
+            : "w-full cursor-pointer rounded bg-transparent px-1 text-sm outline-none transition-colors hover:bg-surface-100-900"
+        }
+        maxLength={maxLength}
+        disabled={mutation.isPending}
+      />
       {mutation.error && <ErrorAlert message={mutation.error.message} />}
     </div>
   );
