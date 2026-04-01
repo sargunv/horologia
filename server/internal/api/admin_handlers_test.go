@@ -316,6 +316,41 @@ func TestUsersUpdate(t *testing.T) {
 		assertStatusClose(t, resp, http.StatusForbidden)
 	})
 
+	t.Run("non-owner can set own password", func(t *testing.T) {
+		token := createTestUser(t, env, "selfpwd@example.com", "SelfPwd", "password")
+		selfID := getUserID(t, env, token)
+		resp := doRequestAs(t, env, token, "PATCH", "/users/"+selfID,
+			`{"setPassword":"newpassword123"}`)
+		assertStatusClose(t, resp, http.StatusOK)
+
+		// Verify login with new password works.
+		resp = doRequestAs(t, env, "", "POST", "/auth/login",
+			`{"email":"selfpwd@example.com","password":"newpassword123"}`)
+		if resp.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(resp.Body)
+			_ = resp.Body.Close()
+			t.Fatalf("login with new password: got %d; body: %s", resp.StatusCode, body)
+		}
+		_ = resp.Body.Close()
+	})
+
+	t.Run("non-owner can clear own password", func(t *testing.T) {
+		token := createTestUser(t, env, "selfclear@example.com", "SelfClear", "password")
+		selfID := getUserID(t, env, token)
+		resp := doRequestAs(t, env, token, "PATCH", "/users/"+selfID,
+			`{"clearPassword":true}`)
+		assertStatusClose(t, resp, http.StatusOK)
+
+		// Verify login is rejected.
+		resp = doRequestAs(t, env, "", "POST", "/auth/login",
+			`{"email":"selfclear@example.com","password":"password"}`)
+		if resp.StatusCode == http.StatusOK {
+			_ = resp.Body.Close()
+			t.Fatal("login should be rejected after clearing password")
+		}
+		_ = resp.Body.Close()
+	})
+
 	t.Run("nonexistent user returns 404", func(t *testing.T) {
 		resp := doRequest(t, env, "PATCH", "/users/U999999",
 			`{"name":"Ghost"}`)

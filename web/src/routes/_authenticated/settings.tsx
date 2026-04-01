@@ -8,6 +8,7 @@ import { EditableField, PropertyRow } from "../../components/EditableField.tsx";
 import { ErrorAlert } from "../../components/space-settings/ErrorAlert.tsx";
 import { SettingsSection } from "../../components/space-settings/SettingsSection.tsx";
 import { DIALOG_ANIMATION } from "../../lib/dialog.ts";
+import { useUserPatch } from "../../lib/mutations.ts";
 import { authConfigQueryOptions, currentUserQueryOptions } from "../../lib/queries.ts";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -59,24 +60,10 @@ function ProfileCard({ userId, name, email }: { userId: string; name: string; em
 }
 
 function PasswordCard({ userId, hasPassword }: { userId: string; hasPassword: boolean }) {
-  const queryClient = useQueryClient();
+  const mutation = useUserPatch(userId);
   const [open, setOpen] = useState(false);
-  const cancelRef = useRef<HTMLButtonElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
   const [password, setPassword] = useState("");
-
-  const mutation = useMutation({
-    mutationFn: async (body: { setPassword: string }) => {
-      const { error } = await apiClient.PATCH("/users/{userId}", {
-        params: { path: { userId } },
-        body,
-      });
-      if (error) throw new Error(error.message ?? "Failed to update password");
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["currentUser"] });
-      setOpen(false);
-    },
-  });
 
   const label = hasPassword ? "Change password" : "Set password";
 
@@ -91,7 +78,7 @@ function PasswordCard({ userId, hasPassword }: { userId: string; hasPassword: bo
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     mutation.reset();
-    mutation.mutate({ setPassword: password });
+    mutation.mutate({ setPassword: password }, { onSuccess: () => setOpen(false) });
   }
 
   return (
@@ -104,7 +91,7 @@ function PasswordCard({ userId, hasPassword }: { userId: string; hasPassword: bo
         <Dialog
           open={open}
           onOpenChange={handleOpenChange}
-          initialFocusEl={() => cancelRef.current}
+          initialFocusEl={() => passwordRef.current}
         >
           <Dialog.Trigger className="btn btn-sm preset-outlined-surface-200-800">
             {label}
@@ -128,6 +115,7 @@ function PasswordCard({ userId, hasPassword }: { userId: string; hasPassword: bo
                   <label className="flex flex-col gap-1">
                     <span className="text-surface-600-400 text-sm font-medium">New password</span>
                     <input
+                      ref={passwordRef}
                       type="password"
                       required
                       minLength={8}
@@ -140,10 +128,7 @@ function PasswordCard({ userId, hasPassword }: { userId: string; hasPassword: bo
                   </label>
                   {mutation.error && <ErrorAlert message={mutation.error.message} />}
                   <footer className="flex justify-end gap-2">
-                    <Dialog.CloseTrigger
-                      ref={cancelRef}
-                      className="btn preset-outlined-surface-200-800"
-                    >
+                    <Dialog.CloseTrigger className="btn preset-outlined-surface-200-800">
                       Cancel
                     </Dialog.CloseTrigger>
                     <button
@@ -229,8 +214,9 @@ function DangerZoneCard({ userId, email }: { userId: string; email: string }) {
                   </Dialog.CloseTrigger>
                 </header>
                 <Dialog.Description className="text-surface-600-400 text-sm">
-                  This will permanently delete your account, including all tasks, memberships, and
-                  tokens. You will be signed out immediately and will not be able to log in again.
+                  This will permanently delete your account, including your memberships,
+                  assignments, and tokens. You will be signed out immediately and will not be able
+                  to log in again.
                 </Dialog.Description>
                 <div>
                   <label
@@ -244,7 +230,7 @@ function DangerZoneCard({ userId, email }: { userId: string; email: string }) {
                     type="text"
                     value={confirmation}
                     onChange={(e) => setConfirmation(e.target.value)}
-                    className="input"
+                    className="input preset-outlined-surface-200-800 w-full"
                     placeholder={email}
                     autoComplete="off"
                   />

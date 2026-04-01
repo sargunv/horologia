@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/ogen-go/ogen/ogenerrors"
+
 	"github.com/sargunv/tend/server/internal/activitylog"
 	apigen "github.com/sargunv/tend/server/internal/api/gen"
 	"github.com/sargunv/tend/server/internal/auth"
@@ -83,6 +85,9 @@ func (h *Handler) UsersCreate(ctx context.Context, req *apigen.UserCreate) (*api
 
 func (h *Handler) UsersUpdate(ctx context.Context, req *apigen.UserUpdate, params apigen.UsersUpdateParams) (*apigen.User, error) {
 	authUser := auth.UserFromContext(ctx)
+	if authUser == nil {
+		return nil, &ogenerrors.SecurityError{Err: ogenerrors.ErrSecurityRequirementIsNotSatisfied}
+	}
 
 	userID, err := types.ParseUserID(params.UserId)
 	if err != nil {
@@ -92,11 +97,11 @@ func (h *Handler) UsersUpdate(ctx context.Context, req *apigen.UserUpdate, param
 	// Non-owners can only update themselves.
 	if !authUser.IsOwner {
 		if userID != authUser.ID {
-			return nil, forbidden("owner access required")
+			return nil, forbidden("cannot modify other users")
 		}
 		// Non-owners cannot change owner status.
 		if req.IsOwner.IsSet() {
-			return nil, forbidden("owner access required")
+			return nil, forbidden("cannot change owner status")
 		}
 	}
 
@@ -201,6 +206,9 @@ func (h *Handler) UsersUpdate(ctx context.Context, req *apigen.UserUpdate, param
 
 func (h *Handler) UsersDelete(ctx context.Context, params apigen.UsersDeleteParams) error {
 	authUser := auth.UserFromContext(ctx)
+	if authUser == nil {
+		return &ogenerrors.SecurityError{Err: ogenerrors.ErrSecurityRequirementIsNotSatisfied}
+	}
 
 	userID, err := types.ParseUserID(params.UserId)
 	if err != nil {
@@ -209,8 +217,10 @@ func (h *Handler) UsersDelete(ctx context.Context, params apigen.UsersDeletePara
 
 	// Non-owners can only delete themselves.
 	if !authUser.IsOwner && userID != authUser.ID {
-		return forbidden("owner access required")
+		return forbidden("cannot modify other users")
 	}
+
+	now := time.Now()
 
 	tx, err := h.Pool.Begin(ctx)
 	if err != nil {
@@ -243,7 +253,6 @@ func (h *Handler) UsersDelete(ctx context.Context, params apigen.UsersDeletePara
 		return err
 	}
 
-	now := time.Now()
 	if err := activitylog.Log(ctx, tx, activitylog.Entry{
 		SpaceSlug:  "",
 		EntityType: activitylog.EntityUser,

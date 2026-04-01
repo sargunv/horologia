@@ -64,7 +64,7 @@ export function EditableField({
               setEditing(false);
             }
           }}
-          className="w-full border-b-2 border-primary-500 bg-transparent text-sm outline-none"
+          className="input preset-outlined-surface-200-800 w-full"
           maxLength={maxLength}
           disabled={mutation.isPending}
         />
