@@ -273,11 +273,122 @@ func TestUsersUpdate(t *testing.T) {
 		assertStatusClose(t, resp, http.StatusBadRequest)
 	})
 
-	t.Run("non-owner gets 403", func(t *testing.T) {
+	t.Run("non-owner cannot update other user", func(t *testing.T) {
 		token := createTestUser(t, env, "nonadmin@example.com", "NonAdmin", "password")
 		resp := doRequestAs(t, env, token, "PATCH", "/users/"+userID,
 			`{"name":"Hacked"}`)
 		assertStatusClose(t, resp, http.StatusForbidden)
+	})
+
+	t.Run("non-owner can update own name", func(t *testing.T) {
+		token := createTestUser(t, env, "selfupdate@example.com", "SelfUpdate", "password")
+		selfID := getUserID(t, env, token)
+		resp := doRequestAs(t, env, token, "PATCH", "/users/"+selfID,
+			`{"name":"New Name"}`)
+		assertStatus(t, resp, http.StatusOK)
+
+		var user map[string]any
+		readJSON(t, resp, &user)
+		if user["name"] != "New Name" {
+			t.Errorf("name = %v, want New Name", user["name"])
+		}
+	})
+
+	t.Run("non-owner can update own email", func(t *testing.T) {
+		token := createTestUser(t, env, "selfemail@example.com", "SelfEmail", "password")
+		selfID := getUserID(t, env, token)
+		resp := doRequestAs(t, env, token, "PATCH", "/users/"+selfID,
+			`{"email":"selfemail-new@example.com"}`)
+		assertStatus(t, resp, http.StatusOK)
+
+		var user map[string]any
+		readJSON(t, resp, &user)
+		if user["email"] != "selfemail-new@example.com" {
+			t.Errorf("email = %v, want selfemail-new@example.com", user["email"])
+		}
+	})
+
+	t.Run("non-owner cannot set isOwner on self", func(t *testing.T) {
+		token := createTestUser(t, env, "selfowner@example.com", "SelfOwner", "password")
+		selfID := getUserID(t, env, token)
+		resp := doRequestAs(t, env, token, "PATCH", "/users/"+selfID,
+			`{"isOwner":true}`)
+		assertStatusClose(t, resp, http.StatusForbidden)
+	})
+
+	t.Run("non-owner can set own password", func(t *testing.T) {
+		token := createTestUser(t, env, "selfpwd@example.com", "SelfPwd", "password")
+		selfID := getUserID(t, env, token)
+		resp := doRequestAs(t, env, token, "PATCH", "/users/"+selfID,
+			`{"setPassword":"newpassword123"}`)
+		assertStatusClose(t, resp, http.StatusOK)
+
+		// Verify login with new password works.
+		resp = doRequestAs(t, env, "", "POST", "/auth/login",
+			`{"email":"selfpwd@example.com","password":"newpassword123"}`)
+		if resp.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(resp.Body)
+			_ = resp.Body.Close()
+			t.Fatalf("login with new password: got %d; body: %s", resp.StatusCode, body)
+		}
+		_ = resp.Body.Close()
+	})
+
+	t.Run("non-owner can clear own password", func(t *testing.T) {
+		token := createTestUser(t, env, "selfclear@example.com", "SelfClear", "password")
+		selfID := getUserID(t, env, token)
+		resp := doRequestAs(t, env, token, "PATCH", "/users/"+selfID,
+			`{"clearPassword":true}`)
+		assertStatusClose(t, resp, http.StatusOK)
+
+		// Verify login is rejected.
+		resp = doRequestAs(t, env, "", "POST", "/auth/login",
+			`{"email":"selfclear@example.com","password":"password"}`)
+		if resp.StatusCode == http.StatusOK {
+			_ = resp.Body.Close()
+			t.Fatal("login should be rejected after clearing password")
+		}
+		_ = resp.Body.Close()
+	})
+
+	t.Run("password change revokes other sessions but keeps current", func(t *testing.T) {
+		// Create a user and log in twice to get two session tokens.
+		token1 := createTestUser(t, env, "sessiontest@example.com", "SessionTest", "password")
+		selfID := getUserID(t, env, token1)
+
+		// Log in again to get a second session.
+		resp := doRequestAs(t, env, "", "POST", "/auth/login",
+			`{"email":"sessiontest@example.com","password":"password"}`)
+		assertStatus(t, resp, http.StatusOK)
+		var token2 string
+		for _, c := range resp.Cookies() {
+			if c.Name == "tend_session" {
+				token2 = c.Value
+			}
+		}
+		_ = resp.Body.Close()
+		if token2 == "" {
+			t.Fatal("second login missing tend_session cookie")
+		}
+
+		// Both sessions should work.
+		resp = doRequestAs(t, env, token1, "GET", "/users/me", "")
+		assertStatusClose(t, resp, http.StatusOK)
+		resp = doRequestAs(t, env, token2, "GET", "/users/me", "")
+		assertStatusClose(t, resp, http.StatusOK)
+
+		// Change password using token1.
+		resp = doRequestAs(t, env, token1, "PATCH", "/users/"+selfID,
+			`{"setPassword":"changedpass123"}`)
+		assertStatusClose(t, resp, http.StatusOK)
+
+		// token1 (current session) should still work.
+		resp = doRequestAs(t, env, token1, "GET", "/users/me", "")
+		assertStatusClose(t, resp, http.StatusOK)
+
+		// token2 (other session) should be revoked.
+		resp = doRequestAs(t, env, token2, "GET", "/users/me", "")
+		assertStatusClose(t, resp, http.StatusUnauthorized)
 	})
 
 	t.Run("nonexistent user returns 404", func(t *testing.T) {
@@ -328,10 +439,21 @@ func TestUsersDelete(t *testing.T) {
 		assertStatusClose(t, resp, http.StatusBadRequest)
 	})
 
-	t.Run("non-owner gets 403", func(t *testing.T) {
+	t.Run("non-owner can delete self", func(t *testing.T) {
+		token := createTestUser(t, env, "selfdelete@example.com", "SelfDelete", "password")
+		selfID := getUserID(t, env, token)
+		resp := doRequestAs(t, env, token, "DELETE", "/users/"+selfID, "")
+		assertStatusClose(t, resp, http.StatusNoContent)
+
+		// Their token should no longer work.
+		resp = doRequestAs(t, env, token, "GET", "/users/me", "")
+		assertStatusClose(t, resp, http.StatusUnauthorized)
+	})
+
+	t.Run("non-owner cannot delete other user", func(t *testing.T) {
 		token := createTestUser(t, env, "regular2@example.com", "Regular2", "password")
-		targetID := getUserID(t, env, token)
-		resp := doRequestAs(t, env, token, "DELETE", "/users/"+targetID, "")
+		ownerID := getUserID(t, env, env.Token)
+		resp := doRequestAs(t, env, token, "DELETE", "/users/"+ownerID, "")
 		assertStatusClose(t, resp, http.StatusForbidden)
 	})
 

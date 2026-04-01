@@ -5,8 +5,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/ogen-go/ogen/ogenerrors"
+
 	"github.com/sargunv/tend/server/internal/activitylog"
 	apigen "github.com/sargunv/tend/server/internal/api/gen"
+	"github.com/sargunv/tend/server/internal/auth"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/taskengine"
 	"github.com/sargunv/tend/server/internal/types"
@@ -81,13 +84,25 @@ func (h *Handler) UsersCreate(ctx context.Context, req *apigen.UserCreate) (*api
 }
 
 func (h *Handler) UsersUpdate(ctx context.Context, req *apigen.UserUpdate, params apigen.UsersUpdateParams) (*apigen.User, error) {
-	if err := h.requireOwner(ctx); err != nil {
-		return nil, err
+	authUser := auth.UserFromContext(ctx)
+	if authUser == nil {
+		return nil, &ogenerrors.SecurityError{Err: ogenerrors.ErrSecurityRequirementIsNotSatisfied}
 	}
 
 	userID, err := types.ParseUserID(params.UserId)
 	if err != nil {
 		return nil, badRequest(err.Error())
+	}
+
+	// Non-owners can only update themselves.
+	if !authUser.IsOwner {
+		if userID != authUser.ID {
+			return nil, forbidden("cannot modify other users")
+		}
+		// Non-owners cannot change owner status.
+		if req.IsOwner.IsSet() {
+			return nil, forbidden("cannot change owner status")
+		}
 	}
 
 	if req.SetPassword.IsSet() && req.ClearPassword.Or(false) {
@@ -136,6 +151,14 @@ func (h *Handler) UsersUpdate(ctx context.Context, req *apigen.UserUpdate, param
 	// Handle password changes.
 	if req.SetPassword.IsSet() {
 		if err := taskengine.SetUserPassword(ctx, tx, userID, req.SetPassword.Value, h.PasswordChecker, now); err != nil {
+			return nil, err
+		}
+		// Revoke all other session tokens for this user so stale sessions
+		// cannot survive a password change. API tokens are not affected.
+		if err := q.DeleteOtherSessionTokens(ctx, dbgen.DeleteOtherSessionTokensParams{
+			UserID:    userID,
+			TokenHash: authUser.SessionTokenHash,
+		}); err != nil {
 			return nil, err
 		}
 	} else if req.ClearPassword.Or(false) {
@@ -190,14 +213,22 @@ func (h *Handler) UsersUpdate(ctx context.Context, req *apigen.UserUpdate, param
 }
 
 func (h *Handler) UsersDelete(ctx context.Context, params apigen.UsersDeleteParams) error {
-	if err := h.requireOwner(ctx); err != nil {
-		return err
+	authUser := auth.UserFromContext(ctx)
+	if authUser == nil {
+		return &ogenerrors.SecurityError{Err: ogenerrors.ErrSecurityRequirementIsNotSatisfied}
 	}
 
 	userID, err := types.ParseUserID(params.UserId)
 	if err != nil {
 		return badRequest(err.Error())
 	}
+
+	// Non-owners can only delete themselves.
+	if !authUser.IsOwner && userID != authUser.ID {
+		return forbidden("cannot modify other users")
+	}
+
+	now := time.Now()
 
 	tx, err := h.Pool.Begin(ctx)
 	if err != nil {
@@ -230,7 +261,6 @@ func (h *Handler) UsersDelete(ctx context.Context, params apigen.UsersDeletePara
 		return err
 	}
 
-	now := time.Now()
 	if err := activitylog.Log(ctx, tx, activitylog.Entry{
 		SpaceSlug:  "",
 		EntityType: activitylog.EntityUser,

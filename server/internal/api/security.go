@@ -41,9 +41,12 @@ func (h *Handler) HandleBearerAuth(ctx context.Context, operationName apigen.Ope
 		IsOwner: row.UserIsOwner,
 	}
 
-	// Attribute API token identity for activity logging.
 	if row.Kind == dbgen.AuthTokenKindApi {
+		// Attribute API token identity for activity logging.
 		user.Token = &auth.TokenInfo{ID: row.ID, Name: row.Name}
+	} else {
+		// Track session token hash so handlers can exclude the current session.
+		user.SessionTokenHash = hash
 	}
 
 	return auth.ContextWithUser(ctx, user), nil

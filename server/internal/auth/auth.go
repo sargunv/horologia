@@ -14,11 +14,12 @@ type TokenInfo struct {
 
 // User is the authenticated user attached to the request context.
 type User struct {
-	ID      int64
-	Email   string
-	Name    string
-	IsOwner bool
-	Token   *TokenInfo // nil for session tokens
+	ID               int64
+	Email            string
+	Name             string
+	IsOwner          bool
+	Token            *TokenInfo // nil for session tokens
+	SessionTokenHash string     // set for session tokens, empty for API tokens
 }
 
 // UserFromContext retrieves the authenticated user from the context.
