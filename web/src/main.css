@@ -10,3 +10,63 @@ code.hljs {
   background: unset;
   padding: unset;
 }
+
+/* Tiptap editor prose styles */
+.prose-editor .tiptap {
+  outline: none;
+  min-height: 6rem;
+}
+
+.prose-editor .tiptap > * + * {
+  margin-top: 1rem;
+}
+
+.prose-editor .tiptap h1 {
+  @apply h3;
+}
+.prose-editor .tiptap h2 {
+  @apply h4;
+}
+.prose-editor .tiptap h3 {
+  @apply h5;
+}
+.prose-editor .tiptap h4 {
+  @apply h6;
+}
+.prose-editor .tiptap h5 {
+  @apply h6;
+}
+.prose-editor .tiptap h6 {
+  @apply text-sm font-bold;
+}
+
+.prose-editor .tiptap ul {
+  @apply list-disc pl-6 space-y-1;
+}
+.prose-editor .tiptap ol {
+  @apply list-decimal pl-6 space-y-1;
+}
+.prose-editor .tiptap blockquote {
+  @apply blockquote;
+}
+.prose-editor .tiptap pre {
+  @apply pre;
+}
+.prose-editor .tiptap code {
+  @apply code;
+}
+.prose-editor .tiptap pre code {
+  background: unset;
+  padding: unset;
+}
+.prose-editor .tiptap a {
+  @apply anchor;
+}
+.prose-editor .tiptap hr {
+  @apply hr;
+}
+
+.prose-editor .tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  @apply text-surface-500 pointer-events-none float-left h-0;
+}
