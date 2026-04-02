@@ -3,7 +3,9 @@ package api
 import (
 	"encoding/base64"
 	"fmt"
+	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -359,6 +361,120 @@ func priorityLevelFromDB(p dbgen.TaskPriorityLevel) *apigen.TaskPriorityLevel {
 	return &apigen.TaskPriorityLevel{
 		Name:     p.Name,
 		Position: int64(p.Position),
+	}
+}
+
+// taskListCursor holds the compound keyset pagination state for task list queries.
+type taskListCursor struct {
+	SortStatus   int32
+	SortDue      pgtype.Date
+	SortPriority int32
+	SortEffort   int32
+	ID           int64
+}
+
+// initialTaskListCursor returns sentinel values that sort before any real row.
+func initialTaskListCursor() taskListCursor {
+	return taskListCursor{
+		SortStatus:   math.MinInt32,
+		SortDue:      pgtype.Date{InfinityModifier: pgtype.NegativeInfinity, Valid: true},
+		SortPriority: math.MinInt32,
+		SortEffort:   math.MinInt32,
+		ID:           0,
+	}
+}
+
+func encodeTaskListCursor(row dbgen.ListTasksBySpaceRow) string {
+	// SortDue is always valid (COALESCE ensures non-NULL).
+	var duePart string
+	switch row.SortDue.InfinityModifier {
+	case pgtype.Infinity:
+		duePart = "inf"
+	case pgtype.NegativeInfinity:
+		duePart = "-inf"
+	case pgtype.Finite:
+		duePart = row.SortDue.Time.Format(time.DateOnly)
+	}
+	return fmt.Sprintf("%d~%s~%d~%d~%d",
+		row.SortStatus, duePart, row.SortPriority, row.SortEffort, row.ID)
+}
+
+func decodeTaskListCursor(opt apigen.OptString) (taskListCursor, error) {
+	if !opt.IsSet() {
+		return initialTaskListCursor(), nil
+	}
+	raw, err := decodeCursor(opt)
+	if err != nil {
+		return taskListCursor{}, err
+	}
+	if raw == "" {
+		return initialTaskListCursor(), nil
+	}
+	parts := strings.Split(raw, "~")
+	if len(parts) != 5 {
+		return taskListCursor{}, fmt.Errorf("invalid cursor: expected 5 parts, got %d", len(parts))
+	}
+
+	sortStatus, err := strconv.ParseInt(parts[0], 10, 32)
+	if err != nil {
+		return taskListCursor{}, fmt.Errorf("invalid cursor sort_status: %w", err)
+	}
+
+	var sortDue pgtype.Date
+	switch parts[1] {
+	case "inf":
+		sortDue = pgtype.Date{InfinityModifier: pgtype.Infinity, Valid: true}
+	case "-inf":
+		sortDue = pgtype.Date{InfinityModifier: pgtype.NegativeInfinity, Valid: true}
+	default:
+		t, err := time.Parse(time.DateOnly, parts[1])
+		if err != nil {
+			return taskListCursor{}, fmt.Errorf("invalid cursor sort_due: %w", err)
+		}
+		sortDue = pgtype.Date{Time: t, Valid: true}
+	}
+
+	sortPriority, err := strconv.ParseInt(parts[2], 10, 32)
+	if err != nil {
+		return taskListCursor{}, fmt.Errorf("invalid cursor sort_priority: %w", err)
+	}
+
+	sortEffort, err := strconv.ParseInt(parts[3], 10, 32)
+	if err != nil {
+		return taskListCursor{}, fmt.Errorf("invalid cursor sort_effort: %w", err)
+	}
+
+	id, err := strconv.ParseInt(parts[4], 10, 64)
+	if err != nil {
+		return taskListCursor{}, fmt.Errorf("invalid cursor id: %w", err)
+	}
+
+	return taskListCursor{
+		SortStatus:   int32(sortStatus),
+		SortDue:      sortDue,
+		SortPriority: int32(sortPriority),
+		SortEffort:   int32(sortEffort),
+		ID:           id,
+	}, nil
+}
+
+// taskFromListRow extracts the dbgen.Task fields from a ListTasksBySpaceRow.
+func taskFromListRow(row dbgen.ListTasksBySpaceRow) dbgen.Task {
+	return dbgen.Task{
+		ID:              row.ID,
+		SpaceSlug:       row.SpaceSlug,
+		Title:           row.Title,
+		Description:     row.Description,
+		StatusName:      row.StatusName,
+		EffortName:      row.EffortName,
+		PriorityName:    row.PriorityName,
+		DueAt:           row.DueAt,
+		DueTz:           row.DueTz,
+		RecurrenceType:  row.RecurrenceType,
+		RecurrenceRule:  row.RecurrenceRule,
+		LastCompletedAt: row.LastCompletedAt,
+		CreatedAt:       row.CreatedAt,
+		UpdatedAt:       row.UpdatedAt,
 	}
 }
 

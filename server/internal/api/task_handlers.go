@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -262,7 +261,7 @@ func (h *Handler) SpaceTasksList(ctx context.Context, params apigen.SpaceTasksLi
 	if err := h.requireSpaceRead(ctx, params.SpaceSlug); err != nil {
 		return nil, err
 	}
-	cursorID, err := decodeCursorInt64(params.Cursor)
+	cursor, err := decodeTaskListCursor(params.Cursor)
 	if err != nil {
 		return nil, badRequest(err.Error())
 	}
@@ -272,19 +271,28 @@ func (h *Handler) SpaceTasksList(ctx context.Context, params apigen.SpaceTasksLi
 	q := dbgen.New(h.Pool)
 
 	rows, err := q.ListTasksBySpace(ctx, dbgen.ListTasksBySpaceParams{
-		SpaceSlug: params.SpaceSlug,
-		ID:        cursorID,
-		Limit:     limit + 1,
+		SpaceSlug:          params.SpaceSlug,
+		CursorSortStatus:   cursor.SortStatus,
+		CursorSortDue:      cursor.SortDue,
+		CursorSortPriority: cursor.SortPriority,
+		CursorSortEffort:   cursor.SortEffort,
+		CursorID:           cursor.ID,
+		Lim:                limit + 1,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	items, nextCursor, err := paginate(rows, limit, func(rows []dbgen.Task) ([]apigen.Task, error) {
-		return h.enrichTasks(ctx, q, params.SpaceSlug, rows)
-	}, func(t dbgen.Task) string {
-		return strconv.FormatInt(t.ID, 10)
-	})
+	items, nextCursor, err := paginate(rows, limit,
+		func(rows []dbgen.ListTasksBySpaceRow) ([]apigen.Task, error) {
+			tasks := make([]dbgen.Task, len(rows))
+			for i, r := range rows {
+				tasks[i] = taskFromListRow(r)
+			}
+			return h.enrichTasks(ctx, q, params.SpaceSlug, tasks)
+		},
+		encodeTaskListCursor,
+	)
 	if err != nil {
 		return nil, err
 	}
