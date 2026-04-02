@@ -7,10 +7,57 @@ RETURNING *;
 SELECT * FROM tasks WHERE id = $1 AND space_slug = $2;
 
 -- name: ListTasksBySpace :many
-SELECT * FROM tasks
-WHERE space_slug = $1 AND id > $2
-ORDER BY id ASC
-LIMIT $3;
+SELECT
+    t.id,
+    t.space_slug,
+    t.title,
+    t.description,
+    t.status_name,
+    t.effort_name,
+    t.priority_name,
+    t.due_at,
+    t.due_tz,
+    t.recurrence_type,
+    t.recurrence_rule,
+    t.last_completed_at,
+    t.created_at,
+    t.updated_at,
+    (CASE ts.category
+        WHEN 'completion' THEN ts.position
+        ELSE -ts.position
+    END)::integer AS sort_status,
+    COALESCE(t.due_at, 'infinity'::date) AS sort_due,
+    COALESCE(tpl.position, 2147483647) AS sort_priority,
+    COALESCE(tel.position, 2147483647) AS sort_effort
+FROM tasks t
+JOIN task_statuses ts
+    ON ts.space_slug = t.space_slug AND ts.name = t.status_name
+LEFT JOIN task_priority_levels tpl
+    ON tpl.space_slug = t.space_slug AND tpl.name = t.priority_name
+LEFT JOIN task_effort_levels tel
+    ON tel.space_slug = t.space_slug AND tel.name = t.effort_name
+WHERE
+    t.space_slug = @space_slug
+    AND (
+        (CASE ts.category WHEN 'completion' THEN ts.position ELSE -ts.position END)::integer,
+        COALESCE(t.due_at, 'infinity'::date),
+        COALESCE(tpl.position, 2147483647),
+        COALESCE(tel.position, 2147483647),
+        t.id
+    ) > (
+        @cursor_sort_status::integer,
+        @cursor_sort_due::date,
+        @cursor_sort_priority::integer,
+        @cursor_sort_effort::integer,
+        @cursor_id::bigint
+    )
+ORDER BY
+    sort_status ASC,
+    sort_due ASC,
+    sort_priority ASC,
+    sort_effort ASC,
+    t.id ASC
+LIMIT @lim;
 
 -- name: UpdateTask :one
 UPDATE tasks

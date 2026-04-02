@@ -185,6 +185,147 @@ func TestTasksListPagination(t *testing.T) {
 	}
 }
 
+func TestTasksListSortOrder(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "proj", "Project")
+
+	// Set up statuses: backlog (initial), in_progress (intermediate), done (completion).
+	assertStatusClose(t, doRequest(t, env, "PUT", "/spaces/proj/task-statuses",
+		`{"items":[{"name":"backlog","category":"initial"},{"name":"in_progress","category":"intermediate"},{"name":"done","category":"completion"}]}`),
+		http.StatusOK)
+
+	// Set up priority levels: urgent (0), normal (1), low (2).
+	assertStatusClose(t, doRequest(t, env, "PUT", "/spaces/proj/task-priority-levels",
+		`{"items":[{"name":"urgent"},{"name":"normal"},{"name":"low"}]}`),
+		http.StatusOK)
+
+	// Set up effort levels: small (0), medium (1), large (2).
+	assertStatusClose(t, doRequest(t, env, "PUT", "/spaces/proj/task-effort-levels",
+		`{"items":[{"name":"small"},{"name":"medium"},{"name":"large"}]}`),
+		http.StatusOK)
+
+	futureDate := time.Now().AddDate(0, 0, 30).Format(time.DateOnly)
+	pastDate := time.Now().AddDate(0, 0, -5).Format(time.DateOnly)
+
+	// Create tasks in an order that differs from the expected sort.
+	// Task A: backlog, no due date, no priority — should sort late (initial status, no due)
+	taskA := createTask(t, env, "proj", `{"title":"A-backlog-nodue"}`)
+
+	// Task B: in_progress, past due, urgent, small effort — sort first
+	taskB := createTask(t, env, "proj", `{"title":"B","status":"in_progress","due":{"at":"`+pastDate+`","timezone":"UTC"},"priority":"urgent","effort":"small"}`)
+
+	// Task C: in_progress, past due, urgent, large effort — same status+due+priority as B, effort tiebreaker
+	taskC := createTask(t, env, "proj", `{"title":"C","status":"in_progress","due":{"at":"`+pastDate+`","timezone":"UTC"},"priority":"urgent","effort":"large"}`)
+
+	// Task D: in_progress, future due, low priority — same status as B/C, later due
+	taskD := createTask(t, env, "proj", `{"title":"D","status":"in_progress","due":{"at":"`+futureDate+`","timezone":"UTC"},"priority":"low"}`)
+
+	// Task E: backlog, past due, normal priority — lower status than in_progress
+	taskE := createTask(t, env, "proj", `{"title":"E","due":{"at":"`+pastDate+`","timezone":"UTC"},"priority":"normal"}`)
+
+	// Task F: backlog, no due date — no due date sorts after all dated tasks
+	taskF := createTask(t, env, "proj", `{"title":"F"}`)
+
+	// Task G: done — completion status sorts last
+	taskG := createTask(t, env, "proj", `{"title":"G","status":"done"}`)
+
+	// Expected order exercises all sort dimensions:
+	// 1. B: in_progress(-1), pastDate, urgent(0), small(0)
+	// 2. C: in_progress(-1), pastDate, urgent(0), large(2)  — effort tiebreaker
+	// 3. D: in_progress(-1), futureDate, low(2), no effort   — due date tiebreaker
+	// 4. A: backlog(0), no due(inf), no priority, no effort  — status tiebreaker (but no due date)
+	// 5. E: backlog(0), pastDate, normal(1), no effort        — status tiebreaker
+	// 6. F: backlog(0), no due(inf), no priority, no effort  — due date tiebreaker vs E
+	// 7. G: done(2), no due(inf)                              — completion last
+	expectedOrder := []string{
+		jsonAs[string](t, taskB["id"]),
+		jsonAs[string](t, taskC["id"]),
+		jsonAs[string](t, taskD["id"]),
+		jsonAs[string](t, taskE["id"]),
+		jsonAs[string](t, taskA["id"]),
+		jsonAs[string](t, taskF["id"]),
+		jsonAs[string](t, taskG["id"]),
+	}
+
+	resp := doRequest(t, env, "GET", "/spaces/proj/tasks?limit=10", "")
+	assertStatus(t, resp, http.StatusOK)
+	var page map[string]any
+	readJSON(t, resp, &page)
+	items := jsonAs[[]any](t, page["items"])
+	if len(items) != 7 {
+		t.Fatalf("got %d items, want 7", len(items))
+	}
+
+	for i, item := range items {
+		got := jsonAs[string](t, jsonAs[map[string]any](t, item)["id"])
+		if got != expectedOrder[i] {
+			t.Errorf("position %d: got %s, want %s", i, got, expectedOrder[i])
+		}
+	}
+}
+
+func TestTasksListSortPagination(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+
+	// Priority levels: high (pos 0), medium (pos 1), low (pos 2).
+	assertStatusClose(t, doRequest(t, env, "PUT", "/spaces/home/task-priority-levels",
+		`{"items":[{"name":"high"},{"name":"medium"},{"name":"low"}]}`),
+		http.StatusOK)
+
+	dueDate := time.Now().AddDate(0, 0, 1).Format(time.DateOnly)
+
+	// 3 tasks with same status+due, differing only in priority.
+	// Page break at limit=2 forces the cursor to cross a priority boundary.
+	task1 := createTask(t, env, "home", `{"title":"T1","due":{"at":"`+dueDate+`","timezone":"UTC"},"priority":"high"}`)
+	task2 := createTask(t, env, "home", `{"title":"T2","due":{"at":"`+dueDate+`","timezone":"UTC"},"priority":"medium"}`)
+	task3 := createTask(t, env, "home", `{"title":"T3","due":{"at":"`+dueDate+`","timezone":"UTC"},"priority":"low"}`)
+
+	expectedOrder := []string{
+		jsonAs[string](t, task1["id"]),
+		jsonAs[string](t, task2["id"]),
+		jsonAs[string](t, task3["id"]),
+	}
+
+	// Page 1: limit=2, cursor ends mid-priority-group.
+	resp := doRequest(t, env, "GET", "/spaces/home/tasks?limit=2", "")
+	assertStatus(t, resp, http.StatusOK)
+	var page1 map[string]any
+	readJSON(t, resp, &page1)
+	items1 := jsonAs[[]any](t, page1["items"])
+	if len(items1) != 2 {
+		t.Fatalf("page 1: got %d items, want 2", len(items1))
+	}
+	if jsonAs[string](t, jsonAs[map[string]any](t, items1[0])["id"]) != expectedOrder[0] {
+		t.Errorf("page 1 item 0: got %v, want %v", jsonAs[map[string]any](t, items1[0])["id"], expectedOrder[0])
+	}
+	if jsonAs[string](t, jsonAs[map[string]any](t, items1[1])["id"]) != expectedOrder[1] {
+		t.Errorf("page 1 item 1: got %v, want %v", jsonAs[map[string]any](t, items1[1])["id"], expectedOrder[1])
+	}
+	cursor := page1["nextCursor"]
+	if cursor == nil {
+		t.Fatal("page 1: expected nextCursor")
+	}
+
+	// Page 2: cursor crosses priority boundary (medium → low).
+	resp2 := doRequest(t, env, "GET", "/spaces/home/tasks?limit=2&cursor="+jsonAs[string](t, cursor), "")
+	assertStatus(t, resp2, http.StatusOK)
+	var page2 map[string]any
+	readJSON(t, resp2, &page2)
+	items2 := jsonAs[[]any](t, page2["items"])
+	if len(items2) != 1 {
+		t.Fatalf("page 2: got %d items, want 1", len(items2))
+	}
+	if jsonAs[string](t, jsonAs[map[string]any](t, items2[0])["id"]) != expectedOrder[2] {
+		t.Errorf("page 2 item 0: got %v, want %v", jsonAs[map[string]any](t, items2[0])["id"], expectedOrder[2])
+	}
+	if page2["nextCursor"] != nil {
+		t.Error("page 2: expected null nextCursor")
+	}
+}
+
 func TestTasksListNonexistentSpace(t *testing.T) {
 	env := setupTestServer(t)
 
