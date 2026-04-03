@@ -194,6 +194,7 @@ func taskFromDB(task dbgen.Task, assigneeUserIDs []int64, tagNames []string, rel
 
 	t := &apigen.Task{
 		ID:             types.FormatTaskID(task.ID),
+		SpaceSlug:      task.SpaceSlug,
 		Title:          task.Title,
 		Description:    task.Description,
 		Status:         task.StatusName,
@@ -384,19 +385,26 @@ func initialTaskListCursor() taskListCursor {
 	}
 }
 
-func encodeTaskListCursor(row dbgen.ListTasksBySpaceRow) string {
+func formatTaskListCursor(sortStatus int32, sortDue pgtype.Date, sortPriority, sortEffort int32, id int64) string {
 	// SortDue is always valid (COALESCE ensures non-NULL).
 	var duePart string
-	switch row.SortDue.InfinityModifier {
+	switch sortDue.InfinityModifier {
 	case pgtype.Infinity:
 		duePart = "inf"
 	case pgtype.NegativeInfinity:
 		duePart = "-inf"
 	case pgtype.Finite:
-		duePart = row.SortDue.Time.Format(time.DateOnly)
+		duePart = sortDue.Time.Format(time.DateOnly)
 	}
-	return fmt.Sprintf("%d~%s~%d~%d~%d",
-		row.SortStatus, duePart, row.SortPriority, row.SortEffort, row.ID)
+	return fmt.Sprintf("%d~%s~%d~%d~%d", sortStatus, duePart, sortPriority, sortEffort, id)
+}
+
+func encodeTaskListCursor(row dbgen.ListTasksBySpaceRow) string {
+	return formatTaskListCursor(row.SortStatus, row.SortDue, row.SortPriority, row.SortEffort, row.ID)
+}
+
+func encodeUserTaskListCursor(row dbgen.ListTasksByUserRow) string {
+	return formatTaskListCursor(row.SortStatus, row.SortDue, row.SortPriority, row.SortEffort, row.ID)
 }
 
 func decodeTaskListCursor(opt apigen.OptString) (taskListCursor, error) {
@@ -460,6 +468,26 @@ func decodeTaskListCursor(opt apigen.OptString) (taskListCursor, error) {
 
 // taskFromListRow extracts the dbgen.Task fields from a ListTasksBySpaceRow.
 func taskFromListRow(row dbgen.ListTasksBySpaceRow) dbgen.Task {
+	return dbgen.Task{
+		ID:              row.ID,
+		SpaceSlug:       row.SpaceSlug,
+		Title:           row.Title,
+		Description:     row.Description,
+		StatusName:      row.StatusName,
+		EffortName:      row.EffortName,
+		PriorityName:    row.PriorityName,
+		DueAt:           row.DueAt,
+		DueTz:           row.DueTz,
+		RecurrenceType:  row.RecurrenceType,
+		RecurrenceRule:  row.RecurrenceRule,
+		LastCompletedAt: row.LastCompletedAt,
+		CreatedAt:       row.CreatedAt,
+		UpdatedAt:       row.UpdatedAt,
+	}
+}
+
+// taskFromUserListRow extracts the dbgen.Task fields from a ListTasksByUserRow.
+func taskFromUserListRow(row dbgen.ListTasksByUserRow) dbgen.Task {
 	return dbgen.Task{
 		ID:              row.ID,
 		SpaceSlug:       row.SpaceSlug,

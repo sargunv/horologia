@@ -9,9 +9,8 @@ WHERE source_task_id = $1 AND target_task_id = $2 AND kind = $3 AND space_slug =
 -- name: ListRelationsByTasks :many
 SELECT source_task_id, target_task_id, kind, created_at
 FROM task_relations
-WHERE space_slug = $1
-  AND (source_task_id = ANY(@source_task_ids::bigint[])
-    OR target_task_id = ANY(@target_task_ids::bigint[]))
+WHERE source_task_id = ANY(@source_task_ids::bigint[])
+   OR target_task_id = ANY(@target_task_ids::bigint[])
 ORDER BY created_at ASC;
 
 -- Two single-task queries instead of one with OR, so each can use its own index

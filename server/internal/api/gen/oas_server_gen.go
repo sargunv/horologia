@@ -136,6 +136,10 @@ type Handler interface {
 	//
 	// GET /users/{userId}/activity
 	UserActivityList(ctx context.Context, params UserActivityListParams) (*ActivityLogPage, error)
+	// UserTasksList implements UserTasks_list operation.
+	//
+	// GET /users/{userId}/tasks
+	UserTasksList(ctx context.Context, params UserTasksListParams) (*TaskPage, error)
 	// UsersCreate implements Users_create operation.
 	//
 	// POST /users
