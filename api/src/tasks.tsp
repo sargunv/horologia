@@ -43,6 +43,7 @@ model TaskDue {
 
 model Task {
   id: string;
+  spaceSlug: string;
   title: string;
   description: string;
   status: string;

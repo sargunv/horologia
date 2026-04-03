@@ -2991,6 +2991,10 @@ func (s *Task) encodeFields(e *jx.Encoder) {
 		e.Str(s.ID)
 	}
 	{
+		e.FieldStart("spaceSlug")
+		e.Str(s.SpaceSlug)
+	}
+	{
 		e.FieldStart("title")
 		e.Str(s.Title)
 	}
@@ -3068,23 +3072,24 @@ func (s *Task) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfTask = [16]string{
+var jsonFieldsNameOfTask = [17]string{
 	0:  "id",
-	1:  "title",
-	2:  "description",
-	3:  "status",
-	4:  "effort",
-	5:  "priority",
-	6:  "recurrenceType",
-	7:  "recurrenceRule",
-	8:  "lastCompletedAt",
-	9:  "assigneeIds",
-	10: "rotationPool",
-	11: "tags",
-	12: "relations",
-	13: "due",
-	14: "createdAt",
-	15: "updatedAt",
+	1:  "spaceSlug",
+	2:  "title",
+	3:  "description",
+	4:  "status",
+	5:  "effort",
+	6:  "priority",
+	7:  "recurrenceType",
+	8:  "recurrenceRule",
+	9:  "lastCompletedAt",
+	10: "assigneeIds",
+	11: "rotationPool",
+	12: "tags",
+	13: "relations",
+	14: "due",
+	15: "createdAt",
+	16: "updatedAt",
 }
 
 // Decode decodes Task from json.
@@ -3092,7 +3097,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode Task to nil")
 	}
-	var requiredBitSet [2]uint8
+	var requiredBitSet [3]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -3108,8 +3113,20 @@ func (s *Task) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
-		case "title":
+		case "spaceSlug":
 			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.SpaceSlug = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"spaceSlug\"")
+			}
+		case "title":
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.Title = string(v)
@@ -3121,7 +3138,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"title\"")
 			}
 		case "description":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				v, err := d.Str()
 				s.Description = string(v)
@@ -3133,7 +3150,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"description\"")
 			}
 		case "status":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := d.Str()
 				s.Status = string(v)
@@ -3145,7 +3162,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
 		case "effort":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				if err := s.Effort.Decode(d); err != nil {
 					return err
@@ -3155,7 +3172,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"effort\"")
 			}
 		case "priority":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				if err := s.Priority.Decode(d); err != nil {
 					return err
@@ -3165,7 +3182,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"priority\"")
 			}
 		case "recurrenceType":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				if err := s.RecurrenceType.Decode(d); err != nil {
 					return err
@@ -3175,7 +3192,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"recurrenceType\"")
 			}
 		case "recurrenceRule":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				if err := s.RecurrenceRule.Decode(d); err != nil {
 					return err
@@ -3185,7 +3202,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"recurrenceRule\"")
 			}
 		case "lastCompletedAt":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				if err := s.LastCompletedAt.Decode(d, json.DecodeDateTime); err != nil {
 					return err
@@ -3195,7 +3212,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"lastCompletedAt\"")
 			}
 		case "assigneeIds":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				s.AssigneeIds = make([]string, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -3215,7 +3232,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"assigneeIds\"")
 			}
 		case "rotationPool":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				s.RotationPool = make([]string, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -3235,7 +3252,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"rotationPool\"")
 			}
 		case "tags":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				s.Tags = make([]string, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -3255,7 +3272,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"tags\"")
 			}
 		case "relations":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				s.Relations = make([]TaskRelation, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -3273,7 +3290,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"relations\"")
 			}
 		case "due":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				if err := s.Due.Decode(d); err != nil {
 					return err
@@ -3283,7 +3300,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"due\"")
 			}
 		case "createdAt":
-			requiredBitSet[1] |= 1 << 6
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -3295,7 +3312,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"createdAt\"")
 			}
 		case "updatedAt":
-			requiredBitSet[1] |= 1 << 7
+			requiredBitSet[2] |= 1 << 0
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -3315,9 +3332,10 @@ func (s *Task) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [2]uint8{
+	for i, mask := range [3]uint8{
 		0b11111111,
 		0b11111111,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

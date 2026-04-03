@@ -237,6 +237,13 @@ func (UnimplementedHandler) UserActivityList(ctx context.Context, params UserAct
 	return r, ht.ErrNotImplemented
 }
 
+// UserTasksList implements UserTasks_list operation.
+//
+// GET /users/{userId}/tasks
+func (UnimplementedHandler) UserTasksList(ctx context.Context, params UserTasksListParams) (r *TaskPage, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // UsersCreate implements Users_create operation.
 //
 // POST /users

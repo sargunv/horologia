@@ -66,6 +66,7 @@ var operationRolesBearerAuth = map[string][]string{
 	SpacesReadOperation:                     []string{},
 	SpacesUpdateOperation:                   []string{},
 	UserActivityListOperation:               []string{},
+	UserTasksListOperation:                  []string{},
 	UsersCreateOperation:                    []string{},
 	UsersDeleteOperation:                    []string{},
 	UsersGetOperation:                       []string{},

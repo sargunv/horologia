@@ -152,14 +152,12 @@ func (q *Queries) ListRelationsByTaskAsTarget(ctx context.Context, arg ListRelat
 const listRelationsByTasks = `-- name: ListRelationsByTasks :many
 SELECT source_task_id, target_task_id, kind, created_at
 FROM task_relations
-WHERE space_slug = $1
-  AND (source_task_id = ANY($2::bigint[])
-    OR target_task_id = ANY($3::bigint[]))
+WHERE source_task_id = ANY($1::bigint[])
+   OR target_task_id = ANY($2::bigint[])
 ORDER BY created_at ASC
 `
 
 type ListRelationsByTasksParams struct {
-	SpaceSlug     string
 	SourceTaskIds []int64
 	TargetTaskIds []int64
 }
@@ -172,7 +170,7 @@ type ListRelationsByTasksRow struct {
 }
 
 func (q *Queries) ListRelationsByTasks(ctx context.Context, arg ListRelationsByTasksParams) ([]ListRelationsByTasksRow, error) {
-	rows, err := q.db.Query(ctx, listRelationsByTasks, arg.SpaceSlug, arg.SourceTaskIds, arg.TargetTaskIds)
+	rows, err := q.db.Query(ctx, listRelationsByTasks, arg.SourceTaskIds, arg.TargetTaskIds)
 	if err != nil {
 		return nil, err
 	}

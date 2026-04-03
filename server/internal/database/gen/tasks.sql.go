@@ -307,6 +307,144 @@ func (q *Queries) ListTasksBySpace(ctx context.Context, arg ListTasksBySpacePara
 	return items, nil
 }
 
+const listTasksByUser = `-- name: ListTasksByUser :many
+SELECT
+    t.id,
+    t.space_slug,
+    t.title,
+    t.description,
+    t.status_name,
+    t.effort_name,
+    t.priority_name,
+    t.due_at,
+    t.due_tz,
+    t.recurrence_type,
+    t.recurrence_rule,
+    t.last_completed_at,
+    t.created_at,
+    t.updated_at,
+    (CASE ts.category
+        WHEN 'completion' THEN ts.position
+        ELSE -ts.position
+    END)::integer AS sort_status,
+    COALESCE(t.due_at, 'infinity'::date) AS sort_due,
+    COALESCE(tpl.position, 2147483647) AS sort_priority,
+    COALESCE(tel.position, 2147483647) AS sort_effort
+FROM tasks t
+JOIN task_assignees ta
+    ON ta.task_id = t.id
+JOIN task_statuses ts
+    ON ts.space_slug = t.space_slug AND ts.name = t.status_name
+LEFT JOIN task_priority_levels tpl
+    ON tpl.space_slug = t.space_slug AND tpl.name = t.priority_name
+LEFT JOIN task_effort_levels tel
+    ON tel.space_slug = t.space_slug AND tel.name = t.effort_name
+WHERE
+    ta.user_id = $1
+    AND (
+        (CASE ts.category WHEN 'completion' THEN ts.position ELSE -ts.position END)::integer,
+        COALESCE(t.due_at, 'infinity'::date),
+        COALESCE(tpl.position, 2147483647),
+        COALESCE(tel.position, 2147483647),
+        t.id
+    ) > (
+        $2::integer,
+        $3::date,
+        $4::integer,
+        $5::integer,
+        $6::bigint
+    )
+ORDER BY
+    sort_status ASC,
+    sort_due ASC,
+    sort_priority ASC,
+    sort_effort ASC,
+    t.id ASC
+LIMIT $7
+`
+
+type ListTasksByUserParams struct {
+	AssigneeUserID     int64
+	CursorSortStatus   int32
+	CursorSortDue      pgtype.Date
+	CursorSortPriority int32
+	CursorSortEffort   int32
+	CursorID           int64
+	Lim                int32
+}
+
+type ListTasksByUserRow struct {
+	ID              int64
+	SpaceSlug       string
+	Title           string
+	Description     string
+	StatusName      string
+	EffortName      pgtype.Text
+	PriorityName    pgtype.Text
+	DueAt           pgtype.Date
+	DueTz           pgtype.Text
+	RecurrenceType  RecurrenceType
+	RecurrenceRule  pgtype.Text
+	LastCompletedAt pgtype.Timestamptz
+	CreatedAt       pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
+	SortStatus      int32
+	SortDue         pgtype.Date
+	SortPriority    int32
+	SortEffort      int32
+}
+
+// Lists all tasks assigned to a user across all spaces, with compound keyset
+// pagination. Sort order: status, due date, priority, effort, then task ID.
+// TODO: For cross-space comparability, normalize priority/effort positions to
+// 0.0–1.0 (position / max_position) instead of raw positions.
+func (q *Queries) ListTasksByUser(ctx context.Context, arg ListTasksByUserParams) ([]ListTasksByUserRow, error) {
+	rows, err := q.db.Query(ctx, listTasksByUser,
+		arg.AssigneeUserID,
+		arg.CursorSortStatus,
+		arg.CursorSortDue,
+		arg.CursorSortPriority,
+		arg.CursorSortEffort,
+		arg.CursorID,
+		arg.Lim,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListTasksByUserRow{}
+	for rows.Next() {
+		var i ListTasksByUserRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.SpaceSlug,
+			&i.Title,
+			&i.Description,
+			&i.StatusName,
+			&i.EffortName,
+			&i.PriorityName,
+			&i.DueAt,
+			&i.DueTz,
+			&i.RecurrenceType,
+			&i.RecurrenceRule,
+			&i.LastCompletedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.SortStatus,
+			&i.SortDue,
+			&i.SortPriority,
+			&i.SortEffort,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const resetTaskToInitial = `-- name: ResetTaskToInitial :exec
 UPDATE tasks
 SET status_name = $1, updated_at = $2
