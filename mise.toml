@@ -1,0 +1,82 @@
+experimental_monorepo_root = true
+
+[monorepo]
+config_roots = [
+  "api",
+  "cli",
+  "server",
+  "web",
+]
+
+[env]
+_.file = ".env.local"
+POSTGRES_PORT = "{{env.POSTGRES_PORT | default(value='5432')}}"
+OIDC_PORT = "{{env.OIDC_PORT | default(value='5556')}}"
+SERVER_PORT = "{{env.SERVER_PORT | default(value='8080')}}"
+WEB_PORT = "{{env.WEB_PORT | default(value='5173')}}"
+TILT_PORT = "{{env.TILT_PORT | default(value='10350')}}"
+
+[settings]
+experimental = true
+pin = true
+
+[settings.node]
+corepack = true
+
+[tools]
+go = "1.26.1"
+node = "24.14.1"
+dprint = "0.53.0"
+hk = "1.38.0"
+golangci-lint = "2.11.3"
+pkl = "0.31.0"
+"github:sargunv/jvl" = "2026.03.01"
+tilt = "0.37.0"
+"npm:@playwright/cli" = "0.1.1"
+
+[hooks]
+postinstall = [
+  "corepack enable pnpm",
+  "hk install --mise",
+  "pnpm install",
+  "go mod download",
+  "playwright-cli install",
+]
+
+[tasks.generate]
+description = "Run all code generation"
+depends = ["//*:generate"]
+
+[tasks.build]
+description = "Build all packages"
+depends = ["//*:build"]
+
+[tasks.test]
+description = "Run all tests"
+depends = ["//*:test"]
+
+[tasks.check]
+description = "Run all checks"
+run = "hk check --all"
+
+[tasks.fix]
+description = "Fix all auto-fixable issues"
+run = "hk fix --all"
+
+[tasks.ci]
+description = "Run the full suite: generate → fix → test"
+run = "mise run generate && mise run fix && mise run test"
+
+[tasks.dev]
+description = "Start local dev environment"
+run = "tilt up --stream --port $TILT_PORT"
+
+[tasks.docker-build]
+description = "Build Docker image with versions from mise.toml"
+run = """
+docker build \
+  --build-arg GO_VERSION=$(mise config get tools.go) \
+  --build-arg NODE_VERSION=$(mise config get tools.node) \
+  -t tend \
+  .
+"""
