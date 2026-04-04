@@ -30,13 +30,6 @@ const USER_MANAGEABLE_KINDS: TaskRelationKind[] = [
   "duplicates",
 ];
 
-const SYSTEM_MANAGED_KINDS: TaskRelationKind[] = [
-  "triggers",
-  "triggered_by",
-  "spawns",
-  "spawned_by",
-];
-
 function RelationItem({
   spaceSlug,
   currentTaskId,
@@ -47,7 +40,7 @@ function RelationItem({
   relation: TaskRelation;
 }) {
   const deleteMutation = useDeleteRelation(spaceSlug, currentTaskId);
-  const isSystemManaged = SYSTEM_MANAGED_KINDS.includes(relation.kind);
+  const isSystemManaged = !USER_MANAGEABLE_KINDS.includes(relation.kind);
 
   return (
     <div className="py-2">
@@ -68,7 +61,7 @@ function RelationItem({
           <button
             type="button"
             className="btn btn-sm preset-outlined-surface-200-800 ml-auto"
-            aria-label="Remove relation"
+            aria-label={`Remove ${KIND_LABELS[relation.kind]} relation to ${relation.taskId}`}
             disabled={deleteMutation.isPending}
             onClick={() => {
               deleteMutation.reset();
@@ -107,7 +100,6 @@ function AddRelationForm({
       setValidationError("Cannot relate a task to itself");
       return;
     }
-    setValidationError(null);
     addMutation.reset();
     addMutation.mutate(
       { kind: kindInput, taskId: trimmed },
@@ -121,7 +113,7 @@ function AddRelationForm({
   }
 
   return (
-    <div>
+    <>
       <form onSubmit={handleSubmit} className="flex gap-2 mt-3">
         <select
           value={kindInput}
@@ -155,7 +147,7 @@ function AddRelationForm({
       </form>
       {validationError && <ErrorAlert message={validationError} />}
       {addMutation.error && <ErrorAlert message={addMutation.error.message} />}
-    </div>
+    </>
   );
 }
 
