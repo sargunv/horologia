@@ -7,31 +7,20 @@ import {
 } from "@tanstack/react-query";
 import { createFileRoute, createLink, useNavigate } from "@tanstack/react-router";
 import {
-  Calendar,
   ChevronDown,
   CircleAlert,
-  Gauge,
   ListChecks,
   Plus,
   Settings,
-  SignalHigh,
-  Tag,
-  Users,
 } from "lucide-react";
 import { type FormEvent, useMemo, useState } from "react";
 import { apiClient } from "../../../../api/client.ts";
-import type { components } from "../../../../api/schema.d.ts";
-import { useSpaceMemberMap } from "../../../../lib/hooks.ts";
+import { TaskRow } from "../../../../components/task/TaskRow.tsx";
 import {
   spaceQueryOptions,
   spaceTaskStatusesQueryOptions,
   spaceTasksInfiniteQueryOptions,
 } from "../../../../lib/queries.ts";
-
-type Task = components["schemas"]["Task"];
-type TaskStatus = components["schemas"]["TaskStatus"];
-type TaskStatusCategory = components["schemas"]["TaskStatusCategory"];
-type SpaceMember = components["schemas"]["SpaceMember"];
 
 export const Route = createFileRoute("/_authenticated/spaces/$spaceSlug/")({
   loader: ({ context: { queryClient }, params: { spaceSlug } }) =>
@@ -40,101 +29,6 @@ export const Route = createFileRoute("/_authenticated/spaces/$spaceSlug/")({
 });
 
 const SettingsLink = createLink("a");
-const TaskLink = createLink("a");
-
-const statusCategoryPreset: Record<TaskStatusCategory, string> = {
-  initial: "preset-tonal-surface",
-  intermediate: "preset-tonal-warning",
-  completion: "preset-tonal-success",
-};
-
-function StatusBadge({
-  status,
-  statusMap,
-}: {
-  status: string;
-  statusMap: Map<string, TaskStatus>;
-}) {
-  const taskStatus = statusMap.get(status);
-  const preset = taskStatus ? statusCategoryPreset[taskStatus.category] : "preset-tonal-surface";
-  return (
-    <span className={`rounded-base px-2 py-0.5 text-xs font-medium whitespace-nowrap ${preset}`}>
-      {status}
-    </span>
-  );
-}
-
-function TaskRow({
-  task,
-  spaceSlug,
-  statusMap,
-  memberMap,
-}: {
-  task: Task;
-  spaceSlug: string;
-  statusMap: Map<string, TaskStatus>;
-  memberMap: Map<string, SpaceMember>;
-}) {
-  const assigneeNames = task.assigneeIds.map((id) => memberMap.get(id)?.userName ?? id).join(", ");
-
-  return (
-    <TaskLink
-      to="/spaces/$spaceSlug/tasks/$taskId"
-      params={{ spaceSlug, taskId: task.id }}
-      className="group flex items-center gap-4 border-b border-surface-200-800 px-4 py-3 transition-colors last:border-b-0 hover:bg-surface-100-900"
-    >
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        <span className="text-surface-500 shrink-0 font-mono text-xs">{task.id}</span>
-        <span className="truncate font-medium">{task.title}</span>
-      </div>
-
-      <div className="flex shrink-0 items-center gap-3">
-        <StatusBadge status={task.status} statusMap={statusMap} />
-
-        {task.assigneeIds.length > 0 && (
-          <span
-            className="text-surface-600-400 flex items-center gap-1 text-xs"
-            title={assigneeNames}
-          >
-            <Users className="size-3.5" />
-            <span className="max-w-24 truncate">{assigneeNames}</span>
-          </span>
-        )}
-
-        {task.due && (
-          <span className="text-surface-600-400 flex items-center gap-1 text-xs whitespace-nowrap">
-            <Calendar className="size-3.5" />
-            {task.due.at}
-          </span>
-        )}
-
-        {task.effort && (
-          <span className="text-surface-600-400 flex items-center gap-1 text-xs whitespace-nowrap">
-            <Gauge className="size-3.5" />
-            {task.effort}
-          </span>
-        )}
-
-        {task.priority && (
-          <span className="text-surface-600-400 flex items-center gap-1 text-xs whitespace-nowrap">
-            <SignalHigh className="size-3.5" />
-            {task.priority}
-          </span>
-        )}
-
-        {task.tags.length > 0 && (
-          <span
-            className="text-surface-600-400 flex items-center gap-1 text-xs"
-            title={task.tags.join(", ")}
-          >
-            <Tag className="size-3.5" />
-            <span className="max-w-20 truncate">{task.tags.join(", ")}</span>
-          </span>
-        )}
-      </div>
-    </TaskLink>
-  );
-}
 
 function CreateTaskDialog({ spaceSlug }: { spaceSlug: string }) {
   const navigate = useNavigate();
@@ -245,8 +139,6 @@ function SpacePage() {
   const { spaceSlug } = Route.useParams();
   const { data: space } = useSuspenseQuery(spaceQueryOptions(spaceSlug));
   const { data: statuses } = useSuspenseQuery(spaceTaskStatusesQueryOptions(spaceSlug));
-  const memberMap = useSpaceMemberMap(spaceSlug);
-
   const statusMap = useMemo(() => new Map(statuses.map((s) => [s.name, s])), [statuses]);
 
   const {
@@ -286,7 +178,6 @@ function SpacePage() {
                 task={task}
                 spaceSlug={spaceSlug}
                 statusMap={statusMap}
-                memberMap={memberMap}
               />
             ))}
           </div>
