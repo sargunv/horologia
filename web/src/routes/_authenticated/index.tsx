@@ -4,13 +4,14 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { ListChecks } from "lucide-react";
-import { useMemo } from "react";
+import { ChevronDown, ListChecks } from "lucide-react";
+import { Suspense, useMemo } from "react";
 import type { components } from "../../api/schema.d.ts";
 import { TaskRow } from "../../components/task/TaskRow.tsx";
 import { useSpaceMemberMap } from "../../lib/hooks.ts";
 import {
   currentUserQueryOptions,
+  spaceMembersQueryOptions,
   spacesQueryOptions,
   spaceTaskStatusesQueryOptions,
   userTasksInfiniteQueryOptions,
@@ -33,6 +34,9 @@ export const Route = createFileRoute("/_authenticated/")({
       ...spaces.map((s: Space) =>
         queryClient.ensureQueryData(spaceTaskStatusesQueryOptions(s.slug))
       ),
+      ...spaces.map((s: Space) =>
+        queryClient.ensureQueryData(spaceMembersQueryOptions(s.slug))
+      ),
     ]);
   },
   component: MyTasksPage,
@@ -40,21 +44,22 @@ export const Route = createFileRoute("/_authenticated/")({
 
 // ── Cross-space status map ─────────────────────────────────────────────────
 
-function useAllSpaceStatusMaps(): Map<string, Map<string, TaskStatus>> {
-  const { data: spaces } = useSuspenseQuery(spacesQueryOptions);
-  const results = useQueries({
+function useAllSpaceStatusMaps(
+  spaces: Space[]
+): Map<string, Map<string, TaskStatus>> {
+  return useQueries({
     queries: spaces.map((s) => spaceTaskStatusesQueryOptions(s.slug)),
+    combine(results) {
+      const map = new Map<string, Map<string, TaskStatus>>();
+      spaces.forEach((space, i) => {
+        const data = results[i]?.data;
+        if (data) {
+          map.set(space.slug, new Map(data.map((s) => [s.name, s])));
+        }
+      });
+      return map;
+    },
   });
-  return useMemo(() => {
-    const map = new Map<string, Map<string, TaskStatus>>();
-    spaces.forEach((space, i) => {
-      const data = results[i]?.data;
-      if (data) {
-        map.set(space.slug, new Map(data.map((s) => [s.name, s])));
-      }
-    });
-    return map;
-  }, [spaces, results]);
 }
 
 // ── TaskRowWithMembers ─────────────────────────────────────────────────────
@@ -99,7 +104,7 @@ function MyTasksPage() {
     [taskPages]
   );
 
-  const allStatusMaps = useAllSpaceStatusMaps();
+  const allStatusMaps = useAllSpaceStatusMaps(spaces);
 
   const spaceNameMap = useMemo(
     () => new Map(spaces.map((s) => [s.slug, s.name])),
@@ -116,14 +121,16 @@ function MyTasksPage() {
       <div className="mt-6">
         {tasks.length > 0 ? (
           <div className="card preset-outlined-surface-200-800 divide-surface-200-800 overflow-hidden">
-            {tasks.map((task) => (
-              <TaskRowWithMembers
-                key={task.id}
-                task={task}
-                statusMap={allStatusMaps.get(task.spaceSlug) ?? new Map()}
-                spaceLabel={spaceNameMap.get(task.spaceSlug) ?? task.spaceSlug}
-              />
-            ))}
+            <Suspense>
+              {tasks.map((task) => (
+                <TaskRowWithMembers
+                  key={`${task.spaceSlug}/${task.id}`}
+                  task={task}
+                  statusMap={allStatusMaps.get(task.spaceSlug) ?? new Map()}
+                  spaceLabel={spaceNameMap.get(task.spaceSlug) ?? task.spaceSlug}
+                />
+              ))}
+            </Suspense>
           </div>
         ) : (
           <div className="card preset-outlined-surface-200-800 flex flex-col items-center gap-3 p-12 text-center">
@@ -144,7 +151,9 @@ function MyTasksPage() {
               onClick={() => fetchNextPage()}
               disabled={isFetchingNextPage}
             >
-              {isFetchingNextPage ? "Loading..." : "Load more"}
+              {isFetchingNextPage ? "Loading..." : (
+                <>Load more <ChevronDown className="size-4" /></>
+              )}
             </button>
           </div>
         )}

@@ -34,7 +34,7 @@ export function TaskRow({
         <span className="text-surface-500 shrink-0 font-mono text-xs">{task.id}</span>
         <span className="truncate font-medium">{task.title}</span>
         {spaceLabel && (
-          <span className="text-surface-500 shrink-0 rounded-base border border-surface-200-800 px-1.5 py-0.5 text-xs">
+          <span className="chip preset-tonal-surface shrink-0 text-xs">
             {spaceLabel}
           </span>
         )}
@@ -56,7 +56,7 @@ export function TaskRow({
         {task.due && (
           <span className="text-surface-600-400 flex items-center gap-1 text-xs whitespace-nowrap">
             <Calendar className="size-3.5" />
-            {task.due.at}
+            {new Date(task.due.at).toLocaleDateString()}
           </span>
         )}
 
