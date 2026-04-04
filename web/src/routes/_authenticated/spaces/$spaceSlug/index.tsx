@@ -16,7 +16,6 @@ import {
 import { type FormEvent, useMemo, useState } from "react";
 import { apiClient } from "../../../../api/client.ts";
 import { TaskRow } from "../../../../components/task/TaskRow.tsx";
-import { useSpaceMemberMap } from "../../../../lib/hooks.ts";
 import {
   spaceQueryOptions,
   spaceTaskStatusesQueryOptions,
@@ -140,8 +139,6 @@ function SpacePage() {
   const { spaceSlug } = Route.useParams();
   const { data: space } = useSuspenseQuery(spaceQueryOptions(spaceSlug));
   const { data: statuses } = useSuspenseQuery(spaceTaskStatusesQueryOptions(spaceSlug));
-  const memberMap = useSpaceMemberMap(spaceSlug);
-
   const statusMap = useMemo(() => new Map(statuses.map((s) => [s.name, s])), [statuses]);
 
   const {
@@ -181,7 +178,6 @@ function SpacePage() {
                 task={task}
                 spaceSlug={spaceSlug}
                 statusMap={statusMap}
-                memberMap={memberMap}
               />
             ))}
           </div>

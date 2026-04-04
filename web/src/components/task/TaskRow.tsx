@@ -1,11 +1,11 @@
 import { createLink } from "@tanstack/react-router";
 import { Calendar, Gauge, SignalHigh, Tag, Users } from "lucide-react";
 import type { components } from "../../api/schema.d.ts";
+import { useSpaceMemberMap } from "../../lib/hooks.ts";
 import { StatusBadge } from "./StatusBadge.tsx";
 
 type Task = components["schemas"]["Task"];
 type TaskStatus = components["schemas"]["TaskStatus"];
-type SpaceMember = components["schemas"]["SpaceMember"];
 
 const TaskLink = createLink("a");
 
@@ -13,15 +13,14 @@ export function TaskRow({
   task,
   spaceSlug,
   statusMap,
-  memberMap,
   spaceLabel,
 }: {
   task: Task;
   spaceSlug: string;
   statusMap: Map<string, TaskStatus>;
-  memberMap: Map<string, SpaceMember>;
   spaceLabel?: string;
 }) {
+  const memberMap = useSpaceMemberMap(spaceSlug);
   const assigneeNames = task.assigneeIds.map((id) => memberMap.get(id)?.userName ?? id).join(", ");
 
   return (

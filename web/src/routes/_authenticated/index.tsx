@@ -5,10 +5,9 @@ import {
 } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronDown, ListChecks } from "lucide-react";
-import { Suspense, useMemo } from "react";
+import { useMemo } from "react";
 import type { components } from "../../api/schema.d.ts";
 import { TaskRow } from "../../components/task/TaskRow.tsx";
-import { useSpaceMemberMap } from "../../lib/hooks.ts";
 import {
   currentUserQueryOptions,
   spaceMembersQueryOptions,
@@ -52,38 +51,12 @@ function useAllSpaceStatusMaps(
     combine(results) {
       const map = new Map<string, Map<string, TaskStatus>>();
       spaces.forEach((space, i) => {
-        const data = results[i]?.data;
-        if (data) {
-          map.set(space.slug, new Map(data.map((s) => [s.name, s])));
-        }
+        const statuses = results[i]?.data ?? [];
+        map.set(space.slug, new Map(statuses.map((s) => [s.name, s])));
       });
       return map;
     },
   });
-}
-
-// ── TaskRowWithMembers ─────────────────────────────────────────────────────
-// Wrapper so useSpaceMemberMap is called once per rendered row (correct hook usage)
-
-function TaskRowWithMembers({
-  task,
-  statusMap,
-  spaceLabel,
-}: {
-  task: Task;
-  statusMap: Map<string, TaskStatus>;
-  spaceLabel: string;
-}) {
-  const memberMap = useSpaceMemberMap(task.spaceSlug);
-  return (
-    <TaskRow
-      task={task}
-      spaceSlug={task.spaceSlug}
-      statusMap={statusMap}
-      memberMap={memberMap}
-      spaceLabel={spaceLabel}
-    />
-  );
 }
 
 // ── Page ───────────────────────────────────────────────────────────────────
@@ -106,11 +79,6 @@ function MyTasksPage() {
 
   const allStatusMaps = useAllSpaceStatusMaps(spaces);
 
-  const spaceNameMap = useMemo(
-    () => new Map(spaces.map((s) => [s.slug, s.name])),
-    [spaces]
-  );
-
   return (
     <div className="p-6">
       <h1 className="h3">My Tasks</h1>
@@ -121,16 +89,15 @@ function MyTasksPage() {
       <div className="mt-6">
         {tasks.length > 0 ? (
           <div className="card preset-outlined-surface-200-800 divide-surface-200-800 overflow-hidden">
-            <Suspense>
-              {tasks.map((task) => (
-                <TaskRowWithMembers
-                  key={`${task.spaceSlug}/${task.id}`}
-                  task={task}
-                  statusMap={allStatusMaps.get(task.spaceSlug) ?? new Map()}
-                  spaceLabel={spaceNameMap.get(task.spaceSlug) ?? task.spaceSlug}
-                />
-              ))}
-            </Suspense>
+            {tasks.map((task) => (
+              <TaskRow
+                key={`${task.spaceSlug}/${task.id}`}
+                task={task}
+                spaceSlug={task.spaceSlug}
+                statusMap={allStatusMaps.get(task.spaceSlug) ?? new Map()}
+                spaceLabel={spaces.find((s) => s.slug === task.spaceSlug)?.name ?? task.spaceSlug}
+              />
+            ))}
           </div>
         ) : (
           <div className="card preset-outlined-surface-200-800 flex flex-col items-center gap-3 p-12 text-center">
