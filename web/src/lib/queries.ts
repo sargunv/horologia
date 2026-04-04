@@ -189,3 +189,22 @@ export const spaceTaskQueryOptions = (spaceSlug: string, taskId: string) =>
       return data;
     },
   });
+
+export const userTasksInfiniteQueryOptions = (userId: string) => {
+  const initialPageParam: string | null = null;
+  return infiniteQueryOptions({
+    queryKey: ["users", userId, "tasks", "list"],
+    queryFn: async ({ pageParam }: { pageParam: string | null }) => {
+      const { data, error } = await apiClient.GET("/users/{userId}/tasks", {
+        params: {
+          path: { userId },
+          query: { ...(pageParam ? { cursor: pageParam } : {}), limit: 50 },
+        },
+      });
+      if (error) throw error;
+      return data;
+    },
+    initialPageParam,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+  });
+};
