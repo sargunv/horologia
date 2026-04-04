@@ -48,3 +48,64 @@ export function useUserPatch(userId: string) {
     },
   });
 }
+
+type TaskRelationCreate = components["schemas"]["TaskRelationCreate"];
+type TaskRelationKind = components["schemas"]["TaskRelationKind"];
+
+export function useAddRelation(spaceSlug: string, taskId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: TaskRelationCreate) => {
+      const { data, error } = await apiClient.POST(
+        "/spaces/{spaceSlug}/tasks/{taskId}/relations",
+        {
+          params: { path: { spaceSlug, taskId } },
+          body,
+        },
+      );
+      if (error) throw new Error(error.message ?? "Failed to add relation");
+      return data;
+    },
+    onSuccess: async () => {
+      try {
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", taskId] }),
+          queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", "list"] }),
+        ]);
+      } catch (err) {
+        console.error("Failed to refresh after adding relation:", err);
+      }
+    },
+  });
+}
+
+export function useDeleteRelation(spaceSlug: string, taskId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      kind,
+      relatedTaskId,
+    }: {
+      kind: TaskRelationKind;
+      relatedTaskId: string;
+    }) => {
+      const { error } = await apiClient.DELETE(
+        "/spaces/{spaceSlug}/tasks/{taskId}/relations/{kind}/{relatedTaskId}",
+        {
+          params: { path: { spaceSlug, taskId, kind, relatedTaskId } },
+        },
+      );
+      if (error) throw new Error(error.message ?? "Failed to remove relation");
+    },
+    onSuccess: async () => {
+      try {
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", taskId] }),
+          queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", "list"] }),
+        ]);
+      } catch (err) {
+        console.error("Failed to refresh after removing relation:", err);
+      }
+    },
+  });
+}
