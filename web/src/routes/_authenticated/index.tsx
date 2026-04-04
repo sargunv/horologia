@@ -16,7 +16,6 @@ import {
   userTasksInfiniteQueryOptions,
 } from "../../lib/queries.ts";
 
-type Task = components["schemas"]["Task"];
 type TaskStatus = components["schemas"]["TaskStatus"];
 type Space = components["schemas"]["Space"];
 
@@ -30,10 +29,10 @@ export const Route = createFileRoute("/_authenticated/")({
     ]);
     await Promise.all([
       queryClient.ensureInfiniteQueryData(userTasksInfiniteQueryOptions(user.id)),
-      ...spaces.map((s) =>
+      ...spaces.map((s: Space) =>
         queryClient.ensureQueryData(spaceTaskStatusesQueryOptions(s.slug))
       ),
-      ...spaces.map((s) =>
+      ...spaces.map((s: Space) =>
         queryClient.ensureQueryData(spaceMembersQueryOptions(s.slug))
       ),
     ]);
