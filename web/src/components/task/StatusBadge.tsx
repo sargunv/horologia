@@ -3,7 +3,7 @@ import type { components } from "../../api/schema.d.ts";
 type TaskStatus = components["schemas"]["TaskStatus"];
 type TaskStatusCategory = components["schemas"]["TaskStatusCategory"];
 
-export const statusCategoryPreset: Record<TaskStatusCategory, string> = {
+const statusCategoryPreset: Record<TaskStatusCategory, string> = {
   initial: "preset-tonal-surface",
   intermediate: "preset-tonal-warning",
   completion: "preset-tonal-success",

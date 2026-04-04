@@ -30,10 +30,10 @@ export const Route = createFileRoute("/_authenticated/")({
     ]);
     await Promise.all([
       queryClient.ensureInfiniteQueryData(userTasksInfiniteQueryOptions(user.id)),
-      ...spaces.map((s: Space) =>
+      ...spaces.map((s) =>
         queryClient.ensureQueryData(spaceTaskStatusesQueryOptions(s.slug))
       ),
-      ...spaces.map((s: Space) =>
+      ...spaces.map((s) =>
         queryClient.ensureQueryData(spaceMembersQueryOptions(s.slug))
       ),
     ]);
