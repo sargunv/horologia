@@ -11,12 +11,14 @@ RUN npm install -g --force corepack && corepack enable pnpm
 WORKDIR /src
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY api/package.json ./api/
+COPY api/emitters/typespec-mcp-go/package.json ./api/emitters/typespec-mcp-go/
 COPY web/package.json ./web/
 RUN pnpm install --frozen-lockfile
 
 # --- Stage 2: Build TypeSpec API ---
 FROM node-deps AS api-build
 COPY api/ ./api/
+RUN pnpm --filter @tend/typespec-mcp-go run build
 RUN cd api && pnpm exec tsp compile .
 
 # --- Stage 3: Build React SPA ---

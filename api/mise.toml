@@ -1,5 +1,5 @@
 [tasks.build]
-description = "Compile TypeSpec"
-run = "pnpm exec tsp compile ."
-sources = ["main.tsp", "src/**/*.tsp", "tspconfig.yaml"]
+description = "Compile TypeSpec (builds emitters first)"
+run = "pnpm --filter @tend/typespec-mcp-go run build && pnpm exec tsp compile ."
+sources = ["main.tsp", "src/**/*.tsp", "tspconfig.yaml", "emitters/**/*.ts"]
 outputs = ["tsp-output/schema/openapi.yaml"]
