@@ -10,22 +10,13 @@ import (
 	"github.com/sargunv/tend/server/internal/mcp"
 )
 
-// newMCPServer creates a standalone test HTTP server wrapping only the MCP
-// transport at "/mcp". It reuses setupTestServer for the database and token.
-func newMCPServer(t *testing.T) (serverURL, token string) {
+// mcpHandler returns an MCP transport wired to a real test database, plus the
+// bearer token for the seeded test user. Uses httptest.NewRecorder for direct
+// in-process testing — no extra HTTP server needed.
+func mcpHandler(t *testing.T) (handler http.Handler, token string) {
 	t.Helper()
 	env := setupTestServer(t)
-
-	// Mount the MCP transport directly — no SPA or API handler needed.
-	mux := http.NewServeMux()
-	mux.Handle("/mcp", mcp.NewTransport(env.pool))
-
-	srv := httptest.NewServer(mux)
-	t.Cleanup(srv.Close)
-	// Also close the original test server to avoid leaking goroutines.
-	t.Cleanup(env.Server.Close)
-
-	return srv.URL, env.Token
+	return mcp.NewTransport(env.pool), env.Token
 }
 
 func mcpInitBody(t *testing.T) *bytes.Reader {
@@ -46,36 +37,36 @@ func mcpInitBody(t *testing.T) *bytes.Reader {
 	return bytes.NewReader(body)
 }
 
-// TestMCPUnauthenticated verifies that requests without a bearer token are rejected.
-func TestMCPUnauthenticated(t *testing.T) {
-	serverURL, _ := newMCPServer(t)
-
-	req, _ := http.NewRequestWithContext(t.Context(), http.MethodPost, serverURL+"/mcp", mcpInitBody(t))
+// doMCP sends a POST to the MCP handler and returns the recorded response.
+func doMCP(t *testing.T, handler http.Handler, token string) *http.Response {
+	t.Helper()
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/mcp", mcpInitBody(t))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json, text/event-stream")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		t.Fatalf("do request: %v", err)
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
 	}
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	return w.Result()
+}
+
+// TestMCPUnauthenticated verifies that requests without a bearer token are rejected.
+func TestMCPUnauthenticated(t *testing.T) {
+	handler, _ := mcpHandler(t)
+	resp := doMCP(t, handler, "")
 	defer func() { _ = resp.Body.Close() }()
 
 	assertStatus(t, resp, http.StatusUnauthorized)
+	if ct := resp.Header.Get("Content-Type"); ct != "application/json" {
+		t.Errorf("Content-Type = %q, want application/json", ct)
+	}
 }
 
 // TestMCPInvalidToken verifies that an invalid bearer token is rejected.
 func TestMCPInvalidToken(t *testing.T) {
-	serverURL, _ := newMCPServer(t)
-
-	req, _ := http.NewRequestWithContext(t.Context(), http.MethodPost, serverURL+"/mcp", mcpInitBody(t))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json, text/event-stream")
-	req.Header.Set("Authorization", "Bearer not-a-real-token")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		t.Fatalf("do request: %v", err)
-	}
+	handler, _ := mcpHandler(t)
+	resp := doMCP(t, handler, "not-a-real-token")
 	defer func() { _ = resp.Body.Close() }()
 
 	assertStatus(t, resp, http.StatusUnauthorized)
@@ -84,17 +75,8 @@ func TestMCPInvalidToken(t *testing.T) {
 // TestMCPInitializeHandshake verifies that a valid bearer token allows the MCP
 // initialize handshake to complete successfully.
 func TestMCPInitializeHandshake(t *testing.T) {
-	serverURL, token := newMCPServer(t)
-
-	req, _ := http.NewRequestWithContext(t.Context(), http.MethodPost, serverURL+"/mcp", mcpInitBody(t))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json, text/event-stream")
-	req.Header.Set("Authorization", "Bearer "+token)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		t.Fatalf("do request: %v", err)
-	}
+	handler, token := mcpHandler(t)
+	resp := doMCP(t, handler, token)
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {

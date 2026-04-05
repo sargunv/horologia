@@ -3,7 +3,9 @@ package mcp
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -24,7 +26,7 @@ import (
 //
 //	mux.Handle("/mcp", mcp.NewTransport(pool))
 func NewTransport(pool *pgxpool.Pool) http.Handler {
-	s := NewServer()
+	s := mcpserver.NewMCPServer("Tend", "0.1.0")
 	transport := mcpserver.NewStreamableHTTPServer(s)
 	return bearerAuthMiddleware(pool, transport)
 }
@@ -35,7 +37,7 @@ func bearerAuthMiddleware(pool *pgxpool.Pool, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := extractBearerToken(r)
 		if token == "" {
-			http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+			writeJSONError(w, http.StatusUnauthorized, "unauthorized")
 			return
 		}
 
@@ -43,16 +45,16 @@ func bearerAuthMiddleware(pool *pgxpool.Pool, next http.Handler) http.Handler {
 		q := dbgen.New(pool)
 		row, err := q.GetAuthTokenByHash(r.Context(), hash)
 		if errors.Is(err, pgx.ErrNoRows) {
-			http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+			writeJSONError(w, http.StatusUnauthorized, "unauthorized")
 			return
 		}
 		if err != nil {
-			http.Error(w, `{"error":"internal server error"}`, http.StatusInternalServerError)
+			writeJSONError(w, http.StatusInternalServerError, "internal server error")
 			return
 		}
 
 		if row.ExpiresAt.Valid && time.Now().After(row.ExpiresAt.Time) {
-			http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+			writeJSONError(w, http.StatusUnauthorized, "unauthorized")
 			return
 		}
 
@@ -84,4 +86,12 @@ func extractBearerToken(r *http.Request) string {
 func hashToken(token string) string {
 	h := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(h[:])
+}
+
+func writeJSONError(w http.ResponseWriter, status int, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if err := json.NewEncoder(w).Encode(map[string]string{"error": message}); err != nil {
+		slog.Error("mcp: writeJSONError: failed to write response", "error", err)
+	}
 }
