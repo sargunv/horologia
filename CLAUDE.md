@@ -28,7 +28,8 @@ Package-scoped tasks use a `//` prefix, e.g. `mise run //server:generate`,
 PostgreSQL is managed by mise and started automatically by Tilt. Data is stored per-branch in
 `.postgres/<branch>/data/` (gitignored), so switching branches won't corrupt your schema.
 
-- **Reset the dev database**: `mise run db:reset`, then restart Tilt.
+- **Reset the dev database**: `mise run db:reset`, then re-trigger the `postgres` resource in the
+  Tilt UI (or restart Tilt).
 - **Clean up old branch databases**: `mise run db:clean`
 - **External postgres**: Set `TEND_DB=postgres://user:pass@host/tend?sslmode=disable` in
   `.env.local` to skip mise-managed postgres entirely (e.g. shared team DB, Windows).

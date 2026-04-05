@@ -23,19 +23,16 @@ common_env = {
 }
 
 if manage_postgres:
-    pgdata = os.environ["PGDATA"]
-
     local_resource(
         "postgres",
-        serve_cmd=(
-            "bash -c '"
-            "if [ ! -f \"$PGDATA/PG_VERSION\" ]; then"
-            " initdb -D \"$PGDATA\" -U postgres --auth=trust --no-locale -E UTF8;"
-            " fi &&"
-            " exec postgres -D \"$PGDATA\" -p $POSTGRES_PORT'"
-        ),
+        serve_cmd="""bash -c '
+if [ ! -f "$PGDATA/PG_VERSION" ]; then
+  initdb -D "$PGDATA" -U postgres --auth=trust --no-locale -E UTF8;
+fi &&
+exec postgres -D "$PGDATA" -p $POSTGRES_PORT
+'""",
         serve_env={
-            "PGDATA": pgdata,
+            "PGDATA": os.environ["PGDATA"],
             "POSTGRES_PORT": str(POSTGRES_PORT),
         },
         readiness_probe=probe(

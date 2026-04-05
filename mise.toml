@@ -11,7 +11,7 @@ config_roots = [
 [env]
 _.file = ".env.local"
 POSTGRES_PORT = "{{env.POSTGRES_PORT | default(value='5432')}}"
-PGDATA = "{{config_root}}/.postgres/{{exec(command='git rev-parse --abbrev-ref HEAD 2>/dev/null || echo main')}}/data"
+PGDATA = "{{config_root}}/.postgres/{{exec(command='git rev-parse --abbrev-ref HEAD 2>/dev/null | tr / - || echo main')}}/data"
 OIDC_PORT = "{{env.OIDC_PORT | default(value='5556')}}"
 SERVER_PORT = "{{env.SERVER_PORT | default(value='8080')}}"
 WEB_PORT = "{{env.WEB_PORT | default(value='5173')}}"
@@ -82,7 +82,7 @@ description = "Remove postgres data directories for branches that no longer exis
 run = """
 for dir in .postgres/*/; do
   branch=$(basename "$dir")
-  if ! git show-ref --verify --quiet "refs/heads/$branch"; then
+  if ! git for-each-ref --format='%(refname:short)' refs/heads/ | tr / - | grep -qFx "$branch"; then
     echo "Removing pgdata for deleted branch: $branch"
     rm -rf ".postgres/$branch"
   fi
