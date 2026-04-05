@@ -21,6 +21,10 @@ import (
 // The handler validates Bearer tokens (both API tokens and session tokens)
 // and injects the authenticated user into the request context.
 //
+// Returns 401 Unauthorized if the Authorization header is missing, the token
+// is not found in the database, or the token has expired. On success the
+// authenticated user is available via auth.UserFromContext(ctx).
+//
 // Mount the returned handler at /mcp in your root mux:
 //
 //	mux.Handle("/mcp", mcp.NewTransport(pool, handler))

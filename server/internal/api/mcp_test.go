@@ -2,12 +2,19 @@ package api_test
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
+
+	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/mcp"
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 // mcpHandler returns an MCP transport wired to a real test database, plus the
@@ -67,6 +74,43 @@ func TestMCPUnauthenticated(t *testing.T) {
 func TestMCPInvalidToken(t *testing.T) {
 	handler, _ := mcpHandler(t)
 	resp := doMCP(t, handler, "not-a-real-token")
+	defer func() { _ = resp.Body.Close() }()
+
+	assertStatus(t, resp, http.StatusUnauthorized)
+	if ct := resp.Header.Get("Content-Type"); ct != "application/json" {
+		t.Errorf("Content-Type = %q, want application/json", ct)
+	}
+}
+
+// TestMCPExpiredToken verifies that an expired bearer token is rejected.
+func TestMCPExpiredToken(t *testing.T) {
+	env := setupTestServer(t)
+	handler := mcp.NewTransport(env.pool, env.Handler)
+
+	ownerID := getUserID(t, env, env.Token)
+	ownerNumericID, err := types.ParseUserID(ownerID)
+	if err != nil {
+		t.Fatalf("parse owner ID %q: %v", ownerID, err)
+	}
+
+	rawToken := "expired-mcp-test-token"
+	hash := sha256.Sum256([]byte(rawToken))
+	tokenHash := hex.EncodeToString(hash[:])
+
+	q := dbgen.New(env.pool)
+	_, err = q.CreateAuthToken(t.Context(), dbgen.CreateAuthTokenParams{
+		UserID:    ownerNumericID,
+		TokenHash: tokenHash,
+		Name:      "expired",
+		Kind:      dbgen.AuthTokenKindSession,
+		ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(-time.Hour), Valid: true},
+		CreatedAt: pgtype.Timestamptz{Time: time.Now(), Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("create expired token: %v", err)
+	}
+
+	resp := doMCP(t, handler, rawToken)
 	defer func() { _ = resp.Body.Close() }()
 
 	assertStatus(t, resp, http.StatusUnauthorized)

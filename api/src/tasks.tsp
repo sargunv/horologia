@@ -118,23 +118,29 @@ model TaskPage is Page<Task>;
 interface SpaceTasks {
   @mcpTool(
     "task_list",
-    "List tasks in a space, with optional cursor pagination."
+    "List tasks in a space, with optional cursor pagination. Returns task IDs needed by task_get and task_update."
   )
   @get
   list(@path spaceSlug: string, ...PageParams): TaskPage | ApiError;
 
-  @mcpTool("task_create", "Create a new task in a space.")
+  @mcpTool(
+    "task_create",
+    "Create a new task in a space. Settable: title, description, status, effort, priority. Complex fields (due date, recurrence, assignees, tags) require the web UI."
+  )
   @post
   create(@path spaceSlug: string, @body body: TaskCreate): {
     @statusCode statusCode: 201;
     @body body: Task;
   } | ApiError;
 
-  @mcpTool("task_get", "Get a task by ID.")
+  @mcpTool("task_get", "Get a task by ID. Obtain task IDs from task_list.")
   @get
   read(@path spaceSlug: string, @path taskId: string): Task | ApiError;
 
-  @mcpTool("task_update", "Update an existing task.")
+  @mcpTool(
+    "task_update",
+    "Update a task's title, description, status, effort, or priority. Obtain task IDs from task_list. Complex fields (due date, recurrence, assignees, tags) require the web UI."
+  )
   @patch
   update(
     @path spaceSlug: string,

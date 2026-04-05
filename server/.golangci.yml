@@ -31,11 +31,12 @@ linters:
               desc: "only cmd/server may import the api layer"
             - pkg: "github.com/sargunv/tend/server/internal/cron"
               desc: "only cmd/server may import the cron layer"
-        # Only internal/api may import the generated API types
+        # Only internal/api (and the generated MCP bindings) may import the generated API types
         no-apigen:
           list-mode: lax
           files:
             - "!${config-path}/internal/api/*.go"
+            - "!${config-path}/internal/mcp/gen/*.go"
           deny:
             - pkg: "github.com/sargunv/tend/server/internal/api/gen"
               desc: "only internal/api may import apigen; use domain types from internal/types"
