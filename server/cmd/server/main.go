@@ -163,7 +163,7 @@ var serveCmd = &cobra.Command{
 		finalHandler = api.MountWebAuth(finalHandler, handler)
 
 		// Mount MCP Streamable HTTP endpoint at /mcp with bearer auth.
-		mcpHandler := mcp.NewTransport(pool)
+		mcpHandler := mcp.NewTransport(pool, handler)
 
 		// Mount health check at /healthz, API under /api prefix, MCP at /mcp, and SPA at root.
 		finalHandler = api.MountRoot(finalHandler, mcpHandler, pool, log)

@@ -1,0 +1,24 @@
+{
+  "name": "@tend/typespec-mcp-go",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/src/index.js",
+  "exports": {
+    ".": "./dist/src/index.js",
+    "./dist/src/index.js": "./dist/src/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "watch": "tsc -p tsconfig.build.json --watch"
+  },
+  "peerDependencies": {
+    "@typespec/compiler": "~1.10.0",
+    "@typespec/http": "~1.10.0"
+  },
+  "devDependencies": {
+    "@typespec/compiler": "~1.10.0",
+    "@typespec/http": "~1.10.0",
+    "typescript": "~5.7.3"
+  }
+}

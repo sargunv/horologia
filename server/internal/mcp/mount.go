@@ -16,6 +16,7 @@ import (
 
 	"github.com/sargunv/tend/server/internal/auth"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	mcpgen "github.com/sargunv/tend/server/internal/mcp/gen"
 )
 
 // NewTransport creates an http.Handler for the MCP Streamable HTTP endpoint.
@@ -24,9 +25,10 @@ import (
 //
 // Mount the returned handler at /mcp in your root mux:
 //
-//	mux.Handle("/mcp", mcp.NewTransport(pool))
-func NewTransport(pool *pgxpool.Pool) http.Handler {
+//	mux.Handle("/mcp", mcp.NewTransport(pool, handler))
+func NewTransport(pool *pgxpool.Pool, h mcpgen.Handlers) http.Handler {
 	s := mcpserver.NewMCPServer("Tend", "0.1.0")
+	mcpgen.RegisterTools(s, h)
 	transport := mcpserver.NewStreamableHTTPServer(s)
 	return bearerAuthMiddleware(pool, transport)
 }

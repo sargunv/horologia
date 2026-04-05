@@ -1,5 +1,6 @@
 packages:
   - api
+  - api/emitters/typespec-mcp-go
   - web
 onlyBuiltDependencies:
   - esbuild

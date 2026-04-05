@@ -16,7 +16,7 @@ import (
 func mcpHandler(t *testing.T) (handler http.Handler, token string) {
 	t.Helper()
 	env := setupTestServer(t)
-	return mcp.NewTransport(env.pool), env.Token
+	return mcp.NewTransport(env.pool, env.Handler), env.Token
 }
 
 func mcpInitBody(t *testing.T) *bytes.Reader {

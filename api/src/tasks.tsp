@@ -1,6 +1,8 @@
 import "@typespec/http";
+import "../emitters/typespec-mcp-go/dist/src/index.js";
 
 using Http;
+using MCP;
 
 namespace Tend;
 
@@ -114,16 +116,27 @@ model TaskPage is Page<Task>;
 @route("/spaces/{spaceSlug}/tasks")
 @tag("Tasks")
 interface SpaceTasks {
-  @get list(@path spaceSlug: string, ...PageParams): TaskPage | ApiError;
+  @mcpTool(
+    "task_list",
+    "List tasks in a space, with optional cursor pagination."
+  )
+  @get
+  list(@path spaceSlug: string, ...PageParams): TaskPage | ApiError;
 
-  @post create(@path spaceSlug: string, @body body: TaskCreate): {
+  @mcpTool("task_create", "Create a new task in a space.")
+  @post
+  create(@path spaceSlug: string, @body body: TaskCreate): {
     @statusCode statusCode: 201;
     @body body: Task;
   } | ApiError;
 
-  @get read(@path spaceSlug: string, @path taskId: string): Task | ApiError;
+  @mcpTool("task_get", "Get a task by ID.")
+  @get
+  read(@path spaceSlug: string, @path taskId: string): Task | ApiError;
 
-  @patch update(
+  @mcpTool("task_update", "Update an existing task.")
+  @patch
+  update(
     @path spaceSlug: string,
     @path taskId: string,
     @body body: TaskUpdate,

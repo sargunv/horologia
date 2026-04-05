@@ -10,6 +10,9 @@ importers:
 
   api:
     dependencies:
+      '@tend/typespec-mcp-go':
+        specifier: workspace:*
+        version: link:emitters/typespec-mcp-go
       '@typespec/compiler':
         specifier: ~1.10.0
         version: 1.10.0(@types/node@25.5.0)
@@ -22,6 +25,18 @@ importers:
       '@typespec/openapi3':
         specifier: ~1.10.0
         version: 1.10.0(@typespec/compiler@1.10.0(@types/node@25.5.0))(@typespec/http@1.10.0(@typespec/compiler@1.10.0(@types/node@25.5.0)))(@typespec/openapi@1.10.0(@typespec/compiler@1.10.0(@types/node@25.5.0))(@typespec/http@1.10.0(@typespec/compiler@1.10.0(@types/node@25.5.0))))
+
+  api/emitters/typespec-mcp-go:
+    devDependencies:
+      '@typespec/compiler':
+        specifier: ~1.10.0
+        version: 1.10.0(@types/node@25.5.0)
+      '@typespec/http':
+        specifier: ~1.10.0
+        version: 1.10.0(@typespec/compiler@1.10.0(@types/node@25.5.0))
+      typescript:
+        specifier: ~5.7.3
+        version: 5.7.3
 
   web:
     dependencies:
@@ -2969,6 +2984,11 @@ packages:
   type-fest@4.41.0:
     resolution: {integrity: sha512-TeTSQ6H5YHvpqVwBRcnLDCBnDOHWYu7IvGbHT6N8AOymcr9PJGjc1GTtiWZTYg0NCgYwvnYWEkVChQAr9bjfwA==}
     engines: {node: '>=16'}
+
+  typescript@5.7.3:
+    resolution: {integrity: sha512-84MVSjMEHP+FQRPy3pX9sTVV/INIex71s9TL2Gm5FG/WG1SqXeKyZ0k7/blY/4FdOzI12CBy1vGc4og/eus0fw==}
+    engines: {node: '>=14.17'}
+    hasBin: true
 
   typescript@6.0.0-beta:
     resolution: {integrity: sha512-CldZdztDpQRLM1HC6WDQjQkQN5Ub5zRau737a1diGh3lPmb9oRsaWHk1y5iqK0o7+1bNJ0oXfEGRkAogFZBL+Q==}
@@ -6256,6 +6276,8 @@ snapshots:
       fsevents: 2.3.3
 
   type-fest@4.41.0: {}
+
+  typescript@5.7.3: {}
 
   typescript@6.0.0-beta: {}
 
