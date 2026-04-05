@@ -29,24 +29,27 @@ func (q *Queries) ConvertAccumulatingToOneOff(ctx context.Context, arg ConvertAc
 }
 
 const createTask = `-- name: CreateTask :one
-INSERT INTO tasks (space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-RETURNING id, space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, last_completed_at, created_at, updated_at
+INSERT INTO tasks (space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, overdue_action_after_days, overdue_action, overdue_action_status, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+RETURNING id, space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, last_completed_at, created_at, updated_at, overdue_action_after_days, overdue_action, overdue_action_status
 `
 
 type CreateTaskParams struct {
-	SpaceSlug      string
-	Title          string
-	Description    string
-	StatusName     string
-	EffortName     pgtype.Text
-	PriorityName   pgtype.Text
-	DueAt          pgtype.Date
-	DueTz          pgtype.Text
-	RecurrenceType RecurrenceType
-	RecurrenceRule pgtype.Text
-	CreatedAt      pgtype.Timestamptz
-	UpdatedAt      pgtype.Timestamptz
+	SpaceSlug              string
+	Title                  string
+	Description            string
+	StatusName             string
+	EffortName             pgtype.Text
+	PriorityName           pgtype.Text
+	DueAt                  pgtype.Date
+	DueTz                  pgtype.Text
+	RecurrenceType         RecurrenceType
+	RecurrenceRule         pgtype.Text
+	OverdueActionAfterDays pgtype.Int4
+	OverdueAction          NullOverdueAction
+	OverdueActionStatus    pgtype.Text
+	CreatedAt              pgtype.Timestamptz
+	UpdatedAt              pgtype.Timestamptz
 }
 
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
@@ -61,6 +64,9 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		arg.DueTz,
 		arg.RecurrenceType,
 		arg.RecurrenceRule,
+		arg.OverdueActionAfterDays,
+		arg.OverdueAction,
+		arg.OverdueActionStatus,
 		arg.CreatedAt,
 		arg.UpdatedAt,
 	)
@@ -80,6 +86,9 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		&i.LastCompletedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OverdueActionAfterDays,
+		&i.OverdueAction,
+		&i.OverdueActionStatus,
 	)
 	return i, err
 }
@@ -98,7 +107,7 @@ func (q *Queries) DeleteTask(ctx context.Context, arg DeleteTaskParams) (pgconn.
 }
 
 const getTask = `-- name: GetTask :one
-SELECT id, space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, last_completed_at, created_at, updated_at FROM tasks WHERE id = $1 AND space_slug = $2
+SELECT id, space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, last_completed_at, created_at, updated_at, overdue_action_after_days, overdue_action, overdue_action_status FROM tasks WHERE id = $1 AND space_slug = $2
 `
 
 type GetTaskParams struct {
@@ -124,12 +133,15 @@ func (q *Queries) GetTask(ctx context.Context, arg GetTaskParams) (Task, error) 
 		&i.LastCompletedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OverdueActionAfterDays,
+		&i.OverdueAction,
+		&i.OverdueActionStatus,
 	)
 	return i, err
 }
 
 const listOverdueAccumulatingTasks = `-- name: ListOverdueAccumulatingTasks :many
-SELECT id, space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, last_completed_at, created_at, updated_at FROM tasks
+SELECT id, space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, last_completed_at, created_at, updated_at, overdue_action_after_days, overdue_action, overdue_action_status FROM tasks
 WHERE recurrence_type = 'fixed_accumulating'
   AND due_at IS NOT NULL
   AND due_at <= $1
@@ -164,6 +176,9 @@ func (q *Queries) ListOverdueAccumulatingTasks(ctx context.Context, dueAt pgtype
 			&i.LastCompletedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.OverdueActionAfterDays,
+			&i.OverdueAction,
+			&i.OverdueActionStatus,
 		); err != nil {
 			return nil, err
 		}
@@ -445,6 +460,56 @@ func (q *Queries) ListTasksByUser(ctx context.Context, arg ListTasksByUserParams
 	return items, nil
 }
 
+const listTasksWithOverdueActionDue = `-- name: ListTasksWithOverdueActionDue :many
+SELECT id, space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, last_completed_at, created_at, updated_at, overdue_action_after_days, overdue_action, overdue_action_status FROM tasks
+WHERE overdue_action IS NOT NULL
+  AND due_at IS NOT NULL
+  AND recurrence_type NOT IN ('one_off', 'on_dependency')
+  AND (due_at + COALESCE(overdue_action_after_days, 0)) <= $1
+ORDER BY space_slug, id ASC
+LIMIT 100
+`
+
+// Returns recurring tasks whose overdue action grace period has elapsed.
+// Cap at 100 rows per tick to provide backpressure on the cron job.
+func (q *Queries) ListTasksWithOverdueActionDue(ctx context.Context, dueAt pgtype.Date) ([]Task, error) {
+	rows, err := q.db.Query(ctx, listTasksWithOverdueActionDue, dueAt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Task{}
+	for rows.Next() {
+		var i Task
+		if err := rows.Scan(
+			&i.ID,
+			&i.SpaceSlug,
+			&i.Title,
+			&i.Description,
+			&i.StatusName,
+			&i.EffortName,
+			&i.PriorityName,
+			&i.DueAt,
+			&i.DueTz,
+			&i.RecurrenceType,
+			&i.RecurrenceRule,
+			&i.LastCompletedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.OverdueActionAfterDays,
+			&i.OverdueAction,
+			&i.OverdueActionStatus,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const resetTaskToInitial = `-- name: ResetTaskToInitial :exec
 UPDATE tasks
 SET status_name = $1, updated_at = $2
@@ -473,25 +538,29 @@ func (q *Queries) ResetTaskToInitial(ctx context.Context, arg ResetTaskToInitial
 const updateTask = `-- name: UpdateTask :one
 UPDATE tasks
 SET title = $1, description = $2, status_name = $3, effort_name = $4, priority_name = $5, due_at = $6, due_tz = $7,
-    recurrence_type = $8, recurrence_rule = $9, last_completed_at = $10, updated_at = $11
-WHERE id = $12 AND space_slug = $13
-RETURNING id, space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, last_completed_at, created_at, updated_at
+    recurrence_type = $8, recurrence_rule = $9, last_completed_at = $10,
+    overdue_action_after_days = $11, overdue_action = $12, overdue_action_status = $13, updated_at = $14
+WHERE id = $15 AND space_slug = $16
+RETURNING id, space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, last_completed_at, created_at, updated_at, overdue_action_after_days, overdue_action, overdue_action_status
 `
 
 type UpdateTaskParams struct {
-	Title           string
-	Description     string
-	StatusName      string
-	EffortName      pgtype.Text
-	PriorityName    pgtype.Text
-	DueAt           pgtype.Date
-	DueTz           pgtype.Text
-	RecurrenceType  RecurrenceType
-	RecurrenceRule  pgtype.Text
-	LastCompletedAt pgtype.Timestamptz
-	UpdatedAt       pgtype.Timestamptz
-	ID              int64
-	SpaceSlug       string
+	Title                  string
+	Description            string
+	StatusName             string
+	EffortName             pgtype.Text
+	PriorityName           pgtype.Text
+	DueAt                  pgtype.Date
+	DueTz                  pgtype.Text
+	RecurrenceType         RecurrenceType
+	RecurrenceRule         pgtype.Text
+	LastCompletedAt        pgtype.Timestamptz
+	OverdueActionAfterDays pgtype.Int4
+	OverdueAction          NullOverdueAction
+	OverdueActionStatus    pgtype.Text
+	UpdatedAt              pgtype.Timestamptz
+	ID                     int64
+	SpaceSlug              string
 }
 
 func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error) {
@@ -506,6 +575,9 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 		arg.RecurrenceType,
 		arg.RecurrenceRule,
 		arg.LastCompletedAt,
+		arg.OverdueActionAfterDays,
+		arg.OverdueAction,
+		arg.OverdueActionStatus,
 		arg.UpdatedAt,
 		arg.ID,
 		arg.SpaceSlug,
@@ -526,6 +598,82 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 		&i.LastCompletedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OverdueActionAfterDays,
+		&i.OverdueAction,
+		&i.OverdueActionStatus,
 	)
 	return i, err
+}
+
+const updateTaskOverdueActionAdvanceRecurrence = `-- name: UpdateTaskOverdueActionAdvanceRecurrence :execresult
+UPDATE tasks
+SET due_at     = $1,
+    due_tz     = $2,
+    updated_at = $3
+WHERE id = $4
+  AND space_slug = $5
+  AND overdue_action = 'advance_recurrence'
+`
+
+type UpdateTaskOverdueActionAdvanceRecurrenceParams struct {
+	DueAt     pgtype.Date
+	DueTz     pgtype.Text
+	UpdatedAt pgtype.Timestamptz
+	ID        int64
+	SpaceSlug string
+}
+
+func (q *Queries) UpdateTaskOverdueActionAdvanceRecurrence(ctx context.Context, arg UpdateTaskOverdueActionAdvanceRecurrenceParams) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, updateTaskOverdueActionAdvanceRecurrence,
+		arg.DueAt,
+		arg.DueTz,
+		arg.UpdatedAt,
+		arg.ID,
+		arg.SpaceSlug,
+	)
+}
+
+const updateTaskOverdueActionClearDueDate = `-- name: UpdateTaskOverdueActionClearDueDate :execresult
+UPDATE tasks
+SET due_at     = NULL,
+    due_tz     = NULL,
+    updated_at = $1
+WHERE id = $2
+  AND space_slug = $3
+  AND overdue_action = 'clear_due_date'
+`
+
+type UpdateTaskOverdueActionClearDueDateParams struct {
+	UpdatedAt pgtype.Timestamptz
+	ID        int64
+	SpaceSlug string
+}
+
+func (q *Queries) UpdateTaskOverdueActionClearDueDate(ctx context.Context, arg UpdateTaskOverdueActionClearDueDateParams) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, updateTaskOverdueActionClearDueDate, arg.UpdatedAt, arg.ID, arg.SpaceSlug)
+}
+
+const updateTaskOverdueActionSetStatus = `-- name: UpdateTaskOverdueActionSetStatus :execresult
+UPDATE tasks
+SET status_name = $1,
+    updated_at  = $2
+WHERE id = $3
+  AND space_slug = $4
+  AND overdue_action = 'set_status'
+`
+
+type UpdateTaskOverdueActionSetStatusParams struct {
+	StatusName string
+	UpdatedAt  pgtype.Timestamptz
+	ID         int64
+	SpaceSlug  string
+}
+
+func (q *Queries) UpdateTaskOverdueActionSetStatus(ctx context.Context, arg UpdateTaskOverdueActionSetStatusParams) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, updateTaskOverdueActionSetStatus,
+		arg.StatusName,
+		arg.UpdatedAt,
+		arg.ID,
+		arg.SpaceSlug,
+	)
 }

@@ -594,6 +594,51 @@ func (o NilDateTime) Or(d time.Time) time.Time {
 	return d
 }
 
+// NewNilInt32 returns new NilInt32 with value set to v.
+func NewNilInt32(v int32) NilInt32 {
+	return NilInt32{
+		Value: v,
+	}
+}
+
+// NilInt32 is nullable int32.
+type NilInt32 struct {
+	Value int32
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilInt32) SetTo(v int32) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilInt32) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilInt32) SetToNull() {
+	o.Null = true
+	var v int32
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilInt32) Get() (v int32, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilInt32) Or(d int32) int32 {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewNilString returns new NilString with value set to v.
 func NewNilString(v string) NilString {
 	return NilString{
@@ -678,6 +723,51 @@ func (o NilTaskDue) Get() (v TaskDue, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilTaskDue) Or(d TaskDue) TaskDue {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilTaskOverdueActionRule returns new NilTaskOverdueActionRule with value set to v.
+func NewNilTaskOverdueActionRule(v TaskOverdueActionRule) NilTaskOverdueActionRule {
+	return NilTaskOverdueActionRule{
+		Value: v,
+	}
+}
+
+// NilTaskOverdueActionRule is nullable TaskOverdueActionRule.
+type NilTaskOverdueActionRule struct {
+	Value TaskOverdueActionRule
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilTaskOverdueActionRule) SetTo(v TaskOverdueActionRule) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilTaskOverdueActionRule) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilTaskOverdueActionRule) SetToNull() {
+	o.Null = true
+	var v TaskOverdueActionRule
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilTaskOverdueActionRule) Get() (v TaskOverdueActionRule, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilTaskOverdueActionRule) Or(d TaskOverdueActionRule) TaskOverdueActionRule {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -896,6 +986,69 @@ func (o OptNilTaskDue) Get() (v TaskDue, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNilTaskDue) Or(d TaskDue) TaskDue {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilTaskOverdueActionRule returns new OptNilTaskOverdueActionRule with value set to v.
+func NewOptNilTaskOverdueActionRule(v TaskOverdueActionRule) OptNilTaskOverdueActionRule {
+	return OptNilTaskOverdueActionRule{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilTaskOverdueActionRule is optional nullable TaskOverdueActionRule.
+type OptNilTaskOverdueActionRule struct {
+	Value TaskOverdueActionRule
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilTaskOverdueActionRule was set.
+func (o OptNilTaskOverdueActionRule) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilTaskOverdueActionRule) Reset() {
+	var v TaskOverdueActionRule
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilTaskOverdueActionRule) SetTo(v TaskOverdueActionRule) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilTaskOverdueActionRule) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilTaskOverdueActionRule) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v TaskOverdueActionRule
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilTaskOverdueActionRule) Get() (v TaskOverdueActionRule, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilTaskOverdueActionRule) Or(d TaskOverdueActionRule) TaskOverdueActionRule {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -1394,23 +1547,24 @@ func (s *TagUpdate) SetName(val string) {
 
 // Ref: #/components/schemas/Task
 type Task struct {
-	ID              string             `json:"id"`
-	SpaceSlug       string             `json:"spaceSlug"`
-	Title           string             `json:"title"`
-	Description     string             `json:"description"`
-	Status          string             `json:"status"`
-	Effort          NilString          `json:"effort"`
-	Priority        NilString          `json:"priority"`
-	RecurrenceType  TaskRecurrenceType `json:"recurrenceType"`
-	RecurrenceRule  NilString          `json:"recurrenceRule"`
-	LastCompletedAt NilDateTime        `json:"lastCompletedAt"`
-	AssigneeIds     []string           `json:"assigneeIds"`
-	RotationPool    []string           `json:"rotationPool"`
-	Tags            []string           `json:"tags"`
-	Relations       []TaskRelation     `json:"relations"`
-	Due             NilTaskDue         `json:"due"`
-	CreatedAt       time.Time          `json:"createdAt"`
-	UpdatedAt       time.Time          `json:"updatedAt"`
+	ID                string                   `json:"id"`
+	SpaceSlug         string                   `json:"spaceSlug"`
+	Title             string                   `json:"title"`
+	Description       string                   `json:"description"`
+	Status            string                   `json:"status"`
+	Effort            NilString                `json:"effort"`
+	Priority          NilString                `json:"priority"`
+	RecurrenceType    TaskRecurrenceType       `json:"recurrenceType"`
+	RecurrenceRule    NilString                `json:"recurrenceRule"`
+	LastCompletedAt   NilDateTime              `json:"lastCompletedAt"`
+	AssigneeIds       []string                 `json:"assigneeIds"`
+	RotationPool      []string                 `json:"rotationPool"`
+	Tags              []string                 `json:"tags"`
+	Relations         []TaskRelation           `json:"relations"`
+	Due               NilTaskDue               `json:"due"`
+	OverdueActionRule NilTaskOverdueActionRule `json:"overdueActionRule"`
+	CreatedAt         time.Time                `json:"createdAt"`
+	UpdatedAt         time.Time                `json:"updatedAt"`
 }
 
 // GetID returns the value of ID.
@@ -1486,6 +1640,11 @@ func (s *Task) GetRelations() []TaskRelation {
 // GetDue returns the value of Due.
 func (s *Task) GetDue() NilTaskDue {
 	return s.Due
+}
+
+// GetOverdueActionRule returns the value of OverdueActionRule.
+func (s *Task) GetOverdueActionRule() NilTaskOverdueActionRule {
+	return s.OverdueActionRule
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -1573,6 +1732,11 @@ func (s *Task) SetDue(val NilTaskDue) {
 	s.Due = val
 }
 
+// SetOverdueActionRule sets the value of OverdueActionRule.
+func (s *Task) SetOverdueActionRule(val NilTaskOverdueActionRule) {
+	s.OverdueActionRule = val
+}
+
 // SetCreatedAt sets the value of CreatedAt.
 func (s *Task) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
@@ -1585,17 +1749,18 @@ func (s *Task) SetUpdatedAt(val time.Time) {
 
 // Ref: #/components/schemas/TaskCreate
 type TaskCreate struct {
-	Title          string                `json:"title"`
-	Description    OptString             `json:"description"`
-	Status         OptString             `json:"status"`
-	Effort         OptString             `json:"effort"`
-	Priority       OptString             `json:"priority"`
-	RecurrenceType OptTaskRecurrenceType `json:"recurrenceType"`
-	RecurrenceRule OptString             `json:"recurrenceRule"`
-	AssigneeIds    []string              `json:"assigneeIds"`
-	RotationPool   []string              `json:"rotationPool"`
-	Tags           []string              `json:"tags"`
-	Due            OptNilTaskDue         `json:"due"`
+	Title             string                      `json:"title"`
+	Description       OptString                   `json:"description"`
+	Status            OptString                   `json:"status"`
+	Effort            OptString                   `json:"effort"`
+	Priority          OptString                   `json:"priority"`
+	RecurrenceType    OptTaskRecurrenceType       `json:"recurrenceType"`
+	RecurrenceRule    OptString                   `json:"recurrenceRule"`
+	AssigneeIds       []string                    `json:"assigneeIds"`
+	RotationPool      []string                    `json:"rotationPool"`
+	Tags              []string                    `json:"tags"`
+	Due               OptNilTaskDue               `json:"due"`
+	OverdueActionRule OptNilTaskOverdueActionRule `json:"overdueActionRule"`
 }
 
 // GetTitle returns the value of Title.
@@ -1653,6 +1818,11 @@ func (s *TaskCreate) GetDue() OptNilTaskDue {
 	return s.Due
 }
 
+// GetOverdueActionRule returns the value of OverdueActionRule.
+func (s *TaskCreate) GetOverdueActionRule() OptNilTaskOverdueActionRule {
+	return s.OverdueActionRule
+}
+
 // SetTitle sets the value of Title.
 func (s *TaskCreate) SetTitle(val string) {
 	s.Title = val
@@ -1706,6 +1876,11 @@ func (s *TaskCreate) SetTags(val []string) {
 // SetDue sets the value of Due.
 func (s *TaskCreate) SetDue(val OptNilTaskDue) {
 	s.Due = val
+}
+
+// SetOverdueActionRule sets the value of OverdueActionRule.
+func (s *TaskCreate) SetOverdueActionRule(val OptNilTaskOverdueActionRule) {
+	s.OverdueActionRule = val
 }
 
 // Ref: #/components/schemas/TaskDue
@@ -1803,6 +1978,95 @@ func (s *TaskEffortLevelReplace) GetItems() []TaskEffortLevelInput {
 // SetItems sets the value of Items.
 func (s *TaskEffortLevelReplace) SetItems(val []TaskEffortLevelInput) {
 	s.Items = val
+}
+
+// Ref: #/components/schemas/TaskOverdueAction
+type TaskOverdueAction string
+
+const (
+	TaskOverdueActionAdvanceRecurrence TaskOverdueAction = "advance_recurrence"
+	TaskOverdueActionSetStatus         TaskOverdueAction = "set_status"
+	TaskOverdueActionClearDueDate      TaskOverdueAction = "clear_due_date"
+)
+
+// AllValues returns all TaskOverdueAction values.
+func (TaskOverdueAction) AllValues() []TaskOverdueAction {
+	return []TaskOverdueAction{
+		TaskOverdueActionAdvanceRecurrence,
+		TaskOverdueActionSetStatus,
+		TaskOverdueActionClearDueDate,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TaskOverdueAction) MarshalText() ([]byte, error) {
+	switch s {
+	case TaskOverdueActionAdvanceRecurrence:
+		return []byte(s), nil
+	case TaskOverdueActionSetStatus:
+		return []byte(s), nil
+	case TaskOverdueActionClearDueDate:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TaskOverdueAction) UnmarshalText(data []byte) error {
+	switch TaskOverdueAction(data) {
+	case TaskOverdueActionAdvanceRecurrence:
+		*s = TaskOverdueActionAdvanceRecurrence
+		return nil
+	case TaskOverdueActionSetStatus:
+		*s = TaskOverdueActionSetStatus
+		return nil
+	case TaskOverdueActionClearDueDate:
+		*s = TaskOverdueActionClearDueDate
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/TaskOverdueActionRule
+type TaskOverdueActionRule struct {
+	// Grace period in days after the due date before the action fires.
+	// null means act immediately when the task becomes overdue.
+	After  NilInt32          `json:"after"`
+	Action TaskOverdueAction `json:"action"`
+	// Required when action is set_status; the status name to transition to.
+	Status OptString `json:"status"`
+}
+
+// GetAfter returns the value of After.
+func (s *TaskOverdueActionRule) GetAfter() NilInt32 {
+	return s.After
+}
+
+// GetAction returns the value of Action.
+func (s *TaskOverdueActionRule) GetAction() TaskOverdueAction {
+	return s.Action
+}
+
+// GetStatus returns the value of Status.
+func (s *TaskOverdueActionRule) GetStatus() OptString {
+	return s.Status
+}
+
+// SetAfter sets the value of After.
+func (s *TaskOverdueActionRule) SetAfter(val NilInt32) {
+	s.After = val
+}
+
+// SetAction sets the value of Action.
+func (s *TaskOverdueActionRule) SetAction(val TaskOverdueAction) {
+	s.Action = val
+}
+
+// SetStatus sets the value of Status.
+func (s *TaskOverdueActionRule) SetStatus(val OptString) {
+	s.Status = val
 }
 
 // Ref: #/components/schemas/TaskPage
@@ -2270,17 +2534,18 @@ func (s *TaskStatusReplace) SetItems(val []TaskStatusInput) {
 
 // Ref: #/components/schemas/TaskUpdate
 type TaskUpdate struct {
-	Title          OptString             `json:"title"`
-	Description    OptString             `json:"description"`
-	Status         OptString             `json:"status"`
-	Effort         OptNilString          `json:"effort"`
-	Priority       OptNilString          `json:"priority"`
-	RecurrenceType OptTaskRecurrenceType `json:"recurrenceType"`
-	RecurrenceRule OptNilString          `json:"recurrenceRule"`
-	AssigneeIds    []string              `json:"assigneeIds"`
-	RotationPool   []string              `json:"rotationPool"`
-	Tags           []string              `json:"tags"`
-	Due            OptNilTaskDue         `json:"due"`
+	Title             OptString                   `json:"title"`
+	Description       OptString                   `json:"description"`
+	Status            OptString                   `json:"status"`
+	Effort            OptNilString                `json:"effort"`
+	Priority          OptNilString                `json:"priority"`
+	RecurrenceType    OptTaskRecurrenceType       `json:"recurrenceType"`
+	RecurrenceRule    OptNilString                `json:"recurrenceRule"`
+	AssigneeIds       []string                    `json:"assigneeIds"`
+	RotationPool      []string                    `json:"rotationPool"`
+	Tags              []string                    `json:"tags"`
+	Due               OptNilTaskDue               `json:"due"`
+	OverdueActionRule OptNilTaskOverdueActionRule `json:"overdueActionRule"`
 }
 
 // GetTitle returns the value of Title.
@@ -2338,6 +2603,11 @@ func (s *TaskUpdate) GetDue() OptNilTaskDue {
 	return s.Due
 }
 
+// GetOverdueActionRule returns the value of OverdueActionRule.
+func (s *TaskUpdate) GetOverdueActionRule() OptNilTaskOverdueActionRule {
+	return s.OverdueActionRule
+}
+
 // SetTitle sets the value of Title.
 func (s *TaskUpdate) SetTitle(val OptString) {
 	s.Title = val
@@ -2391,6 +2661,11 @@ func (s *TaskUpdate) SetTags(val []string) {
 // SetDue sets the value of Due.
 func (s *TaskUpdate) SetDue(val OptNilTaskDue) {
 	s.Due = val
+}
+
+// SetOverdueActionRule sets the value of OverdueActionRule.
+func (s *TaskUpdate) SetOverdueActionRule(val OptNilTaskOverdueActionRule) {
+	s.OverdueActionRule = val
 }
 
 // Ref: #/components/schemas/User

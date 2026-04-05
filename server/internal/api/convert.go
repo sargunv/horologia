@@ -225,6 +225,8 @@ func taskFromDB(task dbgen.Task, assigneeUserIDs []int64, tagNames []string, rel
 		t.LastCompletedAt.SetToNull()
 	}
 
+	t.OverdueActionRule = overdueActionRuleFromDB(task.OverdueActionAfterDays, task.OverdueAction, task.OverdueActionStatus)
+
 	return t, nil
 }
 
@@ -528,4 +530,57 @@ func optNilStringToDB(opt apigen.OptNilString, existing pgtype.Text) pgtype.Text
 		return pgtype.Text{}
 	}
 	return pgtype.Text{String: opt.Value, Valid: true}
+}
+
+// overdueActionRuleToDB converts an API TaskOverdueActionRule to DB columns.
+func overdueActionRuleToDB(rule apigen.TaskOverdueActionRule) (afterDays pgtype.Int4, action dbgen.NullOverdueAction, statusName pgtype.Text) {
+	if rule.After.IsNull() {
+		afterDays = pgtype.Int4{}
+	} else {
+		afterDays = pgtype.Int4{Int32: rule.After.Value, Valid: true}
+	}
+	action = dbgen.NullOverdueAction{OverdueAction: dbgen.OverdueAction(rule.Action), Valid: true}
+	if rule.Status.IsSet() {
+		statusName = pgtype.Text{String: rule.Status.Value, Valid: true}
+	}
+	return afterDays, action, statusName
+}
+
+// overdueActionRuleFromDB converts DB overdue action columns to an API NilTaskOverdueActionRule.
+func overdueActionRuleFromDB(afterDays pgtype.Int4, action dbgen.NullOverdueAction, statusName pgtype.Text) apigen.NilTaskOverdueActionRule {
+	if !action.Valid {
+		var nilRule apigen.NilTaskOverdueActionRule
+		nilRule.SetToNull()
+		return nilRule
+	}
+	rule := apigen.TaskOverdueActionRule{
+		Action: apigen.TaskOverdueAction(action.OverdueAction),
+	}
+	if afterDays.Valid {
+		rule.After.SetTo(afterDays.Int32)
+	} else {
+		rule.After.SetToNull()
+	}
+	if statusName.Valid {
+		rule.Status.SetTo(statusName.String)
+	}
+	return apigen.NewNilTaskOverdueActionRule(rule)
+}
+
+// parseOptNilOverdueActionRule parses an OptNilTaskOverdueActionRule (from create/update requests)
+// into DB columns. If not set, returns the existing values. If null, clears them.
+func parseOptNilOverdueActionRule(
+	opt apigen.OptNilTaskOverdueActionRule,
+	existingAfterDays pgtype.Int4,
+	existingAction dbgen.NullOverdueAction,
+	existingStatus pgtype.Text,
+) (afterDays pgtype.Int4, action dbgen.NullOverdueAction, statusName pgtype.Text) {
+	if !opt.IsSet() {
+		return existingAfterDays, existingAction, existingStatus
+	}
+	if opt.IsNull() {
+		return pgtype.Int4{}, dbgen.NullOverdueAction{}, pgtype.Text{}
+	}
+	a, b, c := overdueActionRuleToDB(opt.Value)
+	return a, b, c
 }

@@ -136,6 +136,7 @@ var serveCmd = &cobra.Command{
 		cronCtx, cronCancel := context.WithCancel(cmd.Context())
 		defer cronCancel()
 		go cron.RunAccumulatingCron(cronCtx, pool, log, time.Minute)
+		go cron.RunOverdueActionCron(cronCtx, pool, log, time.Minute)
 
 		h, err := api.NewServer(handler, log)
 		if err != nil {

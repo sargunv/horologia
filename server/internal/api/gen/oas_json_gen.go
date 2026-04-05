@@ -1261,6 +1261,52 @@ func (s *NilDateTime) UnmarshalJSON(data []byte) error {
 	return s.Decode(d, json.DecodeDateTime)
 }
 
+// Encode encodes int32 as json.
+func (o NilInt32) Encode(e *jx.Encoder) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	e.Int32(int32(o.Value))
+}
+
+// Decode decodes int32 from json.
+func (o *NilInt32) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilInt32 to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v int32
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	v, err := d.Int32()
+	if err != nil {
+		return err
+	}
+	o.Value = int32(v)
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilInt32) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilInt32) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes string as json.
 func (o NilString) Encode(e *jx.Encoder) {
 	if o.Null {
@@ -1347,6 +1393,50 @@ func (s NilTaskDue) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *NilTaskDue) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes TaskOverdueActionRule as json.
+func (o NilTaskOverdueActionRule) Encode(e *jx.Encoder) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes TaskOverdueActionRule from json.
+func (o *NilTaskOverdueActionRule) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilTaskOverdueActionRule to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v TaskOverdueActionRule
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilTaskOverdueActionRule) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilTaskOverdueActionRule) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -1482,6 +1572,55 @@ func (s OptNilTaskDue) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptNilTaskDue) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes TaskOverdueActionRule as json.
+func (o OptNilTaskOverdueActionRule) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	if o.Null {
+		e.Null()
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes TaskOverdueActionRule from json.
+func (o *OptNilTaskOverdueActionRule) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptNilTaskOverdueActionRule to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v TaskOverdueActionRule
+		o.Value = v
+		o.Set = true
+		o.Null = true
+		return nil
+	}
+	o.Set = true
+	o.Null = false
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptNilTaskOverdueActionRule) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptNilTaskOverdueActionRule) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -3063,6 +3202,10 @@ func (s *Task) encodeFields(e *jx.Encoder) {
 		s.Due.Encode(e)
 	}
 	{
+		e.FieldStart("overdueActionRule")
+		s.OverdueActionRule.Encode(e)
+	}
+	{
 		e.FieldStart("createdAt")
 		json.EncodeDateTime(e, s.CreatedAt)
 	}
@@ -3072,7 +3215,7 @@ func (s *Task) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfTask = [17]string{
+var jsonFieldsNameOfTask = [18]string{
 	0:  "id",
 	1:  "spaceSlug",
 	2:  "title",
@@ -3088,8 +3231,9 @@ var jsonFieldsNameOfTask = [17]string{
 	12: "tags",
 	13: "relations",
 	14: "due",
-	15: "createdAt",
-	16: "updatedAt",
+	15: "overdueActionRule",
+	16: "createdAt",
+	17: "updatedAt",
 }
 
 // Decode decodes Task from json.
@@ -3299,8 +3443,18 @@ func (s *Task) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"due\"")
 			}
-		case "createdAt":
+		case "overdueActionRule":
 			requiredBitSet[1] |= 1 << 7
+			if err := func() error {
+				if err := s.OverdueActionRule.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"overdueActionRule\"")
+			}
+		case "createdAt":
+			requiredBitSet[2] |= 1 << 0
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -3312,7 +3466,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"createdAt\"")
 			}
 		case "updatedAt":
-			requiredBitSet[2] |= 1 << 0
+			requiredBitSet[2] |= 1 << 1
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -3335,7 +3489,7 @@ func (s *Task) Decode(d *jx.Decoder) error {
 	for i, mask := range [3]uint8{
 		0b11111111,
 		0b11111111,
-		0b00000001,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -3466,9 +3620,15 @@ func (s *TaskCreate) encodeFields(e *jx.Encoder) {
 			s.Due.Encode(e)
 		}
 	}
+	{
+		if s.OverdueActionRule.Set {
+			e.FieldStart("overdueActionRule")
+			s.OverdueActionRule.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfTaskCreate = [11]string{
+var jsonFieldsNameOfTaskCreate = [12]string{
 	0:  "title",
 	1:  "description",
 	2:  "status",
@@ -3480,6 +3640,7 @@ var jsonFieldsNameOfTaskCreate = [11]string{
 	8:  "rotationPool",
 	9:  "tags",
 	10: "due",
+	11: "overdueActionRule",
 }
 
 // Decode decodes TaskCreate from json.
@@ -3629,6 +3790,16 @@ func (s *TaskCreate) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"due\"")
+			}
+		case "overdueActionRule":
+			if err := func() error {
+				s.OverdueActionRule.Reset()
+				if err := s.OverdueActionRule.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"overdueActionRule\"")
 			}
 		default:
 			return d.Skip()
@@ -4217,6 +4388,174 @@ func (s *TaskEffortLevelReplace) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *TaskEffortLevelReplace) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes TaskOverdueAction as json.
+func (s TaskOverdueAction) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes TaskOverdueAction from json.
+func (s *TaskOverdueAction) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode TaskOverdueAction to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch TaskOverdueAction(v) {
+	case TaskOverdueActionAdvanceRecurrence:
+		*s = TaskOverdueActionAdvanceRecurrence
+	case TaskOverdueActionSetStatus:
+		*s = TaskOverdueActionSetStatus
+	case TaskOverdueActionClearDueDate:
+		*s = TaskOverdueActionClearDueDate
+	default:
+		*s = TaskOverdueAction(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s TaskOverdueAction) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *TaskOverdueAction) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *TaskOverdueActionRule) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *TaskOverdueActionRule) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("after")
+		s.After.Encode(e)
+	}
+	{
+		e.FieldStart("action")
+		s.Action.Encode(e)
+	}
+	{
+		if s.Status.Set {
+			e.FieldStart("status")
+			s.Status.Encode(e)
+		}
+	}
+}
+
+var jsonFieldsNameOfTaskOverdueActionRule = [3]string{
+	0: "after",
+	1: "action",
+	2: "status",
+}
+
+// Decode decodes TaskOverdueActionRule from json.
+func (s *TaskOverdueActionRule) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode TaskOverdueActionRule to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "after":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.After.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"after\"")
+			}
+		case "action":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.Action.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"action\"")
+			}
+		case "status":
+			if err := func() error {
+				s.Status.Reset()
+				if err := s.Status.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"status\"")
+			}
+		default:
+			return d.Skip()
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode TaskOverdueActionRule")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfTaskOverdueActionRule) {
+					name = jsonFieldsNameOfTaskOverdueActionRule[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *TaskOverdueActionRule) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *TaskOverdueActionRule) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -5684,9 +6023,15 @@ func (s *TaskUpdate) encodeFields(e *jx.Encoder) {
 			s.Due.Encode(e)
 		}
 	}
+	{
+		if s.OverdueActionRule.Set {
+			e.FieldStart("overdueActionRule")
+			s.OverdueActionRule.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfTaskUpdate = [11]string{
+var jsonFieldsNameOfTaskUpdate = [12]string{
 	0:  "title",
 	1:  "description",
 	2:  "status",
@@ -5698,6 +6043,7 @@ var jsonFieldsNameOfTaskUpdate = [11]string{
 	8:  "rotationPool",
 	9:  "tags",
 	10: "due",
+	11: "overdueActionRule",
 }
 
 // Decode decodes TaskUpdate from json.
@@ -5844,6 +6190,16 @@ func (s *TaskUpdate) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"due\"")
+			}
+		case "overdueActionRule":
+			if err := func() error {
+				s.OverdueActionRule.Reset()
+				if err := s.OverdueActionRule.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"overdueActionRule\"")
 			}
 		default:
 			return d.Skip()

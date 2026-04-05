@@ -14,6 +14,7 @@ import {
   Check,
   ChevronDown,
   CircleAlert,
+  Clock,
   Gauge,
   RefreshCw,
   SignalHigh,
@@ -30,6 +31,7 @@ import { RecurrenceRuleEditor } from "../../../../../components/RecurrenceRuleEd
 import { TimezoneCombobox } from "../../../../../components/TimezoneCombobox.tsx";
 import { TaskDescriptionEditor } from "../../../../../components/TaskDescriptionEditor.tsx";
 import { ErrorAlert } from "../../../../../components/space-settings/ErrorAlert.tsx";
+import { OverdueActionEditor } from "../../../../../components/task/OverdueActionEditor.tsx";
 import { RelationsSection } from "../../../../../components/task/RelationsSection.tsx";
 import { useSpaceMemberMap } from "../../../../../lib/hooks.ts";
 import { useTaskPatch } from "../../../../../lib/mutations.ts";
@@ -45,6 +47,7 @@ import {
 type Task = components["schemas"]["Task"];
 
 type TaskRecurrenceType = components["schemas"]["TaskRecurrenceType"];
+type TaskOverdueActionRule = components["schemas"]["TaskOverdueActionRule"];
 type TaskStatus = components["schemas"]["TaskStatus"];
 type SpaceMember = components["schemas"]["SpaceMember"];
 
@@ -472,6 +475,35 @@ function RecurrenceField({
   );
 }
 
+function OverdueActionField({
+  spaceSlug,
+  taskId,
+  overdueActionRule,
+  statuses,
+}: {
+  spaceSlug: string;
+  taskId: string;
+  overdueActionRule: TaskOverdueActionRule | null;
+  statuses: TaskStatus[];
+}) {
+  const mutation = useTaskPatch(spaceSlug, taskId);
+
+  return (
+    <div className="flex flex-col gap-1">
+      <OverdueActionEditor
+        overdueActionRule={overdueActionRule}
+        statuses={statuses}
+        onSave={(value) => {
+          mutation.reset();
+          mutation.mutate({ overdueActionRule: value });
+        }}
+        disabled={mutation.isPending}
+      />
+      {mutation.error && <ErrorAlert message={mutation.error.message} />}
+    </div>
+  );
+}
+
 function TagsField({
   spaceSlug,
   taskId,
@@ -681,6 +713,20 @@ function TaskDetailPage() {
             recurrenceRule={task.recurrenceRule}
           />
         </PropertyRow>
+
+        {task.recurrenceType !== "one_off" && task.due !== null && (
+          <PropertyRow
+            label="Overdue action"
+            icon={<Clock className="size-4" aria-hidden="true" />}
+          >
+            <OverdueActionField
+              spaceSlug={spaceSlug}
+              taskId={taskId}
+              overdueActionRule={task.overdueActionRule}
+              statuses={statuses}
+            />
+          </PropertyRow>
+        )}
 
         <PropertyRow label="Tags" icon={<Tag className="size-4" aria-hidden="true" />}>
           <TagsField spaceSlug={spaceSlug} taskId={taskId} value={task.tags} />

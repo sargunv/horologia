@@ -481,6 +481,7 @@ export interface components {
             tags: string[];
             relations: components["schemas"]["TaskRelation"][];
             due: components["schemas"]["TaskDue"] | null;
+            overdueActionRule: components["schemas"]["TaskOverdueActionRule"] | null;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -498,6 +499,7 @@ export interface components {
             rotationPool?: string[];
             tags?: string[];
             due?: components["schemas"]["TaskDue"] | null;
+            overdueActionRule?: components["schemas"]["TaskOverdueActionRule"] | null;
         };
         TaskDue: {
             /** Format: date */
@@ -517,6 +519,18 @@ export interface components {
         };
         TaskEffortLevelReplace: {
             items: components["schemas"]["TaskEffortLevelInput"][];
+        };
+        /** @enum {string} */
+        TaskOverdueAction: "advance_recurrence" | "set_status" | "clear_due_date";
+        TaskOverdueActionRule: {
+            /**
+             * @description Grace period in days after the due date before the action fires.
+             *           null means act immediately when the task becomes overdue.
+             */
+            after: number | null;
+            action: components["schemas"]["TaskOverdueAction"];
+            /** @description Required when action is set_status; the status name to transition to. */
+            status?: string;
         };
         TaskPage: {
             items: components["schemas"]["Task"][];
@@ -580,6 +594,7 @@ export interface components {
             rotationPool?: string[];
             tags?: string[];
             due?: components["schemas"]["TaskDue"] | null;
+            overdueActionRule?: components["schemas"]["TaskOverdueActionRule"] | null;
         };
         User: {
             id: string;
