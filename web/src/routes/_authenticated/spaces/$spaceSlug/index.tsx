@@ -1,4 +1,5 @@
 import { Dialog, Portal } from "@skeletonlabs/skeleton-react";
+import { toaster } from "../../../../lib/toaster.ts";
 import {
   useMutation,
   useQueryClient,
@@ -6,13 +7,7 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { createFileRoute, createLink, useNavigate } from "@tanstack/react-router";
-import {
-  ChevronDown,
-  CircleAlert,
-  ListChecks,
-  Plus,
-  Settings,
-} from "lucide-react";
+import { ChevronDown, CircleAlert, ListChecks, Plus, Settings } from "lucide-react";
 import { type FormEvent, useMemo, useState } from "react";
 import { apiClient } from "../../../../api/client.ts";
 import { TaskRow } from "../../../../components/task/TaskRow.tsx";
@@ -52,8 +47,11 @@ function CreateTaskDialog({ spaceSlug }: { spaceSlug: string }) {
         await queryClient.invalidateQueries({
           queryKey: ["spaces", spaceSlug, "tasks", "list"],
         });
-      } catch (err) {
-        console.error("Failed to refresh after task creation:", err);
+      } catch {
+        toaster.warning({
+          title: "Data may be out of date",
+          description: "Refresh the page to see the latest changes.",
+        });
       }
       await navigate({
         to: "/spaces/$spaceSlug/tasks/$taskId",
@@ -173,12 +171,7 @@ function SpacePage() {
         {tasks.length > 0 ? (
           <div className="card preset-outlined-surface-200-800 divide-surface-200-800 overflow-hidden">
             {tasks.map((task) => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                spaceSlug={spaceSlug}
-                statusMap={statusMap}
-              />
+              <TaskRow key={task.id} task={task} spaceSlug={spaceSlug} statusMap={statusMap} />
             ))}
           </div>
         ) : (

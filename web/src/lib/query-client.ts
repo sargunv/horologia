@@ -1,9 +1,14 @@
 import { MutationCache, QueryClient } from "@tanstack/react-query";
+import { toaster } from "./toaster.ts";
 
 export const queryClient = new QueryClient({
   mutationCache: new MutationCache({
     onError: (error) => {
-      console.error("Mutation failed:", error);
+      const message =
+        typeof error === "object" && error !== null && "message" in error
+          ? String(error.message)
+          : "An unexpected error occurred.";
+      toaster.error({ title: "Action failed", description: message });
     },
   }),
   defaultOptions: {

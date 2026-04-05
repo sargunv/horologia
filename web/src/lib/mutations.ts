@@ -1,6 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../api/client.ts";
 import type { components } from "../api/schema.d.ts";
+import { toaster } from "./toaster.ts";
+
+function notifyStaleData() {
+  toaster.warning({
+    title: "Data may be out of date",
+    description: "Refresh the page to see the latest changes.",
+  });
+}
 
 type TaskUpdate = components["schemas"]["TaskUpdate"];
 
@@ -21,8 +29,8 @@ export function useTaskPatch(spaceSlug: string, taskId: string) {
           queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", taskId] }),
           queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", "list"] }),
         ]);
-      } catch (err) {
-        console.error("Failed to refresh after task update:", err);
+      } catch {
+        notifyStaleData();
       }
     },
   });
@@ -56,13 +64,10 @@ export function useAddRelation(spaceSlug: string, taskId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (body: TaskRelationCreate) => {
-      const { data, error } = await apiClient.POST(
-        "/spaces/{spaceSlug}/tasks/{taskId}/relations",
-        {
-          params: { path: { spaceSlug, taskId } },
-          body,
-        },
-      );
+      const { data, error } = await apiClient.POST("/spaces/{spaceSlug}/tasks/{taskId}/relations", {
+        params: { path: { spaceSlug, taskId } },
+        body,
+      });
       if (error) throw new Error(error.message ?? "Failed to add relation");
       return data;
     },
@@ -72,8 +77,8 @@ export function useAddRelation(spaceSlug: string, taskId: string) {
           queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", taskId] }),
           queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", "list"] }),
         ]);
-      } catch (err) {
-        console.error("Failed to refresh after adding relation:", err);
+      } catch {
+        notifyStaleData();
       }
     },
   });
@@ -103,8 +108,8 @@ export function useDeleteRelation(spaceSlug: string, taskId: string) {
           queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", taskId] }),
           queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", "list"] }),
         ]);
-      } catch (err) {
-        console.error("Failed to refresh after removing relation:", err);
+      } catch {
+        notifyStaleData();
       }
     },
   });
