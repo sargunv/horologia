@@ -1,15 +1,19 @@
 import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Check, ExternalLink, Heart, Info, X } from "lucide-react";
+import * as v from "valibot";
 import { authConfigQueryOptions } from "../../lib/queries.ts";
 import { SettingsSection } from "../space-settings/SettingsSection.tsx";
+
+const HealthSchema = v.object({ status: v.string() });
 
 const healthQueryOptions = queryOptions({
   queryKey: ["health"],
   queryFn: async () => {
     const res = await fetch("/healthz");
     if (!res.ok) return { status: "error" };
-    const data: { status: string } = await res.json();
-    return data;
+    const raw: unknown = await res.json();
+    const parsed = v.safeParse(HealthSchema, raw);
+    return parsed.success ? parsed.output : { status: "error" };
   },
   refetchInterval: 30_000,
 });

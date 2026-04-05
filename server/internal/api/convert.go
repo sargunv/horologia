@@ -225,6 +225,8 @@ func taskFromDB(task dbgen.Task, assigneeUserIDs []int64, tagNames []string, rel
 		t.LastCompletedAt.SetToNull()
 	}
 
+	t.OverdueActionRule = overdueActionRuleFromDB(task.OverdueActionAfterDays, task.OverdueAction, task.OverdueActionStatus)
+
 	return t, nil
 }
 
@@ -528,4 +530,44 @@ func optNilStringToDB(opt apigen.OptNilString, existing pgtype.Text) pgtype.Text
 		return pgtype.Text{}
 	}
 	return pgtype.Text{String: opt.Value, Valid: true}
+}
+
+// overdueActionRuleToDB converts an API TaskOverdueActionRule to DB columns.
+// "after: null" (immediate) is stored as 0 — a NULL overdue_action_after_days means
+// "no rule". The DB constraint requires the column to be non-NULL whenever
+// overdue_action is set.
+func overdueActionRuleToDB(rule apigen.TaskOverdueActionRule) (afterDays pgtype.Int4, action dbgen.NullOverdueAction, statusName pgtype.Text) {
+	var days int32
+	if !rule.After.IsNull() {
+		days = rule.After.Value
+	}
+	afterDays = pgtype.Int4{Int32: days, Valid: true}
+	action = dbgen.NullOverdueAction{OverdueAction: dbgen.OverdueAction(rule.Action), Valid: true}
+	if rule.Status.IsSet() {
+		statusName = pgtype.Text{String: rule.Status.Value, Valid: true}
+	}
+	return afterDays, action, statusName
+}
+
+// overdueActionRuleFromDB converts DB overdue action columns to an API NilTaskOverdueActionRule.
+// DB value 0 for after_days means immediate (API "after": null).
+func overdueActionRuleFromDB(afterDays pgtype.Int4, action dbgen.NullOverdueAction, statusName pgtype.Text) apigen.NilTaskOverdueActionRule {
+	if !action.Valid {
+		var nilRule apigen.NilTaskOverdueActionRule
+		nilRule.SetToNull()
+		return nilRule
+	}
+	rule := apigen.TaskOverdueActionRule{
+		Action: apigen.TaskOverdueAction(action.OverdueAction),
+	}
+	// 0 = immediate (null in API); positive = grace period in days
+	if afterDays.Valid && afterDays.Int32 > 0 {
+		rule.After.SetTo(afterDays.Int32)
+	} else {
+		rule.After.SetToNull()
+	}
+	if statusName.Valid {
+		rule.Status.SetTo(statusName.String)
+	}
+	return apigen.NewNilTaskOverdueActionRule(rule)
 }

@@ -2,7 +2,14 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { CircleAlert } from "lucide-react";
 import { type FormEvent, useState } from "react";
+import * as v from "valibot";
 import { linkPendingQueryOptions } from "../lib/queries.ts";
+
+const ErrorBodySchema = v.object({ message: v.string() });
+const LinkResponseSchema = v.object({
+  linked: v.boolean(),
+  redirectTo: v.string(),
+});
 
 export const Route = createFileRoute("/link-account")({
   component: LinkAccountPage,
@@ -27,10 +34,12 @@ function LinkAccountPage() {
         body: JSON.stringify({ password }),
       });
       if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new Error(body?.message ?? "Failed to link account");
+        const body: unknown = await res.json().catch(() => null);
+        const parsed = v.safeParse(ErrorBodySchema, body);
+        throw new Error(parsed.success ? parsed.output.message : "Failed to link account");
       }
-      return res.json();
+      const raw: unknown = await res.json();
+      return v.parse(LinkResponseSchema, raw);
     },
     onSuccess: (data) => {
       void navigate({ to: data.redirectTo ?? "/" });

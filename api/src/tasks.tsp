@@ -12,6 +12,23 @@ enum TaskRecurrenceType {
   on_dependency,
 }
 
+enum TaskOverdueAction {
+  advance_recurrence,
+  set_status,
+  clear_due_date,
+}
+
+model TaskOverdueActionRule {
+  /** Grace period in days after the due date before the action fires.
+      null means act immediately when the task becomes overdue. */
+  after: int32 | null;
+
+  action: TaskOverdueAction;
+
+  /** Required when action is set_status; the status name to transition to. */
+  @minLength(1) @maxLength(100) status?: string;
+}
+
 enum TaskRelationKind {
   parent_of,
   child_of,
@@ -57,6 +74,7 @@ model Task {
   tags: string[];
   relations: TaskRelation[];
   due: TaskDue | null;
+  overdueActionRule: TaskOverdueActionRule | null;
   createdAt: utcDateTime;
   updatedAt: utcDateTime;
 }
@@ -73,6 +91,7 @@ model TaskCreate {
   @maxItems(100) rotationPool?: string[];
   @maxItems(100) tags?: string[];
   due?: TaskDue | null;
+  overdueActionRule?: TaskOverdueActionRule | null;
 }
 
 model TaskUpdate {
@@ -87,6 +106,7 @@ model TaskUpdate {
   @maxItems(100) rotationPool?: string[];
   @maxItems(100) tags?: string[];
   due?: TaskDue | null;
+  overdueActionRule?: TaskOverdueActionRule | null;
 }
 
 model TaskPage is Page<Task>;

@@ -1,0 +1,8 @@
+{
+  "routesDirectory": "./src/routes",
+  "addExtensions": true,
+  "routeTreeFileHeader": [
+    "/* eslint-disable */",
+    "// noinspection JSUnusedGlobalSymbols"
+  ]
+}

@@ -206,21 +206,35 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 	if err := taskengine.ValidateRecurrence(recurrenceType, recurrenceRule, ts); err != nil {
 		return nil, err
 	}
+
+	var overdueAfterDays pgtype.Int4
+	var overdueAction dbgen.NullOverdueAction
+	var overdueStatus pgtype.Text
+	if req.OverdueActionRule.IsSet() && !req.OverdueActionRule.IsNull() {
+		overdueAfterDays, overdueAction, overdueStatus = overdueActionRuleToDB(req.OverdueActionRule.Value)
+	}
+	if err := taskengine.ValidateOverdueActionRule(overdueAfterDays, overdueAction, overdueStatus, recurrenceType, due != nil); err != nil {
+		return nil, err
+	}
+
 	dueAt, dueTz := types.DecomposeDueDate(due)
 	tstz := types.Timestamptz(ts)
 	task, err := q.CreateTask(ctx, dbgen.CreateTaskParams{
-		SpaceSlug:      params.SpaceSlug,
-		Title:          req.Title,
-		Description:    req.Description.Or(""),
-		StatusName:     statusName,
-		EffortName:     effortName,
-		PriorityName:   priorityName,
-		DueAt:          dueAt,
-		DueTz:          dueTz,
-		RecurrenceType: recurrenceType,
-		RecurrenceRule: recurrenceRule,
-		CreatedAt:      tstz,
-		UpdatedAt:      tstz,
+		SpaceSlug:              params.SpaceSlug,
+		Title:                  req.Title,
+		Description:            req.Description.Or(""),
+		StatusName:             statusName,
+		EffortName:             effortName,
+		PriorityName:           priorityName,
+		DueAt:                  dueAt,
+		DueTz:                  dueTz,
+		RecurrenceType:         recurrenceType,
+		RecurrenceRule:         recurrenceRule,
+		OverdueActionAfterDays: overdueAfterDays,
+		OverdueAction:          overdueAction,
+		OverdueActionStatus:    overdueStatus,
+		CreatedAt:              tstz,
+		UpdatedAt:              tstz,
 	})
 	if err != nil {
 		return nil, err
@@ -363,6 +377,24 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 		return nil, err
 	}
 
+	var newOverdueAfterDays pgtype.Int4
+	var newOverdueAction dbgen.NullOverdueAction
+	var newOverdueStatus pgtype.Text
+	if req.OverdueActionRule.IsSet() {
+		if !req.OverdueActionRule.IsNull() {
+			newOverdueAfterDays, newOverdueAction, newOverdueStatus = overdueActionRuleToDB(req.OverdueActionRule.Value)
+		}
+		// else IsNull() → all remain zero values (clears the rule)
+	} else {
+		// not set → preserve existing
+		newOverdueAfterDays = existing.OverdueActionAfterDays
+		newOverdueAction = existing.OverdueAction
+		newOverdueStatus = existing.OverdueActionStatus
+	}
+	if err := taskengine.ValidateOverdueActionRule(newOverdueAfterDays, newOverdueAction, newOverdueStatus, recurrenceType, newDue != nil); err != nil {
+		return nil, err
+	}
+
 	cr, err := taskengine.HandleCompletionTransition(
 		ctx, tx, existing, newStatus,
 		recurrenceType, recurrenceRule,
@@ -375,19 +407,22 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 
 	crDueAt, crDueTz := types.DecomposeDueDate(cr.Due)
 	_, err = q.UpdateTask(ctx, dbgen.UpdateTaskParams{
-		Title:           req.Title.Or(existing.Title),
-		Description:     req.Description.Or(existing.Description),
-		StatusName:      cr.Status,
-		EffortName:      effortName,
-		PriorityName:    priorityName,
-		DueAt:           crDueAt,
-		DueTz:           crDueTz,
-		RecurrenceType:  cr.RecurrenceType,
-		RecurrenceRule:  cr.RecurrenceRule,
-		LastCompletedAt: cr.LastCompletedAt,
-		UpdatedAt:       types.Timestamptz(now),
-		ID:              id,
-		SpaceSlug:       params.SpaceSlug,
+		Title:                  req.Title.Or(existing.Title),
+		Description:            req.Description.Or(existing.Description),
+		StatusName:             cr.Status,
+		EffortName:             effortName,
+		PriorityName:           priorityName,
+		DueAt:                  crDueAt,
+		DueTz:                  crDueTz,
+		RecurrenceType:         cr.RecurrenceType,
+		RecurrenceRule:         cr.RecurrenceRule,
+		LastCompletedAt:        cr.LastCompletedAt,
+		OverdueActionAfterDays: newOverdueAfterDays,
+		OverdueAction:          newOverdueAction,
+		OverdueActionStatus:    newOverdueStatus,
+		UpdatedAt:              types.Timestamptz(now),
+		ID:                     id,
+		SpaceSlug:              params.SpaceSlug,
 	})
 	if err != nil {
 		return nil, err

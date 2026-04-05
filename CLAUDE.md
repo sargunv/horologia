@@ -48,6 +48,56 @@ PostgreSQL is managed by mise and started automatically by Tilt. Data is stored 
 - Never call `time.Now()` inside a function when a `now time.Time` is available from a caller.
   Capture `time.Now()` once at the system boundary (HTTP handler, cron tick) and thread it through.
 
+## Codegen Pipeline
+
+Changes flow through two codegen steps — run `mise run generate` after any of these:
+
+1. **TypeSpec** (`api/src/*.tsp`) → `api/tsp-output/schema/openapi.yaml`
+2. **ogen** consumes the OpenAPI YAML → `server/internal/api/gen/`
+3. **sqlc** (`server/internal/database/queries/*.sql`) → `server/internal/database/gen/`
+
+Both must be re-run when you add new TypeSpec types or new/changed SQL queries. The order in
+`mise run generate` handles this correctly.
+
+## DB Migration Patterns
+
+- Migrations live in `server/internal/database/migrations/`, named `NNNNN_description.sql`
+- Use goose markers: `-- +goose Up` / `-- +goose Down`
+- For nullable paired columns (like the overdue action `(after_days, action)` pair), prefer a
+  `CHECK` constraint enforcing both-null-or-both-set rather than a composite type
+- Partial indexes are effective for cron query patterns (filter on
+  `WHERE overdue_action IS NOT NULL`)
+
+## Task Engine Patterns
+
+- Cron jobs: follow `RunAccumulatingCron` pattern — fire immediately on start, then tick. One
+  function per concern.
+- `ProcessOverdueActionTasks` / `ProcessOverdueTasks` both take `dbgen.DBTX` (not `*pgxpool.Pool`
+  directly) — `*pgxpool.Pool` implements `dbgen.DBTX`, so the cron can pass pool directly.
+- Activity log every cron action: use `activitylog.Log(ctx, db, entry, now)` with `From`/`To` detail
+  fields.
+- For "skip silently" cases in cron (e.g. referenced status was deleted), return `nil` — don't fail
+  the whole batch.
+
+## Handler Patterns
+
+- **Patch semantics for optional-nullable fields**: if `req.Field.IsSet()` is false, preserve the
+  existing value; if set to null (`IsNull()`), clear it; if set to a value, use it.
+- New fields on `CreateTaskParams` / `UpdateTaskParams` are added by updating the SQL query column
+  list and re-running sqlc codegen — the struct fields appear automatically from `RETURNING *`.
+
+## UI Component Patterns
+
+- Editor components (RecurrenceRuleEditor, OverdueActionEditor) follow a save/cancel pattern:
+  - `editing` state + prop sync effect (sync only when `!editing`)
+  - `cancellingRef` trick: `onMouseDown` sets ref so `onBlur` doesn't also fire save
+  - `isDirty` comparison via serialized payload (JSON.stringify for nested objects)
+  - Save/Cancel action bar only shown when `isDirty`
+- Discriminated union for draft state prevents inconsistent field combinations (e.g. `set_status`
+  action always paired with `status` string in the draft type)
+- Conditional `PropertyRow` render guards keep the UI clean: wrap rows in
+  `{condition && <PropertyRow...>}`
+
 ## Web App Conventions
 
 - Use [Skeleton (React)](https://www.skeleton.dev/llms-react.txt) as the design system. Prefer

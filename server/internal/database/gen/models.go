@@ -145,6 +145,49 @@ func (ns NullAuthTokenKind) Value() (driver.Value, error) {
 	return string(ns.AuthTokenKind), nil
 }
 
+type OverdueAction string
+
+const (
+	OverdueActionAdvanceRecurrence OverdueAction = "advance_recurrence"
+	OverdueActionSetStatus         OverdueAction = "set_status"
+	OverdueActionClearDueDate      OverdueAction = "clear_due_date"
+)
+
+func (e *OverdueAction) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = OverdueAction(s)
+	case string:
+		*e = OverdueAction(s)
+	default:
+		return fmt.Errorf("unsupported scan type for OverdueAction: %T", src)
+	}
+	return nil
+}
+
+type NullOverdueAction struct {
+	OverdueAction OverdueAction
+	Valid         bool // Valid is true if OverdueAction is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullOverdueAction) Scan(value interface{}) error {
+	if value == nil {
+		ns.OverdueAction, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.OverdueAction.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullOverdueAction) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.OverdueAction), nil
+}
+
 type RecurrenceType string
 
 const (
@@ -376,20 +419,23 @@ type Tag struct {
 }
 
 type Task struct {
-	ID              int64
-	SpaceSlug       string
-	Title           string
-	Description     string
-	StatusName      string
-	EffortName      pgtype.Text
-	PriorityName    pgtype.Text
-	DueAt           pgtype.Date
-	DueTz           pgtype.Text
-	RecurrenceType  RecurrenceType
-	RecurrenceRule  pgtype.Text
-	LastCompletedAt pgtype.Timestamptz
-	CreatedAt       pgtype.Timestamptz
-	UpdatedAt       pgtype.Timestamptz
+	ID                     int64
+	SpaceSlug              string
+	Title                  string
+	Description            string
+	StatusName             string
+	EffortName             pgtype.Text
+	PriorityName           pgtype.Text
+	DueAt                  pgtype.Date
+	DueTz                  pgtype.Text
+	RecurrenceType         RecurrenceType
+	RecurrenceRule         pgtype.Text
+	LastCompletedAt        pgtype.Timestamptz
+	CreatedAt              pgtype.Timestamptz
+	UpdatedAt              pgtype.Timestamptz
+	OverdueActionAfterDays pgtype.Int4
+	OverdueAction          NullOverdueAction
+	OverdueActionStatus    pgtype.Text
 }
 
 type TaskAssignee struct {

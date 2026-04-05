@@ -1,31 +1,37 @@
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
+import * as v from "valibot";
 import { apiClient } from "../api/client.ts";
 
-export interface AuthConfig {
-  oidc: {
-    enabled: boolean;
-    label: string;
-    autoRedirect: boolean;
-  };
-  password: {
-    enabled: boolean;
-  };
-}
+const AuthConfigSchema = v.object({
+  oidc: v.object({
+    enabled: v.boolean(),
+    label: v.string(),
+    autoRedirect: v.boolean(),
+  }),
+  password: v.object({
+    enabled: v.boolean(),
+  }),
+});
+
+export type AuthConfig = v.InferOutput<typeof AuthConfigSchema>;
 
 export const authConfigQueryOptions = queryOptions({
   queryKey: ["authConfig"],
   queryFn: async (): Promise<AuthConfig> => {
     const res = await fetch("/api/auth/config");
     if (!res.ok) throw new Error("Failed to fetch auth config");
-    return res.json();
+    const raw: unknown = await res.json();
+    return v.parse(AuthConfigSchema, raw);
   },
   staleTime: Infinity,
 });
 
-export interface LinkPendingInfo {
-  email: string;
-  name: string;
-}
+const LinkPendingInfoSchema = v.object({
+  email: v.string(),
+  name: v.string(),
+});
+
+export type LinkPendingInfo = v.InferOutput<typeof LinkPendingInfoSchema>;
 
 export const linkPendingQueryOptions = queryOptions({
   queryKey: ["linkPending"],
@@ -33,7 +39,8 @@ export const linkPendingQueryOptions = queryOptions({
     const res = await fetch("/api/auth/link/pending", { credentials: "include" });
     if (res.status === 404) return null;
     if (!res.ok) throw new Error("Failed to fetch link state");
-    return res.json();
+    const raw: unknown = await res.json();
+    return v.parse(LinkPendingInfoSchema, raw);
   },
   retry: false,
   staleTime: Infinity,

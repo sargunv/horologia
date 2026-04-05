@@ -1,6 +1,6 @@
 -- name: CreateTask :one
-INSERT INTO tasks (space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+INSERT INTO tasks (space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, overdue_action_after_days, overdue_action, overdue_action_status, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 RETURNING *;
 
 -- name: GetTask :one
@@ -121,8 +121,9 @@ LIMIT @lim;
 -- name: UpdateTask :one
 UPDATE tasks
 SET title = $1, description = $2, status_name = $3, effort_name = $4, priority_name = $5, due_at = $6, due_tz = $7,
-    recurrence_type = $8, recurrence_rule = $9, last_completed_at = $10, updated_at = $11
-WHERE id = $12 AND space_slug = $13
+    recurrence_type = $8, recurrence_rule = $9, last_completed_at = $10,
+    overdue_action_after_days = $11, overdue_action = $12, overdue_action_status = $13, updated_at = $14
+WHERE id = $15 AND space_slug = $16
 RETURNING *;
 
 -- name: DeleteTask :execresult
@@ -148,3 +149,59 @@ WHERE recurrence_type = 'fixed_accumulating'
   AND due_at <= $1
 ORDER BY space_slug, id ASC
 LIMIT 100;
+
+-- name: ListTasksWithOverdueActionDue :many
+-- Returns recurring tasks whose overdue action grace period has elapsed.
+-- Cap at 100 rows per tick to provide backpressure on the cron job.
+SELECT * FROM tasks
+WHERE overdue_action IS NOT NULL
+  AND due_at IS NOT NULL
+  AND recurrence_type NOT IN ('one_off', 'on_dependency')
+  AND (due_at + COALESCE(overdue_action_after_days, 0)) <= $1
+ORDER BY space_slug, id ASC
+LIMIT 100;
+
+-- name: UpdateTaskOverdueActionAdvanceRecurrence :execresult
+UPDATE tasks
+SET due_at     = $1,
+    due_tz     = $2,
+    updated_at = $3
+WHERE id = $4
+  AND space_slug = $5
+  AND overdue_action = 'advance_recurrence';
+
+-- name: UpdateTaskOverdueActionSetStatus :execresult
+UPDATE tasks
+SET status_name = $1,
+    updated_at  = $2
+WHERE id = $3
+  AND space_slug = $4
+  AND overdue_action = 'set_status';
+
+-- name: UpdateTaskOverdueActionClearDueDate :execresult
+-- Clears the due date and removes the overdue action rule (since the rule
+-- requires a due date, we must clear both together).
+UPDATE tasks
+SET due_at                    = NULL,
+    due_tz                    = NULL,
+    overdue_action_after_days = NULL,
+    overdue_action            = NULL,
+    overdue_action_status     = NULL,
+    updated_at                = $1
+WHERE id = $2
+  AND space_slug = $3
+  AND overdue_action = 'clear_due_date';
+
+-- name: UpdateTaskOverdueActionExhausted :execresult
+-- Called when advance_recurrence fires but ComputeNextDueAt returns nil
+-- (recurrence rule exhausted). Clears due date and overdue action config.
+UPDATE tasks
+SET due_at                    = NULL,
+    due_tz                    = NULL,
+    overdue_action_after_days = NULL,
+    overdue_action            = NULL,
+    overdue_action_status     = NULL,
+    updated_at                = $1
+WHERE id = $2
+  AND space_slug = $3
+  AND overdue_action = 'advance_recurrence';
