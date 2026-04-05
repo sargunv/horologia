@@ -377,12 +377,20 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 		return nil, err
 	}
 
-	newOverdueAfterDays, newOverdueAction, newOverdueStatus := parseOptNilOverdueActionRule(
-		req.OverdueActionRule,
-		existing.OverdueActionAfterDays,
-		existing.OverdueAction,
-		existing.OverdueActionStatus,
-	)
+	var newOverdueAfterDays pgtype.Int4
+	var newOverdueAction dbgen.NullOverdueAction
+	var newOverdueStatus pgtype.Text
+	if req.OverdueActionRule.IsSet() {
+		if !req.OverdueActionRule.IsNull() {
+			newOverdueAfterDays, newOverdueAction, newOverdueStatus = overdueActionRuleToDB(req.OverdueActionRule.Value)
+		}
+		// else IsNull() → all remain zero values (clears the rule)
+	} else {
+		// not set → preserve existing
+		newOverdueAfterDays = existing.OverdueActionAfterDays
+		newOverdueAction = existing.OverdueAction
+		newOverdueStatus = existing.OverdueActionStatus
+	}
 	if err := taskengine.ValidateOverdueActionRule(newOverdueAfterDays, newOverdueAction, newOverdueStatus, recurrenceType, newDue != nil); err != nil {
 		return nil, err
 	}

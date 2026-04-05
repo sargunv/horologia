@@ -89,6 +89,7 @@ export function OverdueActionEditor({
   const [editing, setEditing] = useState(false);
   const cancellingRef = useRef(false);
 
+  const [savedRule, setSavedRule] = useState<TaskOverdueActionRule | null>(() => overdueActionRule);
   const [savedPayload, setSavedPayload] = useState(() =>
     JSON.stringify(toPayload(toDraftState(overdueActionRule))),
   );
@@ -98,6 +99,7 @@ export function OverdueActionEditor({
     if (!editing) {
       const newDraft = toDraftState(overdueActionRule);
       setDraft(newDraft);
+      setSavedRule(overdueActionRule);
       setSavedPayload(JSON.stringify(toPayload(newDraft)));
     }
   }, [overdueActionRule, editing]);
@@ -109,13 +111,13 @@ export function OverdueActionEditor({
     setEditing(false);
     if (!isDirty) return;
     const payload = toPayload(draft);
+    setSavedRule(payload);
     setSavedPayload(JSON.stringify(payload));
     onSave(payload);
   }
 
   function cancel() {
-    const saved: TaskOverdueActionRule | null = JSON.parse(savedPayload);
-    setDraft(toDraftState(saved));
+    setDraft(toDraftState(savedRule));
     setEditing(false);
   }
 
@@ -179,18 +181,22 @@ export function OverdueActionEditor({
                   className="accent-primary-500"
                 />
                 <span className="text-sm">After</span>
-                <input
-                  type="number"
-                  min={1}
-                  value={draft.afterDays}
-                  onChange={(e) =>
-                    update({ afterDays: Math.max(1, parseInt(e.target.value, 10) || 1) })
-                  }
-                  disabled={disabled || draft.afterMode !== "days"}
-                  className="input preset-outlined-surface-200-800 w-20 text-center"
-                  aria-label="Days after due date"
-                />
-                <span className="text-sm">days</span>
+                {draft.afterMode === "days" && (
+                  <>
+                    <input
+                      type="number"
+                      min={1}
+                      value={draft.afterDays}
+                      onChange={(e) =>
+                        update({ afterDays: Math.max(1, parseInt(e.target.value, 10) || 1) })
+                      }
+                      disabled={disabled}
+                      className="input preset-outlined-surface-200-800 w-20 text-center"
+                      aria-label="Days after due date"
+                    />
+                    <span className="text-sm">days</span>
+                  </>
+                )}
               </label>
             </div>
           </div>

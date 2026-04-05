@@ -566,21 +566,3 @@ func overdueActionRuleFromDB(afterDays pgtype.Int4, action dbgen.NullOverdueActi
 	}
 	return apigen.NewNilTaskOverdueActionRule(rule)
 }
-
-// parseOptNilOverdueActionRule parses an OptNilTaskOverdueActionRule (from create/update requests)
-// into DB columns. If not set, returns the existing values. If null, clears them.
-func parseOptNilOverdueActionRule(
-	opt apigen.OptNilTaskOverdueActionRule,
-	existingAfterDays pgtype.Int4,
-	existingAction dbgen.NullOverdueAction,
-	existingStatus pgtype.Text,
-) (afterDays pgtype.Int4, action dbgen.NullOverdueAction, statusName pgtype.Text) {
-	if !opt.IsSet() {
-		return existingAfterDays, existingAction, existingStatus
-	}
-	if opt.IsNull() {
-		return pgtype.Int4{}, dbgen.NullOverdueAction{}, pgtype.Text{}
-	}
-	a, b, c := overdueActionRuleToDB(opt.Value)
-	return a, b, c
-}
