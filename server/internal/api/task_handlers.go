@@ -68,7 +68,7 @@ func (h *Handler) fetchTask(ctx context.Context, q *dbgen.Queries, id int64, spa
 
 // enrichTasks batch-fetches assignees, tags, relations, and rotation pool for a
 // slice of tasks and converts them to API types. Uses 4 queries total instead of N*5.
-func (h *Handler) enrichTasks(ctx context.Context, q *dbgen.Queries, spaceSlug string, tasks []dbgen.Task) ([]apigen.Task, error) {
+func (h *Handler) enrichTasks(ctx context.Context, q *dbgen.Queries, tasks []dbgen.Task) ([]apigen.Task, error) {
 	if len(tasks) == 0 {
 		return []apigen.Task{}, nil
 	}
@@ -89,7 +89,6 @@ func (h *Handler) enrichTasks(ctx context.Context, q *dbgen.Queries, spaceSlug s
 		return nil, err
 	}
 	relationRows, err := q.ListRelationsByTasks(ctx, dbgen.ListRelationsByTasksParams{
-		SpaceSlug:     spaceSlug,
 		SourceTaskIds: taskIDs,
 		TargetTaskIds: taskIDs,
 	})
@@ -289,7 +288,7 @@ func (h *Handler) SpaceTasksList(ctx context.Context, params apigen.SpaceTasksLi
 			for i, r := range rows {
 				tasks[i] = taskFromListRow(r)
 			}
-			return h.enrichTasks(ctx, q, params.SpaceSlug, tasks)
+			return h.enrichTasks(ctx, q, tasks)
 		},
 		encodeTaskListCursor,
 	)

@@ -1395,6 +1395,7 @@ func (s *TagUpdate) SetName(val string) {
 // Ref: #/components/schemas/Task
 type Task struct {
 	ID              string             `json:"id"`
+	SpaceSlug       string             `json:"spaceSlug"`
 	Title           string             `json:"title"`
 	Description     string             `json:"description"`
 	Status          string             `json:"status"`
@@ -1415,6 +1416,11 @@ type Task struct {
 // GetID returns the value of ID.
 func (s *Task) GetID() string {
 	return s.ID
+}
+
+// GetSpaceSlug returns the value of SpaceSlug.
+func (s *Task) GetSpaceSlug() string {
+	return s.SpaceSlug
 }
 
 // GetTitle returns the value of Title.
@@ -1495,6 +1501,11 @@ func (s *Task) GetUpdatedAt() time.Time {
 // SetID sets the value of ID.
 func (s *Task) SetID(val string) {
 	s.ID = val
+}
+
+// SetSpaceSlug sets the value of SpaceSlug.
+func (s *Task) SetSpaceSlug(val string) {
+	s.SpaceSlug = val
 }
 
 // SetTitle sets the value of Title.

@@ -30,6 +30,7 @@ import { RecurrenceRuleEditor } from "../../../../../components/RecurrenceRuleEd
 import { TimezoneCombobox } from "../../../../../components/TimezoneCombobox.tsx";
 import { TaskDescriptionEditor } from "../../../../../components/TaskDescriptionEditor.tsx";
 import { ErrorAlert } from "../../../../../components/space-settings/ErrorAlert.tsx";
+import { RelationsSection } from "../../../../../components/task/RelationsSection.tsx";
 import { useSpaceMemberMap } from "../../../../../lib/hooks.ts";
 import { useTaskPatch } from "../../../../../lib/mutations.ts";
 import {
@@ -696,6 +697,8 @@ function TaskDetailPage() {
           />
         </PropertyRow>
       </div>
+
+      <RelationsSection spaceSlug={spaceSlug} taskId={task.id} relations={task.relations} />
 
       <DeleteTaskSection spaceSlug={spaceSlug} taskId={taskId} />
     </div>

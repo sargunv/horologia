@@ -266,7 +266,7 @@ tend/
   a token are attributed to the user but tagged with the token name (e.g., "Sargun (via Claude)").
   Every action records `user_id` + nullable `token_id`. No separate bot accounts — tokens inherit
   the user's permissions. OIDC users can create tokens; admins can create username/password users.
-- **Deployment** — Docker Compose with `tend-server` and PostgreSQL containers.
+- **Deployment** — Single `tend-server` binary with external PostgreSQL.
 
 ### Future platforms (post v0.1)
 
@@ -300,7 +300,7 @@ tend/
 - Markdown descriptions
 - Today view (unified dashboard)
 - OIDC + username/password auth
-- Docker Compose deployment (server + PostgreSQL)
+- Single binary deployment (server + external PostgreSQL)
 
 **Out of scope for v0.1:**
 

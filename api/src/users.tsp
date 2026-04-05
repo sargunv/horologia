@@ -52,3 +52,9 @@ interface Users {
 
   @delete delete(@path userId: string): void | ApiError;
 }
+
+@route("/users/{userId}/tasks")
+@tag("Users")
+interface UserTasks {
+  @get list(@path userId: string, ...PageParams): TaskPage | ApiError;
+}
