@@ -77,6 +77,31 @@ func applyAdvanceRecurrence(
 	if err != nil {
 		return err
 	}
+	fromVal := task.DueAt.Time.Format("2006-01-02")
+	if next == nil {
+		// Recurrence rule exhausted — clear due date and overdue action config so
+		// the task is no longer picked up by the cron and the UI shows no stale rule.
+		result, err := q.UpdateTaskOverdueActionExhausted(ctx, dbgen.UpdateTaskOverdueActionExhaustedParams{
+			UpdatedAt: nowTz,
+			ID:        task.ID,
+			SpaceSlug: task.SpaceSlug,
+		})
+		if err != nil {
+			return err
+		}
+		if result.RowsAffected() == 0 {
+			return nil // concurrent update won
+		}
+		return activitylog.Log(ctx, db, activitylog.Entry{
+			SpaceSlug:  task.SpaceSlug,
+			EntityType: activitylog.EntityTask,
+			EntityID:   types.FormatTaskID(task.ID),
+			Action:     activitylog.ActionUpdated,
+			Details: []activitylog.Detail{
+				{Field: "due", From: &fromVal},
+			},
+		}, now)
+	}
 	newDueAt, newDueTz := types.DecomposeDueDate(next)
 	result, err := q.UpdateTaskOverdueActionAdvanceRecurrence(ctx, dbgen.UpdateTaskOverdueActionAdvanceRecurrenceParams{
 		DueAt:     newDueAt,
@@ -91,19 +116,14 @@ func applyAdvanceRecurrence(
 	if result.RowsAffected() == 0 {
 		return nil // concurrent update won
 	}
-	fromVal := task.DueAt.Time.Format("2006-01-02")
-	var toVal *string
-	if next != nil {
-		s := next.Date.Time.Format("2006-01-02")
-		toVal = &s
-	}
+	toVal := next.Date.Time.Format("2006-01-02")
 	return activitylog.Log(ctx, db, activitylog.Entry{
 		SpaceSlug:  task.SpaceSlug,
 		EntityType: activitylog.EntityTask,
 		EntityID:   types.FormatTaskID(task.ID),
 		Action:     activitylog.ActionUpdated,
 		Details: []activitylog.Detail{
-			{Field: "due", From: &fromVal, To: toVal},
+			{Field: "due", From: &fromVal, To: &toVal},
 		},
 	}, now)
 }

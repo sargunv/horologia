@@ -635,9 +635,12 @@ func (q *Queries) UpdateTaskOverdueActionAdvanceRecurrence(ctx context.Context, 
 
 const updateTaskOverdueActionClearDueDate = `-- name: UpdateTaskOverdueActionClearDueDate :execresult
 UPDATE tasks
-SET due_at     = NULL,
-    due_tz     = NULL,
-    updated_at = $1
+SET due_at                    = NULL,
+    due_tz                    = NULL,
+    overdue_action_after_days = NULL,
+    overdue_action            = NULL,
+    overdue_action_status     = NULL,
+    updated_at                = $1
 WHERE id = $2
   AND space_slug = $3
   AND overdue_action = 'clear_due_date'
@@ -649,8 +652,35 @@ type UpdateTaskOverdueActionClearDueDateParams struct {
 	SpaceSlug string
 }
 
+// Clears the due date and removes the overdue action rule (since the rule
+// requires a due date, we must clear both together).
 func (q *Queries) UpdateTaskOverdueActionClearDueDate(ctx context.Context, arg UpdateTaskOverdueActionClearDueDateParams) (pgconn.CommandTag, error) {
 	return q.db.Exec(ctx, updateTaskOverdueActionClearDueDate, arg.UpdatedAt, arg.ID, arg.SpaceSlug)
+}
+
+const updateTaskOverdueActionExhausted = `-- name: UpdateTaskOverdueActionExhausted :execresult
+UPDATE tasks
+SET due_at                    = NULL,
+    due_tz                    = NULL,
+    overdue_action_after_days = NULL,
+    overdue_action            = NULL,
+    overdue_action_status     = NULL,
+    updated_at                = $1
+WHERE id = $2
+  AND space_slug = $3
+  AND overdue_action = 'advance_recurrence'
+`
+
+type UpdateTaskOverdueActionExhaustedParams struct {
+	UpdatedAt pgtype.Timestamptz
+	ID        int64
+	SpaceSlug string
+}
+
+// Called when advance_recurrence fires but ComputeNextDueAt returns nil
+// (recurrence rule exhausted). Clears due date and overdue action config.
+func (q *Queries) UpdateTaskOverdueActionExhausted(ctx context.Context, arg UpdateTaskOverdueActionExhaustedParams) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, updateTaskOverdueActionExhausted, arg.UpdatedAt, arg.ID, arg.SpaceSlug)
 }
 
 const updateTaskOverdueActionSetStatus = `-- name: UpdateTaskOverdueActionSetStatus :execresult

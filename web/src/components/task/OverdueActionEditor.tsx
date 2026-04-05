@@ -26,11 +26,11 @@ const OVERDUE_ACTION_LABELS: Record<TaskOverdueAction, string> = {
   clear_due_date: "Clear due date",
 };
 
-const OVERDUE_ACTION_VALUES: TaskOverdueAction[] = [
+const OVERDUE_ACTION_VALUES = [
   "advance_recurrence",
   "set_status",
   "clear_due_date",
-];
+] satisfies TaskOverdueAction[];
 
 function isOverdueAction(value: string): value is TaskOverdueAction {
   return OVERDUE_ACTION_VALUES.some((v) => v === value);

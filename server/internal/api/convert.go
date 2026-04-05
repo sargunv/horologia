@@ -533,12 +533,15 @@ func optNilStringToDB(opt apigen.OptNilString, existing pgtype.Text) pgtype.Text
 }
 
 // overdueActionRuleToDB converts an API TaskOverdueActionRule to DB columns.
+// "after: null" (immediate) is stored as 0 — a NULL overdue_action_after_days means
+// "no rule". The DB constraint requires the column to be non-NULL whenever
+// overdue_action is set.
 func overdueActionRuleToDB(rule apigen.TaskOverdueActionRule) (afterDays pgtype.Int4, action dbgen.NullOverdueAction, statusName pgtype.Text) {
-	if rule.After.IsNull() {
-		afterDays = pgtype.Int4{}
-	} else {
-		afterDays = pgtype.Int4{Int32: rule.After.Value, Valid: true}
+	var days int32
+	if !rule.After.IsNull() {
+		days = rule.After.Value
 	}
+	afterDays = pgtype.Int4{Int32: days, Valid: true}
 	action = dbgen.NullOverdueAction{OverdueAction: dbgen.OverdueAction(rule.Action), Valid: true}
 	if rule.Status.IsSet() {
 		statusName = pgtype.Text{String: rule.Status.Value, Valid: true}
@@ -547,6 +550,7 @@ func overdueActionRuleToDB(rule apigen.TaskOverdueActionRule) (afterDays pgtype.
 }
 
 // overdueActionRuleFromDB converts DB overdue action columns to an API NilTaskOverdueActionRule.
+// DB value 0 for after_days means immediate (API "after": null).
 func overdueActionRuleFromDB(afterDays pgtype.Int4, action dbgen.NullOverdueAction, statusName pgtype.Text) apigen.NilTaskOverdueActionRule {
 	if !action.Valid {
 		var nilRule apigen.NilTaskOverdueActionRule
@@ -556,7 +560,8 @@ func overdueActionRuleFromDB(afterDays pgtype.Int4, action dbgen.NullOverdueActi
 	rule := apigen.TaskOverdueActionRule{
 		Action: apigen.TaskOverdueAction(action.OverdueAction),
 	}
-	if afterDays.Valid {
+	// 0 = immediate (null in API); positive = grace period in days
+	if afterDays.Valid && afterDays.Int32 > 0 {
 		rule.After.SetTo(afterDays.Int32)
 	} else {
 		rule.After.SetToNull()

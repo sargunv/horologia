@@ -179,10 +179,29 @@ WHERE id = $3
   AND overdue_action = 'set_status';
 
 -- name: UpdateTaskOverdueActionClearDueDate :execresult
+-- Clears the due date and removes the overdue action rule (since the rule
+-- requires a due date, we must clear both together).
 UPDATE tasks
-SET due_at     = NULL,
-    due_tz     = NULL,
-    updated_at = $1
+SET due_at                    = NULL,
+    due_tz                    = NULL,
+    overdue_action_after_days = NULL,
+    overdue_action            = NULL,
+    overdue_action_status     = NULL,
+    updated_at                = $1
 WHERE id = $2
   AND space_slug = $3
   AND overdue_action = 'clear_due_date';
+
+-- name: UpdateTaskOverdueActionExhausted :execresult
+-- Called when advance_recurrence fires but ComputeNextDueAt returns nil
+-- (recurrence rule exhausted). Clears due date and overdue action config.
+UPDATE tasks
+SET due_at                    = NULL,
+    due_tz                    = NULL,
+    overdue_action_after_days = NULL,
+    overdue_action            = NULL,
+    overdue_action_status     = NULL,
+    updated_at                = $1
+WHERE id = $2
+  AND space_slug = $3
+  AND overdue_action = 'advance_recurrence';
