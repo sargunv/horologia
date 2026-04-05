@@ -23,8 +23,36 @@ common_env = {
 }
 
 if manage_postgres:
-    docker_compose("docker-compose.yml")
-    dc_resource("postgres", labels=["infra"])
+    pgdata = os.environ["PGDATA"]
+
+    local_resource(
+        "postgres",
+        serve_cmd=(
+            "bash -c '"
+            "if [ ! -f \"$PGDATA/PG_VERSION\" ]; then"
+            " initdb -D \"$PGDATA\" -U postgres --auth=trust --no-locale -E UTF8;"
+            " fi &&"
+            " exec postgres -D \"$PGDATA\" -p $POSTGRES_PORT'"
+        ),
+        serve_env={
+            "PGDATA": pgdata,
+            "POSTGRES_PORT": str(POSTGRES_PORT),
+        },
+        readiness_probe=probe(
+            exec=exec_action(["pg_isready", "-h", "localhost", "-p", str(POSTGRES_PORT), "-U", "postgres"]),
+            initial_delay_secs=3,
+            period_secs=2,
+            failure_threshold=10,
+        ),
+        labels=["infra"],
+    )
+
+    local_resource(
+        "createdb",
+        cmd="createdb -h localhost -p %d -U postgres tend 2>/dev/null || true" % POSTGRES_PORT,
+        resource_deps=["postgres"],
+        labels=["infra"],
+    )
 
 local_resource(
     "oidc",
@@ -46,7 +74,7 @@ local_resource(
 
 server_resource_deps = ["oidc"]
 if manage_postgres:
-    server_resource_deps.append("postgres")
+    server_resource_deps.append("createdb")
 
 local_resource(
     "server",

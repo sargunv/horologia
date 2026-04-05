@@ -13,7 +13,8 @@ Progress is tracked in Linear (project: Tend).
 This project uses `mise` for tooling and task orchestration. Run `mise tasks` to see all available
 tasks. Key commands:
 
-- `mise run dev` — start local dev environment (Tilt)
+- `mise run dev` — start local dev environment (Tilt; starts postgres automatically via mise-managed
+  PostgreSQL)
 - `mise run generate` — run all code generation (run after changing TypeSpec or route files)
 - `mise run check` — run all linting/checks (hk)
 - `mise run test` — run all tests across all packages
@@ -22,6 +23,17 @@ tasks. Key commands:
 
 Package-scoped tasks use a `//` prefix, e.g. `mise run //server:generate`,
 `mise run //server:build`, `mise run //server:test`.
+
+### Database
+
+PostgreSQL is managed by mise (`conda:postgresql@17`) and started automatically by Tilt. Data is
+stored in `~/.local/share/tend-dev/pgdata` (persistent across restarts).
+
+- **Reset the dev database**: `rm -rf ~/.local/share/tend-dev/pgdata`, then restart Tilt.
+- **Port conflict**: If postgres fails to start, another instance may be on port 5432. Override with
+  `POSTGRES_PORT=5433` in `.env.local`.
+- **External postgres**: Set `TEND_DB=postgres://user:pass@host/tend?sslmode=disable` in
+  `.env.local` to skip mise-managed postgres entirely (e.g. shared team DB, Windows).
 
 ## Packages
 
