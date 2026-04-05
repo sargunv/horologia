@@ -24,6 +24,7 @@ import (
 	"github.com/sargunv/tend/server/internal/cron"
 	"github.com/sargunv/tend/server/internal/database"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/tend/server/internal/mcp"
 	"github.com/sargunv/tend/server/internal/pwdcheck"
 	"github.com/sargunv/tend/server/internal/taskengine"
 )
@@ -161,8 +162,11 @@ var serveCmd = &cobra.Command{
 		// Mount web auth routes (cookie login/logout) and cookie-to-bearer middleware.
 		finalHandler = api.MountWebAuth(finalHandler, handler)
 
-		// Mount health check at /healthz, API under /api prefix, and SPA at root.
-		finalHandler = api.MountRoot(finalHandler, pool, log)
+		// Mount MCP Streamable HTTP endpoint at /mcp with bearer auth.
+		mcpHandler := mcp.NewTransport(pool)
+
+		// Mount health check at /healthz, API under /api prefix, MCP at /mcp, and SPA at root.
+		finalHandler = api.MountRoot(finalHandler, mcpHandler, pool, log)
 
 		// Bootstrap initial owner if configured and no users exist yet.
 		if cfg.InitOwnerEmail != "" {
