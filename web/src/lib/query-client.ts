@@ -1,11 +1,7 @@
 import { MutationCache, QueryClient } from "@tanstack/react-query";
 
 export const queryClient = new QueryClient({
-  mutationCache: new MutationCache({
-    onError: (error) => {
-      console.error("Mutation failed:", error);
-    },
-  }),
+  mutationCache: new MutationCache(),
   defaultOptions: {
     queries: {
       staleTime: 30_000,
