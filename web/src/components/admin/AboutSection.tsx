@@ -8,8 +8,16 @@ const healthQueryOptions = queryOptions({
   queryFn: async () => {
     const res = await fetch("/healthz");
     if (!res.ok) return { status: "error" };
-    const data: { status: string } = await res.json();
-    return data;
+    const raw: unknown = await res.json();
+    if (
+      raw !== null &&
+      typeof raw === "object" &&
+      "status" in raw &&
+      typeof raw.status === "string"
+    ) {
+      return { status: raw.status };
+    }
+    return { status: "error" };
   },
   refetchInterval: 30_000,
 });

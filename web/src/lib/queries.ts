@@ -12,12 +12,43 @@ export interface AuthConfig {
   };
 }
 
+function parseAuthConfig(raw: unknown): AuthConfig {
+  if (raw !== null && typeof raw === "object" && "oidc" in raw && "password" in raw) {
+    const { oidc, password } = raw;
+    if (
+      oidc !== null &&
+      typeof oidc === "object" &&
+      "enabled" in oidc &&
+      typeof oidc.enabled === "boolean" &&
+      "label" in oidc &&
+      typeof oidc.label === "string" &&
+      "autoRedirect" in oidc &&
+      typeof oidc.autoRedirect === "boolean" &&
+      password !== null &&
+      typeof password === "object" &&
+      "enabled" in password &&
+      typeof password.enabled === "boolean"
+    ) {
+      return {
+        oidc: {
+          enabled: oidc.enabled,
+          label: oidc.label,
+          autoRedirect: oidc.autoRedirect,
+        },
+        password: { enabled: password.enabled },
+      };
+    }
+  }
+  throw new Error("Invalid auth config response");
+}
+
 export const authConfigQueryOptions = queryOptions({
   queryKey: ["authConfig"],
   queryFn: async (): Promise<AuthConfig> => {
     const res = await fetch("/api/auth/config");
     if (!res.ok) throw new Error("Failed to fetch auth config");
-    return res.json();
+    const raw: unknown = await res.json();
+    return parseAuthConfig(raw);
   },
   staleTime: Infinity,
 });
@@ -27,13 +58,28 @@ export interface LinkPendingInfo {
   name: string;
 }
 
+function parseLinkPendingInfo(raw: unknown): LinkPendingInfo {
+  if (
+    raw !== null &&
+    typeof raw === "object" &&
+    "email" in raw &&
+    typeof raw.email === "string" &&
+    "name" in raw &&
+    typeof raw.name === "string"
+  ) {
+    return { email: raw.email, name: raw.name };
+  }
+  throw new Error("Invalid link pending info response");
+}
+
 export const linkPendingQueryOptions = queryOptions({
   queryKey: ["linkPending"],
   queryFn: async (): Promise<LinkPendingInfo | null> => {
     const res = await fetch("/api/auth/link/pending", { credentials: "include" });
     if (res.status === 404) return null;
     if (!res.ok) throw new Error("Failed to fetch link state");
-    return res.json();
+    const raw: unknown = await res.json();
+    return parseLinkPendingInfo(raw);
   },
   retry: false,
   staleTime: Infinity,

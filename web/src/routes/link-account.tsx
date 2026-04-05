@@ -27,10 +27,28 @@ function LinkAccountPage() {
         body: JSON.stringify({ password }),
       });
       if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new Error(body?.message ?? "Failed to link account");
+        const body: unknown = await res.json().catch(() => null);
+        const message =
+          body !== null &&
+          typeof body === "object" &&
+          "message" in body &&
+          typeof body.message === "string"
+            ? body.message
+            : undefined;
+        throw new Error(message ?? "Failed to link account");
       }
-      return res.json();
+      const raw: unknown = await res.json();
+      if (
+        raw !== null &&
+        typeof raw === "object" &&
+        "linked" in raw &&
+        typeof raw.linked === "boolean" &&
+        "redirectTo" in raw &&
+        typeof raw.redirectTo === "string"
+      ) {
+        return { linked: raw.linked, redirectTo: raw.redirectTo };
+      }
+      throw new Error("Invalid link response");
     },
     onSuccess: (data) => {
       void navigate({ to: data.redirectTo ?? "/" });

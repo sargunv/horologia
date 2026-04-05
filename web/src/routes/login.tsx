@@ -5,19 +5,21 @@ import { type FormEvent, useEffect, useState } from "react";
 import { authConfigQueryOptions } from "../lib/queries.ts";
 
 interface LoginSearch {
-  redirect: string | undefined;
-  noredirect: boolean;
+  redirect?: string;
+  noredirect?: boolean;
 }
 
 export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>): LoginSearch => {
     const r = typeof search["redirect"] === "string" ? search["redirect"] : undefined;
+    const redirect = r && r.startsWith("/") && !r.startsWith("//") ? r : undefined;
+    const noredirect =
+      search["noredirect"] === true ||
+      search["noredirect"] === "true" ||
+      search["noredirect"] === "";
     return {
-      redirect: r && r.startsWith("/") && !r.startsWith("//") ? r : undefined,
-      noredirect:
-        search["noredirect"] === true ||
-        search["noredirect"] === "true" ||
-        search["noredirect"] === "",
+      ...(redirect !== undefined ? { redirect } : {}),
+      ...(noredirect ? { noredirect } : {}),
     };
   },
   component: LoginPage,
@@ -40,8 +42,15 @@ function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
       if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new Error(body?.message ?? "Invalid email or password");
+        const body: unknown = await res.json().catch(() => null);
+        const message =
+          body !== null &&
+          typeof body === "object" &&
+          "message" in body &&
+          typeof body.message === "string"
+            ? body.message
+            : undefined;
+        throw new Error(message ?? "Invalid email or password");
       }
     },
     onSuccess: () => {

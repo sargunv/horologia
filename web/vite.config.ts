@@ -8,7 +8,15 @@ const serverPort = env.SERVER_PORT ?? "8080";
 const webPort = env.WEB_PORT ?? "5173";
 
 export default defineConfig({
-  plugins: [TanStackRouterVite({ routesDirectory: "./src/routes" }), react(), tailwindcss()],
+  plugins: [
+    TanStackRouterVite({
+      routesDirectory: "./src/routes",
+      addExtensions: true,
+      routeTreeFileHeader: ["/* eslint-disable */", "// noinspection JSUnusedGlobalSymbols"],
+    }),
+    react(),
+    tailwindcss(),
+  ],
   lint: {
     ignorePatterns: ["dist/**", "src/routeTree.gen.ts"],
     plugins: ["eslint", "typescript", "unicorn", "oxc", "import", "react", "promise", "vitest"],
@@ -20,6 +28,14 @@ export default defineConfig({
       "import/no-mutable-exports": "error",
       "import/no-cycle": "error",
       "@typescript-eslint/consistent-type-assertions": ["error", { assertionStyle: "never" }],
+      "typescript/no-explicit-any": "error",
+      "typescript/no-unsafe-argument": "error",
+      "typescript/no-unsafe-assignment": "error",
+      "typescript/no-unsafe-call": "error",
+      "typescript/no-unsafe-function-type": "error",
+      "typescript/no-unsafe-member-access": "error",
+      "typescript/no-unsafe-return": "error",
+      "typescript/no-unsafe-type-assertion": "error",
     },
     options: {
       typeAware: true,
