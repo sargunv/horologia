@@ -77,4 +77,4 @@ default admin user (`admin@localhost` / `password`) on first run.
 ### Capturing UI evidence
 
 After implementing UI changes, capture a walkthrough video before committing to verify the feature
-works end-to-end and provide visual evidence for the PR. Use the `/video-walkthrough` skill.
+works end-to-end and provide visual evidence for the PR.
