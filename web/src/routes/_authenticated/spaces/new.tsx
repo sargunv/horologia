@@ -3,7 +3,7 @@ import { createFileRoute, createLink, useNavigate } from "@tanstack/react-router
 import { CircleAlert } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { apiClient } from "../../../api/client.ts";
-import { toaster } from "../../../lib/toaster.ts";
+import { notifyStaleData } from "../../../lib/toaster.ts";
 
 export const Route = createFileRoute("/_authenticated/spaces/new")({
   component: NewSpacePage,
@@ -38,11 +38,9 @@ function NewSpacePage() {
     onSuccess: async (data) => {
       try {
         await queryClient.invalidateQueries({ queryKey: ["spaces"] });
-      } catch {
-        toaster.warning({
-          title: "Data may be out of date",
-          description: "Refresh the page to see the latest changes.",
-        });
+      } catch (err) {
+        console.error("Cache invalidation failed after mutation:", err);
+        notifyStaleData();
       }
       void navigate({ to: "/spaces/$spaceSlug", params: { spaceSlug: data.slug } });
     },

@@ -1,14 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../api/client.ts";
 import type { components } from "../api/schema.d.ts";
-import { toaster } from "./toaster.ts";
-
-function notifyStaleData() {
-  toaster.warning({
-    title: "Data may be out of date",
-    description: "Refresh the page to see the latest changes.",
-  });
-}
+import { notifyStaleData } from "./toaster.ts";
 
 type TaskUpdate = components["schemas"]["TaskUpdate"];
 
@@ -29,7 +22,8 @@ export function useTaskPatch(spaceSlug: string, taskId: string) {
           queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", taskId] }),
           queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", "list"] }),
         ]);
-      } catch {
+      } catch (err) {
+        console.error("Cache invalidation failed after mutation:", err);
         notifyStaleData();
       }
     },
@@ -77,7 +71,8 @@ export function useAddRelation(spaceSlug: string, taskId: string) {
           queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", taskId] }),
           queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", "list"] }),
         ]);
-      } catch {
+      } catch (err) {
+        console.error("Cache invalidation failed after mutation:", err);
         notifyStaleData();
       }
     },
@@ -108,7 +103,8 @@ export function useDeleteRelation(spaceSlug: string, taskId: string) {
           queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", taskId] }),
           queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", "list"] }),
         ]);
-      } catch {
+      } catch (err) {
+        console.error("Cache invalidation failed after mutation:", err);
         notifyStaleData();
       }
     },

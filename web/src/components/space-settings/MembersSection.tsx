@@ -3,16 +3,9 @@ import { UserPlus, Users, X } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
-import { toaster } from "../../lib/toaster.ts";
+import { notifyStaleData } from "../../lib/toaster.ts";
 import { ErrorAlert } from "./ErrorAlert.tsx";
 import { SettingsSection } from "./SettingsSection.tsx";
-
-function notifyStaleData() {
-  toaster.warning({
-    title: "Data may be out of date",
-    description: "Refresh the page to see the latest changes.",
-  });
-}
 
 type SpaceMember = components["schemas"]["SpaceMember"];
 type SpaceRole = components["schemas"]["SpaceRole"];
@@ -110,7 +103,8 @@ function MemberRow({
     onSuccess: async () => {
       try {
         await queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "members"] });
-      } catch {
+      } catch (err) {
+        console.error("Cache invalidation failed after mutation:", err);
         notifyStaleData();
       }
     },
@@ -126,7 +120,8 @@ function MemberRow({
     onSuccess: async () => {
       try {
         await queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "members"] });
-      } catch {
+      } catch (err) {
+        console.error("Cache invalidation failed after mutation:", err);
         notifyStaleData();
       }
     },
@@ -238,7 +233,8 @@ function AddMemberForm({ spaceSlug }: { spaceSlug: string }) {
       setRole("member");
       try {
         await queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "members"] });
-      } catch {
+      } catch (err) {
+        console.error("Cache invalidation failed after mutation:", err);
         notifyStaleData();
       }
     },

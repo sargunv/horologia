@@ -1,5 +1,5 @@
 import { Dialog, Portal } from "@skeletonlabs/skeleton-react";
-import { toaster } from "../../../../lib/toaster.ts";
+import { notifyStaleData } from "../../../../lib/toaster.ts";
 import {
   useMutation,
   useQueryClient,
@@ -47,11 +47,9 @@ function CreateTaskDialog({ spaceSlug }: { spaceSlug: string }) {
         await queryClient.invalidateQueries({
           queryKey: ["spaces", spaceSlug, "tasks", "list"],
         });
-      } catch {
-        toaster.warning({
-          title: "Data may be out of date",
-          description: "Refresh the page to see the latest changes.",
-        });
+      } catch (err) {
+        console.error("Cache invalidation failed after mutation:", err);
+        notifyStaleData();
       }
       await navigate({
         to: "/spaces/$spaceSlug/tasks/$taskId",
