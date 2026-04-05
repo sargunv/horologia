@@ -89,6 +89,11 @@ function AddRelationForm({
   const [validationError, setValidationError] = useState<string | null>(null);
   const addMutation = useAddRelation(spaceSlug, taskId);
 
+  function handleKindChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const kind = USER_MANAGEABLE_KINDS.find((k) => k === e.target.value);
+    if (kind !== undefined) setKindInput(kind);
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = taskIdInput.trim();
@@ -114,10 +119,10 @@ function AddRelationForm({
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="flex gap-2 mt-3">
+      <form onSubmit={handleSubmit} className="flex flex-wrap gap-2 mt-3">
         <select
           value={kindInput}
-          onChange={(e) => setKindInput(e.target.value as TaskRelationKind)}
+          onChange={handleKindChange}
           className="select preset-outlined-surface-200-800 text-sm"
         >
           {USER_MANAGEABLE_KINDS.map((k) => (
