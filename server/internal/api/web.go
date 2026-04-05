@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/sargunv/tend/server/internal/auth"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 )
 
@@ -106,7 +107,7 @@ func WebLogoutHandler(handler *Handler) http.Handler {
 		}
 
 		ctx := r.Context()
-		hash := hashToken(c.Value)
+		hash := auth.HashToken(c.Value)
 		q := dbgen.New(handler.Pool)
 		_, _ = q.DeleteAuthTokenByHash(ctx, hash)
 

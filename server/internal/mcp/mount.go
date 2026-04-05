@@ -1,8 +1,6 @@
 package mcp
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -43,7 +41,7 @@ func bearerAuthMiddleware(pool *pgxpool.Pool, next http.Handler) http.Handler {
 			return
 		}
 
-		hash := hashToken(token)
+		hash := auth.HashToken(token)
 		q := dbgen.New(pool)
 		row, err := q.GetAuthTokenByHash(r.Context(), hash)
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -83,11 +81,6 @@ func extractBearerToken(r *http.Request) string {
 		return ""
 	}
 	return strings.TrimPrefix(h, "Bearer ")
-}
-
-func hashToken(token string) string {
-	h := sha256.Sum256([]byte(token))
-	return hex.EncodeToString(h[:])
 }
 
 func writeJSONError(w http.ResponseWriter, status int, message string) {

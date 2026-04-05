@@ -1,5 +1,5 @@
 import "@typespec/http";
-import "../emitters/typespec-mcp-go/dist/src/index.js";
+import "@tend/typespec-mcp-go";
 
 using Http;
 using MCP;

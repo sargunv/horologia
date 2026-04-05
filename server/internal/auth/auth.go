@@ -1,6 +1,16 @@
 package auth
 
-import "context"
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+)
+
+// HashToken returns the hex-encoded SHA-256 of the given token string.
+func HashToken(token string) string {
+	h := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(h[:])
+}
 
 type contextKey int
 

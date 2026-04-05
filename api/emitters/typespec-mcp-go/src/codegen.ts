@@ -160,6 +160,9 @@ function descOpt(desc: string): string {
 
 /**
  * Derives the ogen Handler interface method signature.
+ *
+ * NOTE: This is currently scoped to the four task operations. Extending this
+ * emitter to new interfaces requires adding cases here and in emitGoCall.
  */
 function deriveHandlerMethod(opName: string, httpOp: HttpOperation): string {
   const iface = httpOp.container ? ((httpOp.container as any).name ?? "") : "";
@@ -180,6 +183,9 @@ function deriveHandlerMethod(opName: string, httpOp: HttpOperation): string {
   }
 }
 
+// COMPLEX_FIELDS lists body fields that are omitted from MCP tool parameters
+// because they require structured input not representable as plain strings.
+// When adding new complex fields to TaskCreate/TaskUpdate, add them here too.
 const COMPLEX_FIELDS = new Set([
   "due",
   "overdueActionRule",
@@ -310,8 +316,9 @@ export function generateGoFile(program: Program, tools: ToolInfo[]): string {
   // Per-tool definitions
   for (const { toolOpts, httpOp } of tools) {
     const camel = snakeToCamel(toolOpts.name);
-    const pathParams = collectParams(program, httpOp).filter((p) => p.isPathParam);
-    const queryParams = collectParams(program, httpOp).filter((p) => !p.isPathParam);
+    const allParams = collectParams(program, httpOp);
+    const pathParams = allParams.filter((p) => p.isPathParam);
+    const queryParams = allParams.filter((p) => !p.isPathParam);
     const bodyFields = collectBodyFields(program, httpOp);
 
     lines.push(`// --- ${toolOpts.name} ---`);
