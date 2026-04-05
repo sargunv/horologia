@@ -1,46 +1,19 @@
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
+import * as v from "valibot";
 import { apiClient } from "../api/client.ts";
 
-export interface AuthConfig {
-  oidc: {
-    enabled: boolean;
-    label: string;
-    autoRedirect: boolean;
-  };
-  password: {
-    enabled: boolean;
-  };
-}
+const AuthConfigSchema = v.object({
+  oidc: v.object({
+    enabled: v.boolean(),
+    label: v.string(),
+    autoRedirect: v.boolean(),
+  }),
+  password: v.object({
+    enabled: v.boolean(),
+  }),
+});
 
-function parseAuthConfig(raw: unknown): AuthConfig {
-  if (raw !== null && typeof raw === "object" && "oidc" in raw && "password" in raw) {
-    const { oidc, password } = raw;
-    if (
-      oidc !== null &&
-      typeof oidc === "object" &&
-      "enabled" in oidc &&
-      typeof oidc.enabled === "boolean" &&
-      "label" in oidc &&
-      typeof oidc.label === "string" &&
-      "autoRedirect" in oidc &&
-      typeof oidc.autoRedirect === "boolean" &&
-      password !== null &&
-      typeof password === "object" &&
-      "enabled" in password &&
-      typeof password.enabled === "boolean"
-    ) {
-      return {
-        oidc: {
-          enabled: oidc.enabled,
-          label: oidc.label,
-          autoRedirect: oidc.autoRedirect,
-        },
-        password: { enabled: password.enabled },
-      };
-    }
-  }
-  throw new Error("Invalid auth config response");
-}
+export type AuthConfig = v.InferOutput<typeof AuthConfigSchema>;
 
 export const authConfigQueryOptions = queryOptions({
   queryKey: ["authConfig"],
@@ -48,29 +21,17 @@ export const authConfigQueryOptions = queryOptions({
     const res = await fetch("/api/auth/config");
     if (!res.ok) throw new Error("Failed to fetch auth config");
     const raw: unknown = await res.json();
-    return parseAuthConfig(raw);
+    return v.parse(AuthConfigSchema, raw);
   },
   staleTime: Infinity,
 });
 
-export interface LinkPendingInfo {
-  email: string;
-  name: string;
-}
+const LinkPendingInfoSchema = v.object({
+  email: v.string(),
+  name: v.string(),
+});
 
-function parseLinkPendingInfo(raw: unknown): LinkPendingInfo {
-  if (
-    raw !== null &&
-    typeof raw === "object" &&
-    "email" in raw &&
-    typeof raw.email === "string" &&
-    "name" in raw &&
-    typeof raw.name === "string"
-  ) {
-    return { email: raw.email, name: raw.name };
-  }
-  throw new Error("Invalid link pending info response");
-}
+export type LinkPendingInfo = v.InferOutput<typeof LinkPendingInfoSchema>;
 
 export const linkPendingQueryOptions = queryOptions({
   queryKey: ["linkPending"],
@@ -79,7 +40,7 @@ export const linkPendingQueryOptions = queryOptions({
     if (res.status === 404) return null;
     if (!res.ok) throw new Error("Failed to fetch link state");
     const raw: unknown = await res.json();
-    return parseLinkPendingInfo(raw);
+    return v.parse(LinkPendingInfoSchema, raw);
   },
   retry: false,
   staleTime: Infinity,

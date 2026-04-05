@@ -2,7 +2,10 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { CircleAlert } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
+import * as v from "valibot";
 import { authConfigQueryOptions } from "../lib/queries.ts";
+
+const ErrorBodySchema = v.object({ message: v.string() });
 
 interface LoginSearch {
   redirect?: string;
@@ -43,14 +46,8 @@ function LoginPage() {
       });
       if (!res.ok) {
         const body: unknown = await res.json().catch(() => null);
-        const message =
-          body !== null &&
-          typeof body === "object" &&
-          "message" in body &&
-          typeof body.message === "string"
-            ? body.message
-            : undefined;
-        throw new Error(message ?? "Invalid email or password");
+        const parsed = v.safeParse(ErrorBodySchema, body);
+        throw new Error(parsed.success ? parsed.output.message : "Invalid email or password");
       }
     },
     onSuccess: () => {
