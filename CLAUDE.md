@@ -32,7 +32,7 @@ PostgreSQL is managed by mise and started automatically by Tilt. Data is stored 
   Tilt UI (or restart Tilt).
 - **Clean up old branch databases**: `mise run db:clean`
 - **External postgres**: Set `TEND_DB=postgres://user:pass@host/tend?sslmode=disable` in
-  `.env.local` to skip mise-managed postgres entirely (e.g. shared team DB, Windows).
+  `.env.local` to skip mise-managed postgres entirely (e.g. a shared team DB).
 
 ## Packages
 
@@ -69,22 +69,12 @@ PostgreSQL is managed by mise and started automatically by Tilt. Data is stored 
 
 Use `playwright-cli` for web automation. Run `playwright-cli --help` for available commands.
 
+### Dev environment
+
+`mise run dev` starts all services (postgres, server, web). The `seed` Tilt resource creates the
+default admin user (`admin@localhost` / `password`) on first run.
+
 ### Capturing UI evidence
 
 After implementing UI changes, capture a walkthrough video before committing to verify the feature
-works end-to-end and provide visual evidence for the PR:
-
-1. Start the dev environment: `mise run dev` (wait for all services to be healthy)
-2. Open the browser: `playwright-cli open http://localhost:$WEB_PORT`
-3. Log in: navigate to login, fill credentials (`admin@localhost` / `password`)
-4. Start recording: `playwright-cli video-start`
-5. Walk through the implemented feature — navigate to relevant pages, interact with new UI
-6. Stop recording: `playwright-cli video-stop --filename=/tmp/walkthrough.webm`
-7. Upload the video to the PR: `gh pr comment <number> --body "## UI Walkthrough" --edit-last` or
-   attach via:
-   `gh api repos/{owner}/{repo}/issues/{number}/comments -f body="![walkthrough](video-url)"`
-
-For quick screenshots instead of video:
-
-- `playwright-cli screenshot` — captures the current page
-- `playwright-cli screenshot <ref>` — captures a specific element
+works end-to-end and provide visual evidence for the PR. Use the `/video-walkthrough` skill.
