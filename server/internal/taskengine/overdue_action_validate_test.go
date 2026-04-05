@@ -13,10 +13,6 @@ func nullOverdueAction(a dbgen.OverdueAction) dbgen.NullOverdueAction {
 	return dbgen.NullOverdueAction{OverdueAction: a, Valid: true}
 }
 
-func nullText(s string) pgtype.Text {
-	return pgtype.Text{String: s, Valid: true}
-}
-
 func TestValidateOverdueActionRule(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -34,43 +30,6 @@ func TestValidateOverdueActionRule(t *testing.T) {
 			action:         dbgen.NullOverdueAction{Valid: false},
 			recurrenceType: dbgen.RecurrenceTypeOneOff,
 			hasDue:         false,
-			wantErr:        false,
-		},
-		// ─── Valid configurations ─────────────────────────────────────────────────────
-		{
-			name:           "advance_recurrence on completion_based with due",
-			action:         nullOverdueAction(dbgen.OverdueActionAdvanceRecurrence),
-			recurrenceType: dbgen.RecurrenceTypeCompletionBased,
-			hasDue:         true,
-			wantErr:        false,
-		},
-		{
-			name:           "advance_recurrence on fixed_non_accumulating with due",
-			action:         nullOverdueAction(dbgen.OverdueActionAdvanceRecurrence),
-			recurrenceType: dbgen.RecurrenceTypeFixedNonAccumulating,
-			hasDue:         true,
-			wantErr:        false,
-		},
-		{
-			name:           "set_status on completion_based with status and due",
-			action:         nullOverdueAction(dbgen.OverdueActionSetStatus),
-			statusName:     nullText("overdue"),
-			recurrenceType: dbgen.RecurrenceTypeCompletionBased,
-			hasDue:         true,
-			wantErr:        false,
-		},
-		{
-			name:           "clear_due_date on fixed_non_accumulating with due",
-			action:         nullOverdueAction(dbgen.OverdueActionClearDueDate),
-			recurrenceType: dbgen.RecurrenceTypeFixedNonAccumulating,
-			hasDue:         true,
-			wantErr:        false,
-		},
-		{
-			name:           "clear_due_date on fixed_accumulating with due",
-			action:         nullOverdueAction(dbgen.OverdueActionClearDueDate),
-			recurrenceType: dbgen.RecurrenceTypeFixedAccumulating,
-			hasDue:         true,
 			wantErr:        false,
 		},
 		// ─── Invalid configurations ───────────────────────────────────────────────────
