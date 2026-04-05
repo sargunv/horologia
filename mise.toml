@@ -42,7 +42,7 @@ postinstall = [
   "hk install --mise",
   "pnpm install",
   "go mod download",
-  "playwright-cli install",
+  "playwright-cli install-browser",
 ]
 
 [tasks.generate]
