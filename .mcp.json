@@ -10,10 +10,6 @@
     "tilt": {
       "command": "npx",
       "args": ["-y", "mcp-server-tilt"]
-    },
-    "linear": {
-      "type": "sse",
-      "url": "https://mcp.linear.app/sse"
     }
   }
 }
