@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { components } from "../../api/schema.d.ts";
 
 type TaskOverdueAction = components["schemas"]["TaskOverdueAction"];
@@ -84,6 +84,7 @@ export function OverdueActionEditor({
   onSave: (rule: TaskOverdueActionRule | null) => void;
   disabled?: boolean;
 }) {
+  const radioName = useId();
   const [draft, setDraft] = useState<DraftState>(() => toDraftState(overdueActionRule));
   const [editing, setEditing] = useState(false);
   const cancellingRef = useRef(false);
@@ -160,6 +161,7 @@ export function OverdueActionEditor({
               <label className="flex items-center gap-2">
                 <input
                   type="radio"
+                  name={radioName}
                   checked={draft.afterMode === "immediate"}
                   onChange={() => update({ afterMode: "immediate" })}
                   disabled={disabled}
@@ -170,6 +172,7 @@ export function OverdueActionEditor({
               <label className="flex items-center gap-2">
                 <input
                   type="radio"
+                  name={radioName}
                   checked={draft.afterMode === "days"}
                   onChange={() => update({ afterMode: "days" })}
                   disabled={disabled}
@@ -181,7 +184,7 @@ export function OverdueActionEditor({
                   min={1}
                   value={draft.afterDays}
                   onChange={(e) =>
-                    update({ afterDays: Math.max(1, parseInt(e.target.value) || 1) })
+                    update({ afterDays: Math.max(1, parseInt(e.target.value, 10) || 1) })
                   }
                   disabled={disabled || draft.afterMode !== "days"}
                   className="input preset-outlined-surface-200-800 w-20 text-center"
