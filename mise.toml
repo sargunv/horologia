@@ -11,7 +11,7 @@ config_roots = [
 [env]
 _.file = ".env.local"
 POSTGRES_PORT = "{{env.POSTGRES_PORT | default(value='5432')}}"
-PGDATA = "{{env.PGDATA | default(value=env.HOME ~ '/.local/share/tend-dev/pgdata')}}"
+PGDATA = "{{config_root}}/.postgres/{{exec(command='git rev-parse --abbrev-ref HEAD 2>/dev/null || echo main')}}/data"
 OIDC_PORT = "{{env.OIDC_PORT | default(value='5556')}}"
 SERVER_PORT = "{{env.SERVER_PORT | default(value='8080')}}"
 WEB_PORT = "{{env.WEB_PORT | default(value='5173')}}"
@@ -72,6 +72,22 @@ run = "mise run generate && mise run fix && mise run test"
 [tasks.dev]
 description = "Start local dev environment"
 run = "tilt up --stream --port $TILT_PORT"
+
+[tasks."db:reset"]
+description = "Drop and reinitialise the dev database for the current branch"
+run = "rm -rf \"$PGDATA\" && echo 'Database reset. Restart dev to reinitialise.'"
+
+[tasks."db:clean"]
+description = "Remove postgres data directories for branches that no longer exist"
+run = """
+for dir in .postgres/*/; do
+  branch=$(basename "$dir")
+  if ! git show-ref --verify --quiet "refs/heads/$branch"; then
+    echo "Removing pgdata for deleted branch: $branch"
+    rm -rf ".postgres/$branch"
+  fi
+done
+"""
 
 [tasks.docker-build]
 description = "Build Docker image with versions from mise.toml"
