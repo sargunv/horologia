@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"time"
@@ -19,7 +18,7 @@ import (
 
 // HandleBearerAuth validates the bearer token and enriches the context with the user.
 func (h *Handler) HandleBearerAuth(ctx context.Context, operationName apigen.OperationName, t apigen.BearerAuth) (context.Context, error) {
-	hash := hashToken(t.Token)
+	hash := auth.HashToken(t.Token)
 	q := dbgen.New(h.Pool)
 	row, err := q.GetAuthTokenByHash(ctx, hash)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -60,13 +59,7 @@ func generateToken() (raw string, hash string, err error) {
 		return "", "", err
 	}
 	raw = hex.EncodeToString(b)
-	return raw, hashToken(raw), nil
-}
-
-// hashToken returns the hex-encoded SHA-256 of the given token string.
-func hashToken(token string) string {
-	h := sha256.Sum256([]byte(token))
-	return hex.EncodeToString(h[:])
+	return raw, auth.HashToken(raw), nil
 }
 
 // createSessionToken generates a token, stores it in the DB, and returns the raw value.

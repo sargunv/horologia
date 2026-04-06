@@ -1,0 +1,331 @@
+package api_test
+
+import (
+	"bytes"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/sargunv/tend/server/internal/mcp"
+)
+
+// mcpSession represents an initialized MCP session for testing.
+type mcpSession struct {
+	handler   http.Handler
+	token     string
+	sessionID string
+}
+
+// newMCPSession creates an MCP transport, performs the initialize handshake,
+// and returns a session ready for tool calls.
+func newMCPSession(t *testing.T, env *testEnv) *mcpSession {
+	t.Helper()
+	handler := mcp.NewTransport(env.pool, env.Handler)
+
+	// Send initialize request.
+	body, err := json.Marshal(map[string]any{
+		"jsonrpc": "2.0",
+		"id":      1,
+		"method":  "initialize",
+		"params": map[string]any{
+			"protocolVersion": "2024-11-05",
+			"capabilities":    map[string]any{},
+			"clientInfo":      map[string]any{"name": "test-client", "version": "0.1.0"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("marshal initialize body: %v", err)
+	}
+
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/mcp", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json, text/event-stream")
+	req.Header.Set("Authorization", "Bearer "+env.Token)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	resp := w.Result()
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("MCP initialize: status %d, want 200", resp.StatusCode)
+	}
+
+	sessionID := resp.Header.Get("Mcp-Session-Id")
+
+	return &mcpSession{
+		handler:   handler,
+		token:     env.Token,
+		sessionID: sessionID,
+	}
+}
+
+// call sends a JSON-RPC tools/call request and returns the parsed JSON-RPC response.
+func (s *mcpSession) call(t *testing.T, toolName string, args map[string]any) map[string]any {
+	t.Helper()
+	body, err := json.Marshal(map[string]any{
+		"jsonrpc": "2.0",
+		"id":      2,
+		"method":  "tools/call",
+		"params": map[string]any{
+			"name":      toolName,
+			"arguments": args,
+		},
+	})
+	if err != nil {
+		t.Fatalf("marshal tools/call body: %v", err)
+	}
+
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/mcp", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json, text/event-stream")
+	req.Header.Set("Authorization", "Bearer "+s.token)
+	if s.sessionID != "" {
+		req.Header.Set("Mcp-Session-Id", s.sessionID)
+	}
+	w := httptest.NewRecorder()
+	s.handler.ServeHTTP(w, req)
+	resp := w.Result()
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("MCP call %s: status %d, want 200", toolName, resp.StatusCode)
+	}
+
+	// The response may be SSE (text/event-stream) or plain JSON.
+	var result map[string]any
+	ct := resp.Header.Get("Content-Type")
+	if strings.HasPrefix(ct, "text/event-stream") {
+		raw := w.Body.String()
+		for line := range strings.SplitSeq(raw, "\n") {
+			data, ok := strings.CutPrefix(strings.TrimSpace(line), "data:")
+			if !ok {
+				continue
+			}
+			data = strings.TrimSpace(data)
+			if err := json.Unmarshal([]byte(data), &result); err == nil && result["id"] != nil {
+				break
+			}
+		}
+		if result == nil {
+			t.Fatalf("MCP call %s: no JSON-RPC response in SSE body: %s", toolName, raw)
+		}
+	} else {
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			t.Fatalf("MCP call %s: decode JSON: %v", toolName, err)
+		}
+	}
+
+	return result
+}
+
+// toolResult extracts the tool result content from a JSON-RPC response.
+// Returns parsed JSON content and whether the result was an error.
+func toolResult(t *testing.T, rpcResp map[string]any) (content map[string]any, isError bool) {
+	t.Helper()
+	if rpcResp["error"] != nil {
+		t.Fatalf("unexpected JSON-RPC error: %v", rpcResp["error"])
+	}
+	result := jsonAs[map[string]any](t, rpcResp["result"])
+	items := jsonAs[[]any](t, result["content"])
+	if len(items) == 0 {
+		t.Fatal("MCP result has no content items")
+	}
+	item := jsonAs[map[string]any](t, items[0])
+	text := jsonAs[string](t, item["text"])
+
+	errFlag, _ := result["isError"].(bool)
+	if errFlag {
+		return nil, true
+	}
+
+	var parsed map[string]any
+	if err := json.Unmarshal([]byte(text), &parsed); err != nil {
+		t.Fatalf("unmarshal tool result text: %v (text: %s)", err, text)
+	}
+	return parsed, false
+}
+
+// toolErrorText extracts the error message text from an MCP error result.
+func toolErrorText(t *testing.T, rpcResp map[string]any) string {
+	t.Helper()
+	if rpcResp["error"] != nil {
+		t.Fatalf("unexpected JSON-RPC error: %v", rpcResp["error"])
+	}
+	result := jsonAs[map[string]any](t, rpcResp["result"])
+	items := jsonAs[[]any](t, result["content"])
+	if len(items) == 0 {
+		t.Fatal("MCP result has no content items")
+	}
+	item := jsonAs[map[string]any](t, items[0])
+	return jsonAs[string](t, item["text"])
+}
+
+// --- Tests ---
+
+func TestMCPTaskCreate(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+
+	rpcResp := s.call(t, "task_create", map[string]any{
+		"spaceSlug": "home",
+		"title":     "MCP task",
+	})
+	task, isErr := toolResult(t, rpcResp)
+	if isErr {
+		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
+	}
+	if task["title"] != "MCP task" {
+		t.Errorf("title = %v, want MCP task", task["title"])
+	}
+	if task["status"] != "todo" {
+		t.Errorf("status = %v, want todo", task["status"])
+	}
+	id := jsonAs[string](t, task["id"])
+	if !strings.HasPrefix(id, "T") {
+		t.Errorf("id = %v, want T-prefixed", id)
+	}
+}
+
+func TestMCPTaskCreateWithFields(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+
+	rpcResp := s.call(t, "task_create", map[string]any{
+		"spaceSlug":   "home",
+		"title":       "Detailed task",
+		"description": "A description",
+		"status":      "done",
+	})
+	task, isErr := toolResult(t, rpcResp)
+	if isErr {
+		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
+	}
+	if task["description"] != "A description" {
+		t.Errorf("description = %v, want A description", task["description"])
+	}
+	if task["status"] != "done" {
+		t.Errorf("status = %v, want done", task["status"])
+	}
+}
+
+func TestMCPTaskCreateMissingTitle(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+
+	rpcResp := s.call(t, "task_create", map[string]any{
+		"spaceSlug": "home",
+	})
+	errText := toolErrorText(t, rpcResp)
+	if errText != "title is required" {
+		t.Errorf("error = %q, want 'title is required'", errText)
+	}
+}
+
+func TestMCPTaskList(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+	createTask(t, env, "home", `{"title":"Task A"}`)
+	createTask(t, env, "home", `{"title":"Task B"}`)
+
+	rpcResp := s.call(t, "task_list", map[string]any{
+		"spaceSlug": "home",
+	})
+	page, isErr := toolResult(t, rpcResp)
+	if isErr {
+		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
+	}
+	items := jsonAs[[]any](t, page["items"])
+	if len(items) != 2 {
+		t.Fatalf("got %d items, want 2", len(items))
+	}
+}
+
+func TestMCPTaskGet(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+	created := createTask(t, env, "home", `{"title":"Fetch me"}`)
+	taskID := jsonAs[string](t, created["id"])
+
+	rpcResp := s.call(t, "task_get", map[string]any{
+		"spaceSlug": "home",
+		"taskId":    taskID,
+	})
+	task, isErr := toolResult(t, rpcResp)
+	if isErr {
+		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
+	}
+	if task["title"] != "Fetch me" {
+		t.Errorf("title = %v, want Fetch me", task["title"])
+	}
+	if task["id"] != taskID {
+		t.Errorf("id = %v, want %s", task["id"], taskID)
+	}
+}
+
+func TestMCPTaskUpdate(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+	created := createTask(t, env, "home", `{"title":"Original"}`)
+	taskID := jsonAs[string](t, created["id"])
+
+	rpcResp := s.call(t, "task_update", map[string]any{
+		"spaceSlug": "home",
+		"taskId":    taskID,
+		"title":     "Updated",
+		"status":    "done",
+	})
+	task, isErr := toolResult(t, rpcResp)
+	if isErr {
+		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
+	}
+	if task["title"] != "Updated" {
+		t.Errorf("title = %v, want Updated", task["title"])
+	}
+	if task["status"] != "done" {
+		t.Errorf("status = %v, want done", task["status"])
+	}
+}
+
+func TestMCPTaskCreateInNonexistentSpace(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	rpcResp := s.call(t, "task_create", map[string]any{
+		"spaceSlug": "nonexistent",
+		"title":     "Should fail",
+	})
+	_, isErr := toolResult(t, rpcResp)
+	if !isErr {
+		t.Error("expected error result for nonexistent space")
+	}
+}
+
+func TestMCPTaskGetNonexistent(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+
+	rpcResp := s.call(t, "task_get", map[string]any{
+		"spaceSlug": "home",
+		"taskId":    "T999999",
+	})
+	_, isErr := toolResult(t, rpcResp)
+	if !isErr {
+		t.Error("expected error result for nonexistent task")
+	}
+}

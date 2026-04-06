@@ -82,8 +82,10 @@ func decodeAuthDeleteTokenParams(args [1]string, argsEscaped bool, r *http.Reque
 // SpaceActivityListParams is parameters of SpaceActivity_list operation.
 type SpaceActivityListParams struct {
 	SpaceSlug string
-	Cursor    OptString `json:",omitempty,omitzero"`
-	Limit     OptInt32  `json:",omitempty,omitzero"`
+	// Pagination cursor from a previous response.
+	Cursor OptString `json:",omitempty,omitzero"`
+	// Maximum number of items to return (1–100).
+	Limit OptInt32 `json:",omitempty,omitzero"`
 }
 
 func unpackSpaceActivityListParams(packed middleware.Parameters) (params SpaceActivityListParams) {
@@ -983,8 +985,10 @@ func decodeSpaceTagsUpdateParams(args [2]string, argsEscaped bool, r *http.Reque
 type SpaceTaskActivityListParams struct {
 	SpaceSlug string
 	TaskId    string
-	Cursor    OptString `json:",omitempty,omitzero"`
-	Limit     OptInt32  `json:",omitempty,omitzero"`
+	// Pagination cursor from a previous response.
+	Cursor OptString `json:",omitempty,omitzero"`
+	// Maximum number of items to return (1–100).
+	Limit OptInt32 `json:",omitempty,omitzero"`
 }
 
 func unpackSpaceTaskActivityListParams(packed middleware.Parameters) (params SpaceTaskActivityListParams) {
@@ -1942,6 +1946,7 @@ func decodeSpaceTaskStatusesReplaceParams(args [1]string, argsEscaped bool, r *h
 
 // SpaceTasksCreateParams is parameters of SpaceTasks_create operation.
 type SpaceTasksCreateParams struct {
+	// Slug of the space.
 	SpaceSlug string
 }
 
@@ -2125,9 +2130,12 @@ func decodeSpaceTasksDeleteParams(args [2]string, argsEscaped bool, r *http.Requ
 
 // SpaceTasksListParams is parameters of SpaceTasks_list operation.
 type SpaceTasksListParams struct {
+	// Slug of the space.
 	SpaceSlug string
-	Cursor    OptString `json:",omitempty,omitzero"`
-	Limit     OptInt32  `json:",omitempty,omitzero"`
+	// Pagination cursor from a previous response.
+	Cursor OptString `json:",omitempty,omitzero"`
+	// Maximum number of items to return (1–100).
+	Limit OptInt32 `json:",omitempty,omitzero"`
 }
 
 func unpackSpaceTasksListParams(packed middleware.Parameters) (params SpaceTasksListParams) {
@@ -2293,8 +2301,10 @@ func decodeSpaceTasksListParams(args [1]string, argsEscaped bool, r *http.Reques
 
 // SpaceTasksReadParams is parameters of SpaceTasks_read operation.
 type SpaceTasksReadParams struct {
+	// Slug of the space.
 	SpaceSlug string
-	TaskId    string
+	// Task ID.
+	TaskId string
 }
 
 func unpackSpaceTasksReadParams(packed middleware.Parameters) (params SpaceTasksReadParams) {
@@ -2411,8 +2421,10 @@ func decodeSpaceTasksReadParams(args [2]string, argsEscaped bool, r *http.Reques
 
 // SpaceTasksUpdateParams is parameters of SpaceTasks_update operation.
 type SpaceTasksUpdateParams struct {
+	// Slug of the space.
 	SpaceSlug string
-	TaskId    string
+	// Task ID.
+	TaskId string
 }
 
 func unpackSpaceTasksUpdateParams(packed middleware.Parameters) (params SpaceTasksUpdateParams) {
@@ -2725,8 +2737,10 @@ func decodeSpacesUpdateParams(args [1]string, argsEscaped bool, r *http.Request)
 // UserActivityListParams is parameters of UserActivity_list operation.
 type UserActivityListParams struct {
 	UserId string
+	// Pagination cursor from a previous response.
 	Cursor OptString `json:",omitempty,omitzero"`
-	Limit  OptInt32  `json:",omitempty,omitzero"`
+	// Maximum number of items to return (1–100).
+	Limit OptInt32 `json:",omitempty,omitzero"`
 }
 
 func unpackUserActivityListParams(packed middleware.Parameters) (params UserActivityListParams) {
@@ -2893,8 +2907,10 @@ func decodeUserActivityListParams(args [1]string, argsEscaped bool, r *http.Requ
 // UserTasksListParams is parameters of UserTasks_list operation.
 type UserTasksListParams struct {
 	UserId string
+	// Pagination cursor from a previous response.
 	Cursor OptString `json:",omitempty,omitzero"`
-	Limit  OptInt32  `json:",omitempty,omitzero"`
+	// Maximum number of items to return (1–100).
+	Limit OptInt32 `json:",omitempty,omitzero"`
 }
 
 func unpackUserTasksListParams(packed middleware.Parameters) (params UserTasksListParams) {

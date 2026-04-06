@@ -27,7 +27,7 @@ func TestHealthzOK(t *testing.T) {
 	env := setupTestServer(t)
 
 	log := slog.New(slog.DiscardHandler)
-	root := api.MountRoot(env.Server.Config.Handler, env.pool, log)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log)
 	srv := httptest.NewServer(root)
 	t.Cleanup(srv.Close)
 
@@ -54,7 +54,7 @@ func TestHealthzDBDown(t *testing.T) {
 	env.pool.Close()
 
 	log := slog.New(slog.DiscardHandler)
-	root := api.MountRoot(env.Server.Config.Handler, env.pool, log)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log)
 	srv := httptest.NewServer(root)
 	t.Cleanup(srv.Close)
 

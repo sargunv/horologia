@@ -368,6 +368,10 @@ func priorityLevelFromDB(p dbgen.TaskPriorityLevel) *apigen.TaskPriorityLevel {
 }
 
 // taskListCursor holds the compound keyset pagination state for task list queries.
+// TODO: the tilde-delimited cursor format has no version prefix. If fields are
+// added or reordered, in-flight cursors from before the deployment will be
+// rejected. This is acceptable for now (cursors are opaque and short-lived) but
+// should be revisited if cursor compatibility across deployments becomes a concern.
 type taskListCursor struct {
 	SortStatus   int32
 	SortDue      pgtype.Date

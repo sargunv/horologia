@@ -1,6 +1,8 @@
 import "@typespec/http";
+import "@tend/typespec-mcp-go";
 
 using Http;
+using MCP;
 
 namespace Tend;
 
@@ -80,13 +82,27 @@ model Task {
 }
 
 model TaskCreate {
+  /** Task title (1–500 chars). */
   @minLength(1) @maxLength(500) title: string;
+
+  /** Task description (max 10000 chars). */
   @maxLength(10000) description?: string;
+
+  /** Initial status name. Defaults to the space's first status. */
   status?: string;
+
+  /** Effort level name. */
   @minLength(1) @maxLength(100) effort?: string;
+
+  /** Priority level name. */
   @minLength(1) @maxLength(100) priority?: string;
+
+  /** Recurrence type (e.g. one_off, completion_based, fixed_accumulating). */
   recurrenceType?: TaskRecurrenceType;
+
+  /** Recurrence rule (RRULE string, max 500 chars). */
   @minLength(1) @maxLength(500) recurrenceRule?: string;
+
   @maxItems(100) assigneeIds?: string[];
   @maxItems(100) rotationPool?: string[];
   @maxItems(100) tags?: string[];
@@ -95,13 +111,27 @@ model TaskCreate {
 }
 
 model TaskUpdate {
+  /** New title. */
   @minLength(1) @maxLength(500) title?: string;
+
+  /** New description. */
   @maxLength(10000) description?: string;
+
+  /** New status name. */
   status?: string;
+
+  /** New effort level name. */
   @minLength(1) @maxLength(100) effort?: string | null;
+
+  /** New priority level name. */
   @minLength(1) @maxLength(100) priority?: string | null;
+
+  /** New recurrence type. */
   recurrenceType?: TaskRecurrenceType;
+
+  /** New recurrence rule (RRULE string, max 500 chars). */
   @minLength(1) @maxLength(500) recurrenceRule?: string | null;
+
   @maxItems(100) assigneeIds?: string[];
   @maxItems(100) rotationPool?: string[];
   @maxItems(100) tags?: string[];
@@ -114,18 +144,55 @@ model TaskPage is Page<Task>;
 @route("/spaces/{spaceSlug}/tasks")
 @tag("Tasks")
 interface SpaceTasks {
-  @get list(@path spaceSlug: string, ...PageParams): TaskPage | ApiError;
+  @mcpTool(
+    "task_list",
+    "List tasks in a space, with optional cursor pagination. Returns task IDs needed by task_get and task_update."
+  )
+  @get
+  list(
+    /** Slug of the space. */
+    @path spaceSlug: string,
 
-  @post create(@path spaceSlug: string, @body body: TaskCreate): {
+    ...PageParams,
+  ): TaskPage | ApiError;
+
+  @mcpTool(
+    "task_create",
+    "Create a new task in a space. Complex fields (due date, assignees, tags) are not settable via MCP."
+  )
+  @post
+  create(
+    /** Slug of the space. */
+    @path spaceSlug: string,
+
+    @body body: TaskCreate,
+  ): {
     @statusCode statusCode: 201;
     @body body: Task;
   } | ApiError;
 
-  @get read(@path spaceSlug: string, @path taskId: string): Task | ApiError;
-
-  @patch update(
+  @mcpTool("task_get", "Get a task by ID. Obtain task IDs from task_list.")
+  @get
+  read(
+    /** Slug of the space. */
     @path spaceSlug: string,
+
+    /** Task ID. */
     @path taskId: string,
+  ): Task | ApiError;
+
+  @mcpTool(
+    "task_update",
+    "Update an existing task. Obtain task IDs from task_list. Complex fields (due date, assignees, tags) are not settable via MCP."
+  )
+  @patch
+  update(
+    /** Slug of the space. */
+    @path spaceSlug: string,
+
+    /** Task ID. */
+    @path taskId: string,
+
     @body body: TaskUpdate,
   ): Task | ApiError;
 

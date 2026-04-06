@@ -16,6 +16,9 @@ model Page<T> {
 }
 
 model PageParams {
+  /** Pagination cursor from a previous response. */
   @query cursor?: string;
+
+  /** Maximum number of items to return (1–100). */
   @query limit?: int32;
 }
