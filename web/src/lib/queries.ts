@@ -215,3 +215,60 @@ export const userTasksInfiniteQueryOptions = (userId: string) => {
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
   });
 };
+
+export const taskActivityInfiniteQueryOptions = (spaceSlug: string, taskId: string) => {
+  const initialPageParam: string | null = null;
+  return infiniteQueryOptions({
+    queryKey: ["spaces", spaceSlug, "tasks", taskId, "activity"],
+    queryFn: async ({ pageParam }: { pageParam: string | null }) => {
+      const { data, error } = await apiClient.GET("/spaces/{spaceSlug}/tasks/{taskId}/activity", {
+        params: {
+          path: { spaceSlug, taskId },
+          query: { ...(pageParam ? { cursor: pageParam } : {}), limit: 50 },
+        },
+      });
+      if (error) throw error;
+      return data;
+    },
+    initialPageParam,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+  });
+};
+
+export const spaceActivityInfiniteQueryOptions = (spaceSlug: string) => {
+  const initialPageParam: string | null = null;
+  return infiniteQueryOptions({
+    queryKey: ["spaces", spaceSlug, "activity"],
+    queryFn: async ({ pageParam }: { pageParam: string | null }) => {
+      const { data, error } = await apiClient.GET("/spaces/{spaceSlug}/activity", {
+        params: {
+          path: { spaceSlug },
+          query: { ...(pageParam ? { cursor: pageParam } : {}), limit: 50 },
+        },
+      });
+      if (error) throw error;
+      return data;
+    },
+    initialPageParam,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+  });
+};
+
+export const userActivityInfiniteQueryOptions = (userId: string) => {
+  const initialPageParam: string | null = null;
+  return infiniteQueryOptions({
+    queryKey: ["users", userId, "activity"],
+    queryFn: async ({ pageParam }: { pageParam: string | null }) => {
+      const { data, error } = await apiClient.GET("/users/{userId}/activity", {
+        params: {
+          path: { userId },
+          query: { ...(pageParam ? { cursor: pageParam } : {}), limit: 50 },
+        },
+      });
+      if (error) throw error;
+      return data;
+    },
+    initialPageParam,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+  });
+};

@@ -6,9 +6,15 @@ import {
   parseDate,
   useListCollection,
 } from "@skeletonlabs/skeleton-react";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseInfiniteQuery,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import { createFileRoute, createLink, useNavigate } from "@tanstack/react-router";
 import {
+  Activity,
   ArrowLeft,
   Calendar,
   Check,
@@ -23,13 +29,14 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { apiClient } from "../../../../../api/client.ts";
 import type { components } from "../../../../../api/schema.d.ts";
 import { DateField } from "../../../../../components/DateField.tsx";
 import { RecurrenceRuleEditor } from "../../../../../components/RecurrenceRuleEditor.tsx";
 import { TimezoneCombobox } from "../../../../../components/TimezoneCombobox.tsx";
 import { TaskDescriptionEditor } from "../../../../../components/TaskDescriptionEditor.tsx";
+import { ActivityFeed } from "../../../../../components/ActivityFeed.tsx";
 import { ErrorAlert } from "../../../../../components/space-settings/ErrorAlert.tsx";
 import { OverdueActionEditor } from "../../../../../components/task/OverdueActionEditor.tsx";
 import { RelationsSection } from "../../../../../components/task/RelationsSection.tsx";
@@ -42,6 +49,7 @@ import {
   spaceQueryOptions,
   spaceTaskQueryOptions,
   spaceTaskStatusesQueryOptions,
+  taskActivityInfiniteQueryOptions,
 } from "../../../../../lib/queries.ts";
 
 type Task = components["schemas"]["Task"];
@@ -554,6 +562,27 @@ function TagsField({
   );
 }
 
+function TaskActivityFeed({ spaceSlug, taskId }: { spaceSlug: string; taskId: string }) {
+  const memberMap = useSpaceMemberMap(spaceSlug);
+  const {
+    data: pages,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useSuspenseInfiniteQuery(taskActivityInfiniteQueryOptions(spaceSlug, taskId));
+  const entries = useMemo(() => pages.pages.flatMap((p) => p.items), [pages]);
+
+  return (
+    <ActivityFeed
+      entries={entries}
+      hasNextPage={hasNextPage}
+      fetchNextPage={fetchNextPage}
+      isFetchingNextPage={isFetchingNextPage}
+      memberMap={memberMap}
+    />
+  );
+}
+
 function DeleteTaskSection({ spaceSlug, taskId }: { spaceSlug: string; taskId: string }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -745,6 +774,20 @@ function TaskDetailPage() {
       </div>
 
       <RelationsSection spaceSlug={spaceSlug} taskId={task.id} relations={task.relations} />
+
+      <div className="mt-8">
+        <h2 className="h5 mb-4 flex items-center gap-2">
+          <Activity className="size-4" aria-hidden="true" />
+          Activity
+        </h2>
+        <Suspense
+          fallback={
+            <div className="text-surface-500 py-6 text-center text-sm">Loading activity…</div>
+          }
+        >
+          <TaskActivityFeed spaceSlug={spaceSlug} taskId={taskId} />
+        </Suspense>
+      </div>
 
       <DeleteTaskSection spaceSlug={spaceSlug} taskId={taskId} />
     </div>

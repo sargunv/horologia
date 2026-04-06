@@ -7,7 +7,7 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { createFileRoute, createLink, useNavigate } from "@tanstack/react-router";
-import { ChevronDown, CircleAlert, ListChecks, Plus, Settings } from "lucide-react";
+import { Activity, ChevronDown, CircleAlert, ListChecks, Plus, Settings } from "lucide-react";
 import { type FormEvent, useMemo, useState } from "react";
 import { apiClient } from "../../../../api/client.ts";
 import { TaskRow } from "../../../../components/task/TaskRow.tsx";
@@ -24,6 +24,7 @@ export const Route = createFileRoute("/_authenticated/spaces/$spaceSlug/")({
 });
 
 const SettingsLink = createLink("a");
+const ActivityLink = createLink("a");
 
 function CreateTaskDialog({ spaceSlug }: { spaceSlug: string }) {
   const navigate = useNavigate();
@@ -154,6 +155,14 @@ function SpacePage() {
         <h1 className="h3">{space.name}</h1>
         <div className="flex items-center gap-2">
           <CreateTaskDialog spaceSlug={spaceSlug} />
+          <ActivityLink
+            to="/spaces/$spaceSlug/activity"
+            params={{ spaceSlug }}
+            className="btn preset-outlined-surface-200-800 flex items-center gap-2"
+          >
+            <Activity className="size-4" />
+            Activity
+          </ActivityLink>
           <SettingsLink
             to="/spaces/$spaceSlug/settings"
             params={{ spaceSlug }}
