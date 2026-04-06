@@ -1749,12 +1749,19 @@ func (s *Task) SetUpdatedAt(val time.Time) {
 
 // Ref: #/components/schemas/TaskCreate
 type TaskCreate struct {
-	Title             string                      `json:"title"`
-	Description       OptString                   `json:"description"`
-	Status            OptString                   `json:"status"`
-	Effort            OptString                   `json:"effort"`
-	Priority          OptString                   `json:"priority"`
-	RecurrenceType    OptTaskRecurrenceType       `json:"recurrenceType"`
+	// Task title (1–500 chars).
+	Title string `json:"title"`
+	// Task description (max 10000 chars).
+	Description OptString `json:"description"`
+	// Initial status name. Defaults to the space's first status.
+	Status OptString `json:"status"`
+	// Effort level name.
+	Effort OptString `json:"effort"`
+	// Priority level name.
+	Priority OptString `json:"priority"`
+	// Recurrence type (e.g. one_off, completion_based, fixed_accumulating).
+	RecurrenceType OptTaskRecurrenceType `json:"recurrenceType"`
+	// Recurrence rule (RRULE string, max 500 chars).
 	RecurrenceRule    OptString                   `json:"recurrenceRule"`
 	AssigneeIds       []string                    `json:"assigneeIds"`
 	RotationPool      []string                    `json:"rotationPool"`
@@ -2534,12 +2541,19 @@ func (s *TaskStatusReplace) SetItems(val []TaskStatusInput) {
 
 // Ref: #/components/schemas/TaskUpdate
 type TaskUpdate struct {
-	Title             OptString                   `json:"title"`
-	Description       OptString                   `json:"description"`
-	Status            OptString                   `json:"status"`
-	Effort            OptNilString                `json:"effort"`
-	Priority          OptNilString                `json:"priority"`
-	RecurrenceType    OptTaskRecurrenceType       `json:"recurrenceType"`
+	// New title.
+	Title OptString `json:"title"`
+	// New description.
+	Description OptString `json:"description"`
+	// New status name.
+	Status OptString `json:"status"`
+	// New effort level name.
+	Effort OptNilString `json:"effort"`
+	// New priority level name.
+	Priority OptNilString `json:"priority"`
+	// New recurrence type.
+	RecurrenceType OptTaskRecurrenceType `json:"recurrenceType"`
+	// New recurrence rule (RRULE string, max 500 chars).
 	RecurrenceRule    OptNilString                `json:"recurrenceRule"`
 	AssigneeIds       []string                    `json:"assigneeIds"`
 	RotationPool      []string                    `json:"rotationPool"`

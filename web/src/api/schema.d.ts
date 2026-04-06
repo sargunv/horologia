@@ -488,12 +488,19 @@ export interface components {
             updatedAt: string;
         };
         TaskCreate: {
+            /** @description Task title (1–500 chars). */
             title: string;
+            /** @description Task description (max 10000 chars). */
             description?: string;
+            /** @description Initial status name. Defaults to the space's first status. */
             status?: string;
+            /** @description Effort level name. */
             effort?: string;
+            /** @description Priority level name. */
             priority?: string;
+            /** @description Recurrence type (e.g. one_off, completion_based, fixed_accumulating). */
             recurrenceType?: components["schemas"]["TaskRecurrenceType"];
+            /** @description Recurrence rule (RRULE string, max 500 chars). */
             recurrenceRule?: string;
             assigneeIds?: string[];
             rotationPool?: string[];
@@ -583,12 +590,19 @@ export interface components {
             items: components["schemas"]["TaskStatusInput"][];
         };
         TaskUpdate: {
+            /** @description New title. */
             title?: string;
+            /** @description New description. */
             description?: string;
+            /** @description New status name. */
             status?: string;
+            /** @description New effort level name. */
             effort?: string | null;
+            /** @description New priority level name. */
             priority?: string | null;
+            /** @description New recurrence type. */
             recurrenceType?: components["schemas"]["TaskRecurrenceType"];
+            /** @description New recurrence rule (RRULE string, max 500 chars). */
             recurrenceRule?: string | null;
             assigneeIds?: string[];
             rotationPool?: string[];
@@ -626,7 +640,9 @@ export interface components {
     };
     responses: never;
     parameters: {
+        /** @description Pagination cursor from a previous response. */
         "PageParams.cursor": string;
+        /** @description Maximum number of items to return (1–100). */
         "PageParams.limit": number;
     };
     requestBodies: never;
@@ -886,7 +902,9 @@ export interface operations {
     SpaceActivity_list: {
         parameters: {
             query?: {
+                /** @description Pagination cursor from a previous response. */
                 cursor?: components["parameters"]["PageParams.cursor"];
+                /** @description Maximum number of items to return (1–100). */
                 limit?: components["parameters"]["PageParams.limit"];
             };
             header?: never;
@@ -1382,11 +1400,14 @@ export interface operations {
     SpaceTasks_list: {
         parameters: {
             query?: {
+                /** @description Pagination cursor from a previous response. */
                 cursor?: components["parameters"]["PageParams.cursor"];
+                /** @description Maximum number of items to return (1–100). */
                 limit?: components["parameters"]["PageParams.limit"];
             };
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;
@@ -1418,6 +1439,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;
@@ -1453,7 +1475,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
+                /** @description Task ID. */
                 taskId: string;
             };
             cookie?: never;
@@ -1515,7 +1539,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
+                /** @description Task ID. */
                 taskId: string;
             };
             cookie?: never;
@@ -1549,7 +1575,9 @@ export interface operations {
     SpaceTaskActivity_list: {
         parameters: {
             query?: {
+                /** @description Pagination cursor from a previous response. */
                 cursor?: components["parameters"]["PageParams.cursor"];
+                /** @description Maximum number of items to return (1–100). */
                 limit?: components["parameters"]["PageParams.limit"];
             };
             header?: never;
@@ -1838,7 +1866,9 @@ export interface operations {
     UserActivity_list: {
         parameters: {
             query?: {
+                /** @description Pagination cursor from a previous response. */
                 cursor?: components["parameters"]["PageParams.cursor"];
+                /** @description Maximum number of items to return (1–100). */
                 limit?: components["parameters"]["PageParams.limit"];
             };
             header?: never;
@@ -1872,7 +1902,9 @@ export interface operations {
     UserTasks_list: {
         parameters: {
             query?: {
+                /** @description Pagination cursor from a previous response. */
                 cursor?: components["parameters"]["PageParams.cursor"];
+                /** @description Maximum number of items to return (1–100). */
                 limit?: components["parameters"]["PageParams.limit"];
             };
             header?: never;
