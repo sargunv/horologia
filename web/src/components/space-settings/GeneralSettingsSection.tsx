@@ -4,6 +4,7 @@ import { SquareKanban } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
+import { notifyStaleData } from "../../lib/toaster.ts";
 import { ErrorAlert } from "./ErrorAlert.tsx";
 import { SettingsSection } from "./SettingsSection.tsx";
 
@@ -52,7 +53,8 @@ function GeneralSettingsForm({ space }: { space: Pick<Space, "slug" | "name" | "
         }
         await queryClient.invalidateQueries({ queryKey: ["spaces"] });
       } catch (err) {
-        console.error("Failed to refresh after space update:", err);
+        console.error("Cache invalidation failed after mutation:", err);
+        notifyStaleData();
       }
       if (data.slug !== space.slug) {
         await navigate({ to: "/spaces/$spaceSlug/settings", params: { spaceSlug: data.slug } });

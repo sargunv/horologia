@@ -1,8 +1,9 @@
+import { Navigation, Toast } from "@skeletonlabs/skeleton-react";
 import { createLink } from "@tanstack/react-router";
-import { Activity, CircleUser, House, Layers, LayoutGrid, Plus } from "lucide-react";
+import { Activity, CircleUser, House, Layers, LayoutGrid, Plus, X } from "lucide-react";
 import type { ReactNode } from "react";
-import { Navigation } from "@skeletonlabs/skeleton-react";
 import type { components } from "../api/schema.d.ts";
+import { toaster } from "../lib/toaster.ts";
 import { UserMenu } from "./UserMenu.tsx";
 
 type User = components["schemas"]["User"];
@@ -124,6 +125,35 @@ export function AppShell({
       <DesktopSidebar user={user} spaces={spaces} />
       <main className="overflow-y-auto pb-16 md:pb-0">{children}</main>
       <MobileBar />
+      <Toast.Group toaster={toaster}>
+        {(toast) => (
+          <Toast
+            toast={toast}
+            className={`card flex items-start gap-3 p-4 shadow-xl ${
+              toast.type === "error"
+                ? "preset-filled-error-500"
+                : toast.type === "warning"
+                  ? "preset-tonal-warning"
+                  : "preset-filled-surface-200-800"
+            }`}
+          >
+            <div className="flex-1">
+              {toast.title && <Toast.Title className="font-semibold">{toast.title}</Toast.Title>}
+              {toast.description && (
+                <Toast.Description className="text-sm opacity-80">
+                  {toast.description}
+                </Toast.Description>
+              )}
+            </div>
+            <Toast.CloseTrigger
+              className="btn btn-icon btn-sm opacity-70 hover:opacity-100"
+              aria-label="Dismiss"
+            >
+              <X className="size-4" aria-hidden="true" />
+            </Toast.CloseTrigger>
+          </Toast>
+        )}
+      </Toast.Group>
     </div>
   );
 }

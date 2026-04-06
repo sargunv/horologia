@@ -1,4 +1,5 @@
 import { Dialog, Portal } from "@skeletonlabs/skeleton-react";
+import { notifyStaleData } from "../../../../lib/toaster.ts";
 import {
   useMutation,
   useQueryClient,
@@ -48,7 +49,8 @@ function CreateTaskDialog({ spaceSlug }: { spaceSlug: string }) {
           queryKey: ["spaces", spaceSlug, "tasks", "list"],
         });
       } catch (err) {
-        console.error("Failed to refresh after task creation:", err);
+        console.error("Cache invalidation failed after mutation:", err);
+        notifyStaleData();
       }
       await navigate({
         to: "/spaces/$spaceSlug/tasks/$taskId",

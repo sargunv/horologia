@@ -3,6 +3,7 @@ import { UserPlus, Users, X } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
+import { notifyStaleData } from "../../lib/toaster.ts";
 import { ErrorAlert } from "./ErrorAlert.tsx";
 import { SettingsSection } from "./SettingsSection.tsx";
 
@@ -103,7 +104,8 @@ function MemberRow({
       try {
         await queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "members"] });
       } catch (err) {
-        console.error("Failed to refresh after role update:", err);
+        console.error("Cache invalidation failed after mutation:", err);
+        notifyStaleData();
       }
     },
   });
@@ -119,7 +121,8 @@ function MemberRow({
       try {
         await queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "members"] });
       } catch (err) {
-        console.error("Failed to refresh after member removal:", err);
+        console.error("Cache invalidation failed after mutation:", err);
+        notifyStaleData();
       }
     },
     onSettled: () => {
@@ -231,7 +234,8 @@ function AddMemberForm({ spaceSlug }: { spaceSlug: string }) {
       try {
         await queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "members"] });
       } catch (err) {
-        console.error("Failed to refresh after adding member:", err);
+        console.error("Cache invalidation failed after mutation:", err);
+        notifyStaleData();
       }
     },
   });

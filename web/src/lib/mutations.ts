@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../api/client.ts";
 import type { components } from "../api/schema.d.ts";
+import { notifyStaleData } from "./toaster.ts";
 
 type TaskUpdate = components["schemas"]["TaskUpdate"];
 
@@ -22,7 +23,8 @@ export function useTaskPatch(spaceSlug: string, taskId: string) {
           queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", "list"] }),
         ]);
       } catch (err) {
-        console.error("Failed to refresh after task update:", err);
+        console.error("Cache invalidation failed after mutation:", err);
+        notifyStaleData();
       }
     },
   });
@@ -56,13 +58,10 @@ export function useAddRelation(spaceSlug: string, taskId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (body: TaskRelationCreate) => {
-      const { data, error } = await apiClient.POST(
-        "/spaces/{spaceSlug}/tasks/{taskId}/relations",
-        {
-          params: { path: { spaceSlug, taskId } },
-          body,
-        },
-      );
+      const { data, error } = await apiClient.POST("/spaces/{spaceSlug}/tasks/{taskId}/relations", {
+        params: { path: { spaceSlug, taskId } },
+        body,
+      });
       if (error) throw new Error(error.message ?? "Failed to add relation");
       return data;
     },
@@ -73,7 +72,8 @@ export function useAddRelation(spaceSlug: string, taskId: string) {
           queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", "list"] }),
         ]);
       } catch (err) {
-        console.error("Failed to refresh after adding relation:", err);
+        console.error("Cache invalidation failed after mutation:", err);
+        notifyStaleData();
       }
     },
   });
@@ -104,7 +104,8 @@ export function useDeleteRelation(spaceSlug: string, taskId: string) {
           queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", "list"] }),
         ]);
       } catch (err) {
-        console.error("Failed to refresh after removing relation:", err);
+        console.error("Cache invalidation failed after mutation:", err);
+        notifyStaleData();
       }
     },
   });
