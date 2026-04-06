@@ -3,6 +3,7 @@ import { createFileRoute, createLink, useNavigate } from "@tanstack/react-router
 import { CircleAlert } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { apiClient } from "../../../api/client.ts";
+import { notifyStaleData } from "../../../lib/toaster.ts";
 
 export const Route = createFileRoute("/_authenticated/spaces/new")({
   component: NewSpacePage,
@@ -38,7 +39,8 @@ function NewSpacePage() {
       try {
         await queryClient.invalidateQueries({ queryKey: ["spaces"] });
       } catch (err) {
-        console.error("Failed to refresh after space creation:", err);
+        console.error("Cache invalidation failed after mutation:", err);
+        notifyStaleData();
       }
       void navigate({ to: "/spaces/$spaceSlug", params: { spaceSlug: data.slug } });
     },
