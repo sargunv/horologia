@@ -134,6 +134,7 @@ func NewOIDCHandler(ctx context.Context, cfg OIDCConfig, handler *Handler) (http
 
 func (h *Handler) handleOIDCCallback(w http.ResponseWriter, r *http.Request, tokens *oidc.Tokens[*oidc.IDTokenClaims], relyingParty rp.RelyingParty) {
 	ctx := r.Context()
+	now := time.Now()
 
 	subject := tokens.IDTokenClaims.Subject
 
@@ -205,7 +206,7 @@ func (h *Handler) handleOIDCCallback(w http.ResponseWriter, r *http.Request, tok
 		switch {
 		case errors.Is(err, pgx.ErrNoRows):
 			// Completely new user — create one.
-			tstz := types.Timestamptz(time.Now())
+			tstz := types.Timestamptz(now)
 			user, err = q.CreateUser(ctx, dbgen.CreateUserParams{
 				Email:       email,
 				Name:        name,
@@ -248,7 +249,7 @@ func (h *Handler) handleOIDCCallback(w http.ResponseWriter, r *http.Request, tok
 			// is added — at minimum, reject subject overwrites or require consent.
 			if err := q.SetUserOIDCSubject(ctx, dbgen.SetUserOIDCSubjectParams{
 				OidcSubject: subjectText,
-				UpdatedAt:   types.Timestamptz(time.Now()),
+				UpdatedAt:   types.Timestamptz(now),
 				ID:          user.ID,
 			}); err != nil {
 				h.Log.ErrorContext(ctx, "oidc: link user", "error", err)
