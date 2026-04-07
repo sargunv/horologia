@@ -1,6 +1,8 @@
 import "@typespec/http";
+import "@tend/typespec-mcp-go";
 
 using Http;
+using MCP;
 
 namespace Tend;
 
@@ -32,10 +34,12 @@ model AuthTokenList {
 @route("/auth")
 @tag("Auth")
 interface Auth {
+  @mcpTool("auth_token_list", "List all API tokens for the authenticated user.")
   @get
   @route("/tokens")
   listTokens(): AuthTokenList | ApiError;
 
+  @mcpTool("auth_token_create", "Create a new API token with a name.")
   @post
   @route("/tokens")
   createToken(@body body: AuthTokenCreate): {
@@ -43,7 +47,11 @@ interface Auth {
     @body body: AuthTokenCreateResponse;
   } | ApiError;
 
+  @mcpTool("auth_token_delete", "Delete an API token by ID.")
   @delete
   @route("/tokens/{tokenId}")
-  deleteToken(@path tokenId: string): void | ApiError;
+  deleteToken(
+    /** Token ID. */
+    @path tokenId: string,
+  ): void | ApiError;
 }

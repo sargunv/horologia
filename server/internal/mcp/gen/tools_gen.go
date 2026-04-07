@@ -4,9 +4,7 @@ package mcpgen
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"log/slog"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	mcpserver "github.com/mark3labs/mcp-go/server"
@@ -16,6 +14,17 @@ import (
 
 // Handlers is the interface MCP tool calls are dispatched through.
 type Handlers interface {
+	// ConvertError maps a handler error to a user-facing message.
+	ConvertError(ctx context.Context, err error) string
+	AuthListTokens(ctx context.Context) (*apigen.AuthTokenList, error)
+	AuthCreateToken(ctx context.Context, req *apigen.AuthTokenCreate) (*apigen.AuthTokenCreateResponse, error)
+	AuthDeleteToken(ctx context.Context, params apigen.AuthDeleteTokenParams) error
+	UsersList(ctx context.Context) (*apigen.UserList, error)
+	UsersMe(ctx context.Context) (*apigen.User, error)
+	UsersGet(ctx context.Context, params apigen.UsersGetParams) (*apigen.User, error)
+	UsersCreate(ctx context.Context, req *apigen.UserCreate) (*apigen.User, error)
+	UsersUpdate(ctx context.Context, req *apigen.UserUpdate, params apigen.UsersUpdateParams) (*apigen.User, error)
+	UsersDelete(ctx context.Context, params apigen.UsersDeleteParams) error
 	UserTasksList(ctx context.Context, params apigen.UserTasksListParams) (*apigen.TaskPage, error)
 	SpacesList(ctx context.Context) (*apigen.SpaceList, error)
 	SpacesCreate(ctx context.Context, req *apigen.SpaceCreate) (*apigen.Space, error)
@@ -47,6 +56,15 @@ type Handlers interface {
 
 // RegisterTools registers all @mcpTool-annotated operations with the MCP server.
 func RegisterTools(s *mcpserver.MCPServer, h Handlers) {
+	s.AddTool(authTokenListTool(), authTokenListHandler(h))
+	s.AddTool(authTokenCreateTool(), authTokenCreateHandler(h))
+	s.AddTool(authTokenDeleteTool(), authTokenDeleteHandler(h))
+	s.AddTool(userListTool(), userListHandler(h))
+	s.AddTool(userMeTool(), userMeHandler(h))
+	s.AddTool(userGetTool(), userGetHandler(h))
+	s.AddTool(userCreateTool(), userCreateHandler(h))
+	s.AddTool(userUpdateTool(), userUpdateHandler(h))
+	s.AddTool(userDeleteTool(), userDeleteHandler(h))
 	s.AddTool(userTaskListTool(), userTaskListHandler(h))
 	s.AddTool(spaceListTool(), spaceListHandler(h))
 	s.AddTool(spaceCreateTool(), spaceCreateHandler(h))
@@ -76,6 +94,242 @@ func RegisterTools(s *mcpserver.MCPServer, h Handlers) {
 	s.AddTool(userActivityListTool(), userActivityListHandler(h))
 }
 
+// --- auth_token_list ---
+
+func authTokenListTool() mcp.Tool {
+	return mcp.NewTool("auth_token_list",
+		mcp.WithDescription("List all API tokens for the authenticated user."),
+	)
+}
+
+func authTokenListHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		result, err := h.AuthListTokens(ctx)
+		if err != nil {
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- auth_token_create ---
+
+func authTokenCreateTool() mcp.Tool {
+	return mcp.NewTool("auth_token_create",
+		mcp.WithDescription("Create a new API token with a name."),
+		mcp.WithString("name", mcp.Required()),
+	)
+}
+
+func authTokenCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		name, ok := args["name"].(string)
+		if !ok || name == "" {
+			return mcp.NewToolResultError("name is required"), nil
+		}
+		body := &apigen.AuthTokenCreate{Name: name}
+		result, err := h.AuthCreateToken(ctx, body)
+		if err != nil {
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- auth_token_delete ---
+
+func authTokenDeleteTool() mcp.Tool {
+	return mcp.NewTool("auth_token_delete",
+		mcp.WithDescription("Delete an API token by ID."),
+		mcp.WithString("tokenId", mcp.Required(), mcp.Description("Token ID.")),
+	)
+}
+
+func authTokenDeleteHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		tokenId, ok := args["tokenId"].(string)
+		if !ok || tokenId == "" {
+			return mcp.NewToolResultError("tokenId is required"), nil
+		}
+		params := apigen.AuthDeleteTokenParams{TokenId: tokenId}
+		if err := h.AuthDeleteToken(ctx, params); err != nil {
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
+		}
+		return mcp.NewToolResultText("ok"), nil
+	}
+}
+
+// --- user_list ---
+
+func userListTool() mcp.Tool {
+	return mcp.NewTool("user_list",
+		mcp.WithDescription("List all users. Requires owner privileges."),
+	)
+}
+
+func userListHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		result, err := h.UsersList(ctx)
+		if err != nil {
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- user_me ---
+
+func userMeTool() mcp.Tool {
+	return mcp.NewTool("user_me",
+		mcp.WithDescription("Get the currently authenticated user."),
+	)
+}
+
+func userMeHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		result, err := h.UsersMe(ctx)
+		if err != nil {
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- user_get ---
+
+func userGetTool() mcp.Tool {
+	return mcp.NewTool("user_get",
+		mcp.WithDescription("Get a user by ID."),
+		mcp.WithString("userId", mcp.Required(), mcp.Description("User ID.")),
+	)
+}
+
+func userGetHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		userId, ok := args["userId"].(string)
+		if !ok || userId == "" {
+			return mcp.NewToolResultError("userId is required"), nil
+		}
+		params := apigen.UsersGetParams{UserId: userId}
+		result, err := h.UsersGet(ctx, params)
+		if err != nil {
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- user_create ---
+
+func userCreateTool() mcp.Tool {
+	return mcp.NewTool("user_create",
+		mcp.WithDescription("Create a new user with name, email, and optional password."),
+		mcp.WithString("name", mcp.Required()),
+		mcp.WithString("email", mcp.Required()),
+		mcp.WithBoolean("isOwner"),
+		mcp.WithString("password"),
+	)
+}
+
+func userCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		name, ok := args["name"].(string)
+		if !ok || name == "" {
+			return mcp.NewToolResultError("name is required"), nil
+		}
+		email, ok := args["email"].(string)
+		if !ok || email == "" {
+			return mcp.NewToolResultError("email is required"), nil
+		}
+		body := &apigen.UserCreate{Name: name, Email: email}
+		if v, ok := args["isOwner"].(bool); ok {
+			body.IsOwner.SetTo(v)
+		}
+		if v, ok := args["password"].(string); ok {
+			body.Password.SetTo(v)
+		}
+		result, err := h.UsersCreate(ctx, body)
+		if err != nil {
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- user_update ---
+
+func userUpdateTool() mcp.Tool {
+	return mcp.NewTool("user_update",
+		mcp.WithDescription("Update a user's name, email, owner status, or password."),
+		mcp.WithString("userId", mcp.Required(), mcp.Description("User ID.")),
+		mcp.WithString("name"),
+		mcp.WithString("email"),
+		mcp.WithBoolean("isOwner"),
+		mcp.WithString("setPassword"),
+		mcp.WithBoolean("clearPassword"),
+	)
+}
+
+func userUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		userId, ok := args["userId"].(string)
+		if !ok || userId == "" {
+			return mcp.NewToolResultError("userId is required"), nil
+		}
+		params := apigen.UsersUpdateParams{UserId: userId}
+		body := &apigen.UserUpdate{}
+		if v, ok := args["name"].(string); ok {
+			body.Name.SetTo(v)
+		}
+		if v, ok := args["email"].(string); ok {
+			body.Email.SetTo(v)
+		}
+		if v, ok := args["isOwner"].(bool); ok {
+			body.IsOwner.SetTo(v)
+		}
+		if v, ok := args["setPassword"].(string); ok {
+			body.SetPassword.SetTo(v)
+		}
+		if v, ok := args["clearPassword"].(bool); ok {
+			body.ClearPassword.SetTo(v)
+		}
+		result, err := h.UsersUpdate(ctx, body, params)
+		if err != nil {
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- user_delete ---
+
+func userDeleteTool() mcp.Tool {
+	return mcp.NewTool("user_delete",
+		mcp.WithDescription("Delete a user by ID."),
+		mcp.WithString("userId", mcp.Required(), mcp.Description("User ID.")),
+	)
+}
+
+func userDeleteHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		userId, ok := args["userId"].(string)
+		if !ok || userId == "" {
+			return mcp.NewToolResultError("userId is required"), nil
+		}
+		params := apigen.UsersDeleteParams{UserId: userId}
+		if err := h.UsersDelete(ctx, params); err != nil {
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
+		}
+		return mcp.NewToolResultText("ok"), nil
+	}
+}
+
 // --- user_task_list ---
 
 func userTaskListTool() mcp.Tool {
@@ -103,7 +357,7 @@ func userTaskListHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		}
 		result, err := h.UserTasksList(ctx, params)
 		if err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mustToolResultJSON(result), nil
 	}
@@ -121,7 +375,7 @@ func spaceListHandler(h Handlers) mcpserver.ToolHandlerFunc {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		result, err := h.SpacesList(ctx)
 		if err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mustToolResultJSON(result), nil
 	}
@@ -155,7 +409,7 @@ func spaceCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		}
 		result, err := h.SpacesCreate(ctx, body)
 		if err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mustToolResultJSON(result), nil
 	}
@@ -180,7 +434,7 @@ func spaceGetHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		params := apigen.SpacesReadParams{SpaceSlug: spaceSlug}
 		result, err := h.SpacesRead(ctx, params)
 		if err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mustToolResultJSON(result), nil
 	}
@@ -218,7 +472,7 @@ func spaceUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		}
 		result, err := h.SpacesUpdate(ctx, body, params)
 		if err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mustToolResultJSON(result), nil
 	}
@@ -242,7 +496,7 @@ func spaceDeleteHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		}
 		params := apigen.SpacesDeleteParams{SpaceSlug: spaceSlug}
 		if err := h.SpacesDelete(ctx, params); err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mcp.NewToolResultText("ok"), nil
 	}
@@ -267,7 +521,7 @@ func memberListHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		params := apigen.SpaceMembersListParams{SpaceSlug: spaceSlug}
 		result, err := h.SpaceMembersList(ctx, params)
 		if err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mustToolResultJSON(result), nil
 	}
@@ -303,7 +557,7 @@ func memberCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		body := &apigen.SpaceMemberCreate{UserId: userId, Role: apigen.SpaceRole(role)}
 		result, err := h.SpaceMembersCreate(ctx, body, params)
 		if err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mustToolResultJSON(result), nil
 	}
@@ -339,7 +593,7 @@ func memberUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		body := &apigen.SpaceMemberUpdate{Role: apigen.SpaceRole(role)}
 		result, err := h.SpaceMembersUpdate(ctx, body, params)
 		if err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mustToolResultJSON(result), nil
 	}
@@ -368,7 +622,7 @@ func memberDeleteHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		}
 		params := apigen.SpaceMembersDeleteParams{SpaceSlug: spaceSlug, UserId: userId}
 		if err := h.SpaceMembersDelete(ctx, params); err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mcp.NewToolResultText("ok"), nil
 	}
@@ -393,7 +647,7 @@ func tagListHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		params := apigen.SpaceTagsListParams{SpaceSlug: spaceSlug}
 		result, err := h.SpaceTagsList(ctx, params)
 		if err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mustToolResultJSON(result), nil
 	}
@@ -424,7 +678,7 @@ func tagCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		body := &apigen.TagCreate{Name: name}
 		result, err := h.SpaceTagsCreate(ctx, body, params)
 		if err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mustToolResultJSON(result), nil
 	}
@@ -460,7 +714,7 @@ func tagUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		body := &apigen.TagUpdate{Name: name}
 		result, err := h.SpaceTagsUpdate(ctx, body, params)
 		if err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mustToolResultJSON(result), nil
 	}
@@ -489,7 +743,7 @@ func tagDeleteHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		}
 		params := apigen.SpaceTagsDeleteParams{SpaceSlug: spaceSlug, TagName: tagName}
 		if err := h.SpaceTagsDelete(ctx, params); err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mcp.NewToolResultText("ok"), nil
 	}
@@ -522,7 +776,7 @@ func taskListHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		}
 		result, err := h.SpaceTasksList(ctx, params)
 		if err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mustToolResultJSON(result), nil
 	}
@@ -577,7 +831,7 @@ func taskCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		}
 		result, err := h.SpaceTasksCreate(ctx, body, params)
 		if err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mustToolResultJSON(result), nil
 	}
@@ -607,7 +861,7 @@ func taskGetHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		params := apigen.SpaceTasksReadParams{SpaceSlug: spaceSlug, TaskId: taskId}
 		result, err := h.SpaceTasksRead(ctx, params)
 		if err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mustToolResultJSON(result), nil
 	}
@@ -666,7 +920,7 @@ func taskUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		}
 		result, err := h.SpaceTasksUpdate(ctx, body, params)
 		if err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mustToolResultJSON(result), nil
 	}
@@ -695,7 +949,7 @@ func taskDeleteHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		}
 		params := apigen.SpaceTasksDeleteParams{SpaceSlug: spaceSlug, TaskId: taskId}
 		if err := h.SpaceTasksDelete(ctx, params); err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mcp.NewToolResultText("ok"), nil
 	}
@@ -736,7 +990,7 @@ func relationCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		body := &apigen.TaskRelationCreate{Kind: apigen.TaskRelationKind(kind), RelatedTaskId: relatedTaskId}
 		result, err := h.SpaceTaskRelationsCreate(ctx, body, params)
 		if err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mustToolResultJSON(result), nil
 	}
@@ -775,7 +1029,7 @@ func relationDeleteHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		}
 		params := apigen.SpaceTaskRelationsDeleteParams{SpaceSlug: spaceSlug, TaskId: taskId, Kind: apigen.TaskRelationKind(kind), RelatedTaskId: relatedTaskId}
 		if err := h.SpaceTaskRelationsDelete(ctx, params); err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mcp.NewToolResultText("ok"), nil
 	}
@@ -800,7 +1054,7 @@ func statusListHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		params := apigen.SpaceTaskStatusesListParams{SpaceSlug: spaceSlug}
 		result, err := h.SpaceTaskStatusesList(ctx, params)
 		if err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mustToolResultJSON(result), nil
 	}
@@ -825,7 +1079,7 @@ func effortLevelListHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		params := apigen.SpaceTaskEffortLevelsListParams{SpaceSlug: spaceSlug}
 		result, err := h.SpaceTaskEffortLevelsList(ctx, params)
 		if err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mustToolResultJSON(result), nil
 	}
@@ -850,7 +1104,7 @@ func priorityLevelListHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		params := apigen.SpaceTaskPriorityLevelsListParams{SpaceSlug: spaceSlug}
 		result, err := h.SpaceTaskPriorityLevelsList(ctx, params)
 		if err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mustToolResultJSON(result), nil
 	}
@@ -888,7 +1142,7 @@ func taskActivityListHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		}
 		result, err := h.SpaceTaskActivityList(ctx, params)
 		if err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mustToolResultJSON(result), nil
 	}
@@ -921,7 +1175,7 @@ func spaceActivityListHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		}
 		result, err := h.SpaceActivityList(ctx, params)
 		if err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mustToolResultJSON(result), nil
 	}
@@ -954,22 +1208,13 @@ func userActivityListHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		}
 		result, err := h.UserActivityList(ctx, params)
 		if err != nil {
-			return toolResultFromError(err), nil
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mustToolResultJSON(result), nil
 	}
 }
 
 // --- helpers ---
-
-func toolResultFromError(err error) *mcp.CallToolResult {
-	var apiErr *apigen.ApiErrorStatusCode
-	if errors.As(err, &apiErr) {
-		return mcp.NewToolResultError(apiErr.Response.Message)
-	}
-	slog.Error("mcp: tool handler error", "error", err)
-	return mcp.NewToolResultError("internal error")
-}
 
 func mustToolResultJSON(v any) *mcp.CallToolResult {
 	res, err := mcp.NewToolResultJSON(v)

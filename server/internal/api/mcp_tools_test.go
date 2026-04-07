@@ -120,9 +120,8 @@ func (s *mcpSession) call(t *testing.T, toolName string, args map[string]any) ma
 	return result
 }
 
-// toolResult extracts the tool result content from a JSON-RPC response.
-// Returns parsed JSON content and whether the result was an error.
-func toolResult(t *testing.T, rpcResp map[string]any) (content map[string]any, isError bool) {
+// mcpResultText extracts the raw text and isError flag from an MCP JSON-RPC response.
+func mcpResultText(t *testing.T, rpcResp map[string]any) (text string, isError bool) {
 	t.Helper()
 	if rpcResp["error"] != nil {
 		t.Fatalf("unexpected JSON-RPC error: %v", rpcResp["error"])
@@ -133,13 +132,18 @@ func toolResult(t *testing.T, rpcResp map[string]any) (content map[string]any, i
 		t.Fatal("MCP result has no content items")
 	}
 	item := jsonAs[map[string]any](t, items[0])
-	text := jsonAs[string](t, item["text"])
-
 	errFlag, _ := result["isError"].(bool)
-	if errFlag {
+	return jsonAs[string](t, item["text"]), errFlag
+}
+
+// toolResult extracts the tool result content from a JSON-RPC response.
+// Returns parsed JSON content and whether the result was an error.
+func toolResult(t *testing.T, rpcResp map[string]any) (content map[string]any, isError bool) {
+	t.Helper()
+	text, isErr := mcpResultText(t, rpcResp)
+	if isErr {
 		return nil, true
 	}
-
 	var parsed map[string]any
 	if err := json.Unmarshal([]byte(text), &parsed); err != nil {
 		t.Fatalf("unmarshal tool result text: %v (text: %s)", err, text)
@@ -150,36 +154,19 @@ func toolResult(t *testing.T, rpcResp map[string]any) (content map[string]any, i
 // toolErrorText extracts the error message text from an MCP error result.
 func toolErrorText(t *testing.T, rpcResp map[string]any) string {
 	t.Helper()
-	if rpcResp["error"] != nil {
-		t.Fatalf("unexpected JSON-RPC error: %v", rpcResp["error"])
-	}
-	result := jsonAs[map[string]any](t, rpcResp["result"])
-	items := jsonAs[[]any](t, result["content"])
-	if len(items) == 0 {
-		t.Fatal("MCP result has no content items")
-	}
-	item := jsonAs[map[string]any](t, items[0])
-	return jsonAs[string](t, item["text"])
+	text, _ := mcpResultText(t, rpcResp)
+	return text
 }
 
 // toolResultOk checks that the MCP tool call returned a non-error text result.
 // Returns the text content. Use for void-return tools (delete operations).
 func toolResultOk(t *testing.T, rpcResp map[string]any) string {
 	t.Helper()
-	if rpcResp["error"] != nil {
-		t.Fatalf("unexpected JSON-RPC error: %v", rpcResp["error"])
+	text, isErr := mcpResultText(t, rpcResp)
+	if isErr {
+		t.Fatalf("expected success, got error: %s", text)
 	}
-	result := jsonAs[map[string]any](t, rpcResp["result"])
-	errFlag, _ := result["isError"].(bool)
-	if errFlag {
-		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
-	}
-	items := jsonAs[[]any](t, result["content"])
-	if len(items) == 0 {
-		t.Fatal("MCP result has no content items")
-	}
-	item := jsonAs[map[string]any](t, items[0])
-	return jsonAs[string](t, item["text"])
+	return text
 }
 
 // toolResultJSON extracts a successful JSON result, failing the test on error.
@@ -338,6 +325,10 @@ func TestMCPTaskCreateInNonexistentSpace(t *testing.T) {
 	if !isErr {
 		t.Error("expected error result for nonexistent space")
 	}
+	errText := toolErrorText(t, rpcResp)
+	if errText != "resource not found" {
+		t.Errorf("error = %q, want 'resource not found'", errText)
+	}
 }
 
 func TestMCPTaskGetNonexistent(t *testing.T) {
@@ -353,6 +344,10 @@ func TestMCPTaskGetNonexistent(t *testing.T) {
 	_, isErr := toolResult(t, rpcResp)
 	if !isErr {
 		t.Error("expected error result for nonexistent task")
+	}
+	errText := toolErrorText(t, rpcResp)
+	if errText != "resource not found" {
+		t.Errorf("error = %q, want 'resource not found'", errText)
 	}
 }
 
@@ -819,8 +814,7 @@ func TestMCPRelationDelete(t *testing.T) {
 	toolResultOk(t, rpcResp)
 
 	// Verify relation is gone.
-	rels := assertTaskRelations(t, env, "home", taskAID, 0)
-	_ = rels
+	assertTaskRelations(t, env, "home", taskAID, 0)
 }
 
 // --- Error path tests ---
@@ -835,6 +829,9 @@ func TestMCPSpaceGetNonexistent(t *testing.T) {
 	_, isErr := toolResult(t, rpcResp)
 	if !isErr {
 		t.Error("expected error for nonexistent space")
+	}
+	if errText := toolErrorText(t, rpcResp); errText != "resource not found" {
+		t.Errorf("error = %q, want 'resource not found'", errText)
 	}
 }
 
@@ -852,6 +849,9 @@ func TestMCPTaskDeleteNonexistent(t *testing.T) {
 	if !isErr {
 		t.Error("expected error for nonexistent task")
 	}
+	if errText := toolErrorText(t, rpcResp); errText != "resource not found" {
+		t.Errorf("error = %q, want 'resource not found'", errText)
+	}
 }
 
 func TestMCPSpaceDeleteNonexistent(t *testing.T) {
@@ -864,5 +864,50 @@ func TestMCPSpaceDeleteNonexistent(t *testing.T) {
 	_, isErr := toolResult(t, rpcResp)
 	if !isErr {
 		t.Error("expected error for nonexistent space")
+	}
+	if errText := toolErrorText(t, rpcResp); errText != "resource not found" {
+		t.Errorf("error = %q, want 'resource not found'", errText)
+	}
+}
+
+func TestMCPSpaceCreateDuplicate(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+
+	rpcResp := s.call(t, "space_create", map[string]any{
+		"slug": "home",
+		"name": "Home Again",
+	})
+	_, isErr := toolResult(t, rpcResp)
+	if !isErr {
+		t.Error("expected error for duplicate space")
+	}
+	if errText := toolErrorText(t, rpcResp); errText != "resource already exists" {
+		t.Errorf("error = %q, want 'resource already exists'", errText)
+	}
+}
+
+func TestMCPMemberUpdateForbidden(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+	viewerToken, viewerID := createAndAddMember(t, env, "home", "viewer@test.com", "Viewer", "password", "viewer")
+
+	// Create a session as the viewer.
+	viewerEnv := *env
+	viewerEnv.Token = viewerToken
+	s := newMCPSession(t, &viewerEnv)
+
+	// Viewer should not be able to update their own role.
+	rpcResp := s.call(t, "member_update", map[string]any{
+		"spaceSlug": "home",
+		"userId":    viewerID,
+		"role":      "admin",
+	})
+	_, isErr := toolResult(t, rpcResp)
+	if !isErr {
+		t.Error("expected error for forbidden member update")
 	}
 }

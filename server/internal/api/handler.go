@@ -79,6 +79,13 @@ func (h *Handler) NewError(ctx context.Context, err error) *apigen.ApiErrorStatu
 	}
 }
 
+// ConvertError maps a handler error to a user-facing message string.
+// This is used by the MCP layer to produce descriptive error messages
+// instead of generic "internal error" responses.
+func (h *Handler) ConvertError(ctx context.Context, err error) string {
+	return h.NewError(ctx, err).Response.Message
+}
+
 var (
 	badRequest = types.ValidationError
 	forbidden  = types.ForbiddenError

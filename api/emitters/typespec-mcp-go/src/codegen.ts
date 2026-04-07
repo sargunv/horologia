@@ -1,11 +1,4 @@
-import {
-  type Enum,
-  type Model,
-  type Program,
-  type Scalar,
-  type Type,
-  getDoc,
-} from "@typespec/compiler";
+import { type Program, type Type, getDoc } from "@typespec/compiler";
 import type { HttpOperation, HttpOperationResponse } from "@typespec/http";
 import type { McpToolOptions } from "./decorator.js";
 
@@ -30,10 +23,8 @@ export interface EmitterOptions {
 function getSimpleNonNull(type: Type): Type | null {
   if (type.kind === "Scalar" || type.kind === "Enum") return type;
   if (type.kind === "Union") {
-    const variants = [...(type as any).variants.values()].map((v: any) => v.type as Type);
-    const nonNull = variants.filter(
-      (v: Type) => !(v.kind === "Intrinsic" && (v as any).name === "null"),
-    );
+    const variants = [...type.variants.values()].map((v) => v.type);
+    const nonNull = variants.filter((v) => !(v.kind === "Intrinsic" && v.name === "null"));
     if (nonNull.length === 1 && (nonNull[0].kind === "Scalar" || nonNull[0].kind === "Enum")) {
       return nonNull[0];
     }
@@ -45,7 +36,7 @@ function getSimpleNonNull(type: Type): Type | null {
 
 function mcpPropertyType(type: Type): string {
   if (type.kind === "Scalar") {
-    const name = (type as Scalar).name;
+    const name = type.name;
     if (name === "string" || name === "url" || name === "plainDate" || name === "utcDateTime") {
       return "mcp.WithString";
     }
@@ -77,7 +68,7 @@ interface GoTypeInfo {
 
 function goTypeInfo(type: Type, alias: string): GoTypeInfo {
   if (type.kind === "Scalar") {
-    const name = (type as Scalar).name;
+    const name = type.name;
     if (name === "string" || name === "url" || name === "plainDate" || name === "utcDateTime") {
       return { assertType: "string", convertExpr: "" };
     }
@@ -87,7 +78,7 @@ function goTypeInfo(type: Type, alias: string): GoTypeInfo {
     if (name === "boolean") return { assertType: "bool", convertExpr: "" };
   }
   if (type.kind === "Enum") {
-    return { assertType: "string", convertExpr: `${alias}.${(type as Enum).name}(%s)` };
+    return { assertType: "string", convertExpr: `${alias}.${type.name}(%s)` };
   }
   return { assertType: "string", convertExpr: "" };
 }
@@ -136,7 +127,7 @@ function collectBodyFields(
 
   const fields: GoParam[] = [];
   const usedNames = new Set<string>(pathParamNames);
-  for (const [name, prop] of (bodyType as Model).properties) {
+  for (const [name, prop] of bodyType.properties) {
     const resolved = getSimpleNonNull(prop.type);
     if (!resolved) continue;
     // If a body field collides with an existing name, prefix with "body" for the MCP param name
@@ -174,7 +165,7 @@ interface DerivedOp {
 }
 
 function deriveOp(httpOp: HttpOperation): DerivedOp {
-  const iface = httpOp.container ? ((httpOp.container as any).name ?? "") : "";
+  const iface = httpOp.container?.name ?? "";
   const methodName = `${iface}${capitalize(httpOp.operation.name)}`;
   return {
     methodName,
@@ -189,8 +180,8 @@ function deriveBodyTypeName(httpOp: HttpOperation): string | null {
   const body = httpOp.parameters.body;
   if (!body) return null;
   const bodyType = body.type;
-  if (bodyType.kind === "Model" && (bodyType as Model).name) {
-    return (bodyType as Model).name;
+  if (bodyType.kind === "Model" && bodyType.name) {
+    return bodyType.name;
   }
   return null;
 }
@@ -218,8 +209,8 @@ function responseBodyTypeName(resp: HttpOperationResponse): string | null {
   for (const content of resp.responses) {
     if (!content.body) continue;
     const bodyType = content.body.type;
-    if (bodyType.kind === "Model" && (bodyType as Model).name) {
-      return (bodyType as Model).name;
+    if (bodyType.kind === "Model" && bodyType.name) {
+      return bodyType.name;
     }
   }
   return null;
@@ -353,12 +344,12 @@ function emitHandlerBody(
   if (op.responseTypeName) {
     lines.push(`\t\tresult, err := h.${op.methodName}(${callArgs.join(", ")})`);
     lines.push(`\t\tif err != nil {`);
-    lines.push(`\t\t\treturn toolResultFromError(err), nil`);
+    lines.push(`\t\t\treturn mcp.NewToolResultError(h.ConvertError(ctx, err)), nil`);
     lines.push(`\t\t}`);
     lines.push(`\t\treturn mustToolResultJSON(result), nil`);
   } else {
     lines.push(`\t\tif err := h.${op.methodName}(${callArgs.join(", ")}); err != nil {`);
-    lines.push(`\t\t\treturn toolResultFromError(err), nil`);
+    lines.push(`\t\t\treturn mcp.NewToolResultError(h.ConvertError(ctx, err)), nil`);
     lines.push(`\t\t}`);
     lines.push(`\t\treturn mcp.NewToolResultText("ok"), nil`);
   }
@@ -368,8 +359,6 @@ function emitHandlerBody(
 
 const ALIAS = "apigen";
 const PKG = "mcpgen";
-const ERROR_TYPE = "ApiErrorStatusCode";
-const ERROR_MSG_FIELD = "Response.Message";
 
 export function generateGoFile(program: Program, tools: ToolInfo[], opts: EmitterOptions): string {
   const lines: string[] = [];
@@ -380,9 +369,7 @@ export function generateGoFile(program: Program, tools: ToolInfo[], opts: Emitte
   lines.push("");
   lines.push("import (");
   lines.push('\t"context"');
-  lines.push('\t"errors"');
   lines.push('\t"fmt"');
-  lines.push('\t"log/slog"');
   lines.push("");
   lines.push('\t"github.com/mark3labs/mcp-go/mcp"');
   lines.push('\tmcpserver "github.com/mark3labs/mcp-go/server"');
@@ -397,6 +384,8 @@ export function generateGoFile(program: Program, tools: ToolInfo[], opts: Emitte
   // Handlers interface
   lines.push("// Handlers is the interface MCP tool calls are dispatched through.");
   lines.push("type Handlers interface {");
+  lines.push("\t// ConvertError maps a handler error to a user-facing message.");
+  lines.push("\tConvertError(ctx context.Context, err error) string");
   for (const op of derived) {
     const parts: string[] = [`ctx context.Context`];
     if (op.bodyTypeName) parts.push(`req *${ALIAS}.${op.bodyTypeName}`);
@@ -462,15 +451,6 @@ export function generateGoFile(program: Program, tools: ToolInfo[], opts: Emitte
 
   // Helpers
   lines.push("// --- helpers ---");
-  lines.push("");
-  lines.push("func toolResultFromError(err error) *mcp.CallToolResult {");
-  lines.push(`\tvar apiErr *${ALIAS}.${ERROR_TYPE}`);
-  lines.push("\tif errors.As(err, &apiErr) {");
-  lines.push(`\t\treturn mcp.NewToolResultError(apiErr.${ERROR_MSG_FIELD})`);
-  lines.push("\t}");
-  lines.push('\tslog.Error("mcp: tool handler error", "error", err)');
-  lines.push('\treturn mcp.NewToolResultError("internal error")');
-  lines.push("}");
   lines.push("");
   lines.push("func mustToolResultJSON(v any) *mcp.CallToolResult {");
   lines.push("\tres, err := mcp.NewToolResultJSON(v)");

@@ -720,6 +720,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Token ID. */
                 tokenId: string;
             };
             cookie?: never;
@@ -1804,6 +1805,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description User ID. */
                 userId: string;
             };
             cookie?: never;
@@ -1835,6 +1837,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description User ID. */
                 userId: string;
             };
             cookie?: never;
@@ -1864,6 +1867,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description User ID. */
                 userId: string;
             };
             cookie?: never;

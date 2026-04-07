@@ -1,21 +1,24 @@
-import { type EmitContext } from "@typespec/compiler";
+import { type EmitContext, NoTarget } from "@typespec/compiler";
 import { getAllHttpServices } from "@typespec/http";
 import { getMcpTool } from "./decorator.js";
 import { generateGoFile, type ToolInfo, type EmitterOptions } from "./codegen.js";
 import * as path from "path";
 import * as fs from "fs/promises";
 
-export async function $onEmit(context: EmitContext): Promise<void> {
-  const { program } = context;
-  const rawOpts = context.options as Record<string, unknown>;
+interface RawEmitterOpts {
+  ogenImportPath?: string;
+}
 
-  const ogenImportPath = rawOpts["ogenImportPath"];
+export async function $onEmit(context: EmitContext<RawEmitterOpts>): Promise<void> {
+  const { program } = context;
+  const ogenImportPath = context.options.ogenImportPath;
+
   if (typeof ogenImportPath !== "string" || !ogenImportPath) {
     program.reportDiagnostic({
       code: "typespec-mcp-go/missing-option",
       severity: "error",
       message: `@tend/typespec-mcp-go requires the "ogenImportPath" option (Go import path for ogen-generated package).`,
-      target: { kind: "NoTarget" } as any,
+      target: NoTarget,
     });
     return;
   }

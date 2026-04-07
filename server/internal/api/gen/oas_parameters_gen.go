@@ -16,6 +16,7 @@ import (
 
 // AuthDeleteTokenParams is parameters of Auth_deleteToken operation.
 type AuthDeleteTokenParams struct {
+	// Token ID.
 	TokenId string
 }
 
@@ -3107,6 +3108,7 @@ func decodeUserTasksListParams(args [1]string, argsEscaped bool, r *http.Request
 
 // UsersDeleteParams is parameters of Users_delete operation.
 type UsersDeleteParams struct {
+	// User ID.
 	UserId string
 }
 
@@ -3172,6 +3174,7 @@ func decodeUsersDeleteParams(args [1]string, argsEscaped bool, r *http.Request) 
 
 // UsersGetParams is parameters of Users_get operation.
 type UsersGetParams struct {
+	// User ID.
 	UserId string
 }
 
@@ -3237,6 +3240,7 @@ func decodeUsersGetParams(args [1]string, argsEscaped bool, r *http.Request) (pa
 
 // UsersUpdateParams is parameters of Users_update operation.
 type UsersUpdateParams struct {
+	// User ID.
 	UserId string
 }
 
