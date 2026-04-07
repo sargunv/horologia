@@ -580,8 +580,10 @@ func TestMCPMemberList(t *testing.T) {
 		"spaceSlug": "home",
 	})
 	items := toolResultList(t, rpcResp)
-	// Owner is not auto-added as member, so list may be empty.
-	_ = items
+	// Space creator is added as admin member by default.
+	if len(items) != 1 {
+		t.Fatalf("got %d members, want 1 (creator)", len(items))
+	}
 }
 
 func TestMCPMemberCreate(t *testing.T) {
@@ -710,7 +712,9 @@ func TestMCPEffortLevelList(t *testing.T) {
 		"spaceSlug": "home",
 	})
 	items := toolResultList(t, rpcResp)
-	_ = items // Default effort levels may or may not exist.
+	if len(items) != 3 {
+		t.Fatalf("got %d effort levels, want 3 (default)", len(items))
+	}
 }
 
 func TestMCPPriorityLevelList(t *testing.T) {
@@ -723,7 +727,9 @@ func TestMCPPriorityLevelList(t *testing.T) {
 		"spaceSlug": "home",
 	})
 	items := toolResultList(t, rpcResp)
-	_ = items // Default priority levels may or may not exist.
+	if len(items) != 3 {
+		t.Fatalf("got %d priority levels, want 3 (default)", len(items))
+	}
 }
 
 // --- Activity tools ---
