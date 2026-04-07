@@ -53,8 +53,12 @@ interface SpaceTaskActivity {
   )
   @get
   list(
+    /** Slug of the space. */
     @path spaceSlug: string,
+
+    /** Task ID. */
     @path taskId: string,
+
     ...PageParams,
   ): ActivityLogPage | ApiError;
 }
@@ -64,7 +68,12 @@ interface SpaceTaskActivity {
 interface SpaceActivity {
   @mcpTool("space_activity_list", "List activity log entries for a space.")
   @get
-  list(@path spaceSlug: string, ...PageParams): ActivityLogPage | ApiError;
+  list(
+    /** Slug of the space. */
+    @path spaceSlug: string,
+
+    ...PageParams,
+  ): ActivityLogPage | ApiError;
 }
 
 @route("/users/{userId}/activity")
@@ -72,5 +81,10 @@ interface SpaceActivity {
 interface UserActivity {
   @mcpTool("user_activity_list", "List activity log entries for a user.")
   @get
-  list(@path userId: string, ...PageParams): ActivityLogPage | ApiError;
+  list(
+    /** User ID. */
+    @path userId: string,
+
+    ...PageParams,
+  ): ActivityLogPage | ApiError;
 }

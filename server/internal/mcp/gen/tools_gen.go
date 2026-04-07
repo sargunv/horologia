@@ -47,7 +47,7 @@ type Handlers interface {
 
 // RegisterTools registers all @mcpTool-annotated operations with the MCP server.
 func RegisterTools(s *mcpserver.MCPServer, h Handlers) {
-	s.AddTool(userTasksListTool(), userTasksListHandler(h))
+	s.AddTool(userTaskListTool(), userTaskListHandler(h))
 	s.AddTool(spaceListTool(), spaceListHandler(h))
 	s.AddTool(spaceCreateTool(), spaceCreateHandler(h))
 	s.AddTool(spaceGetTool(), spaceGetHandler(h))
@@ -76,18 +76,18 @@ func RegisterTools(s *mcpserver.MCPServer, h Handlers) {
 	s.AddTool(userActivityListTool(), userActivityListHandler(h))
 }
 
-// --- user_tasks_list ---
+// --- user_task_list ---
 
-func userTasksListTool() mcp.Tool {
-	return mcp.NewTool("user_tasks_list",
+func userTaskListTool() mcp.Tool {
+	return mcp.NewTool("user_task_list",
 		mcp.WithDescription("List tasks assigned to a user across all spaces."),
-		mcp.WithString("userId", mcp.Required()),
+		mcp.WithString("userId", mcp.Required(), mcp.Description("User ID.")),
 		mcp.WithString("cursor", mcp.Description("Pagination cursor from a previous response.")),
 		mcp.WithNumber("limit", mcp.Description("Maximum number of items to return (1–100).")),
 	)
 }
 
-func userTasksListHandler(h Handlers) mcpserver.ToolHandlerFunc {
+func userTaskListHandler(h Handlers) mcpserver.ToolHandlerFunc {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
 		userId, ok := args["userId"].(string)
@@ -166,7 +166,7 @@ func spaceCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 func spaceGetTool() mcp.Tool {
 	return mcp.NewTool("space_get",
 		mcp.WithDescription("Get a space by slug."),
-		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("spaceSlug", mcp.Required(), mcp.Description("Slug of the space.")),
 	)
 }
 
@@ -191,7 +191,7 @@ func spaceGetHandler(h Handlers) mcpserver.ToolHandlerFunc {
 func spaceUpdateTool() mcp.Tool {
 	return mcp.NewTool("space_update",
 		mcp.WithDescription("Update a space's slug, name, or description."),
-		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("spaceSlug", mcp.Required(), mcp.Description("Slug of the space.")),
 		mcp.WithString("slug"),
 		mcp.WithString("name"),
 		mcp.WithString("description"),
@@ -229,7 +229,7 @@ func spaceUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 func spaceDeleteTool() mcp.Tool {
 	return mcp.NewTool("space_delete",
 		mcp.WithDescription("Delete a space by slug."),
-		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("spaceSlug", mcp.Required(), mcp.Description("Slug of the space.")),
 	)
 }
 
@@ -253,7 +253,7 @@ func spaceDeleteHandler(h Handlers) mcpserver.ToolHandlerFunc {
 func memberListTool() mcp.Tool {
 	return mcp.NewTool("member_list",
 		mcp.WithDescription("List members of a space."),
-		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("spaceSlug", mcp.Required(), mcp.Description("Slug of the space.")),
 	)
 }
 
@@ -278,7 +278,7 @@ func memberListHandler(h Handlers) mcpserver.ToolHandlerFunc {
 func memberCreateTool() mcp.Tool {
 	return mcp.NewTool("member_create",
 		mcp.WithDescription("Add a user to a space with a role (admin, member, or viewer)."),
-		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("spaceSlug", mcp.Required(), mcp.Description("Slug of the space.")),
 		mcp.WithString("userId", mcp.Required()),
 		mcp.WithString("role", mcp.Required()),
 	)
@@ -314,8 +314,8 @@ func memberCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 func memberUpdateTool() mcp.Tool {
 	return mcp.NewTool("member_update",
 		mcp.WithDescription("Change a member's role in a space. Obtain user IDs from member_list."),
-		mcp.WithString("spaceSlug", mcp.Required()),
-		mcp.WithString("userId", mcp.Required()),
+		mcp.WithString("spaceSlug", mcp.Required(), mcp.Description("Slug of the space.")),
+		mcp.WithString("userId", mcp.Required(), mcp.Description("User ID of the member.")),
 		mcp.WithString("role", mcp.Required()),
 	)
 }
@@ -350,8 +350,8 @@ func memberUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 func memberDeleteTool() mcp.Tool {
 	return mcp.NewTool("member_delete",
 		mcp.WithDescription("Remove a member from a space. Obtain user IDs from member_list."),
-		mcp.WithString("spaceSlug", mcp.Required()),
-		mcp.WithString("userId", mcp.Required()),
+		mcp.WithString("spaceSlug", mcp.Required(), mcp.Description("Slug of the space.")),
+		mcp.WithString("userId", mcp.Required(), mcp.Description("User ID of the member.")),
 	)
 }
 
@@ -379,7 +379,7 @@ func memberDeleteHandler(h Handlers) mcpserver.ToolHandlerFunc {
 func tagListTool() mcp.Tool {
 	return mcp.NewTool("tag_list",
 		mcp.WithDescription("List all tags in a space."),
-		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("spaceSlug", mcp.Required(), mcp.Description("Slug of the space.")),
 	)
 }
 
@@ -404,7 +404,7 @@ func tagListHandler(h Handlers) mcpserver.ToolHandlerFunc {
 func tagCreateTool() mcp.Tool {
 	return mcp.NewTool("tag_create",
 		mcp.WithDescription("Create a tag in a space."),
-		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("spaceSlug", mcp.Required(), mcp.Description("Slug of the space.")),
 		mcp.WithString("name", mcp.Required()),
 	)
 }
@@ -435,8 +435,8 @@ func tagCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 func tagUpdateTool() mcp.Tool {
 	return mcp.NewTool("tag_update",
 		mcp.WithDescription("Rename a tag. Obtain tag names from tag_list."),
-		mcp.WithString("spaceSlug", mcp.Required()),
-		mcp.WithString("tagName", mcp.Required()),
+		mcp.WithString("spaceSlug", mcp.Required(), mcp.Description("Slug of the space.")),
+		mcp.WithString("tagName", mcp.Required(), mcp.Description("Current tag name.")),
 		mcp.WithString("name", mcp.Required()),
 	)
 }
@@ -471,8 +471,8 @@ func tagUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 func tagDeleteTool() mcp.Tool {
 	return mcp.NewTool("tag_delete",
 		mcp.WithDescription("Delete a tag from a space. Obtain tag names from tag_list."),
-		mcp.WithString("spaceSlug", mcp.Required()),
-		mcp.WithString("tagName", mcp.Required()),
+		mcp.WithString("spaceSlug", mcp.Required(), mcp.Description("Slug of the space.")),
+		mcp.WithString("tagName", mcp.Required(), mcp.Description("Tag name to delete.")),
 	)
 }
 
@@ -677,8 +677,8 @@ func taskUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 func taskDeleteTool() mcp.Tool {
 	return mcp.NewTool("task_delete",
 		mcp.WithDescription("Delete a task. Obtain task IDs from task_list."),
-		mcp.WithString("spaceSlug", mcp.Required()),
-		mcp.WithString("taskId", mcp.Required()),
+		mcp.WithString("spaceSlug", mcp.Required(), mcp.Description("Slug of the space.")),
+		mcp.WithString("taskId", mcp.Required(), mcp.Description("Task ID.")),
 	)
 }
 
@@ -706,10 +706,10 @@ func taskDeleteHandler(h Handlers) mcpserver.ToolHandlerFunc {
 func relationCreateTool() mcp.Tool {
 	return mcp.NewTool("relation_create",
 		mcp.WithDescription("Create a relation between two tasks. Obtain task IDs from task_list."),
-		mcp.WithString("spaceSlug", mcp.Required()),
-		mcp.WithString("taskId", mcp.Required()),
-		mcp.WithString("kind", mcp.Required()),
-		mcp.WithString("bodyTaskId", mcp.Required()),
+		mcp.WithString("spaceSlug", mcp.Required(), mcp.Description("Slug of the space.")),
+		mcp.WithString("taskId", mcp.Required(), mcp.Description("Task ID of the source task.")),
+		mcp.WithString("kind", mcp.Required(), mcp.Description("Relation kind (e.g. parent_of, child_of, blocks, blocked_by, relates_to, duplicates, triggers, triggered_by).")),
+		mcp.WithString("bodyTaskId", mcp.Required(), mcp.Description("Task ID of the related task.")),
 	)
 }
 
@@ -747,10 +747,10 @@ func relationCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 func relationDeleteTool() mcp.Tool {
 	return mcp.NewTool("relation_delete",
 		mcp.WithDescription("Delete a relation between two tasks. Obtain task IDs from task_list."),
-		mcp.WithString("spaceSlug", mcp.Required()),
-		mcp.WithString("taskId", mcp.Required()),
-		mcp.WithString("kind", mcp.Required()),
-		mcp.WithString("relatedTaskId", mcp.Required()),
+		mcp.WithString("spaceSlug", mcp.Required(), mcp.Description("Slug of the space.")),
+		mcp.WithString("taskId", mcp.Required(), mcp.Description("Task ID of the source task.")),
+		mcp.WithString("kind", mcp.Required(), mcp.Description("Relation kind.")),
+		mcp.WithString("relatedTaskId", mcp.Required(), mcp.Description("Task ID of the related task.")),
 	)
 }
 
@@ -786,7 +786,7 @@ func relationDeleteHandler(h Handlers) mcpserver.ToolHandlerFunc {
 func statusListTool() mcp.Tool {
 	return mcp.NewTool("status_list",
 		mcp.WithDescription("List task statuses in a space."),
-		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("spaceSlug", mcp.Required(), mcp.Description("Slug of the space.")),
 	)
 }
 
@@ -811,7 +811,7 @@ func statusListHandler(h Handlers) mcpserver.ToolHandlerFunc {
 func effortLevelListTool() mcp.Tool {
 	return mcp.NewTool("effort_level_list",
 		mcp.WithDescription("List task effort levels in a space."),
-		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("spaceSlug", mcp.Required(), mcp.Description("Slug of the space.")),
 	)
 }
 
@@ -836,7 +836,7 @@ func effortLevelListHandler(h Handlers) mcpserver.ToolHandlerFunc {
 func priorityLevelListTool() mcp.Tool {
 	return mcp.NewTool("priority_level_list",
 		mcp.WithDescription("List task priority levels in a space."),
-		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("spaceSlug", mcp.Required(), mcp.Description("Slug of the space.")),
 	)
 }
 
@@ -861,8 +861,8 @@ func priorityLevelListHandler(h Handlers) mcpserver.ToolHandlerFunc {
 func taskActivityListTool() mcp.Tool {
 	return mcp.NewTool("task_activity_list",
 		mcp.WithDescription("List activity log entries for a specific task."),
-		mcp.WithString("spaceSlug", mcp.Required()),
-		mcp.WithString("taskId", mcp.Required()),
+		mcp.WithString("spaceSlug", mcp.Required(), mcp.Description("Slug of the space.")),
+		mcp.WithString("taskId", mcp.Required(), mcp.Description("Task ID.")),
 		mcp.WithString("cursor", mcp.Description("Pagination cursor from a previous response.")),
 		mcp.WithNumber("limit", mcp.Description("Maximum number of items to return (1–100).")),
 	)
@@ -899,7 +899,7 @@ func taskActivityListHandler(h Handlers) mcpserver.ToolHandlerFunc {
 func spaceActivityListTool() mcp.Tool {
 	return mcp.NewTool("space_activity_list",
 		mcp.WithDescription("List activity log entries for a space."),
-		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("spaceSlug", mcp.Required(), mcp.Description("Slug of the space.")),
 		mcp.WithString("cursor", mcp.Description("Pagination cursor from a previous response.")),
 		mcp.WithNumber("limit", mcp.Description("Maximum number of items to return (1–100).")),
 	)
@@ -932,7 +932,7 @@ func spaceActivityListHandler(h Handlers) mcpserver.ToolHandlerFunc {
 func userActivityListTool() mcp.Tool {
 	return mcp.NewTool("user_activity_list",
 		mcp.WithDescription("List activity log entries for a user."),
-		mcp.WithString("userId", mcp.Required()),
+		mcp.WithString("userId", mcp.Required(), mcp.Description("User ID.")),
 		mcp.WithString("cursor", mcp.Description("Pagination cursor from a previous response.")),
 		mcp.WithNumber("limit", mcp.Description("Maximum number of items to return (1–100).")),
 	)

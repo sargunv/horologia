@@ -36,7 +36,10 @@ model TaskStatusReplace {
 interface SpaceTaskStatuses {
   @mcpTool("status_list", "List task statuses in a space.")
   @get
-  list(@path spaceSlug: string): TaskStatusList | ApiError;
+  list(
+    /** Slug of the space. */
+    @path spaceSlug: string,
+  ): TaskStatusList | ApiError;
 
   @put replace(
     @path spaceSlug: string,

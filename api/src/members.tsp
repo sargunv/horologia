@@ -38,14 +38,22 @@ model SpaceMemberList {
 interface SpaceMembers {
   @mcpTool("member_list", "List members of a space.")
   @get
-  list(@path spaceSlug: string): SpaceMemberList | ApiError;
+  list(
+    /** Slug of the space. */
+    @path spaceSlug: string,
+  ): SpaceMemberList | ApiError;
 
   @mcpTool(
     "member_create",
     "Add a user to a space with a role (admin, member, or viewer)."
   )
   @post
-  create(@path spaceSlug: string, @body body: SpaceMemberCreate): {
+  create(
+    /** Slug of the space. */
+    @path spaceSlug: string,
+
+    @body body: SpaceMemberCreate,
+  ): {
     @statusCode statusCode: 201;
     @body body: SpaceMember;
   } | ApiError;
@@ -56,8 +64,12 @@ interface SpaceMembers {
   )
   @patch
   update(
+    /** Slug of the space. */
     @path spaceSlug: string,
+
+    /** User ID of the member. */
     @path userId: string,
+
     @body body: SpaceMemberUpdate,
   ): SpaceMember | ApiError;
 
@@ -66,5 +78,11 @@ interface SpaceMembers {
     "Remove a member from a space. Obtain user IDs from member_list."
   )
   @delete
-  delete(@path spaceSlug: string, @path userId: string): void | ApiError;
+  delete(
+    /** Slug of the space. */
+    @path spaceSlug: string,
+
+    /** User ID of the member. */
+    @path userId: string,
+  ): void | ApiError;
 }

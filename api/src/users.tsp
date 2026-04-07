@@ -58,10 +58,12 @@ interface Users {
 @route("/users/{userId}/tasks")
 @tag("Users")
 interface UserTasks {
-  @mcpTool(
-    "user_tasks_list",
-    "List tasks assigned to a user across all spaces."
-  )
+  @mcpTool("user_task_list", "List tasks assigned to a user across all spaces.")
   @get
-  list(@path userId: string, ...PageParams): TaskPage | ApiError;
+  list(
+    /** User ID. */
+    @path userId: string,
+
+    ...PageParams,
+  ): TaskPage | ApiError;
 }

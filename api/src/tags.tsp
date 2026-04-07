@@ -26,11 +26,19 @@ model TagList {
 interface SpaceTags {
   @mcpTool("tag_list", "List all tags in a space.")
   @get
-  list(@path spaceSlug: string): TagList | ApiError;
+  list(
+    /** Slug of the space. */
+    @path spaceSlug: string,
+  ): TagList | ApiError;
 
   @mcpTool("tag_create", "Create a tag in a space.")
   @post
-  create(@path spaceSlug: string, @body body: TagCreate): {
+  create(
+    /** Slug of the space. */
+    @path spaceSlug: string,
+
+    @body body: TagCreate,
+  ): {
     @statusCode statusCode: 201;
     @body body: Tag;
   } | ApiError;
@@ -38,8 +46,12 @@ interface SpaceTags {
   @mcpTool("tag_update", "Rename a tag. Obtain tag names from tag_list.")
   @patch
   update(
+    /** Slug of the space. */
     @path spaceSlug: string,
+
+    /** Current tag name. */
     @path tagName: string,
+
     @body body: TagUpdate,
   ): Tag | ApiError;
 
@@ -48,5 +60,11 @@ interface SpaceTags {
     "Delete a tag from a space. Obtain tag names from tag_list."
   )
   @delete
-  delete(@path spaceSlug: string, @path tagName: string): void | ApiError;
+  delete(
+    /** Slug of the space. */
+    @path spaceSlug: string,
+
+    /** Tag name to delete. */
+    @path tagName: string,
+  ): void | ApiError;
 }

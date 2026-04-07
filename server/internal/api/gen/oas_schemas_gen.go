@@ -2275,8 +2275,11 @@ func (s *TaskRelation) SetCreatedAt(val time.Time) {
 
 // Ref: #/components/schemas/TaskRelationCreate
 type TaskRelationCreate struct {
-	Kind   TaskRelationKind `json:"kind"`
-	TaskId string           `json:"taskId"`
+	// Relation kind (e.g. parent_of, child_of, blocks, blocked_by, relates_to, duplicates, triggers,
+	// triggered_by).
+	Kind TaskRelationKind `json:"kind"`
+	// Task ID of the related task.
+	TaskId string `json:"taskId"`
 }
 
 // GetKind returns the value of Kind.

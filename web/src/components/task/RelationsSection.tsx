@@ -77,13 +77,7 @@ function RelationItem({
   );
 }
 
-function AddRelationForm({
-  spaceSlug,
-  taskId,
-}: {
-  spaceSlug: string;
-  taskId: string;
-}) {
+function AddRelationForm({ spaceSlug, taskId }: { spaceSlug: string; taskId: string }) {
   const [taskIdInput, setTaskIdInput] = useState("");
   const [kindInput, setKindInput] = useState<TaskRelationKind>("relates_to");
   const [validationError, setValidationError] = useState<string | null>(null);

@@ -59,13 +59,24 @@ interface Spaces {
 
   @mcpTool("space_get", "Get a space by slug.")
   @get
-  read(@path spaceSlug: string): Space | ApiError;
+  read(
+    /** Slug of the space. */
+    @path spaceSlug: string,
+  ): Space | ApiError;
 
   @mcpTool("space_update", "Update a space's slug, name, or description.")
   @patch
-  update(@path spaceSlug: string, @body body: SpaceUpdate): Space | ApiError;
+  update(
+    /** Slug of the space. */
+    @path spaceSlug: string,
+
+    @body body: SpaceUpdate,
+  ): Space | ApiError;
 
   @mcpTool("space_delete", "Delete a space by slug.")
   @delete
-  delete(@path spaceSlug: string): void | ApiError;
+  delete(
+    /** Slug of the space. */
+    @path spaceSlug: string,
+  ): void | ApiError;
 }

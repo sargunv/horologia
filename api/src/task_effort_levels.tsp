@@ -28,7 +28,10 @@ model TaskEffortLevelReplace {
 interface SpaceTaskEffortLevels {
   @mcpTool("effort_level_list", "List task effort levels in a space.")
   @get
-  list(@path spaceSlug: string): TaskEffortLevelList | ApiError;
+  list(
+    /** Slug of the space. */
+    @path spaceSlug: string,
+  ): TaskEffortLevelList | ApiError;
 
   @put replace(
     @path spaceSlug: string,

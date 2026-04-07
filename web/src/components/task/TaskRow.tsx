@@ -33,9 +33,7 @@ export function TaskRow({
         <span className="text-surface-500 shrink-0 font-mono text-xs">{task.id}</span>
         <span className="truncate font-medium">{task.title}</span>
         {spaceLabel && (
-          <span className="chip preset-tonal-surface shrink-0 text-xs">
-            {spaceLabel}
-          </span>
+          <span className="chip preset-tonal-surface shrink-0 text-xs">{spaceLabel}</span>
         )}
       </div>
 

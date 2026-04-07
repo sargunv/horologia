@@ -182,13 +182,20 @@ func toolResultOk(t *testing.T, rpcResp map[string]any) string {
 	return jsonAs[string](t, item["text"])
 }
 
-// toolResultList extracts items from a list/page response.
-func toolResultList(t *testing.T, rpcResp map[string]any) []any {
+// toolResultJSON extracts a successful JSON result, failing the test on error.
+func toolResultJSON(t *testing.T, rpcResp map[string]any) map[string]any {
 	t.Helper()
 	content, isErr := toolResult(t, rpcResp)
 	if isErr {
 		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
 	}
+	return content
+}
+
+// toolResultList extracts items from a list/page response.
+func toolResultList(t *testing.T, rpcResp map[string]any) []any {
+	t.Helper()
+	content := toolResultJSON(t, rpcResp)
 	items, ok := content["items"].([]any)
 	if !ok {
 		t.Fatalf("expected items array, got %T", content["items"])
@@ -208,10 +215,7 @@ func TestMCPTaskCreate(t *testing.T) {
 		"spaceSlug": "home",
 		"title":     "MCP task",
 	})
-	task, isErr := toolResult(t, rpcResp)
-	if isErr {
-		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
-	}
+	task := toolResultJSON(t, rpcResp)
 	if task["title"] != "MCP task" {
 		t.Errorf("title = %v, want MCP task", task["title"])
 	}
@@ -236,10 +240,7 @@ func TestMCPTaskCreateWithFields(t *testing.T) {
 		"description": "A description",
 		"status":      "done",
 	})
-	task, isErr := toolResult(t, rpcResp)
-	if isErr {
-		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
-	}
+	task := toolResultJSON(t, rpcResp)
 	if task["description"] != "A description" {
 		t.Errorf("description = %v, want A description", task["description"])
 	}
@@ -274,10 +275,7 @@ func TestMCPTaskList(t *testing.T) {
 	rpcResp := s.call(t, "task_list", map[string]any{
 		"spaceSlug": "home",
 	})
-	page, isErr := toolResult(t, rpcResp)
-	if isErr {
-		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
-	}
+	page := toolResultJSON(t, rpcResp)
 	items := jsonAs[[]any](t, page["items"])
 	if len(items) != 2 {
 		t.Fatalf("got %d items, want 2", len(items))
@@ -296,10 +294,7 @@ func TestMCPTaskGet(t *testing.T) {
 		"spaceSlug": "home",
 		"taskId":    taskID,
 	})
-	task, isErr := toolResult(t, rpcResp)
-	if isErr {
-		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
-	}
+	task := toolResultJSON(t, rpcResp)
 	if task["title"] != "Fetch me" {
 		t.Errorf("title = %v, want Fetch me", task["title"])
 	}
@@ -322,10 +317,7 @@ func TestMCPTaskUpdate(t *testing.T) {
 		"title":     "Updated",
 		"status":    "done",
 	})
-	task, isErr := toolResult(t, rpcResp)
-	if isErr {
-		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
-	}
+	task := toolResultJSON(t, rpcResp)
 	if task["title"] != "Updated" {
 		t.Errorf("title = %v, want Updated", task["title"])
 	}
@@ -416,10 +408,7 @@ func TestMCPSpaceCreate(t *testing.T) {
 		"slug": "new-space",
 		"name": "New Space",
 	})
-	space, isErr := toolResult(t, rpcResp)
-	if isErr {
-		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
-	}
+	space := toolResultJSON(t, rpcResp)
 	if space["slug"] != "new-space" {
 		t.Errorf("slug = %v, want new-space", space["slug"])
 	}
@@ -437,10 +426,7 @@ func TestMCPSpaceGet(t *testing.T) {
 	rpcResp := s.call(t, "space_get", map[string]any{
 		"spaceSlug": "home",
 	})
-	space, isErr := toolResult(t, rpcResp)
-	if isErr {
-		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
-	}
+	space := toolResultJSON(t, rpcResp)
 	if space["slug"] != "home" {
 		t.Errorf("slug = %v, want home", space["slug"])
 	}
@@ -456,10 +442,7 @@ func TestMCPSpaceUpdate(t *testing.T) {
 		"spaceSlug": "home",
 		"name":      "Updated Home",
 	})
-	space, isErr := toolResult(t, rpcResp)
-	if isErr {
-		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
-	}
+	space := toolResultJSON(t, rpcResp)
 	if space["name"] != "Updated Home" {
 		t.Errorf("name = %v, want Updated Home", space["name"])
 	}
@@ -515,10 +498,7 @@ func TestMCPTagCreate(t *testing.T) {
 		"spaceSlug": "home",
 		"name":      "urgent",
 	})
-	tag, isErr := toolResult(t, rpcResp)
-	if isErr {
-		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
-	}
+	tag := toolResultJSON(t, rpcResp)
 	if tag["name"] != "urgent" {
 		t.Errorf("name = %v, want urgent", tag["name"])
 	}
@@ -536,10 +516,7 @@ func TestMCPTagUpdate(t *testing.T) {
 		"tagName":   "urgent",
 		"name":      "critical",
 	})
-	tag, isErr := toolResult(t, rpcResp)
-	if isErr {
-		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
-	}
+	tag := toolResultJSON(t, rpcResp)
 	if tag["name"] != "critical" {
 		t.Errorf("name = %v, want critical", tag["name"])
 	}
@@ -626,10 +603,7 @@ func TestMCPMemberCreateViaMCP(t *testing.T) {
 		"userId":    userID,
 		"role":      "viewer",
 	})
-	member, isErr := toolResult(t, rpcResp)
-	if isErr {
-		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
-	}
+	member := toolResultJSON(t, rpcResp)
 	if member["userId"] != userID {
 		t.Errorf("userId = %v, want %s", member["userId"], userID)
 	}
@@ -650,10 +624,7 @@ func TestMCPMemberUpdate(t *testing.T) {
 		"userId":    userID,
 		"role":      "admin",
 	})
-	member, isErr := toolResult(t, rpcResp)
-	if isErr {
-		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
-	}
+	member := toolResultJSON(t, rpcResp)
 	if member["role"] != "admin" {
 		t.Errorf("role = %v, want admin", member["role"])
 	}
@@ -786,7 +757,7 @@ func TestMCPUserActivityList(t *testing.T) {
 
 // --- User tasks tool ---
 
-func TestMCPUserTasksList(t *testing.T) {
+func TestMCPUserTaskList(t *testing.T) {
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -794,7 +765,7 @@ func TestMCPUserTasksList(t *testing.T) {
 	createSpace(t, env, "home", "Home")
 	createTask(t, env, "home", `{"title":"Assigned task","assigneeIds":["`+userID+`"]}`)
 
-	rpcResp := s.call(t, "user_tasks_list", map[string]any{
+	rpcResp := s.call(t, "user_task_list", map[string]any{
 		"userId": userID,
 	})
 	items := toolResultList(t, rpcResp)
@@ -821,10 +792,7 @@ func TestMCPRelationCreate(t *testing.T) {
 		"kind":       "blocks",
 		"bodyTaskId": taskBID,
 	})
-	rel, isErr := toolResult(t, rpcResp)
-	if isErr {
-		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
-	}
+	rel := toolResultJSON(t, rpcResp)
 	if rel["kind"] != "blocks" {
 		t.Errorf("kind = %v, want blocks", rel["kind"])
 	}
@@ -853,4 +821,48 @@ func TestMCPRelationDelete(t *testing.T) {
 	// Verify relation is gone.
 	rels := assertTaskRelations(t, env, "home", taskAID, 0)
 	_ = rels
+}
+
+// --- Error path tests ---
+
+func TestMCPSpaceGetNonexistent(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	rpcResp := s.call(t, "space_get", map[string]any{
+		"spaceSlug": "nonexistent",
+	})
+	_, isErr := toolResult(t, rpcResp)
+	if !isErr {
+		t.Error("expected error for nonexistent space")
+	}
+}
+
+func TestMCPTaskDeleteNonexistent(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+
+	rpcResp := s.call(t, "task_delete", map[string]any{
+		"spaceSlug": "home",
+		"taskId":    "T999999",
+	})
+	_, isErr := toolResult(t, rpcResp)
+	if !isErr {
+		t.Error("expected error for nonexistent task")
+	}
+}
+
+func TestMCPSpaceDeleteNonexistent(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	rpcResp := s.call(t, "space_delete", map[string]any{
+		"spaceSlug": "nonexistent",
+	})
+	_, isErr := toolResult(t, rpcResp)
+	if !isErr {
+		t.Error("expected error for nonexistent space")
+	}
 }

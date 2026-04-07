@@ -51,7 +51,10 @@ model TaskRelation {
 }
 
 model TaskRelationCreate {
+  /** Relation kind (e.g. parent_of, child_of, blocks, blocked_by, relates_to, duplicates, triggers, triggered_by). */
   kind: TaskRelationKind;
+
+  /** Task ID of the related task. */
   taskId: string;
 }
 
@@ -198,7 +201,13 @@ interface SpaceTasks {
 
   @mcpTool("task_delete", "Delete a task. Obtain task IDs from task_list.")
   @delete
-  delete(@path spaceSlug: string, @path taskId: string): void | ApiError;
+  delete(
+    /** Slug of the space. */
+    @path spaceSlug: string,
+
+    /** Task ID. */
+    @path taskId: string,
+  ): void | ApiError;
 }
 
 @route("/spaces/{spaceSlug}/tasks/{taskId}/relations")
@@ -210,8 +219,12 @@ interface SpaceTaskRelations {
   )
   @post
   create(
+    /** Slug of the space. */
     @path spaceSlug: string,
+
+    /** Task ID of the source task. */
     @path taskId: string,
+
     @body body: TaskRelationCreate,
   ): {
     @statusCode statusCode: 201;
@@ -224,9 +237,16 @@ interface SpaceTaskRelations {
   )
   @delete
   delete(
+    /** Slug of the space. */
     @path spaceSlug: string,
+
+    /** Task ID of the source task. */
     @path taskId: string,
+
+    /** Relation kind. */
     @path kind: TaskRelationKind,
+
+    /** Task ID of the related task. */
     @path relatedTaskId: string,
   ): void | ApiError;
 }

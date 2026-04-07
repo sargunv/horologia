@@ -566,7 +566,9 @@ export interface components {
             createdAt: string;
         };
         TaskRelationCreate: {
+            /** @description Relation kind (e.g. parent_of, child_of, blocks, blocked_by, relates_to, duplicates, triggers, triggered_by). */
             kind: components["schemas"]["TaskRelationKind"];
+            /** @description Task ID of the related task. */
             taskId: string;
         };
         /** @enum {string} */
@@ -809,6 +811,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;
@@ -840,6 +843,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;
@@ -869,6 +873,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;
@@ -909,6 +914,7 @@ export interface operations {
             };
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;
@@ -940,6 +946,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;
@@ -971,6 +978,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;
@@ -1006,7 +1014,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
+                /** @description User ID of the member. */
                 userId: string;
             };
             cookie?: never;
@@ -1036,7 +1046,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
+                /** @description User ID of the member. */
                 userId: string;
             };
             cookie?: never;
@@ -1072,6 +1084,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;
@@ -1103,6 +1116,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;
@@ -1138,7 +1152,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
+                /** @description Tag name to delete. */
                 tagName: string;
             };
             cookie?: never;
@@ -1168,7 +1184,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
+                /** @description Current tag name. */
                 tagName: string;
             };
             cookie?: never;
@@ -1204,6 +1222,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;
@@ -1270,6 +1289,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;
@@ -1336,6 +1356,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;
@@ -1509,7 +1530,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
+                /** @description Task ID. */
                 taskId: string;
             };
             cookie?: never;
@@ -1582,7 +1605,9 @@ export interface operations {
             };
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
+                /** @description Task ID. */
                 taskId: string;
             };
             cookie?: never;
@@ -1614,7 +1639,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
+                /** @description Task ID of the source task. */
                 taskId: string;
             };
             cookie?: never;
@@ -1650,9 +1677,13 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
+                /** @description Task ID of the source task. */
                 taskId: string;
+                /** @description Relation kind. */
                 kind: components["schemas"]["TaskRelationKind"];
+                /** @description Task ID of the related task. */
                 relatedTaskId: string;
             };
             cookie?: never;
@@ -1873,6 +1904,7 @@ export interface operations {
             };
             header?: never;
             path: {
+                /** @description User ID. */
                 userId: string;
             };
             cookie?: never;
@@ -1909,6 +1941,7 @@ export interface operations {
             };
             header?: never;
             path: {
+                /** @description User ID. */
                 userId: string;
             };
             cookie?: never;

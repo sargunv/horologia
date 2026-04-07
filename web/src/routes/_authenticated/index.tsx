@@ -1,8 +1,4 @@
-import {
-  useQueries,
-  useSuspenseInfiniteQuery,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useQueries, useSuspenseInfiniteQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronDown, ListChecks } from "lucide-react";
 import { useMemo } from "react";
@@ -30,11 +26,9 @@ export const Route = createFileRoute("/_authenticated/")({
     await Promise.all([
       queryClient.ensureInfiniteQueryData(userTasksInfiniteQueryOptions(user.id)),
       ...spaces.map((s: Space) =>
-        queryClient.ensureQueryData(spaceTaskStatusesQueryOptions(s.slug))
+        queryClient.ensureQueryData(spaceTaskStatusesQueryOptions(s.slug)),
       ),
-      ...spaces.map((s: Space) =>
-        queryClient.ensureQueryData(spaceMembersQueryOptions(s.slug))
-      ),
+      ...spaces.map((s: Space) => queryClient.ensureQueryData(spaceMembersQueryOptions(s.slug))),
     ]);
   },
   component: MyTasksPage,
@@ -42,9 +36,7 @@ export const Route = createFileRoute("/_authenticated/")({
 
 // ── Cross-space status map ─────────────────────────────────────────────────
 
-function useAllSpaceStatusMaps(
-  spaces: Space[]
-): Map<string, Map<string, TaskStatus>> {
+function useAllSpaceStatusMaps(spaces: Space[]): Map<string, Map<string, TaskStatus>> {
   return useQueries({
     queries: spaces.map((s) => spaceTaskStatusesQueryOptions(s.slug)),
     combine(results) {
@@ -71,19 +63,14 @@ function MyTasksPage() {
     isFetchingNextPage,
   } = useSuspenseInfiniteQuery(userTasksInfiniteQueryOptions(user.id));
 
-  const tasks = useMemo(
-    () => taskPages.pages.flatMap((p) => p.items),
-    [taskPages]
-  );
+  const tasks = useMemo(() => taskPages.pages.flatMap((p) => p.items), [taskPages]);
 
   const allStatusMaps = useAllSpaceStatusMaps(spaces);
 
   return (
     <div className="p-6">
       <h1 className="h3">My Tasks</h1>
-      <p className="text-surface-600-400 mt-1">
-        All tasks assigned to you across spaces.
-      </p>
+      <p className="text-surface-600-400 mt-1">All tasks assigned to you across spaces.</p>
 
       <div className="mt-6">
         {tasks.length > 0 ? (
@@ -117,8 +104,12 @@ function MyTasksPage() {
               onClick={() => fetchNextPage()}
               disabled={isFetchingNextPage}
             >
-              {isFetchingNextPage ? "Loading..." : (
-                <>Load more <ChevronDown className="size-4" /></>
+              {isFetchingNextPage ? (
+                "Loading..."
+              ) : (
+                <>
+                  Load more <ChevronDown className="size-4" />
+                </>
               )}
             </button>
           </div>

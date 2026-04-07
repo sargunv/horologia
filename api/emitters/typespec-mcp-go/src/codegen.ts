@@ -135,11 +135,21 @@ function collectBodyFields(
   if (bodyType.kind !== "Model") return [];
 
   const fields: GoParam[] = [];
+  const usedNames = new Set<string>(pathParamNames);
   for (const [name, prop] of (bodyType as Model).properties) {
     const resolved = getSimpleNonNull(prop.type);
     if (!resolved) continue;
-    // If a body field collides with a path param, prefix with "body" for the MCP param name
-    const mcpName = pathParamNames.has(name) ? `body${capitalize(name)}` : name;
+    // If a body field collides with an existing name, prefix with "body" for the MCP param name
+    let mcpName = name;
+    if (usedNames.has(mcpName)) {
+      mcpName = `body${capitalize(mcpName)}`;
+      if (usedNames.has(mcpName)) {
+        throw new Error(
+          `MCP param name collision: "${mcpName}" already used (from body field "${name}")`,
+        );
+      }
+    }
+    usedNames.add(mcpName);
     fields.push({
       name: mcpName,
       goField: capitalize(name),

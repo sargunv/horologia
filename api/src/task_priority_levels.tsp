@@ -28,7 +28,10 @@ model TaskPriorityLevelReplace {
 interface SpaceTaskPriorityLevels {
   @mcpTool("priority_level_list", "List task priority levels in a space.")
   @get
-  list(@path spaceSlug: string): TaskPriorityLevelList | ApiError;
+  list(
+    /** Slug of the space. */
+    @path spaceSlug: string,
+  ): TaskPriorityLevelList | ApiError;
 
   @put replace(
     @path spaceSlug: string,
