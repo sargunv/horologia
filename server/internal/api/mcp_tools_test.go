@@ -162,6 +162,40 @@ func toolErrorText(t *testing.T, rpcResp map[string]any) string {
 	return jsonAs[string](t, item["text"])
 }
 
+// toolResultOk checks that the MCP tool call returned a non-error text result.
+// Returns the text content. Use for void-return tools (delete operations).
+func toolResultOk(t *testing.T, rpcResp map[string]any) string {
+	t.Helper()
+	if rpcResp["error"] != nil {
+		t.Fatalf("unexpected JSON-RPC error: %v", rpcResp["error"])
+	}
+	result := jsonAs[map[string]any](t, rpcResp["result"])
+	errFlag, _ := result["isError"].(bool)
+	if errFlag {
+		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
+	}
+	items := jsonAs[[]any](t, result["content"])
+	if len(items) == 0 {
+		t.Fatal("MCP result has no content items")
+	}
+	item := jsonAs[map[string]any](t, items[0])
+	return jsonAs[string](t, item["text"])
+}
+
+// toolResultList extracts items from a list/page response.
+func toolResultList(t *testing.T, rpcResp map[string]any) []any {
+	t.Helper()
+	content, isErr := toolResult(t, rpcResp)
+	if isErr {
+		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
+	}
+	items, ok := content["items"].([]any)
+	if !ok {
+		t.Fatalf("expected items array, got %T", content["items"])
+	}
+	return items
+}
+
 // --- Tests ---
 
 func TestMCPTaskCreate(t *testing.T) {
@@ -328,4 +362,489 @@ func TestMCPTaskGetNonexistent(t *testing.T) {
 	if !isErr {
 		t.Error("expected error result for nonexistent task")
 	}
+}
+
+func TestMCPTaskDelete(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+	created := createTask(t, env, "home", `{"title":"Delete me"}`)
+	taskID := jsonAs[string](t, created["id"])
+
+	rpcResp := s.call(t, "task_delete", map[string]any{
+		"spaceSlug": "home",
+		"taskId":    taskID,
+	})
+	text := toolResultOk(t, rpcResp)
+	if text != "ok" {
+		t.Errorf("expected 'ok', got %q", text)
+	}
+
+	// Verify task is gone.
+	rpcResp = s.call(t, "task_get", map[string]any{
+		"spaceSlug": "home",
+		"taskId":    taskID,
+	})
+	_, isErr := toolResult(t, rpcResp)
+	if !isErr {
+		t.Error("expected error for deleted task")
+	}
+}
+
+// --- Space tools ---
+
+func TestMCPSpaceList(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "alpha", "Alpha")
+	createSpace(t, env, "beta", "Beta")
+
+	rpcResp := s.call(t, "space_list", map[string]any{})
+	items := toolResultList(t, rpcResp)
+	if len(items) != 2 {
+		t.Fatalf("got %d spaces, want 2", len(items))
+	}
+}
+
+func TestMCPSpaceCreate(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	rpcResp := s.call(t, "space_create", map[string]any{
+		"slug": "new-space",
+		"name": "New Space",
+	})
+	space, isErr := toolResult(t, rpcResp)
+	if isErr {
+		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
+	}
+	if space["slug"] != "new-space" {
+		t.Errorf("slug = %v, want new-space", space["slug"])
+	}
+	if space["name"] != "New Space" {
+		t.Errorf("name = %v, want New Space", space["name"])
+	}
+}
+
+func TestMCPSpaceGet(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+
+	rpcResp := s.call(t, "space_get", map[string]any{
+		"spaceSlug": "home",
+	})
+	space, isErr := toolResult(t, rpcResp)
+	if isErr {
+		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
+	}
+	if space["slug"] != "home" {
+		t.Errorf("slug = %v, want home", space["slug"])
+	}
+}
+
+func TestMCPSpaceUpdate(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+
+	rpcResp := s.call(t, "space_update", map[string]any{
+		"spaceSlug": "home",
+		"name":      "Updated Home",
+	})
+	space, isErr := toolResult(t, rpcResp)
+	if isErr {
+		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
+	}
+	if space["name"] != "Updated Home" {
+		t.Errorf("name = %v, want Updated Home", space["name"])
+	}
+}
+
+func TestMCPSpaceDelete(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "doomed", "Doomed")
+
+	rpcResp := s.call(t, "space_delete", map[string]any{
+		"spaceSlug": "doomed",
+	})
+	toolResultOk(t, rpcResp)
+
+	// Verify space is gone.
+	rpcResp = s.call(t, "space_get", map[string]any{
+		"spaceSlug": "doomed",
+	})
+	_, isErr := toolResult(t, rpcResp)
+	if !isErr {
+		t.Error("expected error for deleted space")
+	}
+}
+
+// --- Tag tools ---
+
+func TestMCPTagList(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/home/tags", `{"name":"urgent"}`), http.StatusCreated)
+	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/home/tags", `{"name":"bug"}`), http.StatusCreated)
+
+	rpcResp := s.call(t, "tag_list", map[string]any{
+		"spaceSlug": "home",
+	})
+	items := toolResultList(t, rpcResp)
+	if len(items) != 2 {
+		t.Fatalf("got %d tags, want 2", len(items))
+	}
+}
+
+func TestMCPTagCreate(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+
+	rpcResp := s.call(t, "tag_create", map[string]any{
+		"spaceSlug": "home",
+		"name":      "urgent",
+	})
+	tag, isErr := toolResult(t, rpcResp)
+	if isErr {
+		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
+	}
+	if tag["name"] != "urgent" {
+		t.Errorf("name = %v, want urgent", tag["name"])
+	}
+}
+
+func TestMCPTagUpdate(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/home/tags", `{"name":"urgent"}`), http.StatusCreated)
+
+	rpcResp := s.call(t, "tag_update", map[string]any{
+		"spaceSlug": "home",
+		"tagName":   "urgent",
+		"name":      "critical",
+	})
+	tag, isErr := toolResult(t, rpcResp)
+	if isErr {
+		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
+	}
+	if tag["name"] != "critical" {
+		t.Errorf("name = %v, want critical", tag["name"])
+	}
+}
+
+func TestMCPTagDelete(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+	assertStatusClose(t, doRequest(t, env, "POST", "/spaces/home/tags", `{"name":"urgent"}`), http.StatusCreated)
+
+	rpcResp := s.call(t, "tag_delete", map[string]any{
+		"spaceSlug": "home",
+		"tagName":   "urgent",
+	})
+	toolResultOk(t, rpcResp)
+
+	// Verify tag is gone.
+	rpcResp = s.call(t, "tag_list", map[string]any{
+		"spaceSlug": "home",
+	})
+	items := toolResultList(t, rpcResp)
+	if len(items) != 0 {
+		t.Fatalf("got %d tags, want 0", len(items))
+	}
+}
+
+// --- Member tools ---
+
+func TestMCPMemberList(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+
+	rpcResp := s.call(t, "member_list", map[string]any{
+		"spaceSlug": "home",
+	})
+	items := toolResultList(t, rpcResp)
+	// Owner is not auto-added as member, so list may be empty.
+	_ = items
+}
+
+func TestMCPMemberCreate(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+	_, userID := createAndAddMember(t, env, "home", "bob@test.com", "Bob", "password", "member")
+
+	// Verify via MCP member_list.
+	rpcResp := s.call(t, "member_list", map[string]any{
+		"spaceSlug": "home",
+	})
+	items := toolResultList(t, rpcResp)
+	found := false
+	for _, item := range items {
+		m := jsonAs[map[string]any](t, item)
+		if m["userId"] == userID {
+			found = true
+			if m["role"] != "member" {
+				t.Errorf("role = %v, want member", m["role"])
+			}
+		}
+	}
+	if !found {
+		t.Error("added member not found in member_list")
+	}
+}
+
+func TestMCPMemberCreateViaMCP(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+	token := createTestUser(t, env, "charlie@test.com", "Charlie", "password")
+	userID := getUserID(t, env, token)
+
+	rpcResp := s.call(t, "member_create", map[string]any{
+		"spaceSlug": "home",
+		"userId":    userID,
+		"role":      "viewer",
+	})
+	member, isErr := toolResult(t, rpcResp)
+	if isErr {
+		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
+	}
+	if member["userId"] != userID {
+		t.Errorf("userId = %v, want %s", member["userId"], userID)
+	}
+	if member["role"] != "viewer" {
+		t.Errorf("role = %v, want viewer", member["role"])
+	}
+}
+
+func TestMCPMemberUpdate(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+	_, userID := createAndAddMember(t, env, "home", "bob@test.com", "Bob", "password", "member")
+
+	rpcResp := s.call(t, "member_update", map[string]any{
+		"spaceSlug": "home",
+		"userId":    userID,
+		"role":      "admin",
+	})
+	member, isErr := toolResult(t, rpcResp)
+	if isErr {
+		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
+	}
+	if member["role"] != "admin" {
+		t.Errorf("role = %v, want admin", member["role"])
+	}
+}
+
+func TestMCPMemberDelete(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+	_, userID := createAndAddMember(t, env, "home", "bob@test.com", "Bob", "password", "member")
+
+	rpcResp := s.call(t, "member_delete", map[string]any{
+		"spaceSlug": "home",
+		"userId":    userID,
+	})
+	toolResultOk(t, rpcResp)
+
+	// Verify member is gone.
+	rpcResp = s.call(t, "member_list", map[string]any{
+		"spaceSlug": "home",
+	})
+	items := toolResultList(t, rpcResp)
+	for _, item := range items {
+		m := jsonAs[map[string]any](t, item)
+		if m["userId"] == userID {
+			t.Error("deleted member still in member_list")
+		}
+	}
+}
+
+// --- Level tools ---
+
+func TestMCPStatusList(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+
+	rpcResp := s.call(t, "status_list", map[string]any{
+		"spaceSlug": "home",
+	})
+	items := toolResultList(t, rpcResp)
+	if len(items) < 2 {
+		t.Fatalf("got %d statuses, want at least 2 (default)", len(items))
+	}
+}
+
+func TestMCPEffortLevelList(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+
+	rpcResp := s.call(t, "effort_level_list", map[string]any{
+		"spaceSlug": "home",
+	})
+	items := toolResultList(t, rpcResp)
+	_ = items // Default effort levels may or may not exist.
+}
+
+func TestMCPPriorityLevelList(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+
+	rpcResp := s.call(t, "priority_level_list", map[string]any{
+		"spaceSlug": "home",
+	})
+	items := toolResultList(t, rpcResp)
+	_ = items // Default priority levels may or may not exist.
+}
+
+// --- Activity tools ---
+
+func TestMCPSpaceActivityList(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+	createTask(t, env, "home", `{"title":"Activity trigger"}`)
+
+	rpcResp := s.call(t, "space_activity_list", map[string]any{
+		"spaceSlug": "home",
+	})
+	items := toolResultList(t, rpcResp)
+	if len(items) == 0 {
+		t.Fatal("expected at least 1 activity entry")
+	}
+}
+
+func TestMCPTaskActivityList(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+	created := createTask(t, env, "home", `{"title":"Activity task"}`)
+	taskID := jsonAs[string](t, created["id"])
+
+	rpcResp := s.call(t, "task_activity_list", map[string]any{
+		"spaceSlug": "home",
+		"taskId":    taskID,
+	})
+	items := toolResultList(t, rpcResp)
+	if len(items) == 0 {
+		t.Fatal("expected at least 1 activity entry for task")
+	}
+}
+
+func TestMCPUserActivityList(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	userID := getUserID(t, env, env.Token)
+	createSpace(t, env, "home", "Home")
+
+	rpcResp := s.call(t, "user_activity_list", map[string]any{
+		"userId": userID,
+	})
+	items := toolResultList(t, rpcResp)
+	if len(items) == 0 {
+		t.Fatal("expected at least 1 activity entry for user")
+	}
+}
+
+// --- User tasks tool ---
+
+func TestMCPUserTasksList(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	userID := getUserID(t, env, env.Token)
+	createSpace(t, env, "home", "Home")
+	createTask(t, env, "home", `{"title":"Assigned task","assigneeIds":["`+userID+`"]}`)
+
+	rpcResp := s.call(t, "user_tasks_list", map[string]any{
+		"userId": userID,
+	})
+	items := toolResultList(t, rpcResp)
+	if len(items) != 1 {
+		t.Fatalf("got %d tasks, want 1", len(items))
+	}
+}
+
+// --- Relation tools ---
+
+func TestMCPRelationCreate(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+	taskA := createTask(t, env, "home", `{"title":"Task A"}`)
+	taskB := createTask(t, env, "home", `{"title":"Task B"}`)
+	taskAID := jsonAs[string](t, taskA["id"])
+	taskBID := jsonAs[string](t, taskB["id"])
+
+	rpcResp := s.call(t, "relation_create", map[string]any{
+		"spaceSlug":  "home",
+		"taskId":     taskAID,
+		"kind":       "blocks",
+		"bodyTaskId": taskBID,
+	})
+	rel, isErr := toolResult(t, rpcResp)
+	if isErr {
+		t.Fatalf("expected success, got error: %s", toolErrorText(t, rpcResp))
+	}
+	if rel["kind"] != "blocks" {
+		t.Errorf("kind = %v, want blocks", rel["kind"])
+	}
+}
+
+func TestMCPRelationDelete(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+	taskA := createTask(t, env, "home", `{"title":"Task A"}`)
+	taskB := createTask(t, env, "home", `{"title":"Task B"}`)
+	taskAID := jsonAs[string](t, taskA["id"])
+	taskBID := jsonAs[string](t, taskB["id"])
+
+	createRelation(t, env, "home", taskAID, "blocks", taskBID)
+
+	rpcResp := s.call(t, "relation_delete", map[string]any{
+		"spaceSlug":     "home",
+		"taskId":        taskAID,
+		"kind":          "blocks",
+		"relatedTaskId": taskBID,
+	})
+	toolResultOk(t, rpcResp)
+
+	// Verify relation is gone.
+	rels := assertTaskRelations(t, env, "home", taskAID, 0)
+	_ = rels
 }

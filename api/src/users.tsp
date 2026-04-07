@@ -1,6 +1,8 @@
 import "@typespec/http";
+import "@tend/typespec-mcp-go";
 
 using Http;
+using MCP;
 
 namespace Tend;
 
@@ -56,5 +58,10 @@ interface Users {
 @route("/users/{userId}/tasks")
 @tag("Users")
 interface UserTasks {
-  @get list(@path userId: string, ...PageParams): TaskPage | ApiError;
+  @mcpTool(
+    "user_tasks_list",
+    "List tasks assigned to a user across all spaces."
+  )
+  @get
+  list(@path userId: string, ...PageParams): TaskPage | ApiError;
 }

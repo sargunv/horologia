@@ -1,6 +1,8 @@
 import "@typespec/http";
+import "@tend/typespec-mcp-go";
 
 using Http;
+using MCP;
 
 namespace Tend;
 
@@ -32,7 +34,9 @@ model TaskStatusReplace {
 @route("/spaces/{spaceSlug}/task-statuses")
 @tag("Task Statuses")
 interface SpaceTaskStatuses {
-  @get list(@path spaceSlug: string): TaskStatusList | ApiError;
+  @mcpTool("status_list", "List task statuses in a space.")
+  @get
+  list(@path spaceSlug: string): TaskStatusList | ApiError;
 
   @put replace(
     @path spaceSlug: string,

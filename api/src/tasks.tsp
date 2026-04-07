@@ -196,16 +196,20 @@ interface SpaceTasks {
     @body body: TaskUpdate,
   ): Task | ApiError;
 
-  @delete delete(
-    @path spaceSlug: string,
-    @path taskId: string,
-  ): void | ApiError;
+  @mcpTool("task_delete", "Delete a task. Obtain task IDs from task_list.")
+  @delete
+  delete(@path spaceSlug: string, @path taskId: string): void | ApiError;
 }
 
 @route("/spaces/{spaceSlug}/tasks/{taskId}/relations")
 @tag("Tasks")
 interface SpaceTaskRelations {
-  @post create(
+  @mcpTool(
+    "relation_create",
+    "Create a relation between two tasks. Obtain task IDs from task_list."
+  )
+  @post
+  create(
     @path spaceSlug: string,
     @path taskId: string,
     @body body: TaskRelationCreate,
@@ -214,7 +218,12 @@ interface SpaceTaskRelations {
     @body body: TaskRelation;
   } | ApiError;
 
-  @delete delete(
+  @mcpTool(
+    "relation_delete",
+    "Delete a relation between two tasks. Obtain task IDs from task_list."
+  )
+  @delete
+  delete(
     @path spaceSlug: string,
     @path taskId: string,
     @path kind: TaskRelationKind,

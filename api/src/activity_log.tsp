@@ -1,6 +1,8 @@
 import "@typespec/http";
+import "@tend/typespec-mcp-go";
 
 using Http;
+using MCP;
 
 namespace Tend;
 
@@ -45,7 +47,12 @@ model ActivityLogPage is Page<ActivityLogEntry>;
 @route("/spaces/{spaceSlug}/tasks/{taskId}/activity")
 @tag("Activity")
 interface SpaceTaskActivity {
-  @get list(
+  @mcpTool(
+    "task_activity_list",
+    "List activity log entries for a specific task."
+  )
+  @get
+  list(
     @path spaceSlug: string,
     @path taskId: string,
     ...PageParams,
@@ -55,11 +62,15 @@ interface SpaceTaskActivity {
 @route("/spaces/{spaceSlug}/activity")
 @tag("Activity")
 interface SpaceActivity {
-  @get list(@path spaceSlug: string, ...PageParams): ActivityLogPage | ApiError;
+  @mcpTool("space_activity_list", "List activity log entries for a space.")
+  @get
+  list(@path spaceSlug: string, ...PageParams): ActivityLogPage | ApiError;
 }
 
 @route("/users/{userId}/activity")
 @tag("Activity")
 interface UserActivity {
-  @get list(@path userId: string, ...PageParams): ActivityLogPage | ApiError;
+  @mcpTool("user_activity_list", "List activity log entries for a user.")
+  @get
+  list(@path userId: string, ...PageParams): ActivityLogPage | ApiError;
 }

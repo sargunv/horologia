@@ -1,6 +1,8 @@
 import "@typespec/http";
+import "@tend/typespec-mcp-go";
 
 using Http;
+using MCP;
 
 namespace Tend;
 
@@ -24,7 +26,9 @@ model TaskEffortLevelReplace {
 @route("/spaces/{spaceSlug}/task-effort-levels")
 @tag("Task Effort Levels")
 interface SpaceTaskEffortLevels {
-  @get list(@path spaceSlug: string): TaskEffortLevelList | ApiError;
+  @mcpTool("effort_level_list", "List task effort levels in a space.")
+  @get
+  list(@path spaceSlug: string): TaskEffortLevelList | ApiError;
 
   @put replace(
     @path spaceSlug: string,

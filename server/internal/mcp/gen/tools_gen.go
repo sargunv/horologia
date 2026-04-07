@@ -16,18 +16,483 @@ import (
 
 // Handlers is the interface MCP tool calls are dispatched through.
 type Handlers interface {
+	UserTasksList(ctx context.Context, params apigen.UserTasksListParams) (*apigen.TaskPage, error)
+	SpacesList(ctx context.Context) (*apigen.SpaceList, error)
+	SpacesCreate(ctx context.Context, req *apigen.SpaceCreate) (*apigen.Space, error)
+	SpacesRead(ctx context.Context, params apigen.SpacesReadParams) (*apigen.Space, error)
+	SpacesUpdate(ctx context.Context, req *apigen.SpaceUpdate, params apigen.SpacesUpdateParams) (*apigen.Space, error)
+	SpacesDelete(ctx context.Context, params apigen.SpacesDeleteParams) error
+	SpaceMembersList(ctx context.Context, params apigen.SpaceMembersListParams) (*apigen.SpaceMemberList, error)
+	SpaceMembersCreate(ctx context.Context, req *apigen.SpaceMemberCreate, params apigen.SpaceMembersCreateParams) (*apigen.SpaceMember, error)
+	SpaceMembersUpdate(ctx context.Context, req *apigen.SpaceMemberUpdate, params apigen.SpaceMembersUpdateParams) (*apigen.SpaceMember, error)
+	SpaceMembersDelete(ctx context.Context, params apigen.SpaceMembersDeleteParams) error
+	SpaceTagsList(ctx context.Context, params apigen.SpaceTagsListParams) (*apigen.TagList, error)
+	SpaceTagsCreate(ctx context.Context, req *apigen.TagCreate, params apigen.SpaceTagsCreateParams) (*apigen.Tag, error)
+	SpaceTagsUpdate(ctx context.Context, req *apigen.TagUpdate, params apigen.SpaceTagsUpdateParams) (*apigen.Tag, error)
+	SpaceTagsDelete(ctx context.Context, params apigen.SpaceTagsDeleteParams) error
 	SpaceTasksList(ctx context.Context, params apigen.SpaceTasksListParams) (*apigen.TaskPage, error)
 	SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, params apigen.SpaceTasksCreateParams) (*apigen.Task, error)
 	SpaceTasksRead(ctx context.Context, params apigen.SpaceTasksReadParams) (*apigen.Task, error)
 	SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, params apigen.SpaceTasksUpdateParams) (*apigen.Task, error)
+	SpaceTasksDelete(ctx context.Context, params apigen.SpaceTasksDeleteParams) error
+	SpaceTaskRelationsCreate(ctx context.Context, req *apigen.TaskRelationCreate, params apigen.SpaceTaskRelationsCreateParams) (*apigen.TaskRelation, error)
+	SpaceTaskRelationsDelete(ctx context.Context, params apigen.SpaceTaskRelationsDeleteParams) error
+	SpaceTaskStatusesList(ctx context.Context, params apigen.SpaceTaskStatusesListParams) (*apigen.TaskStatusList, error)
+	SpaceTaskEffortLevelsList(ctx context.Context, params apigen.SpaceTaskEffortLevelsListParams) (*apigen.TaskEffortLevelList, error)
+	SpaceTaskPriorityLevelsList(ctx context.Context, params apigen.SpaceTaskPriorityLevelsListParams) (*apigen.TaskPriorityLevelList, error)
+	SpaceTaskActivityList(ctx context.Context, params apigen.SpaceTaskActivityListParams) (*apigen.ActivityLogPage, error)
+	SpaceActivityList(ctx context.Context, params apigen.SpaceActivityListParams) (*apigen.ActivityLogPage, error)
+	UserActivityList(ctx context.Context, params apigen.UserActivityListParams) (*apigen.ActivityLogPage, error)
 }
 
 // RegisterTools registers all @mcpTool-annotated operations with the MCP server.
 func RegisterTools(s *mcpserver.MCPServer, h Handlers) {
+	s.AddTool(userTasksListTool(), userTasksListHandler(h))
+	s.AddTool(spaceListTool(), spaceListHandler(h))
+	s.AddTool(spaceCreateTool(), spaceCreateHandler(h))
+	s.AddTool(spaceGetTool(), spaceGetHandler(h))
+	s.AddTool(spaceUpdateTool(), spaceUpdateHandler(h))
+	s.AddTool(spaceDeleteTool(), spaceDeleteHandler(h))
+	s.AddTool(memberListTool(), memberListHandler(h))
+	s.AddTool(memberCreateTool(), memberCreateHandler(h))
+	s.AddTool(memberUpdateTool(), memberUpdateHandler(h))
+	s.AddTool(memberDeleteTool(), memberDeleteHandler(h))
+	s.AddTool(tagListTool(), tagListHandler(h))
+	s.AddTool(tagCreateTool(), tagCreateHandler(h))
+	s.AddTool(tagUpdateTool(), tagUpdateHandler(h))
+	s.AddTool(tagDeleteTool(), tagDeleteHandler(h))
 	s.AddTool(taskListTool(), taskListHandler(h))
 	s.AddTool(taskCreateTool(), taskCreateHandler(h))
 	s.AddTool(taskGetTool(), taskGetHandler(h))
 	s.AddTool(taskUpdateTool(), taskUpdateHandler(h))
+	s.AddTool(taskDeleteTool(), taskDeleteHandler(h))
+	s.AddTool(relationCreateTool(), relationCreateHandler(h))
+	s.AddTool(relationDeleteTool(), relationDeleteHandler(h))
+	s.AddTool(statusListTool(), statusListHandler(h))
+	s.AddTool(effortLevelListTool(), effortLevelListHandler(h))
+	s.AddTool(priorityLevelListTool(), priorityLevelListHandler(h))
+	s.AddTool(taskActivityListTool(), taskActivityListHandler(h))
+	s.AddTool(spaceActivityListTool(), spaceActivityListHandler(h))
+	s.AddTool(userActivityListTool(), userActivityListHandler(h))
+}
+
+// --- user_tasks_list ---
+
+func userTasksListTool() mcp.Tool {
+	return mcp.NewTool("user_tasks_list",
+		mcp.WithDescription("List tasks assigned to a user across all spaces."),
+		mcp.WithString("userId", mcp.Required()),
+		mcp.WithString("cursor", mcp.Description("Pagination cursor from a previous response.")),
+		mcp.WithNumber("limit", mcp.Description("Maximum number of items to return (1–100).")),
+	)
+}
+
+func userTasksListHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		userId, ok := args["userId"].(string)
+		if !ok || userId == "" {
+			return mcp.NewToolResultError("userId is required"), nil
+		}
+		params := apigen.UserTasksListParams{UserId: userId}
+		if v, ok := args["cursor"].(string); ok && v != "" {
+			params.Cursor.SetTo(v)
+		}
+		if v, ok := args["limit"].(float64); ok {
+			params.Limit.SetTo(int32(v))
+		}
+		result, err := h.UserTasksList(ctx, params)
+		if err != nil {
+			return toolResultFromError(err), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- space_list ---
+
+func spaceListTool() mcp.Tool {
+	return mcp.NewTool("space_list",
+		mcp.WithDescription("List all spaces the authenticated user can access."),
+	)
+}
+
+func spaceListHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		result, err := h.SpacesList(ctx)
+		if err != nil {
+			return toolResultFromError(err), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- space_create ---
+
+func spaceCreateTool() mcp.Tool {
+	return mcp.NewTool("space_create",
+		mcp.WithDescription("Create a new space with a slug, name, and optional description."),
+		mcp.WithString("slug", mcp.Required()),
+		mcp.WithString("name", mcp.Required()),
+		mcp.WithString("description"),
+	)
+}
+
+func spaceCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		slug, ok := args["slug"].(string)
+		if !ok || slug == "" {
+			return mcp.NewToolResultError("slug is required"), nil
+		}
+		name, ok := args["name"].(string)
+		if !ok || name == "" {
+			return mcp.NewToolResultError("name is required"), nil
+		}
+		body := &apigen.SpaceCreate{Slug: slug, Name: name}
+		if v, ok := args["description"].(string); ok {
+			body.Description.SetTo(v)
+		}
+		result, err := h.SpacesCreate(ctx, body)
+		if err != nil {
+			return toolResultFromError(err), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- space_get ---
+
+func spaceGetTool() mcp.Tool {
+	return mcp.NewTool("space_get",
+		mcp.WithDescription("Get a space by slug."),
+		mcp.WithString("spaceSlug", mcp.Required()),
+	)
+}
+
+func spaceGetHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		params := apigen.SpacesReadParams{SpaceSlug: spaceSlug}
+		result, err := h.SpacesRead(ctx, params)
+		if err != nil {
+			return toolResultFromError(err), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- space_update ---
+
+func spaceUpdateTool() mcp.Tool {
+	return mcp.NewTool("space_update",
+		mcp.WithDescription("Update a space's slug, name, or description."),
+		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("slug"),
+		mcp.WithString("name"),
+		mcp.WithString("description"),
+	)
+}
+
+func spaceUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		params := apigen.SpacesUpdateParams{SpaceSlug: spaceSlug}
+		body := &apigen.SpaceUpdate{}
+		if v, ok := args["slug"].(string); ok {
+			body.Slug.SetTo(v)
+		}
+		if v, ok := args["name"].(string); ok {
+			body.Name.SetTo(v)
+		}
+		if v, ok := args["description"].(string); ok {
+			body.Description.SetTo(v)
+		}
+		result, err := h.SpacesUpdate(ctx, body, params)
+		if err != nil {
+			return toolResultFromError(err), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- space_delete ---
+
+func spaceDeleteTool() mcp.Tool {
+	return mcp.NewTool("space_delete",
+		mcp.WithDescription("Delete a space by slug."),
+		mcp.WithString("spaceSlug", mcp.Required()),
+	)
+}
+
+func spaceDeleteHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		params := apigen.SpacesDeleteParams{SpaceSlug: spaceSlug}
+		if err := h.SpacesDelete(ctx, params); err != nil {
+			return toolResultFromError(err), nil
+		}
+		return mcp.NewToolResultText("ok"), nil
+	}
+}
+
+// --- member_list ---
+
+func memberListTool() mcp.Tool {
+	return mcp.NewTool("member_list",
+		mcp.WithDescription("List members of a space."),
+		mcp.WithString("spaceSlug", mcp.Required()),
+	)
+}
+
+func memberListHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		params := apigen.SpaceMembersListParams{SpaceSlug: spaceSlug}
+		result, err := h.SpaceMembersList(ctx, params)
+		if err != nil {
+			return toolResultFromError(err), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- member_create ---
+
+func memberCreateTool() mcp.Tool {
+	return mcp.NewTool("member_create",
+		mcp.WithDescription("Add a user to a space with a role (admin, member, or viewer)."),
+		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("userId", mcp.Required()),
+		mcp.WithString("role", mcp.Required()),
+	)
+}
+
+func memberCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		userId, ok := args["userId"].(string)
+		if !ok || userId == "" {
+			return mcp.NewToolResultError("userId is required"), nil
+		}
+		role, ok := args["role"].(string)
+		if !ok || role == "" {
+			return mcp.NewToolResultError("role is required"), nil
+		}
+		params := apigen.SpaceMembersCreateParams{SpaceSlug: spaceSlug}
+		body := &apigen.SpaceMemberCreate{UserId: userId, Role: apigen.SpaceRole(role)}
+		result, err := h.SpaceMembersCreate(ctx, body, params)
+		if err != nil {
+			return toolResultFromError(err), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- member_update ---
+
+func memberUpdateTool() mcp.Tool {
+	return mcp.NewTool("member_update",
+		mcp.WithDescription("Change a member's role in a space. Obtain user IDs from member_list."),
+		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("userId", mcp.Required()),
+		mcp.WithString("role", mcp.Required()),
+	)
+}
+
+func memberUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		userId, ok := args["userId"].(string)
+		if !ok || userId == "" {
+			return mcp.NewToolResultError("userId is required"), nil
+		}
+		role, ok := args["role"].(string)
+		if !ok || role == "" {
+			return mcp.NewToolResultError("role is required"), nil
+		}
+		params := apigen.SpaceMembersUpdateParams{SpaceSlug: spaceSlug, UserId: userId}
+		body := &apigen.SpaceMemberUpdate{Role: apigen.SpaceRole(role)}
+		result, err := h.SpaceMembersUpdate(ctx, body, params)
+		if err != nil {
+			return toolResultFromError(err), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- member_delete ---
+
+func memberDeleteTool() mcp.Tool {
+	return mcp.NewTool("member_delete",
+		mcp.WithDescription("Remove a member from a space. Obtain user IDs from member_list."),
+		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("userId", mcp.Required()),
+	)
+}
+
+func memberDeleteHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		userId, ok := args["userId"].(string)
+		if !ok || userId == "" {
+			return mcp.NewToolResultError("userId is required"), nil
+		}
+		params := apigen.SpaceMembersDeleteParams{SpaceSlug: spaceSlug, UserId: userId}
+		if err := h.SpaceMembersDelete(ctx, params); err != nil {
+			return toolResultFromError(err), nil
+		}
+		return mcp.NewToolResultText("ok"), nil
+	}
+}
+
+// --- tag_list ---
+
+func tagListTool() mcp.Tool {
+	return mcp.NewTool("tag_list",
+		mcp.WithDescription("List all tags in a space."),
+		mcp.WithString("spaceSlug", mcp.Required()),
+	)
+}
+
+func tagListHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		params := apigen.SpaceTagsListParams{SpaceSlug: spaceSlug}
+		result, err := h.SpaceTagsList(ctx, params)
+		if err != nil {
+			return toolResultFromError(err), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- tag_create ---
+
+func tagCreateTool() mcp.Tool {
+	return mcp.NewTool("tag_create",
+		mcp.WithDescription("Create a tag in a space."),
+		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("name", mcp.Required()),
+	)
+}
+
+func tagCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		name, ok := args["name"].(string)
+		if !ok || name == "" {
+			return mcp.NewToolResultError("name is required"), nil
+		}
+		params := apigen.SpaceTagsCreateParams{SpaceSlug: spaceSlug}
+		body := &apigen.TagCreate{Name: name}
+		result, err := h.SpaceTagsCreate(ctx, body, params)
+		if err != nil {
+			return toolResultFromError(err), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- tag_update ---
+
+func tagUpdateTool() mcp.Tool {
+	return mcp.NewTool("tag_update",
+		mcp.WithDescription("Rename a tag. Obtain tag names from tag_list."),
+		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("tagName", mcp.Required()),
+		mcp.WithString("name", mcp.Required()),
+	)
+}
+
+func tagUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		tagName, ok := args["tagName"].(string)
+		if !ok || tagName == "" {
+			return mcp.NewToolResultError("tagName is required"), nil
+		}
+		name, ok := args["name"].(string)
+		if !ok || name == "" {
+			return mcp.NewToolResultError("name is required"), nil
+		}
+		params := apigen.SpaceTagsUpdateParams{SpaceSlug: spaceSlug, TagName: tagName}
+		body := &apigen.TagUpdate{Name: name}
+		result, err := h.SpaceTagsUpdate(ctx, body, params)
+		if err != nil {
+			return toolResultFromError(err), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- tag_delete ---
+
+func tagDeleteTool() mcp.Tool {
+	return mcp.NewTool("tag_delete",
+		mcp.WithDescription("Delete a tag from a space. Obtain tag names from tag_list."),
+		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("tagName", mcp.Required()),
+	)
+}
+
+func tagDeleteHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		tagName, ok := args["tagName"].(string)
+		if !ok || tagName == "" {
+			return mcp.NewToolResultError("tagName is required"), nil
+		}
+		params := apigen.SpaceTagsDeleteParams{SpaceSlug: spaceSlug, TagName: tagName}
+		if err := h.SpaceTagsDelete(ctx, params); err != nil {
+			return toolResultFromError(err), nil
+		}
+		return mcp.NewToolResultText("ok"), nil
+	}
 }
 
 // --- task_list ---
@@ -200,6 +665,294 @@ func taskUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			body.RecurrenceRule.SetTo(v)
 		}
 		result, err := h.SpaceTasksUpdate(ctx, body, params)
+		if err != nil {
+			return toolResultFromError(err), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- task_delete ---
+
+func taskDeleteTool() mcp.Tool {
+	return mcp.NewTool("task_delete",
+		mcp.WithDescription("Delete a task. Obtain task IDs from task_list."),
+		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("taskId", mcp.Required()),
+	)
+}
+
+func taskDeleteHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		taskId, ok := args["taskId"].(string)
+		if !ok || taskId == "" {
+			return mcp.NewToolResultError("taskId is required"), nil
+		}
+		params := apigen.SpaceTasksDeleteParams{SpaceSlug: spaceSlug, TaskId: taskId}
+		if err := h.SpaceTasksDelete(ctx, params); err != nil {
+			return toolResultFromError(err), nil
+		}
+		return mcp.NewToolResultText("ok"), nil
+	}
+}
+
+// --- relation_create ---
+
+func relationCreateTool() mcp.Tool {
+	return mcp.NewTool("relation_create",
+		mcp.WithDescription("Create a relation between two tasks. Obtain task IDs from task_list."),
+		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("taskId", mcp.Required()),
+		mcp.WithString("kind", mcp.Required()),
+		mcp.WithString("bodyTaskId", mcp.Required()),
+	)
+}
+
+func relationCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		taskId, ok := args["taskId"].(string)
+		if !ok || taskId == "" {
+			return mcp.NewToolResultError("taskId is required"), nil
+		}
+		kind, ok := args["kind"].(string)
+		if !ok || kind == "" {
+			return mcp.NewToolResultError("kind is required"), nil
+		}
+		bodyTaskId, ok := args["bodyTaskId"].(string)
+		if !ok || bodyTaskId == "" {
+			return mcp.NewToolResultError("bodyTaskId is required"), nil
+		}
+		params := apigen.SpaceTaskRelationsCreateParams{SpaceSlug: spaceSlug, TaskId: taskId}
+		body := &apigen.TaskRelationCreate{Kind: apigen.TaskRelationKind(kind), TaskId: bodyTaskId}
+		result, err := h.SpaceTaskRelationsCreate(ctx, body, params)
+		if err != nil {
+			return toolResultFromError(err), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- relation_delete ---
+
+func relationDeleteTool() mcp.Tool {
+	return mcp.NewTool("relation_delete",
+		mcp.WithDescription("Delete a relation between two tasks. Obtain task IDs from task_list."),
+		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("taskId", mcp.Required()),
+		mcp.WithString("kind", mcp.Required()),
+		mcp.WithString("relatedTaskId", mcp.Required()),
+	)
+}
+
+func relationDeleteHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		taskId, ok := args["taskId"].(string)
+		if !ok || taskId == "" {
+			return mcp.NewToolResultError("taskId is required"), nil
+		}
+		kind, ok := args["kind"].(string)
+		if !ok || kind == "" {
+			return mcp.NewToolResultError("kind is required"), nil
+		}
+		relatedTaskId, ok := args["relatedTaskId"].(string)
+		if !ok || relatedTaskId == "" {
+			return mcp.NewToolResultError("relatedTaskId is required"), nil
+		}
+		params := apigen.SpaceTaskRelationsDeleteParams{SpaceSlug: spaceSlug, TaskId: taskId, Kind: apigen.TaskRelationKind(kind), RelatedTaskId: relatedTaskId}
+		if err := h.SpaceTaskRelationsDelete(ctx, params); err != nil {
+			return toolResultFromError(err), nil
+		}
+		return mcp.NewToolResultText("ok"), nil
+	}
+}
+
+// --- status_list ---
+
+func statusListTool() mcp.Tool {
+	return mcp.NewTool("status_list",
+		mcp.WithDescription("List task statuses in a space."),
+		mcp.WithString("spaceSlug", mcp.Required()),
+	)
+}
+
+func statusListHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		params := apigen.SpaceTaskStatusesListParams{SpaceSlug: spaceSlug}
+		result, err := h.SpaceTaskStatusesList(ctx, params)
+		if err != nil {
+			return toolResultFromError(err), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- effort_level_list ---
+
+func effortLevelListTool() mcp.Tool {
+	return mcp.NewTool("effort_level_list",
+		mcp.WithDescription("List task effort levels in a space."),
+		mcp.WithString("spaceSlug", mcp.Required()),
+	)
+}
+
+func effortLevelListHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		params := apigen.SpaceTaskEffortLevelsListParams{SpaceSlug: spaceSlug}
+		result, err := h.SpaceTaskEffortLevelsList(ctx, params)
+		if err != nil {
+			return toolResultFromError(err), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- priority_level_list ---
+
+func priorityLevelListTool() mcp.Tool {
+	return mcp.NewTool("priority_level_list",
+		mcp.WithDescription("List task priority levels in a space."),
+		mcp.WithString("spaceSlug", mcp.Required()),
+	)
+}
+
+func priorityLevelListHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		params := apigen.SpaceTaskPriorityLevelsListParams{SpaceSlug: spaceSlug}
+		result, err := h.SpaceTaskPriorityLevelsList(ctx, params)
+		if err != nil {
+			return toolResultFromError(err), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- task_activity_list ---
+
+func taskActivityListTool() mcp.Tool {
+	return mcp.NewTool("task_activity_list",
+		mcp.WithDescription("List activity log entries for a specific task."),
+		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("taskId", mcp.Required()),
+		mcp.WithString("cursor", mcp.Description("Pagination cursor from a previous response.")),
+		mcp.WithNumber("limit", mcp.Description("Maximum number of items to return (1–100).")),
+	)
+}
+
+func taskActivityListHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		taskId, ok := args["taskId"].(string)
+		if !ok || taskId == "" {
+			return mcp.NewToolResultError("taskId is required"), nil
+		}
+		params := apigen.SpaceTaskActivityListParams{SpaceSlug: spaceSlug, TaskId: taskId}
+		if v, ok := args["cursor"].(string); ok && v != "" {
+			params.Cursor.SetTo(v)
+		}
+		if v, ok := args["limit"].(float64); ok {
+			params.Limit.SetTo(int32(v))
+		}
+		result, err := h.SpaceTaskActivityList(ctx, params)
+		if err != nil {
+			return toolResultFromError(err), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- space_activity_list ---
+
+func spaceActivityListTool() mcp.Tool {
+	return mcp.NewTool("space_activity_list",
+		mcp.WithDescription("List activity log entries for a space."),
+		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("cursor", mcp.Description("Pagination cursor from a previous response.")),
+		mcp.WithNumber("limit", mcp.Description("Maximum number of items to return (1–100).")),
+	)
+}
+
+func spaceActivityListHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		params := apigen.SpaceActivityListParams{SpaceSlug: spaceSlug}
+		if v, ok := args["cursor"].(string); ok && v != "" {
+			params.Cursor.SetTo(v)
+		}
+		if v, ok := args["limit"].(float64); ok {
+			params.Limit.SetTo(int32(v))
+		}
+		result, err := h.SpaceActivityList(ctx, params)
+		if err != nil {
+			return toolResultFromError(err), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- user_activity_list ---
+
+func userActivityListTool() mcp.Tool {
+	return mcp.NewTool("user_activity_list",
+		mcp.WithDescription("List activity log entries for a user."),
+		mcp.WithString("userId", mcp.Required()),
+		mcp.WithString("cursor", mcp.Description("Pagination cursor from a previous response.")),
+		mcp.WithNumber("limit", mcp.Description("Maximum number of items to return (1–100).")),
+	)
+}
+
+func userActivityListHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		userId, ok := args["userId"].(string)
+		if !ok || userId == "" {
+			return mcp.NewToolResultError("userId is required"), nil
+		}
+		params := apigen.UserActivityListParams{UserId: userId}
+		if v, ok := args["cursor"].(string); ok && v != "" {
+			params.Cursor.SetTo(v)
+		}
+		if v, ok := args["limit"].(float64); ok {
+			params.Limit.SetTo(int32(v))
+		}
+		result, err := h.UserActivityList(ctx, params)
 		if err != nil {
 			return toolResultFromError(err), nil
 		}

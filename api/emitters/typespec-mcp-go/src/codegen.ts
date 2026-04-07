@@ -123,7 +123,12 @@ function collectParams(program: Program, httpOp: HttpOperation, alias: string): 
   return params;
 }
 
-function collectBodyFields(program: Program, httpOp: HttpOperation, alias: string): GoParam[] {
+function collectBodyFields(
+  program: Program,
+  httpOp: HttpOperation,
+  alias: string,
+  pathParamNames: Set<string>,
+): GoParam[] {
   const body = httpOp.parameters.body;
   if (!body) return [];
   const bodyType = body.type;
@@ -133,8 +138,10 @@ function collectBodyFields(program: Program, httpOp: HttpOperation, alias: strin
   for (const [name, prop] of (bodyType as Model).properties) {
     const resolved = getSimpleNonNull(prop.type);
     if (!resolved) continue;
+    // If a body field collides with a path param, prefix with "body" for the MCP param name
+    const mcpName = pathParamNames.has(name) ? `body${capitalize(name)}` : name;
     fields.push({
-      name,
+      name: mcpName,
       goField: capitalize(name),
       mcpType: mcpPropertyType(resolved),
       required: !prop.optional,
@@ -259,9 +266,13 @@ function emitHandlerBody(
   bodyFields: GoParam[],
   alias: string,
 ): void {
+  // Track declared variable names to avoid redeclaration
+  const declaredVars = new Set<string>();
+
   // 1. Extract and validate required path params
   for (const p of pathParams) {
     lines.push(`\t\t${p.name}, ok := args["${p.name}"].(${p.typeInfo.assertType})`);
+    declaredVars.add(p.name);
     emitRequiredGuard(lines, p.name, p.typeInfo);
     lines.push(`\t\t\treturn mcp.NewToolResultError("${p.name} is required"), nil`);
     lines.push(`\t\t}`);
@@ -272,7 +283,13 @@ function emitHandlerBody(
   const optionalBodyFields = bodyFields.filter((f) => !f.required);
 
   for (const f of requiredBodyFields) {
-    lines.push(`\t\t${f.name}, ok := args["${f.name}"].(${f.typeInfo.assertType})`);
+    if (declaredVars.has(f.name)) {
+      // Variable already declared by path param — use = instead of :=
+      lines.push(`\t\t${f.name}, ok = args["${f.name}"].(${f.typeInfo.assertType})`);
+    } else {
+      lines.push(`\t\t${f.name}, ok := args["${f.name}"].(${f.typeInfo.assertType})`);
+      declaredVars.add(f.name);
+    }
     emitRequiredGuard(lines, f.name, f.typeInfo);
     lines.push(`\t\t\treturn mcp.NewToolResultError("${f.name} is required"), nil`);
     lines.push(`\t\t}`);
@@ -398,7 +415,8 @@ export function generateGoFile(program: Program, tools: ToolInfo[], opts: Emitte
     const allParams = collectParams(program, httpOp, ALIAS);
     const pathParams = allParams.filter((p) => p.isPathParam);
     const queryParams = allParams.filter((p) => !p.isPathParam);
-    const bodyFields = collectBodyFields(program, httpOp, ALIAS);
+    const pathParamNames = new Set(pathParams.map((p) => p.name));
+    const bodyFields = collectBodyFields(program, httpOp, ALIAS, pathParamNames);
 
     lines.push(`// --- ${toolOpts.name} ---`);
     lines.push("");
@@ -420,7 +438,10 @@ export function generateGoFile(program: Program, tools: ToolInfo[], opts: Emitte
     lines.push(
       `\treturn func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {`,
     );
-    lines.push(`\t\targs := req.GetArguments()`);
+    const needsArgs = pathParams.length > 0 || queryParams.length > 0 || bodyFields.length > 0;
+    if (needsArgs) {
+      lines.push(`\t\targs := req.GetArguments()`);
+    }
 
     emitHandlerBody(lines, op, pathParams, queryParams, bodyFields, ALIAS);
 
