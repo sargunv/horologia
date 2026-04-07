@@ -787,10 +787,10 @@ func TestMCPRelationCreate(t *testing.T) {
 	taskBID := jsonAs[string](t, taskB["id"])
 
 	rpcResp := s.call(t, "relation_create", map[string]any{
-		"spaceSlug":  "home",
-		"taskId":     taskAID,
-		"kind":       "blocks",
-		"bodyTaskId": taskBID,
+		"spaceSlug":     "home",
+		"taskId":        taskAID,
+		"kind":          "blocks",
+		"relatedTaskId": taskBID,
 	})
 	rel := toolResultJSON(t, rpcResp)
 	if rel["kind"] != "blocks" {

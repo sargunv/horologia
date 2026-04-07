@@ -359,8 +359,8 @@ func TestConvert_relationFromDB(t *testing.T) {
 			if got.Kind != tt.wantKind {
 				t.Errorf("kind = %q, want %q", got.Kind, tt.wantKind)
 			}
-			if got.TaskId != tt.wantTaskID {
-				t.Errorf("taskId = %q, want %q", got.TaskId, tt.wantTaskID)
+			if got.RelatedTaskId != tt.wantTaskID {
+				t.Errorf("relatedTaskId = %q, want %q", got.RelatedTaskId, tt.wantTaskID)
 			}
 		})
 	}

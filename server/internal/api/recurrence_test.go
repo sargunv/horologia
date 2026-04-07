@@ -257,7 +257,7 @@ func TestRecurrenceFixedAccumulatingCompletion(t *testing.T) {
 	}
 
 	// Fetch the spawned task.
-	spawnedID := jsonAs[string](t, spawnsRelation["taskId"])
+	spawnedID := jsonAs[string](t, spawnsRelation["relatedTaskId"])
 	resp2 := doRequest(t, env, "GET", "/spaces/rec-fa/tasks/"+spawnedID, "")
 	assertStatus(t, resp2, http.StatusOK)
 	var spawned map[string]any
@@ -565,7 +565,7 @@ func TestRecurrenceFixedAccumulatingDueDateAdvances(t *testing.T) {
 	for _, rel := range jsonAs[[]any](t, updated["relations"]) {
 		r := jsonAs[map[string]any](t, rel)
 		if r["kind"] == "spawns" {
-			spawnedID = jsonAs[string](t, r["taskId"])
+			spawnedID = jsonAs[string](t, r["relatedTaskId"])
 			break
 		}
 	}
@@ -801,7 +801,7 @@ func TestFixedAccumulatingCompletionCopiesFields(t *testing.T) {
 	for _, rel := range jsonAs[[]any](t, updated["relations"]) {
 		r := jsonAs[map[string]any](t, rel)
 		if r["kind"] == "spawns" {
-			spawnedID = jsonAs[string](t, r["taskId"])
+			spawnedID = jsonAs[string](t, r["relatedTaskId"])
 			break
 		}
 	}
@@ -833,7 +833,7 @@ func TestFixedAccumulatingCompletionCopiesFields(t *testing.T) {
 	var hasSpawnedBy bool
 	for _, rel := range jsonAs[[]any](t, spawned["relations"]) {
 		r := jsonAs[map[string]any](t, rel)
-		if r["kind"] == "spawned_by" && r["taskId"] == taskID {
+		if r["kind"] == "spawned_by" && r["relatedTaskId"] == taskID {
 			hasSpawnedBy = true
 			break
 		}
@@ -860,14 +860,14 @@ func TestFixedAccumulatingCompletionCopiesRelations(t *testing.T) {
 
 	// Create a parent_of relation: parent -> task.
 	resp := doRequest(t, env, "POST", "/spaces/fa-rel/tasks/"+parentID+"/relations",
-		`{"kind":"parent_of","taskId":"`+taskID+`"}`)
+		`{"kind":"parent_of","relatedTaskId":"`+taskID+`"}`)
 	assertStatus(t, resp, http.StatusCreated)
 
 	// Create a duplicates relation (should NOT be copied).
 	other := createTask(t, env, "fa-rel", `{"title":"Other"}`)
 	otherID := jsonAs[string](t, other["id"])
 	resp = doRequest(t, env, "POST", "/spaces/fa-rel/tasks/"+taskID+"/relations",
-		`{"kind":"duplicates","taskId":"`+otherID+`"}`)
+		`{"kind":"duplicates","relatedTaskId":"`+otherID+`"}`)
 	assertStatus(t, resp, http.StatusCreated)
 
 	// Complete the accumulating task.
@@ -881,7 +881,7 @@ func TestFixedAccumulatingCompletionCopiesRelations(t *testing.T) {
 	for _, rel := range jsonAs[[]any](t, updated["relations"]) {
 		r := jsonAs[map[string]any](t, rel)
 		if r["kind"] == "spawns" {
-			spawnedID = jsonAs[string](t, r["taskId"])
+			spawnedID = jsonAs[string](t, r["relatedTaskId"])
 			break
 		}
 	}
@@ -900,7 +900,7 @@ func TestFixedAccumulatingCompletionCopiesRelations(t *testing.T) {
 		r := jsonAs[map[string]any](t, rel)
 		switch r["kind"] {
 		case "child_of":
-			if r["taskId"] == parentID {
+			if r["relatedTaskId"] == parentID {
 				hasParent = true
 			}
 		case "duplicates":

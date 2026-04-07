@@ -46,7 +46,7 @@ enum TaskRelationKind {
 
 model TaskRelation {
   kind: TaskRelationKind;
-  taskId: string;
+  relatedTaskId: string;
   createdAt: utcDateTime;
 }
 
@@ -55,7 +55,7 @@ model TaskRelationCreate {
   kind: TaskRelationKind;
 
   /** Task ID of the related task. */
-  taskId: string;
+  relatedTaskId: string;
 }
 
 model TaskDue {

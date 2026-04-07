@@ -52,20 +52,20 @@ function RelationItem({
         </span>
         <Link
           to="/spaces/$spaceSlug/tasks/$taskId"
-          params={{ spaceSlug, taskId: relation.taskId }}
+          params={{ spaceSlug, taskId: relation.relatedTaskId }}
           className="font-mono text-sm hover:underline"
         >
-          {relation.taskId}
+          {relation.relatedTaskId}
         </Link>
         {!isSystemManaged && (
           <button
             type="button"
             className="btn btn-sm preset-outlined-surface-200-800 ml-auto"
-            aria-label={`Remove ${KIND_LABELS[relation.kind]} relation to ${relation.taskId}`}
+            aria-label={`Remove ${KIND_LABELS[relation.kind]} relation to ${relation.relatedTaskId}`}
             disabled={deleteMutation.isPending}
             onClick={() => {
               deleteMutation.reset();
-              deleteMutation.mutate({ kind: relation.kind, relatedTaskId: relation.taskId });
+              deleteMutation.mutate({ kind: relation.kind, relatedTaskId: relation.relatedTaskId });
             }}
           >
             <X className="size-3.5" aria-hidden="true" />
@@ -101,7 +101,7 @@ function AddRelationForm({ spaceSlug, taskId }: { spaceSlug: string; taskId: str
     }
     addMutation.reset();
     addMutation.mutate(
-      { kind: kindInput, taskId: trimmed },
+      { kind: kindInput, relatedTaskId: trimmed },
       {
         onSuccess: () => {
           setTaskIdInput("");
@@ -168,7 +168,7 @@ export function RelationsSection({
         <div className="divide-y divide-surface-200-800 mb-2">
           {relations.map((rel) => (
             <RelationItem
-              key={`${rel.kind}:${rel.taskId}`}
+              key={`${rel.kind}:${rel.relatedTaskId}`}
               spaceSlug={spaceSlug}
               currentTaskId={taskId}
               relation={rel}

@@ -709,7 +709,7 @@ func relationCreateTool() mcp.Tool {
 		mcp.WithString("spaceSlug", mcp.Required(), mcp.Description("Slug of the space.")),
 		mcp.WithString("taskId", mcp.Required(), mcp.Description("Task ID of the source task.")),
 		mcp.WithString("kind", mcp.Required(), mcp.Description("Relation kind (e.g. parent_of, child_of, blocks, blocked_by, relates_to, duplicates, triggers, triggered_by).")),
-		mcp.WithString("bodyTaskId", mcp.Required(), mcp.Description("Task ID of the related task.")),
+		mcp.WithString("relatedTaskId", mcp.Required(), mcp.Description("Task ID of the related task.")),
 	)
 }
 
@@ -728,12 +728,12 @@ func relationCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		if !ok || kind == "" {
 			return mcp.NewToolResultError("kind is required"), nil
 		}
-		bodyTaskId, ok := args["bodyTaskId"].(string)
-		if !ok || bodyTaskId == "" {
-			return mcp.NewToolResultError("bodyTaskId is required"), nil
+		relatedTaskId, ok := args["relatedTaskId"].(string)
+		if !ok || relatedTaskId == "" {
+			return mcp.NewToolResultError("relatedTaskId is required"), nil
 		}
 		params := apigen.SpaceTaskRelationsCreateParams{SpaceSlug: spaceSlug, TaskId: taskId}
-		body := &apigen.TaskRelationCreate{Kind: apigen.TaskRelationKind(kind), TaskId: bodyTaskId}
+		body := &apigen.TaskRelationCreate{Kind: apigen.TaskRelationKind(kind), RelatedTaskId: relatedTaskId}
 		result, err := h.SpaceTaskRelationsCreate(ctx, body, params)
 		if err != nil {
 			return toolResultFromError(err), nil

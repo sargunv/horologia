@@ -561,7 +561,7 @@ export interface components {
         TaskRecurrenceType: "one_off" | "completion_based" | "fixed_non_accumulating" | "fixed_accumulating" | "on_dependency";
         TaskRelation: {
             kind: components["schemas"]["TaskRelationKind"];
-            taskId: string;
+            relatedTaskId: string;
             /** Format: date-time */
             createdAt: string;
         };
@@ -569,7 +569,7 @@ export interface components {
             /** @description Relation kind (e.g. parent_of, child_of, blocks, blocked_by, relates_to, duplicates, triggers, triggered_by). */
             kind: components["schemas"]["TaskRelationKind"];
             /** @description Task ID of the related task. */
-            taskId: string;
+            relatedTaskId: string;
         };
         /** @enum {string} */
         TaskRelationKind: "parent_of" | "child_of" | "blocks" | "blocked_by" | "relates_to" | "duplicates" | "triggers" | "triggered_by" | "spawns" | "spawned_by";

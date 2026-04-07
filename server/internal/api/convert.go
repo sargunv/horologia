@@ -152,9 +152,9 @@ func relationFromDB(rel taskRelationRow, perspectiveTaskID int64) (apigen.TaskRe
 	}
 
 	return apigen.TaskRelation{
-		Kind:      kind,
-		TaskId:    types.FormatTaskID(relatedID),
-		CreatedAt: tsToTime(rel.CreatedAt),
+		Kind:          kind,
+		RelatedTaskId: types.FormatTaskID(relatedID),
+		CreatedAt:     tsToTime(rel.CreatedAt),
 	}, nil
 }
 

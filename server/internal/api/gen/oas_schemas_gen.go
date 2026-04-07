@@ -2238,9 +2238,9 @@ func (s *TaskRecurrenceType) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/TaskRelation
 type TaskRelation struct {
-	Kind      TaskRelationKind `json:"kind"`
-	TaskId    string           `json:"taskId"`
-	CreatedAt time.Time        `json:"createdAt"`
+	Kind          TaskRelationKind `json:"kind"`
+	RelatedTaskId string           `json:"relatedTaskId"`
+	CreatedAt     time.Time        `json:"createdAt"`
 }
 
 // GetKind returns the value of Kind.
@@ -2248,9 +2248,9 @@ func (s *TaskRelation) GetKind() TaskRelationKind {
 	return s.Kind
 }
 
-// GetTaskId returns the value of TaskId.
-func (s *TaskRelation) GetTaskId() string {
-	return s.TaskId
+// GetRelatedTaskId returns the value of RelatedTaskId.
+func (s *TaskRelation) GetRelatedTaskId() string {
+	return s.RelatedTaskId
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -2263,9 +2263,9 @@ func (s *TaskRelation) SetKind(val TaskRelationKind) {
 	s.Kind = val
 }
 
-// SetTaskId sets the value of TaskId.
-func (s *TaskRelation) SetTaskId(val string) {
-	s.TaskId = val
+// SetRelatedTaskId sets the value of RelatedTaskId.
+func (s *TaskRelation) SetRelatedTaskId(val string) {
+	s.RelatedTaskId = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -2279,7 +2279,7 @@ type TaskRelationCreate struct {
 	// triggered_by).
 	Kind TaskRelationKind `json:"kind"`
 	// Task ID of the related task.
-	TaskId string `json:"taskId"`
+	RelatedTaskId string `json:"relatedTaskId"`
 }
 
 // GetKind returns the value of Kind.
@@ -2287,9 +2287,9 @@ func (s *TaskRelationCreate) GetKind() TaskRelationKind {
 	return s.Kind
 }
 
-// GetTaskId returns the value of TaskId.
-func (s *TaskRelationCreate) GetTaskId() string {
-	return s.TaskId
+// GetRelatedTaskId returns the value of RelatedTaskId.
+func (s *TaskRelationCreate) GetRelatedTaskId() string {
+	return s.RelatedTaskId
 }
 
 // SetKind sets the value of Kind.
@@ -2297,9 +2297,9 @@ func (s *TaskRelationCreate) SetKind(val TaskRelationKind) {
 	s.Kind = val
 }
 
-// SetTaskId sets the value of TaskId.
-func (s *TaskRelationCreate) SetTaskId(val string) {
-	s.TaskId = val
+// SetRelatedTaskId sets the value of RelatedTaskId.
+func (s *TaskRelationCreate) SetRelatedTaskId(val string) {
+	s.RelatedTaskId = val
 }
 
 // Ref: #/components/schemas/TaskRelationKind

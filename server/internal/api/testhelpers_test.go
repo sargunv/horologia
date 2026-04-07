@@ -431,7 +431,7 @@ func assertTaskRelations(t *testing.T, env *testEnv, spaceSlug, taskID string, w
 	return rels
 }
 
-// assertRelationKind asserts that rel has the expected kind and taskId.
+// assertRelationKind asserts that rel has the expected kind and relatedTaskId.
 func assertRelationKind(t *testing.T, rel any, wantKind, wantTaskID string) {
 	t.Helper()
 	r, ok := rel.(map[string]any)
@@ -441,14 +441,14 @@ func assertRelationKind(t *testing.T, rel any, wantKind, wantTaskID string) {
 	if r["kind"] != wantKind {
 		t.Fatalf("got kind %v, want %s", r["kind"], wantKind)
 	}
-	if r["taskId"] != wantTaskID {
-		t.Fatalf("got taskId %v, want %s", r["taskId"], wantTaskID)
+	if r["relatedTaskId"] != wantTaskID {
+		t.Fatalf("got relatedTaskId %v, want %s", r["relatedTaskId"], wantTaskID)
 	}
 }
 
 func createRelation(t *testing.T, env *testEnv, spaceSlug, taskID, kind, relatedTaskID string) {
 	t.Helper()
 	resp := doRequest(t, env, "POST", "/spaces/"+spaceSlug+"/tasks/"+taskID+"/relations",
-		`{"kind":"`+kind+`","taskId":"`+relatedTaskID+`"}`)
+		`{"kind":"`+kind+`","relatedTaskId":"`+relatedTaskID+`"}`)
 	assertStatusClose(t, resp, http.StatusCreated)
 }
