@@ -1,6 +1,8 @@
 import "@typespec/http";
+import "@tend/typespec-mcp-go";
 
 using Http;
+using MCP;
 
 namespace Tend;
 
@@ -39,22 +41,61 @@ model UserList {
 @route("/users")
 @tag("Users")
 interface Users {
-  @get list(): UserList | ApiError;
-  @get @route("/me") me(): User | ApiError;
-  @get get(@path userId: string): User | ApiError;
+  @mcpTool("user_list", "List all users. Requires owner privileges.")
+  @get
+  list(): UserList | ApiError;
 
-  @post create(@body body: UserCreate): {
+  @mcpTool("user_me", "Get the currently authenticated user.")
+  @get
+  @route("/me")
+  me(): User | ApiError;
+
+  @mcpTool("user_get", "Get a user by ID.")
+  @get
+  get(
+    /** User ID. */
+    @path userId: string,
+  ): User | ApiError;
+
+  @mcpTool(
+    "user_create",
+    "Create a new user with name, email, and optional password."
+  )
+  @post
+  create(@body body: UserCreate): {
     @statusCode statusCode: 201;
     @body body: User;
   } | ApiError;
 
-  @patch update(@path userId: string, @body body: UserUpdate): User | ApiError;
+  @mcpTool(
+    "user_update",
+    "Update a user's name, email, owner status, or password."
+  )
+  @patch
+  update(
+    /** User ID. */
+    @path userId: string,
 
-  @delete delete(@path userId: string): void | ApiError;
+    @body body: UserUpdate,
+  ): User | ApiError;
+
+  @mcpTool("user_delete", "Delete a user by ID.")
+  @delete
+  delete(
+    /** User ID. */
+    @path userId: string,
+  ): void | ApiError;
 }
 
 @route("/users/{userId}/tasks")
 @tag("Users")
 interface UserTasks {
-  @get list(@path userId: string, ...PageParams): TaskPage | ApiError;
+  @mcpTool("user_task_list", "List tasks assigned to a user across all spaces.")
+  @get
+  list(
+    /** User ID. */
+    @path userId: string,
+
+    ...PageParams,
+  ): TaskPage | ApiError;
 }

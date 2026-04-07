@@ -15,15 +15,15 @@ func TestTaskRelationsCreate(t *testing.T) {
 
 	// Create a "blocks" relation: T1 blocks T2.
 	resp := doRequest(t, env, "POST", "/spaces/rel-test/tasks/"+t1id+"/relations",
-		`{"kind":"blocks","taskId":"`+t2id+`"}`)
+		`{"kind":"blocks","relatedTaskId":"`+t2id+`"}`)
 	assertStatus(t, resp, http.StatusCreated)
 	var rel map[string]any
 	readJSON(t, resp, &rel)
 	if rel["kind"] != "blocks" {
 		t.Fatalf("got kind %v, want blocks", rel["kind"])
 	}
-	if rel["taskId"] != t2id {
-		t.Fatalf("got taskId %v, want %v", rel["taskId"], t2id)
+	if rel["relatedTaskId"] != t2id {
+		t.Fatalf("got relatedTaskId %v, want %v", rel["relatedTaskId"], t2id)
 	}
 
 	// Verify relation appears on T1 as "blocks" and T2 as "blocked_by".
@@ -112,7 +112,7 @@ func TestTaskRelationsSelfRejected(t *testing.T) {
 
 	t1id := jsonAs[string](t, t1["id"])
 	resp := doRequest(t, env, "POST", "/spaces/self-test/tasks/"+t1id+"/relations",
-		`{"kind":"blocks","taskId":"`+t1id+`"}`)
+		`{"kind":"blocks","relatedTaskId":"`+t1id+`"}`)
 	assertStatusClose(t, resp, http.StatusBadRequest)
 }
 
@@ -125,7 +125,7 @@ func TestTaskRelationsCrossSpaceRejected(t *testing.T) {
 	t2 := createTask(t, env, "space-b", `{"title":"Task 2"}`)
 
 	resp := doRequest(t, env, "POST", "/spaces/space-a/tasks/"+jsonAs[string](t, t1["id"])+"/relations",
-		`{"kind":"blocks","taskId":"`+jsonAs[string](t, t2["id"])+`"}`)
+		`{"kind":"blocks","relatedTaskId":"`+jsonAs[string](t, t2["id"])+`"}`)
 	assertStatusClose(t, resp, http.StatusNotFound)
 }
 
@@ -136,7 +136,7 @@ func TestTaskRelationsNonExistentTask(t *testing.T) {
 	t1 := createTask(t, env, "ne-test", `{"title":"Task 1"}`)
 
 	resp := doRequest(t, env, "POST", "/spaces/ne-test/tasks/"+jsonAs[string](t, t1["id"])+"/relations",
-		`{"kind":"blocks","taskId":"T99999"}`)
+		`{"kind":"blocks","relatedTaskId":"T99999"}`)
 	assertStatusClose(t, resp, http.StatusNotFound)
 }
 
@@ -152,7 +152,7 @@ func TestTaskRelationsDuplicateRejected(t *testing.T) {
 
 	// Same relation again should 409.
 	resp := doRequest(t, env, "POST", "/spaces/dup-test/tasks/"+t1id+"/relations",
-		`{"kind":"blocks","taskId":"`+t2id+`"}`)
+		`{"kind":"blocks","relatedTaskId":"`+t2id+`"}`)
 	assertStatusClose(t, resp, http.StatusConflict)
 }
 
@@ -168,7 +168,7 @@ func TestTaskRelationsDuplicateViaInverse(t *testing.T) {
 
 	// T2 blocked_by T1 should also 409 (same canonical row).
 	resp := doRequest(t, env, "POST", "/spaces/dup-inv/tasks/"+t2id+"/relations",
-		`{"kind":"blocked_by","taskId":"`+t1id+`"}`)
+		`{"kind":"blocked_by","relatedTaskId":"`+t1id+`"}`)
 	assertStatusClose(t, resp, http.StatusConflict)
 }
 
@@ -285,7 +285,7 @@ func TestTaskRelationsNonMemberRejected(t *testing.T) {
 
 	// Non-member should not be able to create relations.
 	resp := doRequestAs(t, env, nonMemberToken, "POST", "/spaces/perm-test/tasks/"+jsonAs[string](t, t1["id"])+"/relations",
-		`{"kind":"blocks","taskId":"`+jsonAs[string](t, t2["id"])+`"}`)
+		`{"kind":"blocks","relatedTaskId":"`+jsonAs[string](t, t2["id"])+`"}`)
 	assertStatusClose(t, resp, http.StatusNotFound)
 }
 

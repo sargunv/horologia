@@ -28,7 +28,7 @@ func (h *Handler) SpaceTaskRelationsCreate(ctx context.Context, req *apigen.Task
 	if err != nil {
 		return nil, badRequest(err.Error())
 	}
-	targetID, err := types.ParseTaskID(req.TaskId)
+	targetID, err := types.ParseTaskID(req.RelatedTaskId)
 	if err != nil {
 		return nil, badRequest(err.Error())
 	}
@@ -89,9 +89,9 @@ func (h *Handler) SpaceTaskRelationsCreate(ctx context.Context, req *apigen.Task
 	}
 
 	return &apigen.TaskRelation{
-		Kind:      req.Kind,
-		TaskId:    types.FormatTaskID(targetID),
-		CreatedAt: ts,
+		Kind:          req.Kind,
+		RelatedTaskId: types.FormatTaskID(targetID),
+		CreatedAt:     ts,
 	}, nil
 }
 

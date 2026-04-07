@@ -1,6 +1,8 @@
 import "@typespec/http";
+import "@tend/typespec-mcp-go";
 
 using Http;
+using MCP;
 
 namespace Tend;
 
@@ -22,21 +24,47 @@ model TagList {
 @route("/spaces/{spaceSlug}/tags")
 @tag("Tags")
 interface SpaceTags {
-  @get list(@path spaceSlug: string): TagList | ApiError;
+  @mcpTool("tag_list", "List all tags in a space.")
+  @get
+  list(
+    /** Slug of the space. */
+    @path spaceSlug: string,
+  ): TagList | ApiError;
 
-  @post create(@path spaceSlug: string, @body body: TagCreate): {
+  @mcpTool("tag_create", "Create a tag in a space.")
+  @post
+  create(
+    /** Slug of the space. */
+    @path spaceSlug: string,
+
+    @body body: TagCreate,
+  ): {
     @statusCode statusCode: 201;
     @body body: Tag;
   } | ApiError;
 
-  @patch update(
+  @mcpTool("tag_update", "Rename a tag. Obtain tag names from tag_list.")
+  @patch
+  update(
+    /** Slug of the space. */
     @path spaceSlug: string,
+
+    /** Current tag name. */
     @path tagName: string,
+
     @body body: TagUpdate,
   ): Tag | ApiError;
 
-  @delete delete(
+  @mcpTool(
+    "tag_delete",
+    "Delete a tag from a space. Obtain tag names from tag_list."
+  )
+  @delete
+  delete(
+    /** Slug of the space. */
     @path spaceSlug: string,
+
+    /** Tag name to delete. */
     @path tagName: string,
   ): void | ApiError;
 }

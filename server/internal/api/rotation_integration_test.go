@@ -250,7 +250,7 @@ func TestRotationFixedAccumulating(t *testing.T) {
 	for _, r := range rels {
 		rel := jsonAs[map[string]any](t, r)
 		if rel["kind"] == "spawns" {
-			spawnedID = jsonAs[string](t, rel["taskId"])
+			spawnedID = jsonAs[string](t, rel["relatedTaskId"])
 		}
 	}
 	if spawnedID == "" {

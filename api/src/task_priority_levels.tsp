@@ -1,6 +1,8 @@
 import "@typespec/http";
+import "@tend/typespec-mcp-go";
 
 using Http;
+using MCP;
 
 namespace Tend;
 
@@ -24,7 +26,12 @@ model TaskPriorityLevelReplace {
 @route("/spaces/{spaceSlug}/task-priority-levels")
 @tag("Task Priority Levels")
 interface SpaceTaskPriorityLevels {
-  @get list(@path spaceSlug: string): TaskPriorityLevelList | ApiError;
+  @mcpTool("priority_level_list", "List task priority levels in a space.")
+  @get
+  list(
+    /** Slug of the space. */
+    @path spaceSlug: string,
+  ): TaskPriorityLevelList | ApiError;
 
   @put replace(
     @path spaceSlug: string,

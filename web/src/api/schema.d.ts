@@ -561,13 +561,15 @@ export interface components {
         TaskRecurrenceType: "one_off" | "completion_based" | "fixed_non_accumulating" | "fixed_accumulating" | "on_dependency";
         TaskRelation: {
             kind: components["schemas"]["TaskRelationKind"];
-            taskId: string;
+            relatedTaskId: string;
             /** Format: date-time */
             createdAt: string;
         };
         TaskRelationCreate: {
+            /** @description Relation kind (e.g. parent_of, child_of, blocks, blocked_by, relates_to, duplicates, triggers, triggered_by). */
             kind: components["schemas"]["TaskRelationKind"];
-            taskId: string;
+            /** @description Task ID of the related task. */
+            relatedTaskId: string;
         };
         /** @enum {string} */
         TaskRelationKind: "parent_of" | "child_of" | "blocks" | "blocked_by" | "relates_to" | "duplicates" | "triggers" | "triggered_by" | "spawns" | "spawned_by";
@@ -718,6 +720,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Token ID. */
                 tokenId: string;
             };
             cookie?: never;
@@ -809,6 +812,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;
@@ -840,6 +844,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;
@@ -869,6 +874,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;
@@ -909,6 +915,7 @@ export interface operations {
             };
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;
@@ -940,6 +947,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;
@@ -971,6 +979,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;
@@ -1006,7 +1015,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
+                /** @description User ID of the member. */
                 userId: string;
             };
             cookie?: never;
@@ -1036,7 +1047,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
+                /** @description User ID of the member. */
                 userId: string;
             };
             cookie?: never;
@@ -1072,6 +1085,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;
@@ -1103,6 +1117,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;
@@ -1138,7 +1153,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
+                /** @description Tag name to delete. */
                 tagName: string;
             };
             cookie?: never;
@@ -1168,7 +1185,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
+                /** @description Current tag name. */
                 tagName: string;
             };
             cookie?: never;
@@ -1204,6 +1223,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;
@@ -1270,6 +1290,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;
@@ -1336,6 +1357,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;
@@ -1509,7 +1531,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
+                /** @description Task ID. */
                 taskId: string;
             };
             cookie?: never;
@@ -1582,7 +1606,9 @@ export interface operations {
             };
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
+                /** @description Task ID. */
                 taskId: string;
             };
             cookie?: never;
@@ -1614,7 +1640,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
+                /** @description Task ID of the source task. */
                 taskId: string;
             };
             cookie?: never;
@@ -1650,9 +1678,13 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
+                /** @description Task ID of the source task. */
                 taskId: string;
+                /** @description Relation kind. */
                 kind: components["schemas"]["TaskRelationKind"];
+                /** @description Task ID of the related task. */
                 relatedTaskId: string;
             };
             cookie?: never;
@@ -1773,6 +1805,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description User ID. */
                 userId: string;
             };
             cookie?: never;
@@ -1804,6 +1837,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description User ID. */
                 userId: string;
             };
             cookie?: never;
@@ -1833,6 +1867,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description User ID. */
                 userId: string;
             };
             cookie?: never;
@@ -1873,6 +1908,7 @@ export interface operations {
             };
             header?: never;
             path: {
+                /** @description User ID. */
                 userId: string;
             };
             cookie?: never;
@@ -1909,6 +1945,7 @@ export interface operations {
             };
             header?: never;
             path: {
+                /** @description User ID. */
                 userId: string;
             };
             cookie?: never;

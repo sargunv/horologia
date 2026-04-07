@@ -5162,8 +5162,8 @@ func (s *TaskRelation) encodeFields(e *jx.Encoder) {
 		s.Kind.Encode(e)
 	}
 	{
-		e.FieldStart("taskId")
-		e.Str(s.TaskId)
+		e.FieldStart("relatedTaskId")
+		e.Str(s.RelatedTaskId)
 	}
 	{
 		e.FieldStart("createdAt")
@@ -5173,7 +5173,7 @@ func (s *TaskRelation) encodeFields(e *jx.Encoder) {
 
 var jsonFieldsNameOfTaskRelation = [3]string{
 	0: "kind",
-	1: "taskId",
+	1: "relatedTaskId",
 	2: "createdAt",
 }
 
@@ -5196,17 +5196,17 @@ func (s *TaskRelation) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"kind\"")
 			}
-		case "taskId":
+		case "relatedTaskId":
 			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
-				s.TaskId = string(v)
+				s.RelatedTaskId = string(v)
 				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"taskId\"")
+				return errors.Wrap(err, "decode field \"relatedTaskId\"")
 			}
 		case "createdAt":
 			requiredBitSet[0] |= 1 << 2
@@ -5290,14 +5290,14 @@ func (s *TaskRelationCreate) encodeFields(e *jx.Encoder) {
 		s.Kind.Encode(e)
 	}
 	{
-		e.FieldStart("taskId")
-		e.Str(s.TaskId)
+		e.FieldStart("relatedTaskId")
+		e.Str(s.RelatedTaskId)
 	}
 }
 
 var jsonFieldsNameOfTaskRelationCreate = [2]string{
 	0: "kind",
-	1: "taskId",
+	1: "relatedTaskId",
 }
 
 // Decode decodes TaskRelationCreate from json.
@@ -5319,17 +5319,17 @@ func (s *TaskRelationCreate) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"kind\"")
 			}
-		case "taskId":
+		case "relatedTaskId":
 			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
-				s.TaskId = string(v)
+				s.RelatedTaskId = string(v)
 				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"taskId\"")
+				return errors.Wrap(err, "decode field \"relatedTaskId\"")
 			}
 		default:
 			return d.Skip()

@@ -30,8 +30,9 @@ local allSteps = new Mapping<String, Step> {
   }
   ["vp-check"] {
     glob = List("**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx")
-    check = "cd web && pnpm exec vp check --no-fmt"
-    fix = "cd web && pnpm exec vp check --no-fmt --fix"
+    workspace_indicator = "vite.config.ts"
+    check = "cd {{workspace}} && pnpm exec vp check --no-fmt"
+    fix = "cd {{workspace}} && pnpm exec vp check --no-fmt --fix"
   }
   ["tsp-format"] {
     glob = List("api/**/*.tsp")
