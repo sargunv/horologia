@@ -698,6 +698,163 @@ func TestMCPPriorityLevelList(t *testing.T) {
 	}
 }
 
+func TestMCPStatusReplace(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+
+	rpcResp := s.call(t, "status_replace", map[string]any{
+		"spaceSlug": "home",
+		"items": []any{
+			map[string]any{"name": "Open", "category": "initial"},
+			map[string]any{"name": "In Progress", "category": "intermediate"},
+			map[string]any{"name": "Done", "category": "completion"},
+		},
+	})
+	items := toolResultList(t, rpcResp)
+	if len(items) != 3 {
+		t.Fatalf("got %d statuses, want 3", len(items))
+	}
+	wantStatuses := []struct{ name, category string }{
+		{"Open", "initial"},
+		{"In Progress", "intermediate"},
+		{"Done", "completion"},
+	}
+	for i, want := range wantStatuses {
+		m := jsonAs[map[string]any](t, items[i])
+		if got := jsonAs[string](t, m["name"]); got != want.name {
+			t.Errorf("items[%d].name = %q, want %q", i, got, want.name)
+		}
+		if got := jsonAs[string](t, m["category"]); got != want.category {
+			t.Errorf("items[%d].category = %q, want %q", i, got, want.category)
+		}
+	}
+
+	// Verify via list
+	listResp := s.call(t, "status_list", map[string]any{"spaceSlug": "home"})
+	listItems := toolResultList(t, listResp)
+	if len(listItems) != 3 {
+		t.Fatalf("list returned %d statuses, want 3", len(listItems))
+	}
+}
+
+func TestMCPEffortLevelReplace(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+
+	rpcResp := s.call(t, "effort_level_replace", map[string]any{
+		"spaceSlug": "home",
+		"items": []any{
+			map[string]any{"name": "Low"},
+			map[string]any{"name": "High"},
+		},
+	})
+	items := toolResultList(t, rpcResp)
+	if len(items) != 2 {
+		t.Fatalf("got %d effort levels, want 2", len(items))
+	}
+	for i, wantName := range []string{"Low", "High"} {
+		m := jsonAs[map[string]any](t, items[i])
+		if got := jsonAs[string](t, m["name"]); got != wantName {
+			t.Errorf("items[%d].name = %q, want %q", i, got, wantName)
+		}
+	}
+
+	// Verify via list
+	listResp := s.call(t, "effort_level_list", map[string]any{"spaceSlug": "home"})
+	listItems := toolResultList(t, listResp)
+	if len(listItems) != 2 {
+		t.Fatalf("list returned %d effort levels, want 2", len(listItems))
+	}
+}
+
+func TestMCPPriorityLevelReplace(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+
+	rpcResp := s.call(t, "priority_level_replace", map[string]any{
+		"spaceSlug": "home",
+		"items": []any{
+			map[string]any{"name": "Low"},
+			map[string]any{"name": "Medium"},
+			map[string]any{"name": "High"},
+		},
+	})
+	items := toolResultList(t, rpcResp)
+	if len(items) != 3 {
+		t.Fatalf("got %d priority levels, want 3", len(items))
+	}
+	for i, wantName := range []string{"Low", "Medium", "High"} {
+		m := jsonAs[map[string]any](t, items[i])
+		if got := jsonAs[string](t, m["name"]); got != wantName {
+			t.Errorf("items[%d].name = %q, want %q", i, got, wantName)
+		}
+	}
+
+	// Verify via list
+	listResp := s.call(t, "priority_level_list", map[string]any{"spaceSlug": "home"})
+	listItems := toolResultList(t, listResp)
+	if len(listItems) != 3 {
+		t.Fatalf("list returned %d priority levels, want 3", len(listItems))
+	}
+}
+
+func TestMCPStatusReplaceMissingCategory(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+
+	rpcResp := s.call(t, "status_replace", map[string]any{
+		"spaceSlug": "home",
+		"items": []any{
+			map[string]any{"name": "Open"},
+		},
+	})
+	errText := toolErrorText(t, rpcResp)
+	if errText != "items[0].category is required" {
+		t.Errorf("error = %q, want 'items[0].category is required'", errText)
+	}
+}
+
+func TestMCPStatusReplaceMissingName(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+
+	rpcResp := s.call(t, "status_replace", map[string]any{
+		"spaceSlug": "home",
+		"items": []any{
+			map[string]any{"category": "initial"},
+		},
+	})
+	errText := toolErrorText(t, rpcResp)
+	if errText != "items[0].name is required" {
+		t.Errorf("error = %q, want 'items[0].name is required'", errText)
+	}
+}
+
+func TestMCPEffortLevelReplaceMissingItems(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+
+	rpcResp := s.call(t, "effort_level_replace", map[string]any{
+		"spaceSlug": "home",
+	})
+	errText := toolErrorText(t, rpcResp)
+	if errText != "items is required" {
+		t.Errorf("error = %q, want 'items is required'", errText)
+	}
+}
+
 // --- Activity tools ---
 
 func TestMCPSpaceActivityList(t *testing.T) {

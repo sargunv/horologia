@@ -1288,6 +1288,7 @@ func decodeSpaceTaskEffortLevelsListParams(args [1]string, argsEscaped bool, r *
 
 // SpaceTaskEffortLevelsReplaceParams is parameters of SpaceTaskEffortLevels_replace operation.
 type SpaceTaskEffortLevelsReplaceParams struct {
+	// Slug of the space.
 	SpaceSlug string
 }
 
@@ -1419,6 +1420,7 @@ func decodeSpaceTaskPriorityLevelsListParams(args [1]string, argsEscaped bool, r
 
 // SpaceTaskPriorityLevelsReplaceParams is parameters of SpaceTaskPriorityLevels_replace operation.
 type SpaceTaskPriorityLevelsReplaceParams struct {
+	// Slug of the space.
 	SpaceSlug string
 }
 
@@ -1906,6 +1908,7 @@ func decodeSpaceTaskStatusesListParams(args [1]string, argsEscaped bool, r *http
 
 // SpaceTaskStatusesReplaceParams is parameters of SpaceTaskStatuses_replace operation.
 type SpaceTaskStatusesReplaceParams struct {
+	// Slug of the space.
 	SpaceSlug string
 }
 

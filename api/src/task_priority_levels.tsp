@@ -33,8 +33,15 @@ interface SpaceTaskPriorityLevels {
     @path spaceSlug: string,
   ): TaskPriorityLevelList | ApiError;
 
-  @put replace(
+  @mcpTool(
+    "priority_level_replace",
+    "Replace all task priority levels in a space."
+  )
+  @put
+  replace(
+    /** Slug of the space. */
     @path spaceSlug: string,
+
     @body body: TaskPriorityLevelReplace,
   ): TaskPriorityLevelList | ApiError;
 }
