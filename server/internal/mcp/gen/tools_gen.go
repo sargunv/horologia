@@ -47,8 +47,11 @@ type Handlers interface {
 	SpaceTaskRelationsCreate(ctx context.Context, req *apigen.TaskRelationCreate, params apigen.SpaceTaskRelationsCreateParams) (*apigen.TaskRelation, error)
 	SpaceTaskRelationsDelete(ctx context.Context, params apigen.SpaceTaskRelationsDeleteParams) error
 	SpaceTaskStatusesList(ctx context.Context, params apigen.SpaceTaskStatusesListParams) (*apigen.TaskStatusList, error)
+	SpaceTaskStatusesReplace(ctx context.Context, req *apigen.TaskStatusReplace, params apigen.SpaceTaskStatusesReplaceParams) (*apigen.TaskStatusList, error)
 	SpaceTaskEffortLevelsList(ctx context.Context, params apigen.SpaceTaskEffortLevelsListParams) (*apigen.TaskEffortLevelList, error)
+	SpaceTaskEffortLevelsReplace(ctx context.Context, req *apigen.TaskEffortLevelReplace, params apigen.SpaceTaskEffortLevelsReplaceParams) (*apigen.TaskEffortLevelList, error)
 	SpaceTaskPriorityLevelsList(ctx context.Context, params apigen.SpaceTaskPriorityLevelsListParams) (*apigen.TaskPriorityLevelList, error)
+	SpaceTaskPriorityLevelsReplace(ctx context.Context, req *apigen.TaskPriorityLevelReplace, params apigen.SpaceTaskPriorityLevelsReplaceParams) (*apigen.TaskPriorityLevelList, error)
 	SpaceTaskActivityList(ctx context.Context, params apigen.SpaceTaskActivityListParams) (*apigen.ActivityLogPage, error)
 	SpaceActivityList(ctx context.Context, params apigen.SpaceActivityListParams) (*apigen.ActivityLogPage, error)
 	UserActivityList(ctx context.Context, params apigen.UserActivityListParams) (*apigen.ActivityLogPage, error)
@@ -87,8 +90,11 @@ func RegisterTools(s *mcpserver.MCPServer, h Handlers) {
 	s.AddTool(relationCreateTool(), relationCreateHandler(h))
 	s.AddTool(relationDeleteTool(), relationDeleteHandler(h))
 	s.AddTool(statusListTool(), statusListHandler(h))
+	s.AddTool(statusReplaceTool(), statusReplaceHandler(h))
 	s.AddTool(effortLevelListTool(), effortLevelListHandler(h))
+	s.AddTool(effortLevelReplaceTool(), effortLevelReplaceHandler(h))
 	s.AddTool(priorityLevelListTool(), priorityLevelListHandler(h))
+	s.AddTool(priorityLevelReplaceTool(), priorityLevelReplaceHandler(h))
 	s.AddTool(taskActivityListTool(), taskActivityListHandler(h))
 	s.AddTool(spaceActivityListTool(), spaceActivityListHandler(h))
 	s.AddTool(userActivityListTool(), userActivityListHandler(h))
@@ -1060,6 +1066,62 @@ func statusListHandler(h Handlers) mcpserver.ToolHandlerFunc {
 	}
 }
 
+// --- status_replace ---
+
+func statusReplaceTool() mcp.Tool {
+	return mcp.NewTool("status_replace",
+		mcp.WithDescription("Replace all task statuses in a space."),
+		mcp.WithString("spaceSlug", mcp.Required(), mcp.Description("Slug of the space.")),
+		mcp.WithArray("items", mcp.Required(),
+			mcp.Items(map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"name":     map[string]any{"type": "string"},
+					"category": map[string]any{"type": "string", "enum": []any{"initial", "intermediate", "completion"}},
+				},
+				"required": []string{"name", "category"},
+			}),
+		),
+	)
+}
+
+func statusReplaceHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		rawItems, ok := args["items"].([]any)
+		if !ok {
+			return mcp.NewToolResultError("items is required"), nil
+		}
+		items := make([]apigen.TaskStatusInput, len(rawItems))
+		for i, raw := range rawItems {
+			m, ok := raw.(map[string]any)
+			if !ok {
+				return mcp.NewToolResultError(fmt.Sprintf("items[%d] must be an object", i)), nil
+			}
+			vName, ok := m["name"].(string)
+			if !ok || vName == "" {
+				return mcp.NewToolResultError(fmt.Sprintf("items[%d].name is required", i)), nil
+			}
+			vCategory, ok := m["category"].(string)
+			if !ok || vCategory == "" {
+				return mcp.NewToolResultError(fmt.Sprintf("items[%d].category is required", i)), nil
+			}
+			items[i] = apigen.TaskStatusInput{Name: vName, Category: apigen.TaskStatusCategory(vCategory)}
+		}
+		params := apigen.SpaceTaskStatusesReplaceParams{SpaceSlug: spaceSlug}
+		body := &apigen.TaskStatusReplace{Items: items}
+		result, err := h.SpaceTaskStatusesReplace(ctx, body, params)
+		if err != nil {
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
 // --- effort_level_list ---
 
 func effortLevelListTool() mcp.Tool {
@@ -1085,6 +1147,57 @@ func effortLevelListHandler(h Handlers) mcpserver.ToolHandlerFunc {
 	}
 }
 
+// --- effort_level_replace ---
+
+func effortLevelReplaceTool() mcp.Tool {
+	return mcp.NewTool("effort_level_replace",
+		mcp.WithDescription("Replace all task effort levels in a space."),
+		mcp.WithString("spaceSlug", mcp.Required(), mcp.Description("Slug of the space.")),
+		mcp.WithArray("items", mcp.Required(),
+			mcp.Items(map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"name": map[string]any{"type": "string"},
+				},
+				"required": []string{"name"},
+			}),
+		),
+	)
+}
+
+func effortLevelReplaceHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		rawItems, ok := args["items"].([]any)
+		if !ok {
+			return mcp.NewToolResultError("items is required"), nil
+		}
+		items := make([]apigen.TaskEffortLevelInput, len(rawItems))
+		for i, raw := range rawItems {
+			m, ok := raw.(map[string]any)
+			if !ok {
+				return mcp.NewToolResultError(fmt.Sprintf("items[%d] must be an object", i)), nil
+			}
+			vName, ok := m["name"].(string)
+			if !ok || vName == "" {
+				return mcp.NewToolResultError(fmt.Sprintf("items[%d].name is required", i)), nil
+			}
+			items[i] = apigen.TaskEffortLevelInput{Name: vName}
+		}
+		params := apigen.SpaceTaskEffortLevelsReplaceParams{SpaceSlug: spaceSlug}
+		body := &apigen.TaskEffortLevelReplace{Items: items}
+		result, err := h.SpaceTaskEffortLevelsReplace(ctx, body, params)
+		if err != nil {
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
 // --- priority_level_list ---
 
 func priorityLevelListTool() mcp.Tool {
@@ -1103,6 +1216,57 @@ func priorityLevelListHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		}
 		params := apigen.SpaceTaskPriorityLevelsListParams{SpaceSlug: spaceSlug}
 		result, err := h.SpaceTaskPriorityLevelsList(ctx, params)
+		if err != nil {
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- priority_level_replace ---
+
+func priorityLevelReplaceTool() mcp.Tool {
+	return mcp.NewTool("priority_level_replace",
+		mcp.WithDescription("Replace all task priority levels in a space."),
+		mcp.WithString("spaceSlug", mcp.Required(), mcp.Description("Slug of the space.")),
+		mcp.WithArray("items", mcp.Required(),
+			mcp.Items(map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"name": map[string]any{"type": "string"},
+				},
+				"required": []string{"name"},
+			}),
+		),
+	)
+}
+
+func priorityLevelReplaceHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		rawItems, ok := args["items"].([]any)
+		if !ok {
+			return mcp.NewToolResultError("items is required"), nil
+		}
+		items := make([]apigen.TaskPriorityLevelInput, len(rawItems))
+		for i, raw := range rawItems {
+			m, ok := raw.(map[string]any)
+			if !ok {
+				return mcp.NewToolResultError(fmt.Sprintf("items[%d] must be an object", i)), nil
+			}
+			vName, ok := m["name"].(string)
+			if !ok || vName == "" {
+				return mcp.NewToolResultError(fmt.Sprintf("items[%d].name is required", i)), nil
+			}
+			items[i] = apigen.TaskPriorityLevelInput{Name: vName}
+		}
+		params := apigen.SpaceTaskPriorityLevelsReplaceParams{SpaceSlug: spaceSlug}
+		body := &apigen.TaskPriorityLevelReplace{Items: items}
+		result, err := h.SpaceTaskPriorityLevelsReplace(ctx, body, params)
 		if err != nil {
 			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}

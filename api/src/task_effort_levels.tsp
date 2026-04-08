@@ -33,8 +33,12 @@ interface SpaceTaskEffortLevels {
     @path spaceSlug: string,
   ): TaskEffortLevelList | ApiError;
 
-  @put replace(
+  @mcpTool("effort_level_replace", "Replace all task effort levels in a space.")
+  @put
+  replace(
+    /** Slug of the space. */
     @path spaceSlug: string,
+
     @body body: TaskEffortLevelReplace,
   ): TaskEffortLevelList | ApiError;
 }

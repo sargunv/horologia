@@ -1255,6 +1255,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;
@@ -1322,6 +1323,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;
@@ -1389,6 +1391,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Slug of the space. */
                 spaceSlug: string;
             };
             cookie?: never;

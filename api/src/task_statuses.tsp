@@ -41,8 +41,12 @@ interface SpaceTaskStatuses {
     @path spaceSlug: string,
   ): TaskStatusList | ApiError;
 
-  @put replace(
+  @mcpTool("status_replace", "Replace all task statuses in a space.")
+  @put
+  replace(
+    /** Slug of the space. */
     @path spaceSlug: string,
+
     @body body: TaskStatusReplace,
   ): TaskStatusList | ApiError;
 }
