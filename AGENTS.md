@@ -23,6 +23,8 @@ tasks. Key commands:
 Package-scoped tasks use a `//` prefix, e.g. `mise run //server:generate`,
 `mise run //server:build`, `mise run //server:test`.
 
+To run any tool managed by mise, use `mise x -- [COMMAND]`
+
 ### Database
 
 PostgreSQL is managed by mise and started automatically by Tilt. Data is stored per-branch in
@@ -115,9 +117,11 @@ Both must be re-run when you add new TypeSpec types or new/changed SQL queries. 
 - Extract `useMutation` hooks into `lib/mutations.ts` only when reused across multiple components.
   One-off mutations with page-specific side effects belong inline in the component.
 
-## Browser Automation
+## Manual Testing
 
 Use `playwright-cli` for web automation. Run `playwright-cli --help` for available commands.
+
+Use `vhs` for recording CLI demos. Run `vhs --help` for details.
 
 ### Dev environment
 
