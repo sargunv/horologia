@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	apigen "github.com/sargunv/tend/api/gen"
 	"github.com/sargunv/tend/server/internal/activitylog"
-	apigen "github.com/sargunv/tend/server/internal/api/gen"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 )
 

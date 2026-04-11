@@ -32,12 +32,20 @@ RUN cd web \
 
 # --- Stage 4: Download Go module dependencies ---
 FROM golang:${GO_VERSION}-bookworm AS go-deps
+COPY api/go.mod /src/api/go.mod
+COPY api/go.sum /src/api/go.sum
+WORKDIR /src/api
+RUN go mod download
+
 WORKDIR /src/server
 COPY server/go.mod server/go.sum ./
 RUN go mod download
 
 # --- Stage 5: Build Go server binary ---
 FROM go-deps AS server-build
+
+# Copy api source needed by the shared generated module.
+COPY api/ /src/api/
 
 # Copy server source.
 COPY server/ ./
@@ -47,12 +55,14 @@ COPY --from=api-build /src/api/tsp-output/schema/openapi.yaml \
     /src/api/tsp-output/schema/openapi.yaml
 
 # Run code generation (tools invoked via go run from module dependencies).
-RUN go run github.com/sqlc-dev/sqlc/cmd/sqlc generate \
+RUN cd /src/api \
  && go run github.com/ogen-go/ogen/cmd/ogen \
-      --target internal/api/gen \
+      --target gen \
       --package gen \
       --clean \
-      /src/api/tsp-output/schema/openapi.yaml
+      tsp-output/schema/openapi.yaml \
+ && cd /src/server \
+ && go run github.com/sqlc-dev/sqlc/cmd/sqlc generate
 
 # Place the SPA dist where the go:embed directive can find it.
 COPY --from=web-build /src/web/dist/ ./internal/webui/dist/

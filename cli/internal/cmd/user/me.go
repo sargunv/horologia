@@ -12,9 +12,13 @@ func newMeCmd(flags *support.RootFlags) *cobra.Command {
 		Use:   "me",
 		Short: "Show the authenticated Tend user",
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
-			user, err := app.CurrentUser(cmd.Context())
+			if app.API == nil {
+				return runtime.MissingServerError()
+			}
+
+			user, err := app.API.UsersMe(cmd.Context())
 			if err != nil {
-				return err
+				return runtime.NormalizeError(err)
 			}
 
 			if app.Config.JSON {

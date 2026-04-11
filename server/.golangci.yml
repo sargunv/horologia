@@ -38,5 +38,5 @@ linters:
             - "!${config-path}/internal/api/*.go"
             - "!${config-path}/internal/mcp/gen/*.go"
           deny:
-            - pkg: "github.com/sargunv/tend/server/internal/api/gen"
+            - pkg: "github.com/sargunv/tend/api/gen"
               desc: "only internal/api may import apigen; use domain types from internal/types"

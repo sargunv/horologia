@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
+	apigen "github.com/sargunv/tend/api/gen"
 	"github.com/sargunv/tend/server/internal/activitylog"
-	apigen "github.com/sargunv/tend/server/internal/api/gen"
 	"github.com/sargunv/tend/server/internal/auth"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/taskengine"

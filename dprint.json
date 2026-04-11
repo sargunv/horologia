@@ -9,7 +9,7 @@
     "**/dist",
     "**/.dprint",
     "**/*-lock.yaml",
-    "server/internal/api/gen",
+    "api/gen",
     "server/internal/database/gen",
     "web/src/api/schema.d.ts",
     "web/src/routeTree.gen.ts",

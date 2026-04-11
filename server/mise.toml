@@ -1,16 +1,15 @@
 [tasks.generate]
 description = "Run all code generation"
-depends = ["//api:build"]
+depends = ["//api:generate"]
 sources = [
   "../api/tsp-output/schema/openapi.yaml",
   "internal/database/migrations/*.sql",
   "internal/database/queries/*.sql",
   "sqlc.yaml",
 ]
-outputs = ["internal/api/gen/*.go", "internal/database/gen/*.go"]
+outputs = ["internal/database/gen/*.go", "internal/mcp/gen/*.go"]
 run = [
   "go run github.com/sqlc-dev/sqlc/cmd/sqlc generate",
-  "go run github.com/ogen-go/ogen/cmd/ogen --target internal/api/gen --package gen --clean ../api/tsp-output/schema/openapi.yaml",
 ]
 
 [tasks.build]

@@ -11,12 +11,12 @@ func (e *ConfigError) Error() string {
 	return e.Message
 }
 
-func newMissingServerError() error {
-	return &ConfigError{Message: "server is not configured; set TEND_SERVER or pass --server"}
+func MissingServerError() error {
+	return &ConfigError{Message: "server is not configured; set TEND_SERVER or run `tend config set server <url>`"}
 }
 
-func newMissingTokenError() error {
-	return &ConfigError{Message: "token is not configured; set TEND_TOKEN or pass --token"}
+func MissingTokenError() error {
+	return &ConfigError{Message: "token is not configured; set TEND_TOKEN or run `tend auth login`"}
 }
 
 // APIError is a structured API error response.

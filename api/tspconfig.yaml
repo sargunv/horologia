@@ -8,4 +8,4 @@ options:
       - 3.1.0
   "@tend/typespec-mcp-go":
     emitter-output-dir: "{project-root}/../server/internal/mcp/gen"
-    ogenImportPath: "github.com/sargunv/tend/server/internal/api/gen"
+    ogenImportPath: "github.com/sargunv/tend/api/gen"

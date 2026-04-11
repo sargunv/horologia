@@ -48,15 +48,19 @@ func NewStatus(flags *support.RootFlags) *cobra.Command {
 			out.Health.DurationMS = time.Since(healthStart).Milliseconds()
 
 			if app.Config.HasToken() {
+				if app.API == nil {
+					return runtime.MissingServerError()
+				}
+
 				authStart := time.Now()
-				user, err := app.CurrentUser(cmd.Context())
+				user, err := app.API.UsersMe(cmd.Context())
 				if err != nil {
-					return err
+					return runtime.NormalizeError(err)
 				}
 				out.Auth.Configured = true
 				out.Auth.OK = true
 				out.Auth.DurationMS = time.Since(authStart).Milliseconds()
-				out.Auth.User = &user
+				out.Auth.User = user
 			} else {
 				out.Auth.Configured = false
 				out.Auth.Skipped = true

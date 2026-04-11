@@ -12,7 +12,7 @@ import (
 	"github.com/ogen-go/ogen/ogenerrors"
 	zhttp "github.com/zitadel/oidc/v3/pkg/http"
 
-	apigen "github.com/sargunv/tend/server/internal/api/gen"
+	apigen "github.com/sargunv/tend/api/gen"
 	"github.com/sargunv/tend/server/internal/pwdcheck"
 	"github.com/sargunv/tend/server/internal/types"
 )

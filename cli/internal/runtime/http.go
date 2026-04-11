@@ -4,13 +4,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"path"
 	"strings"
-	"time"
+
+	apigen "github.com/sargunv/tend/api/gen"
 )
 
 type apiErrorResponse struct {
@@ -25,15 +27,7 @@ type HealthResponse struct {
 }
 
 // User is the API's current-user shape.
-type User struct {
-	ID          string    `json:"id"`
-	Email       string    `json:"email"`
-	Name        string    `json:"name"`
-	IsOwner     bool      `json:"isOwner"`
-	HasPassword bool      `json:"hasPassword"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
-}
+type User = apigen.User
 
 // App holds shared CLI runtime state.
 type App struct {
@@ -42,22 +36,37 @@ type App struct {
 	Stderr io.Writer
 
 	client *http.Client
+	API    *apigen.Client
 }
 
 // NewApp builds the shared CLI runtime.
 func NewApp(cfg Config, stdout io.Writer, stderr io.Writer) *App {
-	return &App{
+	app := &App{
 		Config: cfg,
 		Stdout: stdout,
 		Stderr: stderr,
 		client: &http.Client{},
 	}
+
+	if cfg.HasServer() {
+		client, err := apigen.NewClient(
+			cfg.APIBaseString(),
+			securitySource{token: cfg.Token},
+			apigen.WithClient(app.client),
+		)
+		if err != nil {
+			panic(fmt.Sprintf("create generated API client: %v", err))
+		}
+		app.API = client
+	}
+
+	return app
 }
 
 // Health checks server liveness through /healthz.
 func (a *App) Health(ctx context.Context) (HealthResponse, error) {
 	if !a.Config.HasServer() {
-		return HealthResponse{}, newMissingServerError()
+		return HealthResponse{}, MissingServerError()
 	}
 
 	var resp HealthResponse
@@ -66,26 +75,6 @@ func (a *App) Health(ctx context.Context) (HealthResponse, error) {
 		URL:    resolveURL(a.Config.Server, "/healthz"),
 	}, &resp); err != nil {
 		return HealthResponse{}, err
-	}
-	return resp, nil
-}
-
-// CurrentUser returns the authenticated user from /api/users/me.
-func (a *App) CurrentUser(ctx context.Context) (User, error) {
-	if !a.Config.HasServer() {
-		return User{}, newMissingServerError()
-	}
-	if !a.Config.HasToken() {
-		return User{}, newMissingTokenError()
-	}
-
-	var resp User
-	if err := a.doJSON(ctx, requestSpec{
-		Method: "GET",
-		URL:    resolveURL(a.Config.Server, "/api/users/me"),
-		Auth:   true,
-	}, &resp); err != nil {
-		return User{}, err
 	}
 	return resp, nil
 }
@@ -166,6 +155,38 @@ func decodeAPIError(resp *http.Response) error {
 		StatusCode: resp.StatusCode,
 		Message:    message,
 	}
+}
+
+// NormalizeError converts generated client API errors into CLI-facing errors.
+func NormalizeError(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	var apiErr *apigen.ApiErrorStatusCode
+	if stderrors.As(err, &apiErr) {
+		return &APIError{
+			StatusCode: apiErr.StatusCode,
+			Code:       apiErr.Response.Code,
+			Message:    apiErr.Response.Message,
+		}
+	}
+
+	return err
+}
+
+type securitySource struct {
+	token string
+}
+
+func (s securitySource) BearerAuth(ctx context.Context, operationName apigen.OperationName) (apigen.BearerAuth, error) {
+	if strings.TrimSpace(s.token) == "" {
+		return apigen.BearerAuth{}, MissingTokenError()
+	}
+
+	return apigen.BearerAuth{
+		Token: s.token,
+	}, nil
 }
 
 func resolveURL(base *url.URL, refPath string) *url.URL {

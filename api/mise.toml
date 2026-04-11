@@ -1,5 +1,16 @@
-[tasks.build]
-description = "Compile TypeSpec (builds emitters first)"
-run = "pnpm --filter @tend/typespec-mcp-go run build && pnpm exec tsp compile ."
+[tasks.generate]
+description = "Compile TypeSpec and generate the shared Go API package"
+run = [
+  "pnpm --filter @tend/typespec-mcp-go run build",
+  "pnpm exec tsp compile .",
+  "go run github.com/ogen-go/ogen/cmd/ogen --target gen --package gen --clean tsp-output/schema/openapi.yaml",
+]
 sources = ["main.tsp", "src/**/*.tsp", "tspconfig.yaml", "emitters/**/*.ts"]
-outputs = ["tsp-output/schema/openapi.yaml"]
+outputs = ["tsp-output/schema/openapi.yaml", "gen/*.go"]
+
+[tasks.build]
+description = "Compile TypeSpec and generate the shared Go API package"
+depends = ["generate"]
+run = "true"
+sources = ["main.tsp", "src/**/*.tsp", "tspconfig.yaml", "emitters/**/*.ts", "gen/*.go"]
+outputs = ["tsp-output/schema/openapi.yaml", "gen/*.go"]

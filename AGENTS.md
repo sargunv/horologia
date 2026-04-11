@@ -57,7 +57,7 @@ PostgreSQL is managed by mise and started automatically by Tilt. Data is stored 
 Changes flow through two codegen steps — run `mise run generate` after any of these:
 
 1. **TypeSpec** (`api/src/*.tsp`) → `api/tsp-output/schema/openapi.yaml`
-2. **ogen** consumes the OpenAPI YAML → `server/internal/api/gen/`
+2. **ogen** consumes the OpenAPI YAML → `api/gen/`
 3. **sqlc** (`server/internal/database/queries/*.sql`) → `server/internal/database/gen/`
 
 Both must be re-run when you add new TypeSpec types or new/changed SQL queries. The order in
