@@ -61,7 +61,7 @@ func Load() (Config, error) {
 		return Config{}, errors.New("TEND_DB is required")
 	}
 	if cfg.PublicURL != "" {
-		if !(strings.HasPrefix(cfg.PublicURL, "http://") || strings.HasPrefix(cfg.PublicURL, "https://")) {
+		if !strings.HasPrefix(cfg.PublicURL, "http://") && !strings.HasPrefix(cfg.PublicURL, "https://") {
 			return Config{}, errors.New("TEND_PUBLIC_URL must start with http:// or https://")
 		}
 		cfg.PublicURL = strings.TrimRight(cfg.PublicURL, "/")

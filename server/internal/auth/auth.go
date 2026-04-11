@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"slices"
 
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 )
@@ -50,12 +51,7 @@ func (u *User) HasScope(scope string) bool {
 	if u == nil || scope == "" || u.Token == nil || !u.Token.IsDelegated() {
 		return true
 	}
-	for _, granted := range u.Token.Scopes {
-		if granted == scope {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(u.Token.Scopes, scope)
 }
 
 // UserFromContext retrieves the authenticated user from the context.

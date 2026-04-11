@@ -30,7 +30,7 @@ func SupportedScopes() []string {
 func NormalizeScopes(raw string) ([]string, error) {
 	fields := strings.Fields(raw)
 	if len(fields) == 0 {
-		return nil, fmt.Errorf("scope is required")
+		return nil, errors.New("scope is required")
 	}
 
 	seen := make(map[string]struct{}, len(fields))

@@ -431,16 +431,16 @@ func (h *Handler) validateAuthorizeValues(r *http.Request, values url.Values) (o
 		Resource:            strings.TrimSpace(values.Get("resource")),
 	}
 	if req.ResponseType != "code" {
-		return req, dbgen.OauthClient{}, nil, fmt.Errorf("response_type must be code")
+		return req, dbgen.OauthClient{}, nil, errors.New("response_type must be code")
 	}
 	if req.ClientID == "" || req.RedirectURI == "" {
-		return req, dbgen.OauthClient{}, nil, fmt.Errorf("client_id and redirect_uri are required")
+		return req, dbgen.OauthClient{}, nil, errors.New("client_id and redirect_uri are required")
 	}
 	if req.CodeChallenge == "" {
-		return req, dbgen.OauthClient{}, nil, fmt.Errorf("code_challenge is required")
+		return req, dbgen.OauthClient{}, nil, errors.New("code_challenge is required")
 	}
 	if req.CodeChallengeMethod != "S256" {
-		return req, dbgen.OauthClient{}, nil, fmt.Errorf("code_challenge_method must be S256")
+		return req, dbgen.OauthClient{}, nil, errors.New("code_challenge_method must be S256")
 	}
 
 	scopes, err := auth.NormalizeScopes(req.Scope)
@@ -452,17 +452,17 @@ func (h *Handler) validateAuthorizeValues(r *http.Request, values url.Values) (o
 	client, err := q.GetOAuthClient(r.Context(), req.ClientID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return req, dbgen.OauthClient{}, nil, fmt.Errorf("unknown client_id")
+			return req, dbgen.OauthClient{}, nil, errors.New("unknown client_id")
 		}
 		return req, dbgen.OauthClient{}, nil, err
 	}
 
 	if !oauthRedirectURIAllowed(client, req.RedirectURI) {
-		return req, dbgen.OauthClient{}, nil, fmt.Errorf("redirect_uri is not registered for this client")
+		return req, dbgen.OauthClient{}, nil, errors.New("redirect_uri is not registered for this client")
 	}
 
 	if req.Resource != "" && !oauthResourceAllowed(h.publicBaseURL(r), req.Resource) {
-		return req, dbgen.OauthClient{}, nil, fmt.Errorf("resource is not supported")
+		return req, dbgen.OauthClient{}, nil, errors.New("resource is not supported")
 	}
 
 	return req, client, scopes, nil
