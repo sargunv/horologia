@@ -27,6 +27,7 @@ corepack = true
 
 [tools]
 go = "1.26.1"
+goreleaser = "2.14.3"
 node = "24.14.1"
 dprint = "0.53.0"
 hk = "1.38.0"

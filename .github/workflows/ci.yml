@@ -39,6 +39,8 @@ jobs:
 
       - run: mise run ci
 
+      - run: mise run //cli:release-snapshot
+
   docker:
     runs-on: ubuntu-latest
 
