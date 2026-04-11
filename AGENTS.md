@@ -47,6 +47,8 @@ PostgreSQL is managed by mise and started automatically by Tilt. Data is stored 
 
 - Never use `context.Background()` when a context is available from a caller (e.g. `cmd.Context()`,
   function parameter). Thread contexts through from the top.
+- Always thread context down from the system boundary: HTTP handlers in the server and
+  `cmd.Context()` in the CLI. Do not create a fresh background context in lower layers.
 - Never call `time.Now()` inside a function when a `now time.Time` is available from a caller.
   Capture `time.Now()` once at the system boundary (HTTP handler, cron tick) and thread it through.
 
