@@ -1,17 +1,17 @@
-package cmd
+package usercmd
 
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/sargunv/tend/cli/internal/cmd/support"
 	"github.com/sargunv/tend/cli/internal/runtime"
 )
 
-func newWhoamiCmd(flags *rootFlags) *cobra.Command {
+func newMeCmd(flags *support.RootFlags) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "whoami",
-		Short:   "Show the authenticated Tend user",
-		GroupID: "foundation",
-		RunE: runWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
+		Use:   "me",
+		Short: "Show the authenticated Tend user",
+		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			user, err := app.CurrentUser(cmd.Context())
 			if err != nil {
 				return err

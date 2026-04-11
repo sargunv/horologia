@@ -1,12 +1,14 @@
-package cmd
+package configcmd
 
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/sargunv/tend/cli/internal/cmd/support"
 	"github.com/sargunv/tend/cli/internal/runtime"
 )
 
-type configOutput struct {
+// Output is the JSON response for `tend config show`.
+type Output struct {
 	Server struct {
 		Value  string              `json:"value"`
 		Source runtime.ValueSource `json:"source"`
@@ -24,13 +26,12 @@ type configOutput struct {
 	} `json:"output"`
 }
 
-func newConfigCmd(flags *rootFlags) *cobra.Command {
+func newShowCmd(flags *support.RootFlags) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "config",
-		Short:   "Show the effective CLI configuration",
-		GroupID: "foundation",
-		RunE: runWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
-			out := buildConfigOutput(app.Config)
+		Use:   "show",
+		Short: "Show the effective CLI configuration",
+		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
+			out := BuildOutput(app.Config)
 			if app.Config.JSON {
 				return app.PrintJSON(out)
 			}
@@ -59,8 +60,9 @@ func newConfigCmd(flags *rootFlags) *cobra.Command {
 	return cmd
 }
 
-func buildConfigOutput(cfg runtime.Config) configOutput {
-	var out configOutput
+// BuildOutput formats resolved runtime configuration for display.
+func BuildOutput(cfg runtime.Config) Output {
+	var out Output
 	out.Server.Value = cfg.ServerString()
 	out.Server.Source = cfg.ServerSource
 	out.APIBase.Value = cfg.APIBaseString()

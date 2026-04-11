@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	configcmd "github.com/sargunv/tend/cli/internal/cmd/config"
+	foundationcmd "github.com/sargunv/tend/cli/internal/cmd/foundation"
 	"github.com/sargunv/tend/cli/internal/runtime"
 )
 
@@ -15,12 +17,12 @@ func TestConfigCommandUsesEnv(t *testing.T) {
 	setEnvValue(t, "TEND_SERVER", stringPtr("http://example.com/api/"))
 	setEnvValue(t, "TEND_TOKEN", stringPtr("tokentest1234"))
 
-	stdout, _, err := executeRoot(t, "--json", "config")
+	stdout, _, err := executeRoot(t, "--json", "config", "show")
 	if err != nil {
 		t.Fatalf("execute config: %v", err)
 	}
 
-	var out configOutput
+	var out configcmd.Output
 	if err := json.Unmarshal([]byte(stdout), &out); err != nil {
 		t.Fatalf("decode output: %v\noutput=%s", err, stdout)
 	}
@@ -49,12 +51,12 @@ func TestConfigFlagOverridesEnv(t *testing.T) {
 	setEnvValue(t, "TEND_SERVER", stringPtr("http://env.example.com"))
 	setEnvValue(t, "TEND_TOKEN", stringPtr("envtoken1234"))
 
-	stdout, _, err := executeRoot(t, "--json", "config")
+	stdout, _, err := executeRoot(t, "--json", "config", "show")
 	if err != nil {
 		t.Fatalf("execute config: %v", err)
 	}
 
-	var out configOutput
+	var out configcmd.Output
 	if err := json.Unmarshal([]byte(stdout), &out); err != nil {
 		t.Fatalf("decode output: %v\noutput=%s", err, stdout)
 	}
@@ -90,7 +92,7 @@ func TestHelpDoesNotExposeServerOrTokenFlags(t *testing.T) {
 	}
 }
 
-func TestPingWithoutTokenSkipsAuth(t *testing.T) {
+func TestStatusWithoutTokenSkipsAuth(t *testing.T) {
 	sawWhoami := false
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -108,12 +110,12 @@ func TestPingWithoutTokenSkipsAuth(t *testing.T) {
 	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
 	setEnvValue(t, "TEND_TOKEN", nil)
 
-	stdout, _, err := executeRoot(t, "--json", "ping")
+	stdout, _, err := executeRoot(t, "--json", "status")
 	if err != nil {
-		t.Fatalf("execute ping: %v", err)
+		t.Fatalf("execute status: %v", err)
 	}
 
-	var out pingOutput
+	var out foundationcmd.Output
 	if err := json.Unmarshal([]byte(stdout), &out); err != nil {
 		t.Fatalf("decode output: %v\noutput=%s", err, stdout)
 	}
@@ -132,7 +134,7 @@ func TestPingWithoutTokenSkipsAuth(t *testing.T) {
 	}
 }
 
-func TestWhoamiUsesTokenAndNormalizesAPIBase(t *testing.T) {
+func TestUserMeUsesTokenAndNormalizesAPIBase(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/users/me":
@@ -155,9 +157,9 @@ func TestWhoamiUsesTokenAndNormalizesAPIBase(t *testing.T) {
 	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL+"/api"))
 	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
 
-	stdout, _, err := executeRoot(t, "--json", "whoami")
+	stdout, _, err := executeRoot(t, "--json", "user", "me")
 	if err != nil {
-		t.Fatalf("execute whoami: %v", err)
+		t.Fatalf("execute user me: %v", err)
 	}
 
 	var user runtime.User
@@ -176,11 +178,11 @@ func TestWhoamiUsesTokenAndNormalizesAPIBase(t *testing.T) {
 	}
 }
 
-func TestWhoamiRequiresToken(t *testing.T) {
+func TestUserMeRequiresToken(t *testing.T) {
 	setEnvValue(t, "TEND_SERVER", stringPtr("http://example.com"))
 	setEnvValue(t, "TEND_TOKEN", nil)
 
-	_, _, err := executeRoot(t, "whoami")
+	_, _, err := executeRoot(t, "user", "me")
 	if err == nil {
 		t.Fatalf("expected error")
 	}

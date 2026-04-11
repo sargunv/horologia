@@ -8,16 +8,18 @@ import (
 	"charm.land/fang/v2"
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/runtime"
+	authcmd "github.com/sargunv/tend/cli/internal/cmd/auth"
+	configcmd "github.com/sargunv/tend/cli/internal/cmd/config"
+	foundationcmd "github.com/sargunv/tend/cli/internal/cmd/foundation"
+	spacecmd "github.com/sargunv/tend/cli/internal/cmd/space"
+	"github.com/sargunv/tend/cli/internal/cmd/support"
+	taskcmd "github.com/sargunv/tend/cli/internal/cmd/task"
+	usercmd "github.com/sargunv/tend/cli/internal/cmd/user"
 )
 
 type commandOptions struct {
 	stdout io.Writer
 	stderr io.Writer
-}
-
-type rootFlags struct {
-	json bool
 }
 
 var (
@@ -34,7 +36,7 @@ func NewRootCmd() *cobra.Command {
 }
 
 func newRootCmd(opts commandOptions) *cobra.Command {
-	flags := rootFlags{}
+	flags := &support.RootFlags{}
 
 	rootCmd := &cobra.Command{
 		Use:           "tend",
@@ -49,34 +51,24 @@ func newRootCmd(opts commandOptions) *cobra.Command {
 	rootCmd.SetOut(opts.stdout)
 	rootCmd.SetErr(opts.stderr)
 
-	rootCmd.PersistentFlags().BoolVar(&flags.json, "json", false, "Print machine-readable JSON output")
+	rootCmd.PersistentFlags().BoolVar(&flags.JSON, "json", false, "Print machine-readable JSON output")
 
 	rootCmd.AddGroup(
 		&cobra.Group{ID: "foundation", Title: "Foundation Commands:"},
+		&cobra.Group{ID: "auth", Title: "Authentication Commands:"},
+		&cobra.Group{ID: "workspace", Title: "Workspace Commands:"},
+		&cobra.Group{ID: "account", Title: "Account Commands:"},
 	)
 
 	rootCmd.AddCommand(
-		newConfigCmd(&flags),
-		newPingCmd(&flags),
-		newWhoamiCmd(&flags),
+		foundationcmd.NewStatus(flags),
+		configcmd.New(flags),
+		authcmd.New(flags),
+		spacecmd.New(flags),
+		taskcmd.New(flags),
+		usercmd.New(flags),
 	)
-
 	return rootCmd
-}
-
-func runWithApp(flags *rootFlags, fn func(app *runtime.App, cmd *cobra.Command, args []string) error) func(cmd *cobra.Command, args []string) error {
-	return func(cmd *cobra.Command, args []string) error {
-		cfg, err := runtime.ResolveConfig(runtime.ResolveInput{
-			JSON: flags.json,
-		})
-		if err != nil {
-			return err
-		}
-
-		app := runtime.NewApp(cfg, cmd.OutOrStdout(), cmd.ErrOrStderr())
-		cmd.SetContext(runtime.WithApp(cmd.Context(), app))
-		return fn(app, cmd, args)
-	}
 }
 
 // Execute runs the root command with Fang's CLI UX.

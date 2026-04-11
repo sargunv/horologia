@@ -1,14 +1,16 @@
-package cmd
+package foundationcmd
 
 import (
 	"time"
 
 	"github.com/spf13/cobra"
 
+	"github.com/sargunv/tend/cli/internal/cmd/support"
 	"github.com/sargunv/tend/cli/internal/runtime"
 )
 
-type pingOutput struct {
+// Output is the JSON response for `tend status`.
+type Output struct {
 	Server string `json:"server"`
 	Health struct {
 		OK         bool   `json:"ok"`
@@ -26,13 +28,14 @@ type pingOutput struct {
 	} `json:"auth"`
 }
 
-func newPingCmd(flags *rootFlags) *cobra.Command {
+// NewStatus builds the diagnostic status command.
+func NewStatus(flags *support.RootFlags) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "ping",
+		Use:     "status",
 		Short:   "Check server connectivity and authentication status",
 		GroupID: "foundation",
-		RunE: runWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
-			out := pingOutput{Server: app.Config.ServerString()}
+		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
+			out := Output{Server: app.Config.ServerString()}
 
 			healthStart := time.Now()
 			health, err := app.Health(cmd.Context())
