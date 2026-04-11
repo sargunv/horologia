@@ -13,6 +13,7 @@ import (
 	zhttp "github.com/zitadel/oidc/v3/pkg/http"
 
 	apigen "github.com/sargunv/tend/api/gen"
+	"github.com/sargunv/tend/server/internal/auth"
 	"github.com/sargunv/tend/server/internal/pwdcheck"
 	"github.com/sargunv/tend/server/internal/types"
 )
@@ -117,7 +118,7 @@ func errorHandler(log *slog.Logger) ogenerrors.ErrorHandler {
 		}
 
 		if errors.As(err, &secErr) {
-			SetOAuthChallengeHeader(w, r)
+			auth.SetOAuthChallengeHeader(w, r)
 		}
 
 		ogenerrors.DefaultErrorHandler(ctx, w, r, err)

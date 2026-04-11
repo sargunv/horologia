@@ -39,7 +39,7 @@ func AuthenticateBearerToken(ctx context.Context, db dbgen.DBTX, token string, n
 	switch row.Kind {
 	case dbgen.AuthTokenKindSession:
 		user.SessionTokenHash = hash
-	default:
+	case dbgen.AuthTokenKindApi, dbgen.AuthTokenKindOauthAccess, dbgen.AuthTokenKindOauthRefresh:
 		tokenInfo := &TokenInfo{
 			ID:     row.ID,
 			Name:   row.Name,
@@ -53,6 +53,8 @@ func AuthenticateBearerToken(ctx context.Context, db dbgen.DBTX, token string, n
 			tokenInfo.Resource = row.OauthResource.String
 		}
 		user.Token = tokenInfo
+	default:
+		return nil, ErrUnauthorized
 	}
 
 	return user, nil

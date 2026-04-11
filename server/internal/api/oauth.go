@@ -6,8 +6,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"html/template"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/url"
@@ -198,6 +198,7 @@ func (h *Handler) oauthAuthorizeGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) oauthAuthorizePost(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	if err := r.ParseForm(); err != nil {
 		writeJSONError(w, http.StatusBadRequest, "invalid form body")
 		return
@@ -223,6 +224,7 @@ func (h *Handler) oauthAuthorizePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) oauthToken(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	if err := r.ParseForm(); err != nil {
 		h.writeOAuthJSONError(w, http.StatusBadRequest, "invalid_request", "invalid form body")
 		return
@@ -400,6 +402,7 @@ func (h *Handler) oauthTokenRefresh(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) oauthRevoke(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	if err := r.ParseForm(); err != nil {
 		w.WriteHeader(http.StatusOK)
 		return
@@ -665,7 +668,9 @@ func (h *Handler) writeTokenResponse(w http.ResponseWriter, accessToken string, 
 func writeJSON(w http.ResponseWriter, status int, body any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(body)
+	if err := json.NewEncoder(w).Encode(body); err != nil {
+		slog.Error("oauth: writeJSON: failed to write response", "error", err)
+	}
 }
 
 func oauthResourceAllowed(base string, resource string) bool {
@@ -720,5 +725,5 @@ func (h *Handler) publicBaseURL(r *http.Request) string {
 	if h.PublicURL != "" {
 		return h.PublicURL
 	}
-	return requestPublicBaseURL(r)
+	return auth.RequestPublicBaseURL(r)
 }

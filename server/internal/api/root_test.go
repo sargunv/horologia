@@ -91,7 +91,7 @@ func TestMountRootExposesOAuthAuthorizeRoute(t *testing.T) {
 			return http.ErrUseLastResponse
 		},
 	}
-	resp, err := client.Get(srv.URL + "/oauth/authorize?" + url.Values{
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, srv.URL+"/oauth/authorize?"+url.Values{
 		"response_type":         {"code"},
 		"client_id":             {"tend-cli"},
 		"redirect_uri":          {"http://127.0.0.1:8484/callback"},
@@ -99,7 +99,11 @@ func TestMountRootExposesOAuthAuthorizeRoute(t *testing.T) {
 		"state":                 {"test-state"},
 		"code_challenge":        {"challenge"},
 		"code_challenge_method": {"S256"},
-	}.Encode())
+	}.Encode(), nil)
+	if err != nil {
+		t.Fatalf("new request: %v", err)
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		t.Fatalf("authorize: %v", err)
 	}

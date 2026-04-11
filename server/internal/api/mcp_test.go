@@ -162,7 +162,7 @@ func TestMCPOAuthAccessTokenInitializeHandshake(t *testing.T) {
 		t.Fatalf("parse owner ID %q: %v", ownerID, err)
 	}
 
-	rawToken := "oauth-mcp-test-token"
+	rawToken := "oauth-mcp-test-token" //nolint:gosec // test token fixture
 	hash := sha256.Sum256([]byte(rawToken))
 	tokenHash := hex.EncodeToString(hash[:])
 

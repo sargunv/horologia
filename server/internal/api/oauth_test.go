@@ -16,7 +16,7 @@ import (
 func TestOAuthAuthorizationServerMetadata(t *testing.T) {
 	env := setupTestServer(t)
 
-	resp, err := http.Get(env.Server.URL + "/.well-known/oauth-authorization-server")
+	resp, err := doOAuthRequest(t, http.DefaultClient, http.MethodGet, env.Server.URL+"/.well-known/oauth-authorization-server", nil, "")
 	if err != nil {
 		t.Fatalf("get metadata: %v", err)
 	}
@@ -35,7 +35,7 @@ func TestOAuthAuthorizationServerMetadata(t *testing.T) {
 func TestOAuthProtectedResourceMetadataForMCP(t *testing.T) {
 	env := setupTestServer(t)
 
-	resp, err := http.Get(env.Server.URL + "/mcp/.well-known/oauth-protected-resource")
+	resp, err := doOAuthRequest(t, http.DefaultClient, http.MethodGet, env.Server.URL+"/mcp/.well-known/oauth-protected-resource", nil, "")
 	if err != nil {
 		t.Fatalf("get metadata: %v", err)
 	}
@@ -52,7 +52,7 @@ func TestOAuthAuthorizeRequiresLogin(t *testing.T) {
 	env := setupTestServer(t)
 
 	client := noRedirectClient(t)
-	resp, err := client.Get(env.Server.URL + "/oauth/authorize?" + url.Values{
+	resp, err := doOAuthRequest(t, client, http.MethodGet, env.Server.URL+"/oauth/authorize?"+url.Values{
 		"response_type":         {"code"},
 		"client_id":             {"tend-cli"},
 		"redirect_uri":          {"http://127.0.0.1:8484/callback"},
@@ -60,7 +60,7 @@ func TestOAuthAuthorizeRequiresLogin(t *testing.T) {
 		"state":                 {"test-state"},
 		"code_challenge":        {"challenge"},
 		"code_challenge_method": {"S256"},
-	}.Encode())
+	}.Encode(), nil, "")
 	if err != nil {
 		t.Fatalf("authorize: %v", err)
 	}
@@ -90,13 +90,13 @@ func TestOAuthAuthorizationCodeFlow(t *testing.T) {
 		"resource":              {env.Server.URL + "/api"},
 	})
 
-	tokenResp, err := client.Post(env.Server.URL+"/oauth/token", "application/x-www-form-urlencoded", strings.NewReader(url.Values{
+	tokenResp, err := doOAuthRequest(t, client, http.MethodPost, env.Server.URL+"/oauth/token", strings.NewReader(url.Values{
 		"grant_type":    {"authorization_code"},
 		"client_id":     {"tend-cli"},
 		"code":          {code},
 		"redirect_uri":  {"http://127.0.0.1:8484/callback"},
 		"code_verifier": {verifier},
-	}.Encode()))
+	}.Encode()), "application/x-www-form-urlencoded")
 	if err != nil {
 		t.Fatalf("token exchange: %v", err)
 	}
@@ -113,11 +113,11 @@ func TestOAuthAuthorizationCodeFlow(t *testing.T) {
 	meResp := doRequestAs(t, env, accessToken, http.MethodGet, "/users/me", "")
 	assertStatusClose(t, meResp, http.StatusOK)
 
-	refreshResp, err := client.Post(env.Server.URL+"/oauth/token", "application/x-www-form-urlencoded", strings.NewReader(url.Values{
+	refreshResp, err := doOAuthRequest(t, client, http.MethodPost, env.Server.URL+"/oauth/token", strings.NewReader(url.Values{
 		"grant_type":    {"refresh_token"},
 		"client_id":     {"tend-cli"},
 		"refresh_token": {refreshToken},
-	}.Encode()))
+	}.Encode()), "application/x-www-form-urlencoded")
 	if err != nil {
 		t.Fatalf("refresh exchange: %v", err)
 	}
@@ -129,11 +129,11 @@ func TestOAuthAuthorizationCodeFlow(t *testing.T) {
 		t.Fatal("refresh did not rotate the access token")
 	}
 
-	reuseResp, err := client.Post(env.Server.URL+"/oauth/token", "application/x-www-form-urlencoded", strings.NewReader(url.Values{
+	reuseResp, err := doOAuthRequest(t, client, http.MethodPost, env.Server.URL+"/oauth/token", strings.NewReader(url.Values{
 		"grant_type":    {"refresh_token"},
 		"client_id":     {"tend-cli"},
 		"refresh_token": {refreshToken},
-	}.Encode()))
+	}.Encode()), "application/x-www-form-urlencoded")
 	if err != nil {
 		t.Fatalf("reused refresh exchange: %v", err)
 	}
@@ -144,9 +144,9 @@ func TestOAuthAuthorizationCodeFlow(t *testing.T) {
 		t.Fatalf("error = %v, want invalid_grant", reuseBody["error"])
 	}
 
-	revokeResp, err := client.Post(env.Server.URL+"/oauth/revoke", "application/x-www-form-urlencoded", strings.NewReader(url.Values{
+	revokeResp, err := doOAuthRequest(t, client, http.MethodPost, env.Server.URL+"/oauth/revoke", strings.NewReader(url.Values{
 		"token": {newAccessToken},
-	}.Encode()))
+	}.Encode()), "application/x-www-form-urlencoded")
 	if err != nil {
 		t.Fatalf("revoke: %v", err)
 	}
@@ -270,7 +270,7 @@ func TestOAuthAuthorizeRejectsInvalidRequests(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			resp, err := http.Get(env.Server.URL + "/oauth/authorize?" + tc.params.Encode())
+			resp, err := doOAuthRequest(t, http.DefaultClient, http.MethodGet, env.Server.URL+"/oauth/authorize?"+tc.params.Encode(), nil, "")
 			if err != nil {
 				t.Fatalf("authorize: %v", err)
 			}
@@ -308,13 +308,13 @@ func TestOAuthTokenRejectsInvalidAuthorizationCodeExchanges(t *testing.T) {
 			"resource":              {env.Server.URL + "/api"},
 		})
 
-		resp, err := client.Post(env.Server.URL+"/oauth/token", "application/x-www-form-urlencoded", strings.NewReader(url.Values{
+		resp, err := doOAuthRequest(t, client, http.MethodPost, env.Server.URL+"/oauth/token", strings.NewReader(url.Values{
 			"grant_type":    {"authorization_code"},
 			"client_id":     {"tend-cli"},
 			"code":          {code},
 			"redirect_uri":  {"http://127.0.0.1:8484/callback"},
 			"code_verifier": {"wrong-verifier"},
-		}.Encode()))
+		}.Encode()), "application/x-www-form-urlencoded")
 		if err != nil {
 			t.Fatalf("token exchange: %v", err)
 		}
@@ -346,13 +346,13 @@ func TestOAuthTokenRejectsInvalidAuthorizationCodeExchanges(t *testing.T) {
 			"resource":              {env.Server.URL + "/api"},
 		})
 
-		resp, err := client.Post(env.Server.URL+"/oauth/token", "application/x-www-form-urlencoded", strings.NewReader(url.Values{
+		resp, err := doOAuthRequest(t, client, http.MethodPost, env.Server.URL+"/oauth/token", strings.NewReader(url.Values{
 			"grant_type":    {"authorization_code"},
 			"client_id":     {"tend-cli"},
 			"code":          {code},
 			"redirect_uri":  {"http://127.0.0.1:9999/callback"},
 			"code_verifier": {verifier},
-		}.Encode()))
+		}.Encode()), "application/x-www-form-urlencoded")
 		if err != nil {
 			t.Fatalf("token exchange: %v", err)
 		}
@@ -388,13 +388,13 @@ func TestOAuthTokenRejectsInvalidAuthorizationCodeExchanges(t *testing.T) {
 			t.Fatalf("expire authorization code: %v", err)
 		}
 
-		resp, err := client.Post(env.Server.URL+"/oauth/token", "application/x-www-form-urlencoded", strings.NewReader(url.Values{
+		resp, err := doOAuthRequest(t, client, http.MethodPost, env.Server.URL+"/oauth/token", strings.NewReader(url.Values{
 			"grant_type":    {"authorization_code"},
 			"client_id":     {"tend-cli"},
 			"code":          {code},
 			"redirect_uri":  {"http://127.0.0.1:8484/callback"},
 			"code_verifier": {verifier},
-		}.Encode()))
+		}.Encode()), "application/x-www-form-urlencoded")
 		if err != nil {
 			t.Fatalf("token exchange: %v", err)
 		}
@@ -426,25 +426,25 @@ func TestOAuthTokenRejectsInvalidAuthorizationCodeExchanges(t *testing.T) {
 			"resource":              {env.Server.URL + "/api"},
 		})
 
-		firstResp, err := client.Post(env.Server.URL+"/oauth/token", "application/x-www-form-urlencoded", strings.NewReader(url.Values{
+		firstResp, err := doOAuthRequest(t, client, http.MethodPost, env.Server.URL+"/oauth/token", strings.NewReader(url.Values{
 			"grant_type":    {"authorization_code"},
 			"client_id":     {"tend-cli"},
 			"code":          {code},
 			"redirect_uri":  {"http://127.0.0.1:8484/callback"},
 			"code_verifier": {verifier},
-		}.Encode()))
+		}.Encode()), "application/x-www-form-urlencoded")
 		if err != nil {
 			t.Fatalf("first token exchange: %v", err)
 		}
 		assertStatusClose(t, firstResp, http.StatusOK)
 
-		reuseResp, err := client.Post(env.Server.URL+"/oauth/token", "application/x-www-form-urlencoded", strings.NewReader(url.Values{
+		reuseResp, err := doOAuthRequest(t, client, http.MethodPost, env.Server.URL+"/oauth/token", strings.NewReader(url.Values{
 			"grant_type":    {"authorization_code"},
 			"client_id":     {"tend-cli"},
 			"code":          {code},
 			"redirect_uri":  {"http://127.0.0.1:8484/callback"},
 			"code_verifier": {verifier},
-		}.Encode()))
+		}.Encode()), "application/x-www-form-urlencoded")
 		if err != nil {
 			t.Fatalf("reused token exchange: %v", err)
 		}
@@ -511,7 +511,7 @@ func loginOAuthBrowserSession(t *testing.T, env *testEnv, client *http.Client) {
 func authorizeOAuthCode(t *testing.T, env *testEnv, client *http.Client, form url.Values) string {
 	t.Helper()
 
-	authResp, err := client.Get(env.Server.URL + "/oauth/authorize?" + form.Encode())
+	authResp, err := doOAuthRequest(t, client, http.MethodGet, env.Server.URL+"/oauth/authorize?"+form.Encode(), nil, "")
 	if err != nil {
 		t.Fatalf("authorize GET: %v", err)
 	}
@@ -537,7 +537,7 @@ func authorizeOAuthCode(t *testing.T, env *testEnv, client *http.Client, form ur
 	}
 	postForm.Set("decision", "approve")
 
-	postResp, err := client.Post(env.Server.URL+"/oauth/authorize", "application/x-www-form-urlencoded", strings.NewReader(postForm.Encode()))
+	postResp, err := doOAuthRequest(t, client, http.MethodPost, env.Server.URL+"/oauth/authorize", strings.NewReader(postForm.Encode()), "application/x-www-form-urlencoded")
 	if err != nil {
 		t.Fatalf("authorize POST: %v", err)
 	}
@@ -563,4 +563,17 @@ func authorizationCodeFromRedirect(t *testing.T, form url.Values, redirectLocati
 		t.Fatal("missing authorization code")
 	}
 	return code
+}
+
+func doOAuthRequest(t *testing.T, client *http.Client, method string, rawURL string, body io.Reader, contentType string) (*http.Response, error) {
+	t.Helper()
+
+	req, err := http.NewRequestWithContext(t.Context(), method, rawURL, body)
+	if err != nil {
+		return nil, err
+	}
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
+	}
+	return client.Do(req)
 }

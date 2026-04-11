@@ -164,12 +164,12 @@ func TestOAuthAccessTokenAccepted(t *testing.T) {
 		t.Fatalf("parse owner ID %q: %v", ownerID, err)
 	}
 
-	rawToken := "oauth-access-test-token"
+	rawToken := "oauth-access-test-token" //nolint:gosec // test token fixture
 	hash := sha256.Sum256([]byte(rawToken))
 	tokenHash := hex.EncodeToString(hash[:])
 
 	q := dbgen.New(env.pool)
-	_, err = q.CreateAuthToken(t.Context(), dbgen.CreateAuthTokenParams{
+	_, err = q.CreateAuthToken(t.Context(), dbgen.CreateAuthTokenParams{ //nolint:gosec // test token fixture
 		UserID:        ownerNumericID,
 		TokenHash:     tokenHash,
 		Name:          "Tend CLI",
@@ -197,9 +197,10 @@ func TestAuthTokenListExcludesOAuthTokens(t *testing.T) {
 	}
 
 	q := dbgen.New(env.pool)
+	tokenHashBytes := sha256.Sum256([]byte("oauth-access-list-token")) //nolint:gosec // test token fixture
 	_, err = q.CreateAuthToken(t.Context(), dbgen.CreateAuthTokenParams{
 		UserID:        ownerNumericID,
-		TokenHash:     "oauth-access-list-hash",
+		TokenHash:     hex.EncodeToString(tokenHashBytes[:]),
 		Name:          "Hidden OAuth Token",
 		Kind:          dbgen.AuthTokenKindOauthAccess,
 		ExpiresAt:     pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
@@ -235,7 +236,7 @@ func TestOAuthAccessTokenMissingScopeForbidden(t *testing.T) {
 		t.Fatalf("parse owner ID %q: %v", ownerID, err)
 	}
 
-	rawToken := "oauth-profile-only-token"
+	rawToken := "oauth-profile-only-token" //nolint:gosec // test token fixture
 	hash := sha256.Sum256([]byte(rawToken))
 	tokenHash := hex.EncodeToString(hash[:])
 

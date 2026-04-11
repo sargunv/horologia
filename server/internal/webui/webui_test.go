@@ -9,7 +9,7 @@ import (
 func TestHandlerRedirectsToDevServerWhenEmbeddedSPAIsMissing(t *testing.T) {
 	t.Setenv("WEB_PORT", "5173")
 
-	req := httptest.NewRequest(http.MethodGet, "http://localhost:8080/login?redirect=%2Foauth%2Fauthorize", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "http://localhost:8080/login?redirect=%2Foauth%2Fauthorize", nil)
 	rr := httptest.NewRecorder()
 
 	Handler().ServeHTTP(rr, req)

@@ -8,13 +8,15 @@ This document tracks the implementation plan for:
 
 ## Goals
 
-- Let browser-capable external clients authenticate to Tend without sharing passwords or long-lived personal API tokens.
+- Let browser-capable external clients authenticate to Tend without sharing passwords or long-lived
+  personal API tokens.
 - Keep Tend's existing human authentication modes:
   - password login
   - upstream OIDC login
 - Add Tend's own OAuth authorization server for external clients.
-- Treat MCP as another API transport, not as a special permission domain.
-  MCP access tokens must carry the same delegated scopes as REST access tokens, and MCP tools must enforce the same underlying permissions.
+- Treat MCP as another API transport, not as a special permission domain. MCP access tokens must
+  carry the same delegated scopes as REST access tokens, and MCP tools must enforce the same
+  underlying permissions.
 
 ## Architectural Direction
 
@@ -87,7 +89,8 @@ Status:
 - Completed.
 - Implemented delegated token metadata in `auth_tokens`.
 - Added shared bearer-token authentication used by both REST and MCP.
-- Preserved existing personal token UX by excluding OAuth-issued tokens from the current token-management endpoints.
+- Preserved existing personal token UX by excluding OAuth-issued tokens from the current
+  token-management endpoints.
 
 ### 2. OAuth server primitives
 
@@ -108,7 +111,8 @@ Status:
 - In progress, with the core server flow implemented.
 - Added OAuth client, authorization code, and consent grant persistence.
 - Added `GET/POST /oauth/authorize`, `POST /oauth/token`, and `POST /oauth/revoke`.
-- Implemented authorization code exchange, refresh token rotation, and loopback redirect handling for the seeded `tend-cli` client.
+- Implemented authorization code exchange, refresh token rotation, and loopback redirect handling
+  for the seeded `tend-cli` client.
 
 ### 3. Discovery and protected resource metadata
 
@@ -220,9 +224,11 @@ Status:
 - [x] OAuth metadata endpoints return valid issuer/resource metadata.
 - [x] `/oauth/authorize` rejects invalid client IDs, redirect URIs, scopes, and PKCE inputs.
 - [x] `/oauth/authorize` requires an authenticated Tend session before consent.
-- [x] Consent acceptance issues an authorization code bound to user, client, redirect URI, PKCE challenge, and scopes.
+- [x] Consent acceptance issues an authorization code bound to user, client, redirect URI, PKCE
+      challenge, and scopes.
 - [x] `/oauth/token` exchanges a valid code exactly once.
-- [x] `/oauth/token` rejects wrong verifier, invalid client, wrong redirect URI, reused code, and expired code.
+- [x] `/oauth/token` rejects wrong verifier, invalid client, wrong redirect URI, reused code, and
+      expired code.
 - [x] Refresh token rotation invalidates prior refresh tokens after successful use.
 - [x] `/oauth/revoke` revokes access and refresh tokens idempotently.
 - [x] OAuth-issued access tokens carry delegated scope metadata.
@@ -252,7 +258,8 @@ Status:
 - [x] Consent screen shows client identity and requested scopes clearly.
 - [ ] Consent deny path returns a standards-compliant OAuth error to the client.
 - [x] Consent approve path returns to the correct client redirect URI.
-- [x] Protected resource metadata endpoints are reachable from the browser and by direct HTTP inspection.
+- [x] Protected resource metadata endpoints are reachable from the browser and by direct HTTP
+      inspection.
 
 ### MCP
 
@@ -273,7 +280,8 @@ Status:
 
 - [ ] Record a full browser walkthrough of the OAuth consent flow.
 - [ ] Record a walkthrough showing a delegated token denied for insufficient scope.
-- [ ] Record a walkthrough showing existing password/OIDC web login still works after the OAuth changes.
+- [ ] Record a walkthrough showing existing password/OIDC web login still works after the OAuth
+      changes.
 
 ## Current Execution Order
 
@@ -297,8 +305,10 @@ Status:
 - Added browser authorization, code exchange, refresh rotation, and revoke endpoints.
 - Added shared delegated-scope enforcement in the handler layer for REST and MCP.
 - Added negative-path OAuth protocol coverage for invalid authorize and token exchange inputs.
-- Added CLI runtime coverage for keychain resolution, env-token precedence, refresh retry, and clean re-login errors.
-- Fixed top-level routing so root OAuth, auth, and protected-resource metadata routes are reachable outside the `/api` prefix.
+- Added CLI runtime coverage for keychain resolution, env-token precedence, refresh retry, and clean
+  re-login errors.
+- Fixed top-level routing so root OAuth, auth, and protected-resource metadata routes are reachable
+  outside the `/api` prefix.
 
 ### In Progress
 
@@ -319,6 +329,8 @@ Status:
   - consent page rendering for the CLI client
   - consent approval redirecting to the loopback callback with `code` and `state`
 - CLI verification found one remaining environment-sensitive blocker:
-  - `tend auth login` successfully reaches the loopback callback and the server issues `oauth_access` + `oauth_refresh` tokens
+  - `tend auth login` successfully reaches the loopback callback and the server issues
+    `oauth_access` + `oauth_refresh` tokens
   - the CLI then hangs before completing, and no credentials are persisted locally
-  - live inspection strongly suggests the hang is in OS keychain persistence rather than in the OAuth exchange itself
+  - live inspection strongly suggests the hang is in OS keychain persistence rather than in the
+    OAuth exchange itself

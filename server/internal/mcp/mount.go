@@ -11,7 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	mcpserver "github.com/mark3labs/mcp-go/server"
 
-	apiinternal "github.com/sargunv/tend/server/internal/api"
 	"github.com/sargunv/tend/server/internal/auth"
 	mcpgen "github.com/sargunv/tend/server/internal/mcp/gen"
 )
@@ -40,14 +39,14 @@ func bearerAuthMiddleware(pool *pgxpool.Pool, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := extractBearerToken(r)
 		if token == "" {
-			apiinternal.SetOAuthChallengeHeader(w, r)
+			auth.SetOAuthChallengeHeader(w, r)
 			writeJSONError(w, http.StatusUnauthorized, "unauthorized")
 			return
 		}
 
 		user, err := auth.AuthenticateBearerToken(r.Context(), pool, token, time.Now())
 		if errors.Is(err, auth.ErrUnauthorized) {
-			apiinternal.SetOAuthChallengeHeader(w, r)
+			auth.SetOAuthChallengeHeader(w, r)
 			writeJSONError(w, http.StatusUnauthorized, "unauthorized")
 			return
 		}

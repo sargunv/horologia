@@ -416,7 +416,7 @@ func TestMCPSpaceListRequiresSpacesReadScope(t *testing.T) {
 		t.Fatalf("parse owner ID %q: %v", ownerID, err)
 	}
 
-	rawToken := "oauth-mcp-profile-only"
+	rawToken := "oauth-mcp-profile-only" //nolint:gosec // test token fixture
 	hash := sha256.Sum256([]byte(rawToken))
 	tokenHash := hex.EncodeToString(hash[:])
 
