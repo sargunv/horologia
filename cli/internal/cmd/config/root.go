@@ -14,9 +14,9 @@ func New(flags *support.RootFlags) *cobra.Command {
 
 	cmd.AddCommand(
 		newShowCmd(flags),
-		newSetCmd(),
-		newUnsetCmd(),
-		newPathCmd(),
+		newSetCmd(flags),
+		newUnsetCmd(flags),
+		newPathCmd(flags),
 	)
 
 	return cmd

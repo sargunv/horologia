@@ -12,16 +12,16 @@ func New(flags *support.RootFlags) *cobra.Command {
 	cmd.GroupID = "workspace"
 
 	cmd.AddCommand(
-		newReadWriteCmds()...,
+		newReadWriteCmds(flags)...,
 	)
 	cmd.AddCommand(
-		newDueCmd(),
-		newAssigneeCmd(),
-		newTagCmd(),
-		newRecurrenceCmd(),
-		newOverdueActionCmd(),
-		newRotationCmd(),
-		newRelationCmd(),
+		newDueCmd(flags),
+		newAssigneeCmd(flags),
+		newTagCmd(flags),
+		newRecurrenceCmd(flags),
+		newOverdueActionCmd(flags),
+		newRotationCmd(flags),
+		newRelationCmd(flags),
 	)
 
 	return cmd

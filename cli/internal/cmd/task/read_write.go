@@ -1,20 +1,375 @@
 package taskcmd
 
 import (
+	"errors"
+	"strings"
+
+	apigen "github.com/sargunv/tend/api/gen"
 	"github.com/spf13/cobra"
 
 	"github.com/sargunv/tend/cli/internal/cmd/support"
+	"github.com/sargunv/tend/cli/internal/runtime"
 )
 
-func newReadWriteCmds() []*cobra.Command {
+func newReadWriteCmds(flags *support.RootFlags) []*cobra.Command {
 	return []*cobra.Command{
-		support.StubCommand("list", "List tasks in a space"),
-		support.StubCommand("mine", "List tasks assigned to the current user"),
-		support.StubCommand("show <task>", "Show a task"),
-		support.StubCommand("create", "Create a task"),
-		support.StubCommand("update <task>", "Update scalar task fields"),
-		support.StubCommand("complete <task>", "Mark a task complete"),
-		support.StubCommand("delete <task>", "Delete a task"),
-		support.StubCommand("activity <task>", "Show activity for a task"),
+		newListCmd(flags),
+		newMineCmd(flags),
+		newShowCmd(flags),
+		newCreateCmd(flags),
+		newUpdateCmd(flags),
+		newCompleteCmd(flags),
+		newDeleteCmd(flags),
+		newActivityCmd(flags),
 	}
+}
+
+func newListCmd(flags *support.RootFlags) *cobra.Command {
+	page := pageFlags{}
+
+	cmd := &cobra.Command{
+		Use:   "list <space>",
+		Short: "List tasks in a space",
+		Args:  cobra.ExactArgs(1),
+		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
+			api, err := support.RequireAPI(app)
+			if err != nil {
+				return err
+			}
+
+			params := apigen.SpaceTasksListParams{SpaceSlug: args[0]}
+			setPageParams(page.cursor, page.limit, &params.Cursor, &params.Limit)
+
+			resp, err := api.SpaceTasksList(cmd.Context(), params)
+			if err != nil {
+				return runtime.NormalizeError(err)
+			}
+
+			if app.Config.JSON {
+				return app.PrintJSON(resp)
+			}
+
+			return printTaskListTable(app, resp.Items)
+		}),
+	}
+
+	addPageFlags(cmd, &page)
+	return cmd
+}
+
+func newMineCmd(flags *support.RootFlags) *cobra.Command {
+	page := pageFlags{}
+
+	cmd := &cobra.Command{
+		Use:   "mine",
+		Short: "List tasks assigned to the current user",
+		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
+			api, err := support.RequireAPI(app)
+			if err != nil {
+				return err
+			}
+
+			me, err := api.UsersMe(cmd.Context())
+			if err != nil {
+				return runtime.NormalizeError(err)
+			}
+
+			params := apigen.UserTasksListParams{UserId: me.ID}
+			setPageParams(page.cursor, page.limit, &params.Cursor, &params.Limit)
+
+			resp, err := api.UserTasksList(cmd.Context(), params)
+			if err != nil {
+				return runtime.NormalizeError(err)
+			}
+
+			if app.Config.JSON {
+				return app.PrintJSON(resp)
+			}
+
+			return printTaskListTable(app, resp.Items)
+		}),
+	}
+
+	addPageFlags(cmd, &page)
+	return cmd
+}
+
+func newShowCmd(flags *support.RootFlags) *cobra.Command {
+	return &cobra.Command{
+		Use:   "show <space> <task>",
+		Short: "Show a task",
+		Args:  cobra.ExactArgs(2),
+		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
+			api, err := support.RequireAPI(app)
+			if err != nil {
+				return err
+			}
+
+			task, err := api.SpaceTasksRead(cmd.Context(), apigen.SpaceTasksReadParams{
+				SpaceSlug: args[0],
+				TaskId:    args[1],
+			})
+			if err != nil {
+				return runtime.NormalizeError(err)
+			}
+
+			if app.Config.JSON {
+				return app.PrintJSON(task)
+			}
+
+			printTask(app, task)
+			return nil
+		}),
+	}
+}
+
+func newCreateCmd(flags *support.RootFlags) *cobra.Command {
+	var title string
+	var description string
+	var status string
+	var effort string
+	var priority string
+
+	cmd := &cobra.Command{
+		Use:   "create <space>",
+		Short: "Create a task",
+		Args:  cobra.ExactArgs(1),
+		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
+			api, err := support.RequireAPI(app)
+			if err != nil {
+				return err
+			}
+
+			req := &apigen.TaskCreate{Title: strings.TrimSpace(title)}
+			if cmd.Flags().Changed("description") {
+				req.Description.SetTo(description)
+			}
+			if cmd.Flags().Changed("status") {
+				req.Status.SetTo(strings.TrimSpace(status))
+			}
+			if cmd.Flags().Changed("effort") {
+				req.Effort.SetTo(strings.TrimSpace(effort))
+			}
+			if cmd.Flags().Changed("priority") {
+				req.Priority.SetTo(strings.TrimSpace(priority))
+			}
+
+			task, err := api.SpaceTasksCreate(cmd.Context(), req, apigen.SpaceTasksCreateParams{SpaceSlug: args[0]})
+			if err != nil {
+				return runtime.NormalizeError(err)
+			}
+
+			if app.Config.JSON {
+				return app.PrintJSON(task)
+			}
+
+			printTask(app, task)
+			return nil
+		}),
+	}
+
+	cmd.Flags().StringVar(&title, "title", "", "Task title")
+	cmd.Flags().StringVar(&description, "description", "", "Task description")
+	cmd.Flags().StringVar(&status, "status", "", "Task status")
+	cmd.Flags().StringVar(&effort, "effort", "", "Task effort level")
+	cmd.Flags().StringVar(&priority, "priority", "", "Task priority level")
+	_ = cmd.MarkFlagRequired("title")
+	return cmd
+}
+
+func newUpdateCmd(flags *support.RootFlags) *cobra.Command {
+	var title string
+	var description string
+	var status string
+	var effort string
+	var clearEffort bool
+	var priority string
+	var clearPriority bool
+
+	cmd := &cobra.Command{
+		Use:   "update <space> <task>",
+		Short: "Update scalar task fields",
+		Args:  cobra.ExactArgs(2),
+		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
+			api, err := support.RequireAPI(app)
+			if err != nil {
+				return err
+			}
+
+			req := &apigen.TaskUpdate{}
+			changed := false
+
+			if cmd.Flags().Changed("title") {
+				req.Title.SetTo(strings.TrimSpace(title))
+				changed = true
+			}
+			if cmd.Flags().Changed("description") {
+				req.Description.SetTo(description)
+				changed = true
+			}
+			if cmd.Flags().Changed("status") {
+				req.Status.SetTo(strings.TrimSpace(status))
+				changed = true
+			}
+			if cmd.Flags().Changed("effort") {
+				req.Effort.SetTo(strings.TrimSpace(effort))
+				changed = true
+			}
+			if cmd.Flags().Changed("clear-effort") && clearEffort {
+				req.Effort.SetToNull()
+				changed = true
+			}
+			if cmd.Flags().Changed("priority") {
+				req.Priority.SetTo(strings.TrimSpace(priority))
+				changed = true
+			}
+			if cmd.Flags().Changed("clear-priority") && clearPriority {
+				req.Priority.SetToNull()
+				changed = true
+			}
+
+			if !changed {
+				return errors.New("at least one field flag is required")
+			}
+			if req.Effort.IsSet() && req.Effort.IsNull() && cmd.Flags().Changed("effort") {
+				return errors.New("effort and clear-effort cannot be used together")
+			}
+			if req.Priority.IsSet() && req.Priority.IsNull() && cmd.Flags().Changed("priority") {
+				return errors.New("priority and clear-priority cannot be used together")
+			}
+
+			task, err := api.SpaceTasksUpdate(cmd.Context(), req, apigen.SpaceTasksUpdateParams{
+				SpaceSlug: args[0],
+				TaskId:    args[1],
+			})
+			if err != nil {
+				return runtime.NormalizeError(err)
+			}
+
+			if app.Config.JSON {
+				return app.PrintJSON(task)
+			}
+
+			printTask(app, task)
+			return nil
+		}),
+	}
+
+	cmd.Flags().StringVar(&title, "title", "", "Updated task title")
+	cmd.Flags().StringVar(&description, "description", "", "Updated task description")
+	cmd.Flags().StringVar(&status, "status", "", "Updated task status")
+	cmd.Flags().StringVar(&effort, "effort", "", "Updated task effort level")
+	cmd.Flags().BoolVar(&clearEffort, "clear-effort", false, "Clear the task effort level")
+	cmd.Flags().StringVar(&priority, "priority", "", "Updated task priority level")
+	cmd.Flags().BoolVar(&clearPriority, "clear-priority", false, "Clear the task priority level")
+	return cmd
+}
+
+func newCompleteCmd(flags *support.RootFlags) *cobra.Command {
+	return &cobra.Command{
+		Use:   "complete <space> <task>",
+		Short: "Mark a task complete",
+		Args:  cobra.ExactArgs(2),
+		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
+			api, err := support.RequireAPI(app)
+			if err != nil {
+				return err
+			}
+
+			statuses, err := api.SpaceTaskStatusesList(cmd.Context(), apigen.SpaceTaskStatusesListParams{SpaceSlug: args[0]})
+			if err != nil {
+				return runtime.NormalizeError(err)
+			}
+			completionStatus, err := firstCompletionStatus(statuses.Items)
+			if err != nil {
+				return err
+			}
+
+			req := &apigen.TaskUpdate{}
+			req.Status.SetTo(completionStatus)
+			task, err := api.SpaceTasksUpdate(cmd.Context(), req, apigen.SpaceTasksUpdateParams{
+				SpaceSlug: args[0],
+				TaskId:    args[1],
+			})
+			if err != nil {
+				return runtime.NormalizeError(err)
+			}
+
+			if app.Config.JSON {
+				return app.PrintJSON(task)
+			}
+
+			printTask(app, task)
+			return nil
+		}),
+	}
+}
+
+func newDeleteCmd(flags *support.RootFlags) *cobra.Command {
+	return &cobra.Command{
+		Use:   "delete <space> <task>",
+		Short: "Delete a task",
+		Args:  cobra.ExactArgs(2),
+		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
+			api, err := support.RequireAPI(app)
+			if err != nil {
+				return err
+			}
+
+			if err := api.SpaceTasksDelete(cmd.Context(), apigen.SpaceTasksDeleteParams{
+				SpaceSlug: args[0],
+				TaskId:    args[1],
+			}); err != nil {
+				return runtime.NormalizeError(err)
+			}
+
+			if app.Config.JSON {
+				return app.PrintJSON(map[string]any{
+					"spaceSlug": args[0],
+					"taskId":    args[1],
+					"deleted":   true,
+				})
+			}
+
+			app.Printf("Deleted task %s from %s\n", args[1], args[0])
+			return nil
+		}),
+	}
+}
+
+func newActivityCmd(flags *support.RootFlags) *cobra.Command {
+	page := pageFlags{}
+
+	cmd := &cobra.Command{
+		Use:   "activity <space> <task>",
+		Short: "Show activity for a task",
+		Args:  cobra.ExactArgs(2),
+		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
+			api, err := support.RequireAPI(app)
+			if err != nil {
+				return err
+			}
+
+			params := apigen.SpaceTaskActivityListParams{
+				SpaceSlug: args[0],
+				TaskId:    args[1],
+			}
+			setPageParams(page.cursor, page.limit, &params.Cursor, &params.Limit)
+
+			resp, err := api.SpaceTaskActivityList(cmd.Context(), params)
+			if err != nil {
+				return runtime.NormalizeError(err)
+			}
+
+			if app.Config.JSON {
+				return app.PrintJSON(resp)
+			}
+
+			printActivityPage(app, resp)
+			return nil
+		}),
+	}
+
+	addPageFlags(cmd, &page)
+	return cmd
 }

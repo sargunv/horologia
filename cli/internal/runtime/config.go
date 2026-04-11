@@ -1,8 +1,12 @@
 package runtime
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 
 	envprovider "github.com/knadh/koanf/providers/env/v2"
@@ -12,6 +16,9 @@ import (
 const (
 	envServer = "TEND_SERVER"
 	envToken  = "TEND_TOKEN"
+
+	configDirName  = "tend"
+	configFileName = "config.json"
 )
 
 // ValueSource identifies where a config value came from.
@@ -19,6 +26,7 @@ type ValueSource string
 
 const (
 	ValueSourceUnset ValueSource = "unset"
+	ValueSourceFile  ValueSource = "file"
 	ValueSourceEnv   ValueSource = "env"
 )
 
@@ -45,13 +53,22 @@ func ResolveConfig(input ResolveInput) (Config, error) {
 		JSON: input.JSON,
 	}
 
+	fileValues, err := loadFile()
+	if err != nil {
+		return Config{}, err
+	}
+
 	envValues, err := loadEnv()
 	if err != nil {
 		return Config{}, err
 	}
 
-	serverRaw, serverSource := envValues.Server, ValueSourceUnset
+	serverRaw, serverSource := fileValues.Server, ValueSourceUnset
 	if serverRaw != "" {
+		serverSource = ValueSourceFile
+	}
+	if envValues.Server != "" {
+		serverRaw = envValues.Server
 		serverSource = ValueSourceEnv
 	}
 	serverRaw = strings.TrimSpace(serverRaw)
@@ -80,6 +97,85 @@ func ResolveConfig(input ResolveInput) (Config, error) {
 type envConfig struct {
 	Server string `koanf:"server"`
 	Token  string `koanf:"token"`
+}
+
+type fileConfig struct {
+	Server string `json:"server"`
+}
+
+// ConfigPath returns the persisted CLI config path.
+func ConfigPath() (string, error) {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return "", fmt.Errorf("resolve config directory: %w", err)
+	}
+	return filepath.Join(dir, configDirName, configFileName), nil
+}
+
+func loadFile() (fileConfig, error) {
+	path, err := ConfigPath()
+	if err != nil {
+		return fileConfig{}, err
+	}
+
+	data, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return fileConfig{}, nil
+	}
+	if err != nil {
+		return fileConfig{}, fmt.Errorf("read persisted config: %w", err)
+	}
+
+	var out fileConfig
+	if err := json.Unmarshal(data, &out); err != nil {
+		return fileConfig{}, fmt.Errorf("decode persisted config: %w", err)
+	}
+	out.Server = strings.TrimSpace(out.Server)
+	return out, nil
+}
+
+// SaveServer persists the default server URL and returns the config path and normalized value.
+func SaveServer(raw string) (path string, normalized string, err error) {
+	serverURL, err := normalizeServerURL(strings.TrimSpace(raw))
+	if err != nil {
+		return "", "", err
+	}
+
+	path, err = ConfigPath()
+	if err != nil {
+		return "", "", err
+	}
+
+	cfg := fileConfig{
+		Server: strings.TrimRight(serverURL.String(), "/"),
+	}
+	data, err := json.MarshalIndent(cfg, "", "  ")
+	if err != nil {
+		return "", "", fmt.Errorf("encode persisted config: %w", err)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return "", "", fmt.Errorf("create config directory: %w", err)
+	}
+	if err := os.WriteFile(path, append(data, '\n'), 0o600); err != nil {
+		return "", "", fmt.Errorf("write persisted config: %w", err)
+	}
+
+	return path, cfg.Server, nil
+}
+
+// UnsetServer removes the persisted CLI config file and returns its path.
+func UnsetServer() (string, error) {
+	path, err := ConfigPath()
+	if err != nil {
+		return "", err
+	}
+
+	if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return "", fmt.Errorf("remove persisted config: %w", err)
+	}
+
+	return path, nil
 }
 
 func loadEnv() (envConfig, error) {

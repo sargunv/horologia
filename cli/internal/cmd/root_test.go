@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -72,6 +73,141 @@ func TestConfigFlagOverridesEnv(t *testing.T) {
 	}
 	if got, want := out.Token.Source, runtime.ValueSourceEnv; got != want {
 		t.Fatalf("token source = %q, want %q", got, want)
+	}
+}
+
+func TestConfigCommandUsesPersistedServer(t *testing.T) {
+	setConfigHome(t)
+	setEnvValue(t, "TEND_SERVER", nil)
+	setEnvValue(t, "TEND_TOKEN", stringPtr("tokentest1234"))
+
+	stdout, _, err := executeRoot(t, "--json", "config", "set", "server", "http://file.example.com/api/")
+	if err != nil {
+		t.Fatalf("execute config set server: %v", err)
+	}
+
+	var setOut struct {
+		Path   string `json:"path"`
+		Server string `json:"server"`
+	}
+	if err := json.Unmarshal([]byte(stdout), &setOut); err != nil {
+		t.Fatalf("decode set output: %v\noutput=%s", err, stdout)
+	}
+	if got, want := setOut.Server, "http://file.example.com"; got != want {
+		t.Fatalf("persisted server = %q, want %q", got, want)
+	}
+
+	data, err := os.ReadFile(setOut.Path)
+	if err != nil {
+		t.Fatalf("read config file: %v", err)
+	}
+	if strings.Contains(string(data), "tokentest1234") {
+		t.Fatalf("config file should not contain the token")
+	}
+
+	setEnvValue(t, "TEND_TOKEN", nil)
+	stdout, _, err = executeRoot(t, "--json", "config", "show")
+	if err != nil {
+		t.Fatalf("execute config show: %v", err)
+	}
+
+	var out configcmd.Output
+	if err := json.Unmarshal([]byte(stdout), &out); err != nil {
+		t.Fatalf("decode output: %v\noutput=%s", err, stdout)
+	}
+
+	if got, want := out.Server.Value, "http://file.example.com"; got != want {
+		t.Fatalf("server value = %q, want %q", got, want)
+	}
+	if got, want := out.Server.Source, runtime.ValueSourceFile; got != want {
+		t.Fatalf("server source = %q, want %q", got, want)
+	}
+	if out.Token.Configured {
+		t.Fatalf("token should not be configured")
+	}
+}
+
+func TestConfigEnvOverridesPersistedServer(t *testing.T) {
+	setConfigHome(t)
+	setEnvValue(t, "TEND_SERVER", nil)
+	setEnvValue(t, "TEND_TOKEN", nil)
+
+	if _, _, err := executeRoot(t, "config", "set", "server", "http://file.example.com"); err != nil {
+		t.Fatalf("execute config set server: %v", err)
+	}
+
+	setEnvValue(t, "TEND_SERVER", stringPtr("http://env.example.com"))
+
+	stdout, _, err := executeRoot(t, "--json", "config", "show")
+	if err != nil {
+		t.Fatalf("execute config show: %v", err)
+	}
+
+	var out configcmd.Output
+	if err := json.Unmarshal([]byte(stdout), &out); err != nil {
+		t.Fatalf("decode output: %v\noutput=%s", err, stdout)
+	}
+
+	if got, want := out.Server.Value, "http://env.example.com"; got != want {
+		t.Fatalf("server value = %q, want %q", got, want)
+	}
+	if got, want := out.Server.Source, runtime.ValueSourceEnv; got != want {
+		t.Fatalf("server source = %q, want %q", got, want)
+	}
+}
+
+func TestConfigPathAndUnsetServer(t *testing.T) {
+	setConfigHome(t)
+	setEnvValue(t, "TEND_SERVER", nil)
+	setEnvValue(t, "TEND_TOKEN", nil)
+
+	expectedPath, err := runtime.ConfigPath()
+	if err != nil {
+		t.Fatalf("resolve config path: %v", err)
+	}
+
+	stdout, _, err := executeRoot(t, "--json", "config", "path")
+	if err != nil {
+		t.Fatalf("execute config path: %v", err)
+	}
+
+	var pathOut struct {
+		Path   string `json:"path"`
+		Exists bool   `json:"exists"`
+	}
+	if err := json.Unmarshal([]byte(stdout), &pathOut); err != nil {
+		t.Fatalf("decode path output: %v\noutput=%s", err, stdout)
+	}
+	if got, want := pathOut.Path, expectedPath; got != want {
+		t.Fatalf("path = %q, want %q", got, want)
+	}
+	if pathOut.Exists {
+		t.Fatalf("config path should not exist yet")
+	}
+
+	if _, _, err := executeRoot(t, "config", "set", "server", "http://file.example.com"); err != nil {
+		t.Fatalf("execute config set server: %v", err)
+	}
+	if _, err := os.Stat(expectedPath); err != nil {
+		t.Fatalf("stat config file: %v", err)
+	}
+
+	stdout, _, err = executeRoot(t, "--json", "config", "unset", "server")
+	if err != nil {
+		t.Fatalf("execute config unset server: %v", err)
+	}
+
+	var unsetOut struct {
+		Path string `json:"path"`
+	}
+	if err := json.Unmarshal([]byte(stdout), &unsetOut); err != nil {
+		t.Fatalf("decode unset output: %v\noutput=%s", err, stdout)
+	}
+	if got, want := unsetOut.Path, expectedPath; got != want {
+		t.Fatalf("unset path = %q, want %q", got, want)
+	}
+	if _, err := os.Stat(expectedPath); !os.IsNotExist(err) {
+		t.Fatalf("config file should be removed, stat err=%v", err)
 	}
 }
 
@@ -983,6 +1119,747 @@ func TestSpacePriorityReplaceAllowsEmpty(t *testing.T) {
 	}
 }
 
+func TestTaskListPassesPagination(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/tasks":
+			if got, want := r.URL.Query().Get("cursor"), "next-1"; got != want {
+				t.Fatalf("cursor = %q, want %q", got, want)
+			}
+			if got, want := r.URL.Query().Get("limit"), "10"; got != want {
+				t.Fatalf("limit = %q, want %q", got, want)
+			}
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"items": []map[string]any{
+					{
+						"id":                "T1",
+						"spaceSlug":         "home",
+						"title":             "First task",
+						"description":       "",
+						"status":            "todo",
+						"effort":            nil,
+						"priority":          nil,
+						"recurrenceType":    "one_off",
+						"recurrenceRule":    nil,
+						"lastCompletedAt":   nil,
+						"assigneeIds":       []string{},
+						"rotationPool":      []string{},
+						"tags":              []string{},
+						"relations":         []map[string]any{},
+						"due":               nil,
+						"overdueActionRule": nil,
+						"createdAt":         "2026-04-11T12:00:00Z",
+						"updatedAt":         "2026-04-11T12:00:00Z",
+					},
+				},
+				"nextCursor": "next-2",
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	stdout, _, err := executeRoot(t, "--json", "task", "list", "home", "--cursor", "next-1", "--limit", "10")
+	if err != nil {
+		t.Fatalf("execute task list: %v", err)
+	}
+
+	var out struct {
+		NextCursor string `json:"nextCursor"`
+	}
+	if err := json.Unmarshal([]byte(stdout), &out); err != nil {
+		t.Fatalf("decode output: %v\noutput=%s", err, stdout)
+	}
+	if got, want := out.NextCursor, "next-2"; got != want {
+		t.Fatalf("next cursor = %q, want %q", got, want)
+	}
+}
+
+func TestTaskMineUsesCurrentUser(t *testing.T) {
+	sawWhoami := false
+	sawTasks := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/users/me":
+			sawWhoami = true
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"id":          "U1",
+				"email":       "admin@localhost",
+				"name":        "Admin",
+				"isOwner":     true,
+				"hasPassword": true,
+				"createdAt":   "2026-04-11T12:00:00Z",
+				"updatedAt":   "2026-04-11T12:00:00Z",
+			})
+		case "/api/users/U1/tasks":
+			sawTasks = true
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"items":      []map[string]any{},
+				"nextCursor": nil,
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(t, "task", "mine")
+	if err != nil {
+		t.Fatalf("execute task mine: %v", err)
+	}
+	if !sawWhoami || !sawTasks {
+		t.Fatalf("expected users/me and users/U1/tasks requests")
+	}
+}
+
+func TestTaskCreateSendsBody(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/tasks":
+			if got, want := r.Method, http.MethodPost; got != want {
+				t.Fatalf("method = %q, want %q", got, want)
+			}
+
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			if got, want := body["title"], "Task title"; got != want {
+				t.Fatalf("title = %#v, want %#v", got, want)
+			}
+			if got, want := body["status"], "todo"; got != want {
+				t.Fatalf("status = %#v, want %#v", got, want)
+			}
+			if got, want := body["priority"], "high"; got != want {
+				t.Fatalf("priority = %#v, want %#v", got, want)
+			}
+
+			writeJSON(t, w, http.StatusCreated, map[string]any{
+				"id":                "T1",
+				"spaceSlug":         "home",
+				"title":             "Task title",
+				"description":       "",
+				"status":            "todo",
+				"effort":            nil,
+				"priority":          "high",
+				"recurrenceType":    "one_off",
+				"recurrenceRule":    nil,
+				"lastCompletedAt":   nil,
+				"assigneeIds":       []string{},
+				"rotationPool":      []string{},
+				"tags":              []string{},
+				"relations":         []map[string]any{},
+				"due":               nil,
+				"overdueActionRule": nil,
+				"createdAt":         "2026-04-11T12:00:00Z",
+				"updatedAt":         "2026-04-11T12:00:00Z",
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(t, "task", "create", "home", "--title", "Task title", "--status", "todo", "--priority", "high")
+	if err != nil {
+		t.Fatalf("execute task create: %v", err)
+	}
+}
+
+func TestTaskUpdateSendsScalarPatch(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/tasks/T1":
+			if got, want := r.Method, http.MethodPatch; got != want {
+				t.Fatalf("method = %q, want %q", got, want)
+			}
+
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			if got, want := body["title"], "Updated"; got != want {
+				t.Fatalf("title = %#v, want %#v", got, want)
+			}
+			if body["effort"] != nil {
+				t.Fatalf("effort = %#v, want nil", body["effort"])
+			}
+			if got, want := body["priority"], "low"; got != want {
+				t.Fatalf("priority = %#v, want %#v", got, want)
+			}
+
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"id":                "T1",
+				"spaceSlug":         "home",
+				"title":             "Updated",
+				"description":       "",
+				"status":            "todo",
+				"effort":            nil,
+				"priority":          "low",
+				"recurrenceType":    "one_off",
+				"recurrenceRule":    nil,
+				"lastCompletedAt":   nil,
+				"assigneeIds":       []string{},
+				"rotationPool":      []string{},
+				"tags":              []string{},
+				"relations":         []map[string]any{},
+				"due":               nil,
+				"overdueActionRule": nil,
+				"createdAt":         "2026-04-11T12:00:00Z",
+				"updatedAt":         "2026-04-11T13:00:00Z",
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(t, "task", "update", "home", "T1", "--title", "Updated", "--clear-effort", "--priority", "low")
+	if err != nil {
+		t.Fatalf("execute task update: %v", err)
+	}
+}
+
+func TestTaskCompleteUsesFirstCompletionStatus(t *testing.T) {
+	step := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/task-statuses":
+			step++
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"items": []map[string]any{
+					{"name": "todo", "category": "initial", "position": 1},
+					{"name": "done", "category": "completion", "position": 2},
+					{"name": "archived", "category": "completion", "position": 3},
+				},
+			})
+		case "/api/spaces/home/tasks/T1":
+			step++
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			if got, want := body["status"], "done"; got != want {
+				t.Fatalf("status = %#v, want %#v", got, want)
+			}
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"id":                "T1",
+				"spaceSlug":         "home",
+				"title":             "Task",
+				"description":       "",
+				"status":            "done",
+				"effort":            nil,
+				"priority":          nil,
+				"recurrenceType":    "one_off",
+				"recurrenceRule":    nil,
+				"lastCompletedAt":   "2026-04-11T13:00:00Z",
+				"assigneeIds":       []string{},
+				"rotationPool":      []string{},
+				"tags":              []string{},
+				"relations":         []map[string]any{},
+				"due":               nil,
+				"overdueActionRule": nil,
+				"createdAt":         "2026-04-11T12:00:00Z",
+				"updatedAt":         "2026-04-11T13:00:00Z",
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(t, "task", "complete", "home", "T1")
+	if err != nil {
+		t.Fatalf("execute task complete: %v", err)
+	}
+	if got, want := step, 2; got != want {
+		t.Fatalf("step count = %d, want %d", got, want)
+	}
+}
+
+func TestTaskActivityPassesPagination(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/tasks/T1/activity":
+			if got, want := r.URL.Query().Get("cursor"), "next-1"; got != want {
+				t.Fatalf("cursor = %q, want %q", got, want)
+			}
+			if got, want := r.URL.Query().Get("limit"), "5"; got != want {
+				t.Fatalf("limit = %q, want %q", got, want)
+			}
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"items":      []map[string]any{},
+				"nextCursor": "next-2",
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	stdout, _, err := executeRoot(t, "--json", "task", "activity", "home", "T1", "--cursor", "next-1", "--limit", "5")
+	if err != nil {
+		t.Fatalf("execute task activity: %v", err)
+	}
+
+	var out struct {
+		NextCursor string `json:"nextCursor"`
+	}
+	if err := json.Unmarshal([]byte(stdout), &out); err != nil {
+		t.Fatalf("decode output: %v\noutput=%s", err, stdout)
+	}
+	if got, want := out.NextCursor, "next-2"; got != want {
+		t.Fatalf("next cursor = %q, want %q", got, want)
+	}
+}
+
+func TestTaskDueSetSendsPatch(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/tasks/T1":
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			due, ok := body["due"].(map[string]any)
+			if !ok {
+				t.Fatalf("due missing or wrong type: %#v", body["due"])
+			}
+			if got, want := due["at"], "2026-05-01"; got != want {
+				t.Fatalf("due.at = %#v, want %#v", got, want)
+			}
+			if got, want := due["timezone"], "UTC"; got != want {
+				t.Fatalf("due.timezone = %#v, want %#v", got, want)
+			}
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"id":                "T1",
+				"spaceSlug":         "home",
+				"title":             "Task",
+				"description":       "",
+				"status":            "todo",
+				"effort":            nil,
+				"priority":          nil,
+				"recurrenceType":    "one_off",
+				"recurrenceRule":    nil,
+				"lastCompletedAt":   nil,
+				"assigneeIds":       []string{},
+				"rotationPool":      []string{},
+				"tags":              []string{},
+				"relations":         []map[string]any{},
+				"due":               map[string]any{"at": "2026-05-01", "timezone": "UTC"},
+				"overdueActionRule": nil,
+				"createdAt":         "2026-04-11T12:00:00Z",
+				"updatedAt":         "2026-04-11T13:00:00Z",
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(t, "task", "due", "set", "home", "T1", "--date", "2026-05-01", "--timezone", "UTC")
+	if err != nil {
+		t.Fatalf("execute task due set: %v", err)
+	}
+}
+
+func TestTaskAssigneeAddReadsThenPatches(t *testing.T) {
+	readCount := 0
+	patchCount := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/tasks/T1":
+			if r.Method == http.MethodGet {
+				readCount++
+				writeJSON(t, w, http.StatusOK, map[string]any{
+					"id":                "T1",
+					"spaceSlug":         "home",
+					"title":             "Task",
+					"description":       "",
+					"status":            "todo",
+					"effort":            nil,
+					"priority":          nil,
+					"recurrenceType":    "one_off",
+					"recurrenceRule":    nil,
+					"lastCompletedAt":   nil,
+					"assigneeIds":       []string{"U1"},
+					"rotationPool":      []string{},
+					"tags":              []string{},
+					"relations":         []map[string]any{},
+					"due":               nil,
+					"overdueActionRule": nil,
+					"createdAt":         "2026-04-11T12:00:00Z",
+					"updatedAt":         "2026-04-11T12:00:00Z",
+				})
+				return
+			}
+			patchCount++
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			if got, want := body["assigneeIds"], []any{"U1", "U2"}; !reflect.DeepEqual(got, want) {
+				t.Fatalf("assigneeIds = %#v, want %#v", got, want)
+			}
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"id":                "T1",
+				"spaceSlug":         "home",
+				"title":             "Task",
+				"description":       "",
+				"status":            "todo",
+				"effort":            nil,
+				"priority":          nil,
+				"recurrenceType":    "one_off",
+				"recurrenceRule":    nil,
+				"lastCompletedAt":   nil,
+				"assigneeIds":       []string{"U1", "U2"},
+				"rotationPool":      []string{},
+				"tags":              []string{},
+				"relations":         []map[string]any{},
+				"due":               nil,
+				"overdueActionRule": nil,
+				"createdAt":         "2026-04-11T12:00:00Z",
+				"updatedAt":         "2026-04-11T13:00:00Z",
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(t, "task", "assignee", "add", "home", "T1", "U2")
+	if err != nil {
+		t.Fatalf("execute task assignee add: %v", err)
+	}
+	if readCount != 1 || patchCount != 1 {
+		t.Fatalf("readCount=%d patchCount=%d, want 1/1", readCount, patchCount)
+	}
+}
+
+func TestTaskRotationClearSendsEmptyList(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/tasks/T1":
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			if got, want := body["rotationPool"], []any{}; !reflect.DeepEqual(got, want) {
+				t.Fatalf("rotationPool = %#v, want %#v", got, want)
+			}
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"id":                "T1",
+				"spaceSlug":         "home",
+				"title":             "Task",
+				"description":       "",
+				"status":            "todo",
+				"effort":            nil,
+				"priority":          nil,
+				"recurrenceType":    "one_off",
+				"recurrenceRule":    nil,
+				"lastCompletedAt":   nil,
+				"assigneeIds":       []string{},
+				"rotationPool":      []string{},
+				"tags":              []string{},
+				"relations":         []map[string]any{},
+				"due":               nil,
+				"overdueActionRule": nil,
+				"createdAt":         "2026-04-11T12:00:00Z",
+				"updatedAt":         "2026-04-11T13:00:00Z",
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(t, "task", "rotation", "clear", "home", "T1")
+	if err != nil {
+		t.Fatalf("execute task rotation clear: %v", err)
+	}
+}
+
+func TestTaskRelationAddUsesCreateEndpoint(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/tasks/T1/relations":
+			if got, want := r.Method, http.MethodPost; got != want {
+				t.Fatalf("method = %q, want %q", got, want)
+			}
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			if got, want := body["kind"], "blocks"; got != want {
+				t.Fatalf("kind = %#v, want %#v", got, want)
+			}
+			if got, want := body["relatedTaskId"], "T2"; got != want {
+				t.Fatalf("relatedTaskId = %#v, want %#v", got, want)
+			}
+			writeJSON(t, w, http.StatusCreated, map[string]any{
+				"kind":          "blocks",
+				"relatedTaskId": "T2",
+				"createdAt":     "2026-04-11T12:00:00Z",
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(t, "task", "relation", "add", "home", "T1", "blocks", "T2")
+	if err != nil {
+		t.Fatalf("execute task relation add: %v", err)
+	}
+}
+
+func TestTaskRecurrenceSetSendsPatch(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/tasks/T1":
+			if got, want := r.Method, http.MethodPatch; got != want {
+				t.Fatalf("method = %q, want %q", got, want)
+			}
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			if got, want := body["recurrenceType"], "completion_based"; got != want {
+				t.Fatalf("recurrenceType = %#v, want %#v", got, want)
+			}
+			if got, want := body["recurrenceRule"], "FREQ=WEEKLY"; got != want {
+				t.Fatalf("recurrenceRule = %#v, want %#v", got, want)
+			}
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"id":                "T1",
+				"spaceSlug":         "home",
+				"title":             "Task",
+				"description":       "",
+				"status":            "todo",
+				"effort":            nil,
+				"priority":          nil,
+				"recurrenceType":    "completion_based",
+				"recurrenceRule":    "FREQ=WEEKLY",
+				"lastCompletedAt":   nil,
+				"assigneeIds":       []string{},
+				"rotationPool":      []string{},
+				"tags":              []string{},
+				"relations":         []map[string]any{},
+				"due":               nil,
+				"overdueActionRule": nil,
+				"createdAt":         "2026-04-11T12:00:00Z",
+				"updatedAt":         "2026-04-11T13:00:00Z",
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(t, "task", "recurrence", "set", "home", "T1", "--type", "completion_based", "--rule", "FREQ=WEEKLY")
+	if err != nil {
+		t.Fatalf("execute task recurrence set: %v", err)
+	}
+}
+
+func TestTaskRecurrenceClearSetsOneOff(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/tasks/T1":
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			if got, want := body["recurrenceType"], "one_off"; got != want {
+				t.Fatalf("recurrenceType = %#v, want %#v", got, want)
+			}
+			if _, ok := body["recurrenceRule"]; ok {
+				t.Fatalf("recurrenceRule should be omitted when clearing recurrence")
+			}
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"id":                "T1",
+				"spaceSlug":         "home",
+				"title":             "Task",
+				"description":       "",
+				"status":            "todo",
+				"effort":            nil,
+				"priority":          nil,
+				"recurrenceType":    "one_off",
+				"recurrenceRule":    nil,
+				"lastCompletedAt":   nil,
+				"assigneeIds":       []string{},
+				"rotationPool":      []string{},
+				"tags":              []string{},
+				"relations":         []map[string]any{},
+				"due":               nil,
+				"overdueActionRule": nil,
+				"createdAt":         "2026-04-11T12:00:00Z",
+				"updatedAt":         "2026-04-11T13:00:00Z",
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(t, "task", "recurrence", "clear", "home", "T1")
+	if err != nil {
+		t.Fatalf("execute task recurrence clear: %v", err)
+	}
+}
+
+func TestTaskOverdueActionSetSendsPatch(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/tasks/T1":
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			rule, ok := body["overdueActionRule"].(map[string]any)
+			if !ok {
+				t.Fatalf("overdueActionRule missing or wrong type: %#v", body["overdueActionRule"])
+			}
+			if got, want := rule["action"], "set_status"; got != want {
+				t.Fatalf("action = %#v, want %#v", got, want)
+			}
+			if got, want := rule["after"], float64(3); got != want {
+				t.Fatalf("after = %#v, want %#v", got, want)
+			}
+			if got, want := rule["status"], "done"; got != want {
+				t.Fatalf("status = %#v, want %#v", got, want)
+			}
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"id":                "T1",
+				"spaceSlug":         "home",
+				"title":             "Task",
+				"description":       "",
+				"status":            "todo",
+				"effort":            nil,
+				"priority":          nil,
+				"recurrenceType":    "completion_based",
+				"recurrenceRule":    "FREQ=WEEKLY",
+				"lastCompletedAt":   nil,
+				"assigneeIds":       []string{},
+				"rotationPool":      []string{},
+				"tags":              []string{},
+				"relations":         []map[string]any{},
+				"due":               map[string]any{"at": "2026-05-01", "timezone": "UTC"},
+				"overdueActionRule": map[string]any{"after": 3, "action": "set_status", "status": "done"},
+				"createdAt":         "2026-04-11T12:00:00Z",
+				"updatedAt":         "2026-04-11T13:00:00Z",
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(t, "task", "overdue-action", "set", "home", "T1", "--action", "set_status", "--after-days", "3", "--status", "done")
+	if err != nil {
+		t.Fatalf("execute task overdue-action set: %v", err)
+	}
+}
+
+func TestTaskOverdueActionClearSendsNullPatch(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/tasks/T1":
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			if body["overdueActionRule"] != nil {
+				t.Fatalf("overdueActionRule = %#v, want nil", body["overdueActionRule"])
+			}
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"id":                "T1",
+				"spaceSlug":         "home",
+				"title":             "Task",
+				"description":       "",
+				"status":            "todo",
+				"effort":            nil,
+				"priority":          nil,
+				"recurrenceType":    "completion_based",
+				"recurrenceRule":    "FREQ=WEEKLY",
+				"lastCompletedAt":   nil,
+				"assigneeIds":       []string{},
+				"rotationPool":      []string{},
+				"tags":              []string{},
+				"relations":         []map[string]any{},
+				"due":               map[string]any{"at": "2026-05-01", "timezone": "UTC"},
+				"overdueActionRule": nil,
+				"createdAt":         "2026-04-11T12:00:00Z",
+				"updatedAt":         "2026-04-11T13:00:00Z",
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(t, "task", "overdue-action", "clear", "home", "T1")
+	if err != nil {
+		t.Fatalf("execute task overdue-action clear: %v", err)
+	}
+}
+
+func TestTaskOverdueActionSetValidatesStatusLocally(t *testing.T) {
+	setEnvValue(t, "TEND_SERVER", nil)
+	setEnvValue(t, "TEND_TOKEN", nil)
+
+	_, _, err := executeRoot(t, "task", "overdue-action", "set", "home", "T1", "--action", "set_status")
+	if err == nil {
+		t.Fatalf("expected error")
+	}
+	if got, want := err.Error(), "status is required when action is set_status"; got != want {
+		t.Fatalf("error = %q, want %q", got, want)
+	}
+}
+
 func TestAuthTokenCreateSendsName(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -1197,6 +2074,14 @@ func setEnvValue(t *testing.T, key string, value *string) {
 	if err := os.Setenv(key, *value); err != nil {
 		t.Fatalf("set env %s: %v", key, err)
 	}
+}
+
+func setConfigHome(t *testing.T) {
+	t.Helper()
+
+	home := t.TempDir()
+	setEnvValue(t, "HOME", stringPtr(home))
+	setEnvValue(t, "XDG_CONFIG_HOME", stringPtr(home))
 }
 
 func writeJSON(t *testing.T, w http.ResponseWriter, status int, v any) {
