@@ -7,8 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
+	dbus "github.com/godbus/dbus/v5"
 	"github.com/zalando/go-keyring"
 )
 
@@ -61,6 +63,9 @@ func LoadOAuthCredentials(server string) (*OAuthCredentials, error) {
 	if errors.Is(err, keyring.ErrNotFound) {
 		return nil, nil
 	}
+	if isCredentialStoreUnavailable(err) {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, fmt.Errorf("load keychain credentials: %w", err)
 	}
@@ -100,4 +105,22 @@ func DeleteOAuthCredentials(server string) error {
 		return fmt.Errorf("delete keychain credentials: %w", err)
 	}
 	return nil
+}
+
+func isCredentialStoreUnavailable(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	var dbusErr *dbus.Error
+	if errors.As(err, &dbusErr) {
+		switch dbusErr.Name {
+		case "org.freedesktop.DBus.Error.ServiceUnknown", "org.freedesktop.DBus.Error.NameHasNoOwner":
+			return true
+		}
+	}
+
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "org.freedesktop.secrets") &&
+		(strings.Contains(msg, "service files") || strings.Contains(msg, "name has no owner"))
 }

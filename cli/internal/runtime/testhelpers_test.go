@@ -1,9 +1,11 @@
 package runtime
 
 import (
+	"errors"
 	"os"
 	"testing"
 
+	dbus "github.com/godbus/dbus/v5"
 	"github.com/zalando/go-keyring"
 )
 
@@ -11,8 +13,23 @@ type memoryCredentialStore struct {
 	entries map[string]string
 }
 
+type errorCredentialStore struct {
+	getErr    error
+	setErr    error
+	deleteErr error
+}
+
 func newMemoryCredentialStore() *memoryCredentialStore {
 	return &memoryCredentialStore{entries: make(map[string]string)}
+}
+
+func newUnavailableCredentialStore() *errorCredentialStore {
+	return &errorCredentialStore{
+		getErr: &dbus.Error{
+			Name: "org.freedesktop.DBus.Error.ServiceUnknown",
+			Body: []interface{}{"The name org.freedesktop.secrets was not provided by any .service files"},
+		},
+	}
 }
 
 func (s *memoryCredentialStore) key(service, user string) string {
@@ -39,6 +56,34 @@ func (s *memoryCredentialStore) Delete(service, user string) error {
 	}
 	delete(s.entries, key)
 	return nil
+}
+
+func (s *errorCredentialStore) Get(service, user string) (string, error) {
+	if s.getErr != nil {
+		return "", s.getErr
+	}
+	return "", keyring.ErrNotFound
+}
+
+func (s *errorCredentialStore) Set(service, user, password string) error {
+	if s.setErr != nil {
+		return s.setErr
+	}
+	return nil
+}
+
+func (s *errorCredentialStore) Delete(service, user string) error {
+	if s.deleteErr != nil {
+		return s.deleteErr
+	}
+	return keyring.ErrNotFound
+}
+
+func newErrorCredentialStore(err error) *errorCredentialStore {
+	if err == nil {
+		err = errors.New("credential store error")
+	}
+	return &errorCredentialStore{getErr: err, setErr: err, deleteErr: err}
 }
 
 func withCredentialStore(t *testing.T, store credentialStore) {
