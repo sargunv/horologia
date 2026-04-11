@@ -11,6 +11,12 @@ func newListCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
 		Short: "List accessible spaces",
+		Long:  `List all spaces where you are a member, including each space's slug, name, and description.`,
+		Example: `  # See which spaces you belong to
+  tend space list
+
+  # Get machine-readable output
+  tend space list --json`,
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {

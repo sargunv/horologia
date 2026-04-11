@@ -30,7 +30,14 @@ func newListCmd(flags *support.RootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list <space>",
 		Short: "List tasks in a space",
-		Args:  cobra.ExactArgs(1),
+		Long: `List all tasks in the given space. Results are paginated; use --cursor
+with the value from a previous response to fetch the next page.`,
+		Example: `  # See all tasks in a space
+  tend task list my-project
+
+  # Limit to the first 10 results
+  tend task list my-project --limit 10`,
+		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {
@@ -63,6 +70,14 @@ func newMineCmd(flags *support.RootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "mine",
 		Short: "List tasks assigned to the current user",
+		Long: `List tasks assigned to the authenticated user across all spaces.
+Results are paginated; use --cursor with the value from a previous
+response to fetch the next page.`,
+		Example: `  # See what's on your plate
+  tend task mine
+
+  # Limit to the first 5 results
+  tend task mine --limit 5`,
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {
@@ -98,7 +113,11 @@ func newShowCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "show <space> <task>",
 		Short: "Show a task",
-		Args:  cobra.ExactArgs(2),
+		Long: `Display full details for a single task. The <space> argument is
+the space slug and <task> is the task ID.`,
+		Example: `  # Inspect a single task by ID
+  tend task show my-project SV-42`,
+		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {
@@ -133,7 +152,15 @@ func newCreateCmd(flags *support.RootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create <space>",
 		Short: "Create a task",
-		Args:  cobra.ExactArgs(1),
+		Long: `Create a new task in the given space. The --title flag is required;
+all other fields are optional and use the space's defaults when omitted.`,
+		Example: `  # Create a task with just a title
+  tend task create my-project --title "Fix login bug"
+
+  # Create a task with all fields
+  tend task create my-project --title "Fix login bug" \
+    --status "In Progress" --priority High --effort Medium`,
+		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {
@@ -188,8 +215,16 @@ func newUpdateCmd(flags *support.RootFlags) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "update <space> <task>",
-		Short: "Update scalar task fields",
-		Args:  cobra.ExactArgs(2),
+		Short: "Update a task",
+		Long: `Update fields on an existing task. Only the fields you specify will
+change; all other fields remain untouched. Use --clear-effort or
+--clear-priority to remove an optional field value.`,
+		Example: `  # Change the title
+  tend task update my-project SV-42 --title "New title"
+
+  # Set priority and clear effort
+  tend task update my-project SV-42 --priority High --clear-effort`,
+		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {
@@ -269,7 +304,10 @@ func newCompleteCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "complete <space> <task>",
 		Short: "Mark a task complete",
-		Args:  cobra.ExactArgs(2),
+		Long:  `Mark a task complete by setting it to the space's first completion status.`,
+		Example: `  # Finish a task
+  tend task complete my-project SV-42`,
+		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {
@@ -309,7 +347,11 @@ func newDeleteCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "delete <space> <task>",
 		Short: "Delete a task",
-		Args:  cobra.ExactArgs(2),
+		Long: `Permanently delete a task and all its associated data. This cannot
+be undone.`,
+		Example: `  # Permanently remove a task
+  tend task delete my-project SV-42`,
+		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {
@@ -343,7 +385,15 @@ func newActivityCmd(flags *support.RootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "activity <space> <task>",
 		Short: "Show activity for a task",
-		Args:  cobra.ExactArgs(2),
+		Long: `Show the activity log for a task, including status changes, field
+updates, and comments. Results are paginated; use --cursor with the
+value from a previous response to fetch the next page.`,
+		Example: `  # Show activity for a task
+  tend task activity my-project SV-42
+
+  # Show the last 5 activity entries
+  tend task activity my-project SV-42 --limit 5`,
+		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {

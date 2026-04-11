@@ -8,12 +8,12 @@ import (
 
 // New builds the `tend auth` command tree.
 func New(flags *support.RootFlags) *cobra.Command {
-	cmd := support.GroupCommand("auth", "Authenticate and manage local credentials")
+	cmd := support.GroupCommand("auth", "Manage authentication")
 	cmd.GroupID = "auth"
 
 	cmd.AddCommand(
-		support.StubCommand("login", "Authenticate with a Tend server"),
-		support.StubCommand("logout", "Clear local authentication state"),
+		support.StubCommand("login", "Log in to a Tend server (not yet implemented)"),
+		support.StubCommand("logout", "Log out and clear credentials (not yet implemented)"),
 		newStatusCmd(flags),
 		newTokenCmd(flags),
 	)

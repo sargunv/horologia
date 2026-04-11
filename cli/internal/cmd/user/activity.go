@@ -14,7 +14,14 @@ func newActivityCmd(flags *support.RootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "activity <user>",
 		Short: "Show activity for a user",
-		Args:  cobra.ExactArgs(1),
+		Long: `Show the activity log for a user. Results are paginated; use --cursor
+with the value from a previous response to fetch the next page.`,
+		Example: `  # Show activity for a user
+  tend user activity alice
+
+  # Limit to 5 entries
+  tend user activity alice --limit 5`,
+		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {

@@ -12,7 +12,12 @@ func newDeleteCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "delete <user>",
 		Short: "Delete a user",
-		Args:  cobra.ExactArgs(1),
+		Long: `Permanently delete a user. This cannot be undone. The user's
+space memberships are removed and any tasks assigned to them become
+unassigned.`,
+		Example: `  # Permanently remove a user and revoke their access
+  tend user delete alice`,
+		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {

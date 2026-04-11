@@ -19,6 +19,15 @@ func newCreateCmd(flags *support.RootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a user",
+		Long: `Create a new user. The --name and --email flags are required.
+Pass --owner to grant the new user owner privileges. Pass --password
+to set an initial password; if omitted, the user has no password.`,
+		Example: `  # Create a basic user
+  tend user create --name "Alice Ng" --email alice@example.com
+
+  # Create an owner with an initial password
+  tend user create --name "Bob Li" --email bob@example.com \
+    --owner --password "$INITIAL_PASSWORD"`,
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {

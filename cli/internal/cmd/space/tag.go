@@ -25,7 +25,10 @@ func newTagListCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list <space>",
 		Short: "List tags in a space",
-		Args:  cobra.ExactArgs(1),
+		Long:  `List all tags defined in the given space. Tags can be applied to tasks for filtering and organization.`,
+		Example: `  # List tags in the "eng" space
+  tend space tag list eng`,
+		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {
@@ -52,7 +55,10 @@ func newTagCreateCmd(flags *support.RootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create <space>",
 		Short: "Create a tag in a space",
-		Args:  cobra.ExactArgs(1),
+		Long:  `Create a new tag in the given space. Tag names must be unique within the space.`,
+		Example: `  # Create a "blocked" tag
+  tend space tag create eng --name blocked`,
+		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {
@@ -84,7 +90,11 @@ func newTagRenameCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "rename <space> <tag> <new-name>",
 		Short: "Rename a tag",
-		Args:  cobra.ExactArgs(3),
+		Long: `Rename an existing tag. The <tag> argument is the current name;
+<new-name> is the replacement. All tasks carrying this tag update automatically.`,
+		Example: `  # Rename "blocked" to "on-hold"
+  tend space tag rename eng blocked on-hold`,
+		Args: cobra.ExactArgs(3),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {
@@ -115,7 +125,11 @@ func newTagDeleteCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "delete <space> <tag>",
 		Short: "Delete a tag",
-		Args:  cobra.ExactArgs(2),
+		Long: `Permanently delete a tag from the given space. This removes the tag
+from every task that carries it. This cannot be undone.`,
+		Example: `  # Delete the "blocked" tag
+  tend space tag delete eng blocked`,
+		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {

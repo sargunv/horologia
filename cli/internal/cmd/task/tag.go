@@ -25,7 +25,15 @@ func newTagSetCmd(flags *support.RootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "set <space> <task>",
 		Short: "Replace task tags",
-		Args:  cobra.ExactArgs(2),
+		Long: `Replace the full tag list on a task. Every --tag flag you pass becomes
+the new list; any tag not included is removed. To add or remove a single
+tag without affecting others, use add or remove.`,
+		Example: `  # Set a single tag
+  tend task tag set my-project SV-42 --tag urgent
+
+  # Set multiple tags
+  tend task tag set my-project SV-42 --tag urgent --tag backend`,
+		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {
@@ -53,7 +61,7 @@ func newTagSetCmd(flags *support.RootFlags) *cobra.Command {
 		}),
 	}
 
-	cmd.Flags().StringArrayVar(&tags, "tag", nil, "Tag name; repeat to set the full tag list")
+	cmd.Flags().StringArrayVar(&tags, "tag", nil, "Tag name (repeatable)")
 	return cmd
 }
 
@@ -61,7 +69,11 @@ func newTagAddCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "add <space> <task> <tag>",
 		Short: "Add a tag to a task",
-		Args:  cobra.ExactArgs(3),
+		Long: `Add a tag to the task. If the tag is already present, the command
+succeeds with no change.`,
+		Example: `  # Add the "urgent" tag
+  tend task tag add my-project SV-42 urgent`,
+		Args: cobra.ExactArgs(3),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {
@@ -94,7 +106,11 @@ func newTagRemoveCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "remove <space> <task> <tag>",
 		Short: "Remove a tag from a task",
-		Args:  cobra.ExactArgs(3),
+		Long: `Remove a tag from the task. If the tag is not present, the command
+succeeds with no change.`,
+		Example: `  # Remove the "urgent" tag
+  tend task tag remove my-project SV-42 urgent`,
+		Args: cobra.ExactArgs(3),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {
@@ -127,7 +143,10 @@ func newTagClearCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "clear <space> <task>",
 		Short: "Clear task tags",
-		Args:  cobra.ExactArgs(2),
+		Long:  `Remove all tags from a task, leaving the tag list empty.`,
+		Example: `  # Remove all tags
+  tend task tag clear my-project SV-42`,
+		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {

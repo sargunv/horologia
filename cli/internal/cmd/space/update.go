@@ -19,7 +19,15 @@ func newUpdateCmd(flags *support.RootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update <space>",
 		Short: "Update a space",
-		Args:  cobra.ExactArgs(1),
+		Long: `Update one or more fields on an existing space. Only the fields you
+specify with flags will change; omitted fields remain untouched.`,
+		Example: `  # Rename a space
+  tend space update my-project --name "My Renamed Project"
+
+  # Change a space's slug and description
+  tend space update my-project --slug new-slug \
+    --description "Updated description"`,
+		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {

@@ -27,7 +27,18 @@ func newRecurrenceSetCmd(flags *support.RootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "set <space> <task>",
 		Short: "Set task recurrence",
-		Args:  cobra.ExactArgs(2),
+		Long: `Set the recurrence schedule for a task. The --type flag selects
+the strategy. Types that require an --rule (an RFC 5545 RRULE string):
+completion_based, fixed_non_accumulating, fixed_accumulating. Types
+that do not accept a rule: one_off, on_dependency.`,
+		Example: `  # Recur weekly on completion
+  tend task recurrence set my-project SV-42 \
+    --type completion_based --rule "FREQ=WEEKLY;BYDAY=MO"
+
+  # Recur on a fixed monthly schedule
+  tend task recurrence set my-project SV-42 \
+    --type fixed_non_accumulating --rule "FREQ=MONTHLY;BYMONTHDAY=1"`,
+		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {
@@ -70,8 +81,8 @@ func newRecurrenceSetCmd(flags *support.RootFlags) *cobra.Command {
 		}),
 	}
 
-	cmd.Flags().StringVar(&recurrenceType, "type", "", "Recurrence type")
-	cmd.Flags().StringVar(&rule, "rule", "", "RRULE string")
+	cmd.Flags().StringVar(&recurrenceType, "type", "", "Recurrence type: one_off, completion_based, fixed_non_accumulating, fixed_accumulating, on_dependency")
+	cmd.Flags().StringVar(&rule, "rule", "", "RFC 5545 RRULE string (required for completion_based, fixed_non_accumulating, fixed_accumulating)")
 	_ = cmd.MarkFlagRequired("type")
 	return cmd
 }
@@ -80,7 +91,11 @@ func newRecurrenceClearCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "clear <space> <task>",
 		Short: "Clear task recurrence",
-		Args:  cobra.ExactArgs(2),
+		Long: `Remove the recurrence schedule from a task, resetting it to one_off.
+The task keeps its current status and due date.`,
+		Example: `  # Remove recurrence from a task
+  tend task recurrence clear my-project SV-42`,
+		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {

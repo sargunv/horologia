@@ -30,6 +30,17 @@ func newShowCmd(flags *support.RootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "show",
 		Short: "Show the effective CLI configuration",
+		Long: `Show the effective CLI configuration after merging all sources.
+
+The server URL is resolved from the persisted config file, overridden by
+the TEND_SERVER environment variable if set. The token is read from the
+TEND_TOKEN environment variable only. The output labels every value with
+its source.`,
+		Example: `  # Show current configuration
+  tend config show
+
+  # Show current configuration as JSON
+  tend config show --json`,
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			out := BuildOutput(app.Config)
 			if app.Config.JSON {

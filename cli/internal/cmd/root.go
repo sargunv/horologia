@@ -39,8 +39,13 @@ func newRootCmd(opts commandOptions) *cobra.Command {
 	flags := &support.RootFlags{}
 
 	rootCmd := &cobra.Command{
-		Use:           "tend",
-		Short:         "Tend command-line client",
+		Use:   "tend",
+		Short: "Manage tasks and spaces from the command line",
+		Long: `Command-line client for the Tend server.
+
+Run a subcommand to manage spaces, tasks, users, and authentication.
+With no subcommand, prints this help text. Pass --json to any subcommand
+for machine-readable output.`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -51,7 +56,7 @@ func newRootCmd(opts commandOptions) *cobra.Command {
 	rootCmd.SetOut(opts.stdout)
 	rootCmd.SetErr(opts.stderr)
 
-	rootCmd.PersistentFlags().BoolVar(&flags.JSON, "json", false, "Print machine-readable JSON output")
+	rootCmd.PersistentFlags().BoolVar(&flags.JSON, "json", false, "Format output as JSON")
 
 	rootCmd.AddGroup(
 		&cobra.Group{ID: "foundation", Title: "Foundation Commands:"},

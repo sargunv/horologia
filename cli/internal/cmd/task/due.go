@@ -24,7 +24,17 @@ func newDueSetCmd(flags *support.RootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "set <space> <task>",
 		Short: "Set a task due date",
-		Args:  cobra.ExactArgs(2),
+		Long: `Set the due date and timezone for a task. Both --date and --timezone
+are required. The date must use YYYY-MM-DD format, and the timezone
+must be a valid IANA identifier such as America/New_York.`,
+		Example: `  # Set a due date in US Eastern time
+  tend task due set my-project SV-42 \
+    --date 2026-05-01 --timezone America/New_York
+
+  # Set a due date in UTC
+  tend task due set my-project SV-42 \
+    --date 2026-06-15 --timezone UTC`,
+		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {
@@ -58,8 +68,8 @@ func newDueSetCmd(flags *support.RootFlags) *cobra.Command {
 		}),
 	}
 
-	cmd.Flags().StringVar(&date, "date", "", "Due date in YYYY-MM-DD format")
-	cmd.Flags().StringVar(&timezone, "timezone", "", "IANA timezone for the due date")
+	cmd.Flags().StringVar(&date, "date", "", "Due date (YYYY-MM-DD)")
+	cmd.Flags().StringVar(&timezone, "timezone", "", "IANA timezone, e.g. America/New_York")
 	_ = cmd.MarkFlagRequired("date")
 	_ = cmd.MarkFlagRequired("timezone")
 	return cmd
@@ -69,7 +79,11 @@ func newDueClearCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "clear <space> <task>",
 		Short: "Clear a task due date",
-		Args:  cobra.ExactArgs(2),
+		Long: `Remove the due date from a task. The task will no longer appear in
+overdue filters or trigger overdue actions.`,
+		Example: `  # Clear the due date
+  tend task due clear my-project SV-42`,
+		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {

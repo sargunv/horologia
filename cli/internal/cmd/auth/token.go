@@ -27,6 +27,14 @@ func newTokenListCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
 		Short: "List personal API tokens",
+		Long: `List all personal API tokens for the authenticated user.
+
+Displays each token's ID, name, kind, and creation timestamp.`,
+		Example: `  # List all API tokens
+  tend auth token list
+
+  # List all API tokens as JSON
+  tend auth token list --json`,
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {
@@ -63,6 +71,15 @@ func newTokenCreateCmd(flags *support.RootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a personal API token",
+		Long: `Create a new personal API token with the given name.
+
+The token secret is displayed exactly once. Copy it immediately;
+it cannot be retrieved later.`,
+		Example: `  # Create a token for CI
+  tend auth token create --name "CI deploy"
+
+  # Create a token and capture the secret as JSON
+  tend auth token create --name "scripting" --json`,
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {
@@ -98,7 +115,12 @@ func newTokenRevokeCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "revoke <token-id>",
 		Short: "Revoke a personal API token",
-		Args:  cobra.ExactArgs(1),
+		Long: `Permanently delete the token identified by <token-id>. This action is
+irreversible; any client using the token loses access immediately.
+Find token IDs with "tend auth token list".`,
+		Example: `  # Revoke a token by ID
+  tend auth token revoke abc123`,
+		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {

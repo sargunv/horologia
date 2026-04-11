@@ -29,7 +29,20 @@ func newOverdueActionSetCmd(flags *support.RootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "set <space> <task>",
 		Short: "Set a task overdue action",
-		Args:  cobra.ExactArgs(2),
+		Long: `Set the action taken when a task becomes overdue.
+
+Valid --action values: advance_recurrence (advance to the next
+recurrence), set_status (change to the status given by --status),
+clear_due_date (remove the due date). The action fires immediately
+unless --after-days sets a grace period.`,
+		Example: `  # Advance recurrence immediately when overdue
+  tend task overdue-action set my-project SV-42 \
+    --action advance_recurrence
+
+  # Mark a task done three days after it becomes overdue
+  tend task overdue-action set my-project SV-42 \
+    --action set_status --status Done --after-days 3`,
+		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			parsedAction, err := parseOverdueAction(action)
 			if err != nil {
@@ -84,10 +97,10 @@ func newOverdueActionSetCmd(flags *support.RootFlags) *cobra.Command {
 		}),
 	}
 
-	cmd.Flags().StringVar(&action, "action", "", "Overdue action")
-	cmd.Flags().StringVar(&status, "status", "", "Status to set when action is set_status")
+	cmd.Flags().StringVar(&action, "action", "", "Overdue action: advance_recurrence, set_status, clear_due_date")
+	cmd.Flags().StringVar(&status, "status", "", "Target status name (required when --action is set_status)")
 	cmd.Flags().Int32Var(&afterDays, "after-days", 0, "Grace period in days before the action fires")
-	cmd.Flags().BoolVar(&immediate, "immediate", false, "Fire immediately when the task becomes overdue")
+	cmd.Flags().BoolVar(&immediate, "immediate", false, "Fire as soon as the task becomes overdue")
 	_ = cmd.MarkFlagRequired("action")
 	return cmd
 }
@@ -96,7 +109,11 @@ func newOverdueActionClearCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "clear <space> <task>",
 		Short: "Clear a task overdue action",
-		Args:  cobra.ExactArgs(2),
+		Long: `Remove the overdue action from a task. The task will take no automatic
+action when it becomes overdue.`,
+		Example: `  # Remove the overdue action
+  tend task overdue-action clear my-project SV-42`,
+		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {

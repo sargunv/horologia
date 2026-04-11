@@ -31,7 +31,15 @@ type statusOutput struct {
 func newStatusCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "status",
-		Short: "Show the current authentication state",
+		Short: "Show current authentication status",
+		Long: `Display the configured server URL and its source, a redacted token
+preview, and the authenticated user. If the server or token is missing,
+the identity check is skipped with a reason.`,
+		Example: `  # Check authentication status
+  tend auth status
+
+  # Check authentication status as JSON
+  tend auth status --json`,
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			out := buildStatusOutput(app)
 

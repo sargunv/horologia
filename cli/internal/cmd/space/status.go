@@ -21,7 +21,11 @@ func newStatusListCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list <space>",
 		Short: "List task statuses in a space",
-		Args:  cobra.ExactArgs(1),
+		Long: `List all task statuses configured for a space. Each status shows
+its position, name, and category (initial, intermediate, or completion).`,
+		Example: `  # List statuses in a space
+  tend space status list my-project`,
+		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {
@@ -50,7 +54,22 @@ func newStatusReplaceCmd(flags *support.RootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "replace <space>",
 		Short: "Replace task statuses in a space",
-		Args:  cobra.ExactArgs(1),
+		Long: `Replace all task statuses for a space in a single operation. This removes
+every existing status and writes the provided set. Requires exactly one
+--initial status and at least one --completion status. Tasks that reference
+a removed status will lose that value.`,
+		Example: `  # Set a simple three-status workflow
+  tend space status replace my-project \
+    --initial "To Do" \
+    --intermediate "In Progress" \
+    --completion "Done"
+
+  # Set multiple intermediate and completion statuses
+  tend space status replace my-project \
+    --initial "Backlog" \
+    --intermediate "In Progress" --intermediate "In Review" \
+    --completion "Done" --completion "Won't Fix"`,
+		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			initialValues, err := trimRequiredValues([]string{initial}, "initial status")
 			if err != nil {
@@ -97,8 +116,8 @@ func newStatusReplaceCmd(flags *support.RootFlags) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&initial, "initial", "", "Initial status name")
-	cmd.Flags().StringArrayVar(&intermediate, "intermediate", nil, "Intermediate status name; repeat to add more than one")
-	cmd.Flags().StringArrayVar(&completion, "completion", nil, "Completion status name; repeat to add more than one")
+	cmd.Flags().StringArrayVar(&intermediate, "intermediate", nil, "Intermediate status name (repeatable)")
+	cmd.Flags().StringArrayVar(&completion, "completion", nil, "Completion status name (repeatable)")
 	_ = cmd.MarkFlagRequired("initial")
 	return cmd
 }

@@ -22,8 +22,15 @@ func newRotationSetCmd(flags *support.RootFlags) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "set <space> <task>",
-		Short: "Set a task rotation pool",
-		Args:  cobra.ExactArgs(2),
+		Short: "Replace the rotation pool for a task",
+		Long: `Replace the entire rotation pool for a task. Every --user flag you pass
+becomes the new pool; any user not listed is removed.`,
+		Example: `  # Set a two-person rotation pool
+  tend task rotation set my-project SV-42 --user alice --user bob
+
+  # Replace the pool with a single user
+  tend task rotation set my-project SV-42 --user alice`,
+		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {
@@ -51,7 +58,7 @@ func newRotationSetCmd(flags *support.RootFlags) *cobra.Command {
 		}),
 	}
 
-	cmd.Flags().StringArrayVar(&users, "user", nil, "Rotation pool user ID; repeat to set the full pool")
+	cmd.Flags().StringArrayVar(&users, "user", nil, "User ID to include in the pool (repeatable)")
 	return cmd
 }
 
@@ -59,7 +66,10 @@ func newRotationClearCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "clear <space> <task>",
 		Short: "Clear a task rotation pool",
-		Args:  cobra.ExactArgs(2),
+		Long:  `Remove all users from the rotation pool, disabling rotation for the task.`,
+		Example: `  # Remove the rotation pool
+  tend task rotation clear my-project SV-42`,
+		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {

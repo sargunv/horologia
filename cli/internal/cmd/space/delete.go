@@ -12,7 +12,11 @@ func newDeleteCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "delete <space>",
 		Short: "Delete a space",
-		Args:  cobra.ExactArgs(1),
+		Long: `Permanently delete a space and all its tasks, tags, and configuration.
+This cannot be undone.`,
+		Example: `  # Permanently remove a space and all its data
+  tend space delete my-project`,
+		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {

@@ -25,7 +25,15 @@ func newAssigneeSetCmd(flags *support.RootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "set <space> <task>",
 		Short: "Replace task assignees",
-		Args:  cobra.ExactArgs(2),
+		Long: `Replace the full assignee list on a task. Every --user flag you pass
+becomes the new list; any user not included is removed. To add or
+remove a single assignee without affecting others, use add or remove.`,
+		Example: `  # Assign a single user
+  tend task assignee set my-project SV-42 --user alice
+
+  # Assign multiple users
+  tend task assignee set my-project SV-42 --user alice --user bob`,
+		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {
@@ -55,7 +63,7 @@ func newAssigneeSetCmd(flags *support.RootFlags) *cobra.Command {
 		}),
 	}
 
-	cmd.Flags().StringArrayVar(&users, "user", nil, "Assignee user ID; repeat to set the full assignee list")
+	cmd.Flags().StringArrayVar(&users, "user", nil, "Assignee user ID (repeatable)")
 	return cmd
 }
 
@@ -63,7 +71,11 @@ func newAssigneeAddCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "add <space> <task> <user>",
 		Short: "Add a task assignee",
-		Args:  cobra.ExactArgs(3),
+		Long: `Add a user to the task's assignee list. If the user is already
+assigned, the command succeeds with no change.`,
+		Example: `  # Add alice as an assignee
+  tend task assignee add my-project SV-42 alice`,
+		Args: cobra.ExactArgs(3),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {
@@ -96,7 +108,11 @@ func newAssigneeRemoveCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "remove <space> <task> <user>",
 		Short: "Remove a task assignee",
-		Args:  cobra.ExactArgs(3),
+		Long: `Remove a user from the task's assignee list. If the user is not
+currently assigned, the command succeeds with no change.`,
+		Example: `  # Remove alice from the assignees
+  tend task assignee remove my-project SV-42 alice`,
+		Args: cobra.ExactArgs(3),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {
@@ -129,7 +145,10 @@ func newAssigneeClearCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "clear <space> <task>",
 		Short: "Clear task assignees",
-		Args:  cobra.ExactArgs(2),
+		Long:  `Remove all assignees from a task, leaving the assignee list empty.`,
+		Example: `  # Remove all assignees
+  tend task assignee clear my-project SV-42`,
+		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {

@@ -20,8 +20,17 @@ func newRelationCmd(flags *support.RootFlags) *cobra.Command {
 func newRelationAddCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "add <space> <task> <kind> <related-task>",
-		Short: "Add a relation to a task",
-		Args:  cobra.ExactArgs(4),
+		Short: "Add a relation between two tasks",
+		Long: `Add a directed relation from one task to another within a space.
+The <kind> argument describes how the two tasks relate. Valid values:
+parent_of, child_of, blocks, blocked_by, relates_to, duplicates,
+triggers, triggered_by, spawns, spawned_by.`,
+		Example: `  # Mark SV-42 as blocking SV-43
+  tend task relation add my-project SV-42 blocks SV-43
+
+  # Record that SV-10 relates to SV-11
+  tend task relation add my-project SV-10 relates_to SV-11`,
+		Args: cobra.ExactArgs(4),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {
@@ -55,8 +64,14 @@ func newRelationAddCmd(flags *support.RootFlags) *cobra.Command {
 func newRelationRemoveCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "remove <space> <task> <kind> <related-task>",
-		Short: "Remove a relation from a task",
-		Args:  cobra.ExactArgs(4),
+		Short: "Remove a relation between two tasks",
+		Long: `Remove an existing relation from one task to another. The <kind>
+argument must match the relation to delete. Valid values: parent_of,
+child_of, blocks, blocked_by, relates_to, duplicates, triggers,
+triggered_by, spawns, spawned_by.`,
+		Example: `  # Remove the blocks relation from SV-42 to SV-43
+  tend task relation remove my-project SV-42 blocks SV-43`,
+		Args: cobra.ExactArgs(4),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {

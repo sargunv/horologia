@@ -12,12 +12,17 @@ func newUnsetCmd(flags *support.RootFlags) *cobra.Command {
 		Path string `json:"path"`
 	}
 
-	cmd := support.GroupCommand("unset", "Unset persisted CLI configuration values")
+	cmd := support.GroupCommand("unset", "Remove a persisted configuration value")
 	cmd.AddCommand(
 		&cobra.Command{
 			Use:   "server",
-			Short: "Unset the default Tend server",
-			Args:  cobra.NoArgs,
+			Short: "Remove the persisted server URL",
+			Long: `Remove the persisted server URL from the config file. After removal,
+the CLI falls back to the TEND_SERVER environment variable. If that
+variable is also unset, commands that contact the server will fail.`,
+			Example: `  # Remove the server URL from the config file
+  tend config unset server`,
+			Args: cobra.NoArgs,
 			RunE: func(cmd *cobra.Command, args []string) error {
 				path, err := runtime.UnsetServer()
 				if err != nil {

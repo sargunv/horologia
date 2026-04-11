@@ -13,12 +13,20 @@ func newSetCmd(flags *support.RootFlags) *cobra.Command {
 		Server string `json:"server"`
 	}
 
-	cmd := support.GroupCommand("set", "Set persisted CLI configuration values")
+	cmd := support.GroupCommand("set", "Set a persisted configuration value")
 	cmd.AddCommand(
 		&cobra.Command{
 			Use:   "server <url>",
-			Short: "Set the default Tend server",
-			Args:  cobra.ExactArgs(1),
+			Short: "Set the default Tend server URL",
+			Long: `Write the given URL to the persisted config file as the default Tend
+server. The URL is normalized before saving. This value can still be
+overridden by the TEND_SERVER environment variable.`,
+			Example: `  # Point the CLI at a local dev server
+  tend config set server http://localhost:8080
+
+  # Point the CLI at a hosted instance
+  tend config set server https://tend.example.com`,
+			Args: cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				path, server, err := runtime.SaveServer(args[0])
 				if err != nil {

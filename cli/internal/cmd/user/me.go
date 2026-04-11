@@ -10,7 +10,14 @@ import (
 func newMeCmd(flags *support.RootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "me",
-		Short: "Show the authenticated Tend user",
+		Short: "Show the authenticated user",
+		Long: `Show the user account associated with the current authentication token.
+Useful for verifying which identity the CLI is acting as.`,
+		Example: `  # Show the current user
+  tend user me
+
+  # Show the current user as JSON
+  tend user me --json`,
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			if app.API == nil {
 				return runtime.MissingServerError()

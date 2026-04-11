@@ -17,8 +17,12 @@ func newPathCmd(flags *support.RootFlags) *cobra.Command {
 
 	return &cobra.Command{
 		Use:   "path",
-		Short: "Show the persisted CLI config path",
-		Args:  cobra.NoArgs,
+		Short: "Print the config file path",
+		Long: `Print the absolute path to the persisted config file. The file may not
+exist yet. Use this to locate the config file for manual editing or backup.`,
+		Example: `  # Find the config file for manual editing
+  tend config path`,
+		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			path, err := runtime.ConfigPath()
 			if err != nil {

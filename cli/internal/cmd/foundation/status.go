@@ -31,8 +31,17 @@ type Output struct {
 // NewStatus builds the diagnostic status command.
 func NewStatus(flags *support.RootFlags) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "status",
-		Short:   "Check server connectivity and authentication status",
+		Use:   "status",
+		Short: "Verify server connectivity and authentication",
+		Long: `Verify that the CLI can reach the configured Tend server and that the
+authentication token is valid. Reports server health-check status and latency,
+and the authenticated user when a token is configured. Useful for debugging
+connection or credential problems after initial setup.`,
+		Example: `  # Check connectivity and auth against the configured server
+  tend status
+
+  # Check connectivity and output results as JSON
+  tend status --json`,
 		GroupID: "foundation",
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			out := Output{Server: app.Config.ServerString()}

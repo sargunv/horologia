@@ -8,7 +8,7 @@ import (
 
 // New builds the `tend config` command tree.
 func New(flags *support.RootFlags) *cobra.Command {
-	cmd := support.GroupCommand("config", "Inspect and manage CLI configuration")
+	cmd := support.GroupCommand("config", "Manage CLI configuration")
 	cmd.GroupID = "foundation"
 	cmd.RunE = support.DefaultSubcommand("show")
 

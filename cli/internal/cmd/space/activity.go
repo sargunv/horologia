@@ -14,7 +14,14 @@ func newActivityCmd(flags *support.RootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "activity <space>",
 		Short: "Show activity for a space",
-		Args:  cobra.ExactArgs(1),
+		Long: `List recent activity events for a space. Results are paginated;
+use --cursor with the value from a previous response to fetch the next page.`,
+		Example: `  # Show recent activity
+  tend space activity my-project
+
+  # Show at most 5 activity events
+  tend space activity my-project --limit 5`,
+		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {
