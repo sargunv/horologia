@@ -240,12 +240,12 @@ func setupTestServer(t *testing.T, opts ...testServerOption) *testEnv {
 			_ = srvLn.Close()
 			t.Fatalf("new oidc handler: %v", err)
 		}
-		composed := api.MountWebAuth(api.MountOIDC(h, oidcHandler, log), handler)
+		composed := api.MountOAuth(api.MountWebAuth(api.MountOIDC(h, oidcHandler, log), handler), handler)
 		srv = httptest.NewUnstartedServer(composed)
 		srv.Listener = srvLn
 		srv.Start()
 	} else {
-		srv = httptest.NewServer(api.MountWebAuth(h, handler))
+		srv = httptest.NewServer(api.MountOAuth(api.MountWebAuth(h, handler), handler))
 	}
 	t.Cleanup(srv.Close)
 

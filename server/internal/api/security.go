@@ -7,7 +7,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/ogen-go/ogen/ogenerrors"
 
 	apigen "github.com/sargunv/tend/api/gen"
@@ -18,34 +17,12 @@ import (
 
 // HandleBearerAuth validates the bearer token and enriches the context with the user.
 func (h *Handler) HandleBearerAuth(ctx context.Context, operationName apigen.OperationName, t apigen.BearerAuth) (context.Context, error) {
-	hash := auth.HashToken(t.Token)
-	q := dbgen.New(h.Pool)
-	row, err := q.GetAuthTokenByHash(ctx, hash)
-	if errors.Is(err, pgx.ErrNoRows) {
+	user, err := auth.AuthenticateBearerToken(ctx, h.Pool, t.Token, time.Now())
+	if errors.Is(err, auth.ErrUnauthorized) {
 		return ctx, ogenerrors.ErrSkipServerSecurity
 	}
 	if err != nil {
 		return ctx, err
-	}
-
-	// Check expiration.
-	if row.ExpiresAt.Valid && time.Now().After(row.ExpiresAt.Time) {
-		return ctx, ogenerrors.ErrSkipServerSecurity
-	}
-
-	user := &auth.User{
-		ID:      row.UserID,
-		Email:   row.UserEmail,
-		Name:    row.UserName,
-		IsOwner: row.UserIsOwner,
-	}
-
-	if row.Kind == dbgen.AuthTokenKindApi {
-		// Attribute API token identity for activity logging.
-		user.Token = &auth.TokenInfo{ID: row.ID, Name: row.Name}
-	} else {
-		// Track session token hash so handlers can exclude the current session.
-		user.SessionTokenHash = hash
 	}
 
 	return auth.ContextWithUser(ctx, user), nil

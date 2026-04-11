@@ -13,6 +13,9 @@ import (
 )
 
 func (h *Handler) SpaceActivityList(ctx context.Context, params apigen.SpaceActivityListParams) (*apigen.ActivityLogPage, error) {
+	if err := h.requireScope(ctx, "activity:read"); err != nil {
+		return nil, err
+	}
 	if err := h.requireSpaceRead(ctx, params.SpaceSlug); err != nil {
 		return nil, err
 	}
@@ -38,6 +41,9 @@ func (h *Handler) SpaceActivityList(ctx context.Context, params apigen.SpaceActi
 }
 
 func (h *Handler) SpaceTaskActivityList(ctx context.Context, params apigen.SpaceTaskActivityListParams) (*apigen.ActivityLogPage, error) {
+	if err := h.requireScope(ctx, "activity:read"); err != nil {
+		return nil, err
+	}
 	if err := h.requireSpaceRead(ctx, params.SpaceSlug); err != nil {
 		return nil, err
 	}
@@ -74,6 +80,9 @@ func (h *Handler) SpaceTaskActivityList(ctx context.Context, params apigen.Space
 }
 
 func (h *Handler) UserActivityList(ctx context.Context, params apigen.UserActivityListParams) (*apigen.ActivityLogPage, error) {
+	if err := h.requireScope(ctx, "activity:read"); err != nil {
+		return nil, err
+	}
 	user := auth.UserFromContext(ctx)
 	if user == nil {
 		return nil, forbidden("authentication required")

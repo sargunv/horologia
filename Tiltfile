@@ -12,6 +12,7 @@ if manage_postgres:
 common_env = {
     "TEND_ADDR": ":%d" % SERVER_PORT,
     "TEND_DB": tend_db,
+    "TEND_PUBLIC_URL": "http://localhost:%d" % SERVER_PORT,
     "TEND_LOG_FORMAT": "text",
     "TEND_LOG_LEVEL": "debug",
     "TEND_OIDC_ISSUER": "http://localhost:%d/" % OIDC_PORT,
@@ -20,6 +21,9 @@ common_env = {
     "TEND_OIDC_REDIRECT_URL": "http://localhost:%d/api/auth/oidc/callback" % WEB_PORT,
     "TEND_SECURE_COOKIES": "false",
     "TEND_HIBP_ENABLED": "false",
+    "TEND_INIT_OWNER_EMAIL": "admin@localhost",
+    "TEND_INIT_OWNER_NAME": "Admin",
+    "TEND_INIT_OWNER_PASSWORD": "password",
 }
 
 if manage_postgres:
@@ -87,14 +91,6 @@ local_resource(
     ),
     links=["http://localhost:%d/" % SERVER_PORT],
     labels=["app"],
-)
-
-local_resource(
-    "seed",
-    cmd="mise run //server:seed",
-    env=common_env,
-    resource_deps=["server"],
-    labels=["infra"],
 )
 
 local_resource(

@@ -13,18 +13,41 @@ import (
 )
 
 const createAuthToken = `-- name: CreateAuthToken :one
-INSERT INTO auth_tokens (user_id, token_hash, name, kind, expires_at, created_at)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, user_id, token_hash, name, kind, expires_at, created_at
+INSERT INTO auth_tokens (
+    user_id,
+    token_hash,
+    name,
+    kind,
+    expires_at,
+    created_at,
+    oauth_client_id,
+    oauth_scopes,
+    oauth_resource
+)
+VALUES (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    $7,
+    coalesce($8::text[], '{}'::text[]),
+    $9
+)
+RETURNING id, user_id, token_hash, name, kind, expires_at, created_at, oauth_client_id, oauth_scopes, oauth_resource
 `
 
 type CreateAuthTokenParams struct {
-	UserID    int64
-	TokenHash string
-	Name      string
-	Kind      AuthTokenKind
-	ExpiresAt pgtype.Timestamptz
-	CreatedAt pgtype.Timestamptz
+	UserID        int64
+	TokenHash     string
+	Name          string
+	Kind          AuthTokenKind
+	ExpiresAt     pgtype.Timestamptz
+	CreatedAt     pgtype.Timestamptz
+	OauthClientID pgtype.Text
+	OauthScopes   []string
+	OauthResource pgtype.Text
 }
 
 func (q *Queries) CreateAuthToken(ctx context.Context, arg CreateAuthTokenParams) (AuthToken, error) {
@@ -35,6 +58,9 @@ func (q *Queries) CreateAuthToken(ctx context.Context, arg CreateAuthTokenParams
 		arg.Kind,
 		arg.ExpiresAt,
 		arg.CreatedAt,
+		arg.OauthClientID,
+		arg.OauthScopes,
+		arg.OauthResource,
 	)
 	var i AuthToken
 	err := row.Scan(
@@ -45,6 +71,9 @@ func (q *Queries) CreateAuthToken(ctx context.Context, arg CreateAuthTokenParams
 		&i.Kind,
 		&i.ExpiresAt,
 		&i.CreatedAt,
+		&i.OauthClientID,
+		&i.OauthScopes,
+		&i.OauthResource,
 	)
 	return i, err
 }
@@ -94,6 +123,9 @@ SELECT
     t.kind,
     t.expires_at,
     t.created_at,
+    t.oauth_client_id,
+    t.oauth_scopes,
+    t.oauth_resource,
     u.id         AS user_id_2,
     u.email      AS user_email,
     u.name       AS user_name,
@@ -104,17 +136,20 @@ WHERE t.token_hash = $1
 `
 
 type GetAuthTokenByHashRow struct {
-	ID          int64
-	UserID      int64
-	TokenHash   string
-	Name        string
-	Kind        AuthTokenKind
-	ExpiresAt   pgtype.Timestamptz
-	CreatedAt   pgtype.Timestamptz
-	UserID2     int64
-	UserEmail   string
-	UserName    string
-	UserIsOwner bool
+	ID            int64
+	UserID        int64
+	TokenHash     string
+	Name          string
+	Kind          AuthTokenKind
+	ExpiresAt     pgtype.Timestamptz
+	CreatedAt     pgtype.Timestamptz
+	OauthClientID pgtype.Text
+	OauthScopes   []string
+	OauthResource pgtype.Text
+	UserID2       int64
+	UserEmail     string
+	UserName      string
+	UserIsOwner   bool
 }
 
 func (q *Queries) GetAuthTokenByHash(ctx context.Context, tokenHash string) (GetAuthTokenByHashRow, error) {
@@ -128,6 +163,9 @@ func (q *Queries) GetAuthTokenByHash(ctx context.Context, tokenHash string) (Get
 		&i.Kind,
 		&i.ExpiresAt,
 		&i.CreatedAt,
+		&i.OauthClientID,
+		&i.OauthScopes,
+		&i.OauthResource,
 		&i.UserID2,
 		&i.UserEmail,
 		&i.UserName,
@@ -137,8 +175,9 @@ func (q *Queries) GetAuthTokenByHash(ctx context.Context, tokenHash string) (Get
 }
 
 const listAuthTokensByUser = `-- name: ListAuthTokensByUser :many
-SELECT id, user_id, token_hash, name, kind, expires_at, created_at FROM auth_tokens
+SELECT id, user_id, token_hash, name, kind, expires_at, created_at, oauth_client_id, oauth_scopes, oauth_resource FROM auth_tokens
 WHERE user_id = $1
+  AND kind IN ('session', 'api')
   AND (expires_at IS NULL OR expires_at > $2)
 ORDER BY id ASC
 `
@@ -165,6 +204,9 @@ func (q *Queries) ListAuthTokensByUser(ctx context.Context, arg ListAuthTokensBy
 			&i.Kind,
 			&i.ExpiresAt,
 			&i.CreatedAt,
+			&i.OauthClientID,
+			&i.OauthScopes,
+			&i.OauthResource,
 		); err != nil {
 			return nil, err
 		}

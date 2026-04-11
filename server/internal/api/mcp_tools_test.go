@@ -2,13 +2,20 @@ package api_test
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
+
+	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/mcp"
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 // mcpSession represents an initialized MCP session for testing.
@@ -21,6 +28,11 @@ type mcpSession struct {
 // newMCPSession creates an MCP transport, performs the initialize handshake,
 // and returns a session ready for tool calls.
 func newMCPSession(t *testing.T, env *testEnv) *mcpSession {
+	t.Helper()
+	return newMCPSessionWithToken(t, env, env.Token)
+}
+
+func newMCPSessionWithToken(t *testing.T, env *testEnv, token string) *mcpSession {
 	t.Helper()
 	handler := mcp.NewTransport(env.pool, env.Handler)
 
@@ -42,7 +54,7 @@ func newMCPSession(t *testing.T, env *testEnv) *mcpSession {
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/mcp", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json, text/event-stream")
-	req.Header.Set("Authorization", "Bearer "+env.Token)
+	req.Header.Set("Authorization", "Bearer "+token)
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 	resp := w.Result()
@@ -56,7 +68,7 @@ func newMCPSession(t *testing.T, env *testEnv) *mcpSession {
 
 	return &mcpSession{
 		handler:   handler,
-		token:     env.Token,
+		token:     token,
 		sessionID: sessionID,
 	}
 }
@@ -392,6 +404,46 @@ func TestMCPSpaceList(t *testing.T) {
 	items := toolResultList(t, rpcResp)
 	if len(items) != 2 {
 		t.Fatalf("got %d spaces, want 2", len(items))
+	}
+}
+
+func TestMCPSpaceListRequiresSpacesReadScope(t *testing.T) {
+	env := setupTestServer(t)
+
+	ownerID := getUserID(t, env, env.Token)
+	ownerNumericID, err := types.ParseUserID(ownerID)
+	if err != nil {
+		t.Fatalf("parse owner ID %q: %v", ownerID, err)
+	}
+
+	rawToken := "oauth-mcp-profile-only" //nolint:gosec // test token fixture
+	hash := sha256.Sum256([]byte(rawToken))
+	tokenHash := hex.EncodeToString(hash[:])
+
+	q := dbgen.New(env.pool)
+	_, err = q.CreateAuthToken(t.Context(), dbgen.CreateAuthTokenParams{
+		UserID:        ownerNumericID,
+		TokenHash:     tokenHash,
+		Name:          "Tend MCP",
+		Kind:          dbgen.AuthTokenKindOauthAccess,
+		ExpiresAt:     pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
+		CreatedAt:     pgtype.Timestamptz{Time: time.Now(), Valid: true},
+		OauthClientID: pgtype.Text{String: "remote-mcp", Valid: true},
+		OauthScopes:   []string{"profile:read"},
+		OauthResource: pgtype.Text{String: env.Server.URL + "/mcp", Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("create oauth access token: %v", err)
+	}
+
+	s := newMCPSessionWithToken(t, env, rawToken)
+	rpcResp := s.call(t, "space_list", map[string]any{})
+	text, isErr := mcpResultText(t, rpcResp)
+	if !isErr {
+		t.Fatal("expected scope error for underscoped MCP token")
+	}
+	if text != "insufficient scope" {
+		t.Fatalf("text = %q, want insufficient scope", text)
 	}
 }
 

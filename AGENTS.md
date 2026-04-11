@@ -127,8 +127,8 @@ Use `vhs` for recording CLI demos. Run `vhs --help` for details.
 
 ### Dev environment
 
-`mise run dev` starts all services (postgres, server, web). The `seed` Tilt resource creates the
-default admin user (`admin@localhost` / `password`) on first run.
+`mise run dev` starts all services (postgres, server, web). The server bootstraps the default admin
+user (`admin@localhost` / `password`) on first run via `TEND_INIT_OWNER_*`.
 
 ### Capturing UI evidence
 

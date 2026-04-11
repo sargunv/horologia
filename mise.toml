@@ -14,6 +14,7 @@ POSTGRES_PORT = "{{env.POSTGRES_PORT | default(value='5432')}}"
 PGDATA = "{{config_root}}/.postgres/{{exec(command='git rev-parse --abbrev-ref HEAD 2>/dev/null | tr / - || echo main')}}/data"
 OIDC_PORT = "{{env.OIDC_PORT | default(value='5556')}}"
 SERVER_PORT = "{{env.SERVER_PORT | default(value='8080')}}"
+TEND_SERVER = "http://localhost:{{env.SERVER_PORT | default(value='8080')}}"
 WEB_PORT = "{{env.WEB_PORT | default(value='5173')}}"
 TILT_PORT = "{{env.TILT_PORT | default(value='10350')}}"
 
@@ -73,6 +74,12 @@ run = "mise run generate && mise run fix && mise run test"
 [tasks.dev]
 description = "Start local dev environment"
 run = "tilt up --stream --port $TILT_PORT"
+
+[tasks.cli]
+description = "Run the CLI from the repo root"
+run = """
+mise run //cli:run -- "$@"
+"""
 
 [tasks."db:reset"]
 description = "Drop and reinitialise the dev database for the current branch"

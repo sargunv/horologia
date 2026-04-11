@@ -4,6 +4,7 @@ import { CircleAlert } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 import * as v from "valibot";
 import { authConfigQueryOptions } from "../lib/queries.ts";
+import { shouldUseDocumentNavigation } from "../lib/redirects.ts";
 
 const ErrorBodySchema = v.object({ message: v.string() });
 
@@ -51,7 +52,12 @@ function LoginPage() {
       }
     },
     onSuccess: () => {
-      void navigate({ to: redirect ?? "/" });
+      const target = redirect ?? "/";
+      if (shouldUseDocumentNavigation(target)) {
+        window.location.assign(target);
+        return;
+      }
+      void navigate({ to: target });
     },
   });
 

@@ -10,6 +10,9 @@ import (
 )
 
 func (h *Handler) UsersMe(ctx context.Context) (*apigen.User, error) {
+	if err := h.requireScope(ctx, "profile:read"); err != nil {
+		return nil, err
+	}
 	authUser := auth.UserFromContext(ctx)
 	q := dbgen.New(h.Pool)
 	user, err := q.GetUserByID(ctx, authUser.ID)
@@ -20,6 +23,9 @@ func (h *Handler) UsersMe(ctx context.Context) (*apigen.User, error) {
 }
 
 func (h *Handler) UserTasksList(ctx context.Context, params apigen.UserTasksListParams) (*apigen.TaskPage, error) {
+	if err := h.requireScope(ctx, "tasks:read"); err != nil {
+		return nil, err
+	}
 	user := auth.UserFromContext(ctx)
 	if user == nil {
 		return nil, forbidden("authentication required")

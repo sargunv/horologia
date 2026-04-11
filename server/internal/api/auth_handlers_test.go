@@ -3,6 +3,7 @@ package api_test
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -152,4 +153,161 @@ func TestExpiredTokenRejected(t *testing.T) {
 	}
 
 	assertStatusClose(t, doRequestAs(t, env, rawToken, "GET", "/users/me", ""), http.StatusUnauthorized)
+}
+
+func TestOAuthAccessTokenAccepted(t *testing.T) {
+	env := setupTestServer(t)
+
+	ownerID := getUserID(t, env, env.Token)
+	ownerNumericID, err := types.ParseUserID(ownerID)
+	if err != nil {
+		t.Fatalf("parse owner ID %q: %v", ownerID, err)
+	}
+
+	rawToken := "oauth-access-test-token" //nolint:gosec // test token fixture
+	hash := sha256.Sum256([]byte(rawToken))
+	tokenHash := hex.EncodeToString(hash[:])
+
+	q := dbgen.New(env.pool)
+	_, err = q.CreateAuthToken(t.Context(), dbgen.CreateAuthTokenParams{ //nolint:gosec // test token fixture
+		UserID:        ownerNumericID,
+		TokenHash:     tokenHash,
+		Name:          "Tend CLI",
+		Kind:          dbgen.AuthTokenKindOauthAccess,
+		ExpiresAt:     pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
+		CreatedAt:     pgtype.Timestamptz{Time: time.Now(), Valid: true},
+		OauthClientID: pgtype.Text{String: "tend-cli", Valid: true},
+		OauthScopes:   []string{"profile:read"},
+		OauthResource: pgtype.Text{String: env.Server.URL + "/api", Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("create oauth access token: %v", err)
+	}
+
+	assertStatusClose(t, doRequestAs(t, env, rawToken, "GET", "/users/me", ""), http.StatusOK)
+}
+
+func TestAuthTokenListExcludesOAuthTokens(t *testing.T) {
+	env := setupTestServer(t)
+
+	ownerID := getUserID(t, env, env.Token)
+	ownerNumericID, err := types.ParseUserID(ownerID)
+	if err != nil {
+		t.Fatalf("parse owner ID %q: %v", ownerID, err)
+	}
+
+	q := dbgen.New(env.pool)
+	tokenHashBytes := sha256.Sum256([]byte("oauth-access-list-token")) //nolint:gosec // test token fixture
+	_, err = q.CreateAuthToken(t.Context(), dbgen.CreateAuthTokenParams{
+		UserID:        ownerNumericID,
+		TokenHash:     hex.EncodeToString(tokenHashBytes[:]),
+		Name:          "Hidden OAuth Token",
+		Kind:          dbgen.AuthTokenKindOauthAccess,
+		ExpiresAt:     pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
+		CreatedAt:     pgtype.Timestamptz{Time: time.Now(), Valid: true},
+		OauthClientID: pgtype.Text{String: "tend-cli", Valid: true},
+		OauthScopes:   []string{"profile:read"},
+		OauthResource: pgtype.Text{String: env.Server.URL + "/api", Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("create oauth access token: %v", err)
+	}
+
+	resp := doRequest(t, env, "GET", "/auth/tokens", "")
+	assertStatus(t, resp, http.StatusOK)
+
+	var page map[string]any
+	readJSON(t, resp, &page)
+	items := jsonAs[[]any](t, page["items"])
+	for _, item := range items {
+		token := jsonAs[map[string]any](t, item)
+		if token["name"] == "Hidden OAuth Token" {
+			t.Fatal("auth token list exposed oauth-issued token")
+		}
+	}
+}
+
+func TestOAuthAccessTokenMissingScopeForbidden(t *testing.T) {
+	env := setupTestServer(t)
+
+	ownerID := getUserID(t, env, env.Token)
+	ownerNumericID, err := types.ParseUserID(ownerID)
+	if err != nil {
+		t.Fatalf("parse owner ID %q: %v", ownerID, err)
+	}
+
+	rawToken := "oauth-profile-only-token" //nolint:gosec // test token fixture
+	hash := sha256.Sum256([]byte(rawToken))
+	tokenHash := hex.EncodeToString(hash[:])
+
+	q := dbgen.New(env.pool)
+	_, err = q.CreateAuthToken(t.Context(), dbgen.CreateAuthTokenParams{
+		UserID:        ownerNumericID,
+		TokenHash:     tokenHash,
+		Name:          "Tend CLI",
+		Kind:          dbgen.AuthTokenKindOauthAccess,
+		ExpiresAt:     pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
+		CreatedAt:     pgtype.Timestamptz{Time: time.Now(), Valid: true},
+		OauthClientID: pgtype.Text{String: "tend-cli", Valid: true},
+		OauthScopes:   []string{"profile:read"},
+		OauthResource: pgtype.Text{String: env.Server.URL + "/api", Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("create oauth access token: %v", err)
+	}
+
+	assertStatusClose(t, doRequestAs(t, env, rawToken, "GET", "/spaces", ""), http.StatusForbidden)
+}
+
+func TestOAuthAccessTokenStillRequiresOwner(t *testing.T) {
+	env := setupTestServer(t)
+
+	userToken := createTestUser(t, env, "worker@example.com", "Worker", "password")
+	oauthToken := createOAuthAccessTokenForBearerUser(t, env, userToken, "users:write")
+
+	resp := doRequestAs(t, env, oauthToken, "POST", "/users", `{"email":"new@example.com","name":"New User","password":"password"}`)
+	assertStatusClose(t, resp, http.StatusForbidden)
+}
+
+func TestOAuthAccessTokenStillRequiresSpaceMembership(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "secret", "Secret")
+	userToken := createTestUser(t, env, "outsider@example.com", "Outsider", "password")
+	oauthToken := createOAuthAccessTokenForBearerUser(t, env, userToken, "spaces:read")
+
+	resp := doRequestAs(t, env, oauthToken, "GET", "/spaces/secret", "")
+	assertStatusClose(t, resp, http.StatusNotFound)
+}
+
+func createOAuthAccessTokenForBearerUser(t *testing.T, env *testEnv, bearerToken string, scopes ...string) string {
+	t.Helper()
+
+	userID := getUserID(t, env, bearerToken)
+	userNumericID, err := types.ParseUserID(userID)
+	if err != nil {
+		t.Fatalf("parse user ID %q: %v", userID, err)
+	}
+
+	rawToken := fmt.Sprintf("oauth-%s-%s", t.Name(), userID)
+	hash := sha256.Sum256([]byte(rawToken))
+	tokenHash := hex.EncodeToString(hash[:])
+
+	q := dbgen.New(env.pool)
+	_, err = q.CreateAuthToken(t.Context(), dbgen.CreateAuthTokenParams{
+		UserID:        userNumericID,
+		TokenHash:     tokenHash,
+		Name:          "Tend CLI",
+		Kind:          dbgen.AuthTokenKindOauthAccess,
+		ExpiresAt:     pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
+		CreatedAt:     pgtype.Timestamptz{Time: time.Now(), Valid: true},
+		OauthClientID: pgtype.Text{String: "tend-cli", Valid: true},
+		OauthScopes:   scopes,
+		OauthResource: pgtype.Text{String: env.Server.URL + "/api", Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("create oauth access token: %v", err)
+	}
+
+	return rawToken
 }

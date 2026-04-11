@@ -13,6 +13,7 @@ import (
 	zhttp "github.com/zitadel/oidc/v3/pkg/http"
 
 	apigen "github.com/sargunv/tend/api/gen"
+	"github.com/sargunv/tend/server/internal/auth"
 	"github.com/sargunv/tend/server/internal/pwdcheck"
 	"github.com/sargunv/tend/server/internal/types"
 )
@@ -22,6 +23,7 @@ type Handler struct {
 	apigen.UnimplementedHandler
 	Pool                   *pgxpool.Pool
 	Log                    *slog.Logger
+	PublicURL              string
 	SecureCookies          bool
 	OIDCEnabled            bool
 	OIDCLabel              string
@@ -113,6 +115,10 @@ func errorHandler(log *slog.Logger) ogenerrors.ErrorHandler {
 			log.DebugContext(ctx, "client error", attrs...)
 		} else {
 			log.ErrorContext(ctx, "server error", attrs...)
+		}
+
+		if errors.As(err, &secErr) {
+			auth.SetOAuthChallengeHeader(w, r)
 		}
 
 		ogenerrors.DefaultErrorHandler(ctx, w, r, err)

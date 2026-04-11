@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/sargunv/tend/server/internal/api"
@@ -75,4 +76,45 @@ func TestHealthzDBDown(t *testing.T) {
 	if body["error"] != "database unavailable" {
 		t.Fatalf("got error %q, want %q — raw DB error may be leaking", body["error"], "database unavailable")
 	}
+}
+
+func TestMountRootExposesOAuthAuthorizeRoute(t *testing.T) {
+	env := setupTestServer(t)
+
+	log := slog.New(slog.DiscardHandler)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log)
+	srv := httptest.NewServer(root)
+	t.Cleanup(srv.Close)
+
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, srv.URL+"/oauth/authorize?"+url.Values{
+		"response_type":         {"code"},
+		"client_id":             {"tend-cli"},
+		"redirect_uri":          {"http://127.0.0.1:8484/callback"},
+		"scope":                 {"profile:read"},
+		"state":                 {"test-state"},
+		"code_challenge":        {"challenge"},
+		"code_challenge_method": {"S256"},
+	}.Encode(), nil)
+	if err != nil {
+		t.Fatalf("new request: %v", err)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatalf("authorize: %v", err)
+	}
+	assertStatus(t, resp, http.StatusSeeOther)
+
+	location := resp.Header.Get("Location")
+	if location == "" {
+		t.Fatal("missing redirect location")
+	}
+	if location[:16] != "/login?redirect=" {
+		t.Fatalf("location = %q, want login redirect", location)
+	}
+	_ = resp.Body.Close()
 }

@@ -12,6 +12,9 @@ import (
 )
 
 func (h *Handler) SpaceTagsList(ctx context.Context, params apigen.SpaceTagsListParams) (*apigen.TagList, error) {
+	if err := h.requireScope(ctx, "tags:read"); err != nil {
+		return nil, err
+	}
 	if err := h.requireSpaceRead(ctx, params.SpaceSlug); err != nil {
 		return nil, err
 	}
@@ -27,6 +30,9 @@ func (h *Handler) SpaceTagsList(ctx context.Context, params apigen.SpaceTagsList
 }
 
 func (h *Handler) SpaceTagsCreate(ctx context.Context, req *apigen.TagCreate, params apigen.SpaceTagsCreateParams) (*apigen.Tag, error) {
+	if err := h.requireScope(ctx, "tags:write"); err != nil {
+		return nil, err
+	}
 	if err := h.requireSpaceWrite(ctx, params.SpaceSlug); err != nil {
 		return nil, err
 	}
@@ -72,6 +78,9 @@ func (h *Handler) SpaceTagsCreate(ctx context.Context, req *apigen.TagCreate, pa
 }
 
 func (h *Handler) SpaceTagsUpdate(ctx context.Context, req *apigen.TagUpdate, params apigen.SpaceTagsUpdateParams) (*apigen.Tag, error) {
+	if err := h.requireScope(ctx, "tags:write"); err != nil {
+		return nil, err
+	}
 	if err := h.requireSpaceWrite(ctx, params.SpaceSlug); err != nil {
 		return nil, err
 	}
@@ -127,6 +136,9 @@ func (h *Handler) SpaceTagsUpdate(ctx context.Context, req *apigen.TagUpdate, pa
 }
 
 func (h *Handler) SpaceTagsDelete(ctx context.Context, params apigen.SpaceTagsDeleteParams) error {
+	if err := h.requireScope(ctx, "tags:write"); err != nil {
+		return err
+	}
 	if err := h.requireSpaceWrite(ctx, params.SpaceSlug); err != nil {
 		return err
 	}
