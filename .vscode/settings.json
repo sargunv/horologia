@@ -1,11 +1,8 @@
 {
-  "editor.defaultFormatter": "dprint.dprint",
   "editor.formatOnSave": true,
-  "editor.codeActionsOnSave": {
-    "source.fixAll.oxc": "explicit"
-  },
-  "[typespec]": {
-    "editor.defaultFormatter": "typespec.typespec-vscode"
-  },
-  "typespec.tsp-server.path": "api/node_modules/@typespec/compiler"
+  "editor.codeActionsOnSave": { "source.fixAll.oxc": "explicit" },
+  "editor.defaultFormatter": "dprint.dprint",
+  "oxc.typeAware": true,
+  "oxc.fixKind": "safe_fix",
+  "oxc.unusedDisableDirectives": "deny"
 }

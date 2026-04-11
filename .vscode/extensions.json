@@ -2,8 +2,6 @@
   "recommendations": [
     "dprint.dprint",
     "golang.Go",
-    "hverlin.mise-vscode",
-    "VoidZero.vite-plus-extension-pack",
-    "vitest.explorer"
+    "hverlin.mise-vscode"
   ]
 }
