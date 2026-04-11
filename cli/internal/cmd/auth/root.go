@@ -14,8 +14,8 @@ func New(flags *support.RootFlags) *cobra.Command {
 	cmd.AddCommand(
 		support.StubCommand("login", "Authenticate with a Tend server"),
 		support.StubCommand("logout", "Clear local authentication state"),
-		support.StubCommand("status", "Show the current authentication state"),
-		newTokenCmd(),
+		newStatusCmd(flags),
+		newTokenCmd(flags),
 	)
 
 	return cmd

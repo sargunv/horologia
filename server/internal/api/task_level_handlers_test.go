@@ -62,27 +62,31 @@ func TestTaskStatusesReplaceBasic(t *testing.T) {
 	}
 }
 
-func TestTaskStatusesReplaceReorderExisting(t *testing.T) {
+func TestTaskStatusesReplaceRejectOutOfOrderCategories(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "st", "Status Test")
 
-	// Swap the default order: done before todo.
 	resp := doRequest(t, env, "PUT", "/spaces/st/task-statuses", `{
 		"items": [
 			{"name": "done", "category": "completion"},
 			{"name": "todo", "category": "initial"}
 		]
 	}`)
-	assertStatus(t, resp, http.StatusOK)
-	var body map[string]any
-	readJSON(t, resp, &body)
-	items := jsonAs[[]any](t, body["items"])
-	if jsonAs[map[string]any](t, items[0])["name"] != "done" {
-		t.Errorf("first status = %v, want done", items[0])
-	}
-	if jsonAs[map[string]any](t, items[1])["name"] != "todo" {
-		t.Errorf("second status = %v, want todo", items[1])
-	}
+	assertStatusClose(t, resp, http.StatusBadRequest)
+}
+
+func TestTaskStatusesReplaceRejectIntermediateAfterCompletion(t *testing.T) {
+	env := setupTestServer(t)
+	createSpace(t, env, "st", "Status Test")
+
+	resp := doRequest(t, env, "PUT", "/spaces/st/task-statuses", `{
+		"items": [
+			{"name": "todo", "category": "initial"},
+			{"name": "done", "category": "completion"},
+			{"name": "review", "category": "intermediate"}
+		]
+	}`)
+	assertStatusClose(t, resp, http.StatusBadRequest)
 }
 
 func TestTaskStatusesReplaceRejectRemoveWithTasks(t *testing.T) {

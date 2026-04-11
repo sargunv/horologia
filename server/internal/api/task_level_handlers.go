@@ -31,6 +31,31 @@ type replaceLevelsOps[Item any] struct {
 	validateRemove func(ctx context.Context, q *dbgen.Queries, spaceSlug, name string) error // nil = skip
 }
 
+func validateStatusCategoryOrdering(items []apigen.TaskStatusInput) error {
+	currentPhase := -1
+
+	for _, item := range items {
+		var phase int
+		switch item.Category {
+		case apigen.TaskStatusCategoryInitial:
+			phase = 0
+		case apigen.TaskStatusCategoryIntermediate:
+			phase = 1
+		case apigen.TaskStatusCategoryCompletion:
+			phase = 2
+		default:
+			return badRequest(fmt.Sprintf("invalid status category %q", item.Category))
+		}
+
+		if phase < currentPhase {
+			return badRequest(`status categories must be ordered "initial", then "intermediate", then "completion"`)
+		}
+		currentPhase = phase
+	}
+
+	return nil
+}
+
 // replaceLevels implements the shared diff-and-sync logic for status, effort,
 // and priority level replacement.
 func replaceLevels[Item any](ctx context.Context, q *dbgen.Queries, spaceSlug string, items []Item, ops replaceLevelsOps[Item]) error {
@@ -157,6 +182,9 @@ func (h *Handler) SpaceTaskStatusesReplace(ctx context.Context, req *apigen.Task
 	}
 	if !hasCompletion {
 		return nil, badRequest("at least one status with category \"completion\" is required")
+	}
+	if err := validateStatusCategoryOrdering(req.Items); err != nil {
+		return nil, err
 	}
 
 	tx, err := h.Pool.Begin(ctx)

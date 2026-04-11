@@ -191,6 +191,972 @@ func TestUserMeRequiresToken(t *testing.T) {
 	}
 }
 
+func TestAuthStatusWithoutServerSkipsIdentity(t *testing.T) {
+	setEnvValue(t, "TEND_SERVER", nil)
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123456789"))
+
+	stdout, _, err := executeRoot(t, "--json", "auth", "status")
+	if err != nil {
+		t.Fatalf("execute auth status: %v", err)
+	}
+
+	var out struct {
+		Server struct {
+			Configured bool `json:"configured"`
+		} `json:"server"`
+		Token struct {
+			Configured bool   `json:"configured"`
+			Preview    string `json:"preview"`
+		} `json:"token"`
+		Identity struct {
+			Skipped bool   `json:"skipped"`
+			Reason  string `json:"reason"`
+		} `json:"identity"`
+	}
+	if err := json.Unmarshal([]byte(stdout), &out); err != nil {
+		t.Fatalf("decode output: %v\noutput=%s", err, stdout)
+	}
+
+	if out.Server.Configured {
+		t.Fatalf("server should not be configured")
+	}
+	if !out.Token.Configured {
+		t.Fatalf("token should be configured")
+	}
+	if got, want := out.Token.Preview, "abc1...6789"; got != want {
+		t.Fatalf("token preview = %q, want %q", got, want)
+	}
+	if !out.Identity.Skipped {
+		t.Fatalf("identity should be skipped")
+	}
+	if got, want := out.Identity.Reason, "server not configured"; got != want {
+		t.Fatalf("identity reason = %q, want %q", got, want)
+	}
+}
+
+func TestAuthStatusWithServerChecksIdentity(t *testing.T) {
+	sawWhoami := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/users/me":
+			sawWhoami = true
+			writeJSON(t, w, http.StatusOK, runtime.User{
+				ID:          "U1",
+				Email:       "admin@localhost",
+				Name:        "Admin",
+				IsOwner:     true,
+				HasPassword: true,
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	stdout, _, err := executeRoot(t, "--json", "auth", "status")
+	if err != nil {
+		t.Fatalf("execute auth status: %v", err)
+	}
+
+	var out struct {
+		Identity struct {
+			Checked bool `json:"checked"`
+			OK      bool `json:"ok"`
+			User    struct {
+				ID string `json:"id"`
+			} `json:"user"`
+		} `json:"identity"`
+	}
+	if err := json.Unmarshal([]byte(stdout), &out); err != nil {
+		t.Fatalf("decode output: %v\noutput=%s", err, stdout)
+	}
+
+	if !sawWhoami {
+		t.Fatalf("expected users/me request")
+	}
+	if !out.Identity.Checked || !out.Identity.OK {
+		t.Fatalf("identity should be checked and ok")
+	}
+	if got, want := out.Identity.User.ID, "U1"; got != want {
+		t.Fatalf("identity user id = %q, want %q", got, want)
+	}
+}
+
+func TestSpaceListUsesAPI(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces":
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"items": []map[string]any{
+					{
+						"slug":        "home",
+						"name":        "Home",
+						"description": "Household tasks",
+						"createdAt":   "2026-04-11T12:00:00Z",
+						"updatedAt":   "2026-04-11T12:00:00Z",
+					},
+				},
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	stdout, _, err := executeRoot(t, "--json", "space", "list")
+	if err != nil {
+		t.Fatalf("execute space list: %v", err)
+	}
+
+	var out struct {
+		Items []struct {
+			Slug string `json:"slug"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal([]byte(stdout), &out); err != nil {
+		t.Fatalf("decode output: %v\noutput=%s", err, stdout)
+	}
+	if got, want := out.Items[0].Slug, "home"; got != want {
+		t.Fatalf("slug = %q, want %q", got, want)
+	}
+}
+
+func TestSpaceCreateSendsBody(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces":
+			if got, want := r.Method, http.MethodPost; got != want {
+				t.Fatalf("method = %q, want %q", got, want)
+			}
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			if got, want := body["slug"], "home"; got != want {
+				t.Fatalf("slug = %#v, want %#v", got, want)
+			}
+			if got, want := body["name"], "Home"; got != want {
+				t.Fatalf("name = %#v, want %#v", got, want)
+			}
+			if got, want := body["description"], "Household tasks"; got != want {
+				t.Fatalf("description = %#v, want %#v", got, want)
+			}
+
+			writeJSON(t, w, http.StatusCreated, map[string]any{
+				"slug":        "home",
+				"name":        "Home",
+				"description": "Household tasks",
+				"createdAt":   "2026-04-11T12:00:00Z",
+				"updatedAt":   "2026-04-11T12:00:00Z",
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(t, "space", "create", "--slug", "home", "--name", "Home", "--description", "Household tasks")
+	if err != nil {
+		t.Fatalf("execute space create: %v", err)
+	}
+}
+
+func TestSpaceUpdateSendsOptionalFields(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home":
+			if got, want := r.Method, http.MethodPatch; got != want {
+				t.Fatalf("method = %q, want %q", got, want)
+			}
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			if got, want := body["slug"], "household"; got != want {
+				t.Fatalf("slug = %#v, want %#v", got, want)
+			}
+			if got, want := body["name"], "Household"; got != want {
+				t.Fatalf("name = %#v, want %#v", got, want)
+			}
+			if got, want := body["description"], "Updated"; got != want {
+				t.Fatalf("description = %#v, want %#v", got, want)
+			}
+
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"slug":        "household",
+				"name":        "Household",
+				"description": "Updated",
+				"createdAt":   "2026-04-11T12:00:00Z",
+				"updatedAt":   "2026-04-11T13:00:00Z",
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(t, "space", "update", "home", "--slug", "household", "--name", "Household", "--description", "Updated")
+	if err != nil {
+		t.Fatalf("execute space update: %v", err)
+	}
+}
+
+func TestSpaceActivityPassesPagination(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/activity":
+			if got, want := r.URL.Query().Get("cursor"), "next-1"; got != want {
+				t.Fatalf("cursor = %q, want %q", got, want)
+			}
+			if got, want := r.URL.Query().Get("limit"), "10"; got != want {
+				t.Fatalf("limit = %q, want %q", got, want)
+			}
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"items":      []map[string]any{},
+				"nextCursor": "next-2",
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	stdout, _, err := executeRoot(t, "--json", "space", "activity", "home", "--cursor", "next-1", "--limit", "10")
+	if err != nil {
+		t.Fatalf("execute space activity: %v", err)
+	}
+
+	var out struct {
+		NextCursor string `json:"nextCursor"`
+	}
+	if err := json.Unmarshal([]byte(stdout), &out); err != nil {
+		t.Fatalf("decode output: %v\noutput=%s", err, stdout)
+	}
+	if got, want := out.NextCursor, "next-2"; got != want {
+		t.Fatalf("next cursor = %q, want %q", got, want)
+	}
+}
+
+func TestSpaceMemberListUsesAPI(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/members":
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"items": []map[string]any{
+					{
+						"userId":    "U1",
+						"userName":  "Admin",
+						"userEmail": "admin@localhost",
+						"role":      "admin",
+						"createdAt": "2026-04-11T12:00:00Z",
+					},
+				},
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	stdout, _, err := executeRoot(t, "--json", "space", "member", "list", "home")
+	if err != nil {
+		t.Fatalf("execute space member list: %v", err)
+	}
+
+	var out struct {
+		Items []struct {
+			UserID string `json:"userId"`
+			Role   string `json:"role"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal([]byte(stdout), &out); err != nil {
+		t.Fatalf("decode output: %v\noutput=%s", err, stdout)
+	}
+	if got, want := out.Items[0].UserID, "U1"; got != want {
+		t.Fatalf("user id = %q, want %q", got, want)
+	}
+	if got, want := out.Items[0].Role, "admin"; got != want {
+		t.Fatalf("role = %q, want %q", got, want)
+	}
+}
+
+func TestSpaceMemberAddSendsBody(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/members":
+			if got, want := r.Method, http.MethodPost; got != want {
+				t.Fatalf("method = %q, want %q", got, want)
+			}
+
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			if got, want := body["userId"], "U2"; got != want {
+				t.Fatalf("userId = %#v, want %#v", got, want)
+			}
+			if got, want := body["role"], "viewer"; got != want {
+				t.Fatalf("role = %#v, want %#v", got, want)
+			}
+
+			writeJSON(t, w, http.StatusCreated, map[string]any{
+				"userId":    "U2",
+				"userName":  "Bob",
+				"userEmail": "bob@example.com",
+				"role":      "viewer",
+				"createdAt": "2026-04-11T12:00:00Z",
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(t, "space", "member", "add", "home", "U2", "--role", "viewer")
+	if err != nil {
+		t.Fatalf("execute space member add: %v", err)
+	}
+}
+
+func TestSpaceMemberSetRoleUsesPatch(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/members/U2":
+			if got, want := r.Method, http.MethodPatch; got != want {
+				t.Fatalf("method = %q, want %q", got, want)
+			}
+
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			if got, want := body["role"], "member"; got != want {
+				t.Fatalf("role = %#v, want %#v", got, want)
+			}
+
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"userId":    "U2",
+				"userName":  "Bob",
+				"userEmail": "bob@example.com",
+				"role":      "member",
+				"createdAt": "2026-04-11T12:00:00Z",
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(t, "space", "member", "set-role", "home", "U2", "member")
+	if err != nil {
+		t.Fatalf("execute space member set-role: %v", err)
+	}
+}
+
+func TestSpaceMemberRemoveUsesDelete(t *testing.T) {
+	sawDelete := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/members/U2":
+			sawDelete = true
+			if got, want := r.Method, http.MethodDelete; got != want {
+				t.Fatalf("method = %q, want %q", got, want)
+			}
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(t, "space", "member", "remove", "home", "U2")
+	if err != nil {
+		t.Fatalf("execute space member remove: %v", err)
+	}
+	if !sawDelete {
+		t.Fatalf("expected delete request")
+	}
+}
+
+func TestSpaceTagListUsesAPI(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/tags":
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"items": []map[string]any{
+					{
+						"name":      "bug",
+						"createdAt": "2026-04-11T12:00:00Z",
+					},
+				},
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	stdout, _, err := executeRoot(t, "--json", "space", "tag", "list", "home")
+	if err != nil {
+		t.Fatalf("execute space tag list: %v", err)
+	}
+
+	var out struct {
+		Items []struct {
+			Name string `json:"name"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal([]byte(stdout), &out); err != nil {
+		t.Fatalf("decode output: %v\noutput=%s", err, stdout)
+	}
+	if got, want := out.Items[0].Name, "bug"; got != want {
+		t.Fatalf("name = %q, want %q", got, want)
+	}
+}
+
+func TestSpaceTagCreateSendsBody(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/tags":
+			if got, want := r.Method, http.MethodPost; got != want {
+				t.Fatalf("method = %q, want %q", got, want)
+			}
+
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			if got, want := body["name"], "bug"; got != want {
+				t.Fatalf("name = %#v, want %#v", got, want)
+			}
+
+			writeJSON(t, w, http.StatusCreated, map[string]any{
+				"name":      "bug",
+				"createdAt": "2026-04-11T12:00:00Z",
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(t, "space", "tag", "create", "home", "--name", "bug")
+	if err != nil {
+		t.Fatalf("execute space tag create: %v", err)
+	}
+}
+
+func TestSpaceTagRenameUsesPatch(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/tags/bug":
+			if got, want := r.Method, http.MethodPatch; got != want {
+				t.Fatalf("method = %q, want %q", got, want)
+			}
+
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			if got, want := body["name"], "urgent"; got != want {
+				t.Fatalf("name = %#v, want %#v", got, want)
+			}
+
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"name":      "urgent",
+				"createdAt": "2026-04-11T12:00:00Z",
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(t, "space", "tag", "rename", "home", "bug", "urgent")
+	if err != nil {
+		t.Fatalf("execute space tag rename: %v", err)
+	}
+}
+
+func TestSpaceTagDeleteUsesDelete(t *testing.T) {
+	sawDelete := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/tags/bug":
+			sawDelete = true
+			if got, want := r.Method, http.MethodDelete; got != want {
+				t.Fatalf("method = %q, want %q", got, want)
+			}
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(t, "space", "tag", "delete", "home", "bug")
+	if err != nil {
+		t.Fatalf("execute space tag delete: %v", err)
+	}
+	if !sawDelete {
+		t.Fatalf("expected delete request")
+	}
+}
+
+func TestSpaceStatusReplaceSendsOrderedCategories(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/task-statuses":
+			if got, want := r.Method, http.MethodPut; got != want {
+				t.Fatalf("method = %q, want %q", got, want)
+			}
+
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			items, ok := body["items"].([]any)
+			if !ok {
+				t.Fatalf("items missing or wrong type: %#v", body["items"])
+			}
+			if got, want := len(items), 4; got != want {
+				t.Fatalf("item count = %d, want %d", got, want)
+			}
+
+			first := items[0].(map[string]any)
+			second := items[1].(map[string]any)
+			third := items[2].(map[string]any)
+			fourth := items[3].(map[string]any)
+			if got, want := first["name"], "todo"; got != want {
+				t.Fatalf("first name = %#v, want %#v", got, want)
+			}
+			if got, want := first["category"], "initial"; got != want {
+				t.Fatalf("first category = %#v, want %#v", got, want)
+			}
+			if got, want := second["category"], "intermediate"; got != want {
+				t.Fatalf("second category = %#v, want %#v", got, want)
+			}
+			if got, want := third["category"], "intermediate"; got != want {
+				t.Fatalf("third category = %#v, want %#v", got, want)
+			}
+			if got, want := fourth["category"], "completion"; got != want {
+				t.Fatalf("fourth category = %#v, want %#v", got, want)
+			}
+
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"items": []map[string]any{
+					{"name": "todo", "category": "initial", "position": 1},
+					{"name": "doing", "category": "intermediate", "position": 2},
+					{"name": "blocked", "category": "intermediate", "position": 3},
+					{"name": "done", "category": "completion", "position": 4},
+				},
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(
+		t,
+		"space", "status", "replace", "home",
+		"--initial", "todo",
+		"--intermediate", "doing",
+		"--intermediate", "blocked",
+		"--completion", "done",
+	)
+	if err != nil {
+		t.Fatalf("execute space status replace: %v", err)
+	}
+}
+
+func TestSpaceStatusReplaceValidatesCompletionLocally(t *testing.T) {
+	setEnvValue(t, "TEND_SERVER", nil)
+	setEnvValue(t, "TEND_TOKEN", nil)
+
+	_, _, err := executeRoot(t, "space", "status", "replace", "home", "--initial", "todo")
+	if err == nil {
+		t.Fatalf("expected error")
+	}
+	if got, want := err.Error(), "at least one completion status is required"; got != want {
+		t.Fatalf("error = %q, want %q", got, want)
+	}
+}
+
+func TestSpaceEffortReplaceSendsOrderedLevels(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/task-effort-levels":
+			if got, want := r.Method, http.MethodPut; got != want {
+				t.Fatalf("method = %q, want %q", got, want)
+			}
+
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			items := body["items"].([]any)
+			if got, want := items[0].(map[string]any)["name"], "small"; got != want {
+				t.Fatalf("first name = %#v, want %#v", got, want)
+			}
+			if got, want := items[1].(map[string]any)["name"], "medium"; got != want {
+				t.Fatalf("second name = %#v, want %#v", got, want)
+			}
+
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"items": []map[string]any{
+					{"name": "small", "position": 1},
+					{"name": "medium", "position": 2},
+				},
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(t, "space", "effort", "replace", "home", "--name", "small", "--name", "medium")
+	if err != nil {
+		t.Fatalf("execute space effort replace: %v", err)
+	}
+}
+
+func TestSpaceEffortReplaceAllowsEmpty(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/task-effort-levels":
+			if got, want := r.Method, http.MethodPut; got != want {
+				t.Fatalf("method = %q, want %q", got, want)
+			}
+
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			items, ok := body["items"].([]any)
+			if !ok {
+				t.Fatalf("items missing or wrong type: %#v", body["items"])
+			}
+			if len(items) != 0 {
+				t.Fatalf("item count = %d, want 0", len(items))
+			}
+
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"items": []map[string]any{},
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(t, "space", "effort", "replace", "home")
+	if err != nil {
+		t.Fatalf("execute space effort replace: %v", err)
+	}
+}
+
+func TestSpacePriorityReplaceSendsOrderedLevels(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/task-priority-levels":
+			if got, want := r.Method, http.MethodPut; got != want {
+				t.Fatalf("method = %q, want %q", got, want)
+			}
+
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			items := body["items"].([]any)
+			if got, want := items[0].(map[string]any)["name"], "low"; got != want {
+				t.Fatalf("first name = %#v, want %#v", got, want)
+			}
+			if got, want := items[1].(map[string]any)["name"], "high"; got != want {
+				t.Fatalf("second name = %#v, want %#v", got, want)
+			}
+
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"items": []map[string]any{
+					{"name": "low", "position": 1},
+					{"name": "high", "position": 2},
+				},
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(t, "space", "priority", "replace", "home", "--name", "low", "--name", "high")
+	if err != nil {
+		t.Fatalf("execute space priority replace: %v", err)
+	}
+}
+
+func TestSpacePriorityReplaceAllowsEmpty(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/task-priority-levels":
+			if got, want := r.Method, http.MethodPut; got != want {
+				t.Fatalf("method = %q, want %q", got, want)
+			}
+
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			items, ok := body["items"].([]any)
+			if !ok {
+				t.Fatalf("items missing or wrong type: %#v", body["items"])
+			}
+			if len(items) != 0 {
+				t.Fatalf("item count = %d, want 0", len(items))
+			}
+
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"items": []map[string]any{},
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(t, "space", "priority", "replace", "home")
+	if err != nil {
+		t.Fatalf("execute space priority replace: %v", err)
+	}
+}
+
+func TestAuthTokenCreateSendsName(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/auth/tokens":
+			if got, want := r.Method, http.MethodPost; got != want {
+				t.Fatalf("method = %q, want %q", got, want)
+			}
+			if got, want := r.Header.Get("Authorization"), "Bearer abc123"; got != want {
+				t.Fatalf("authorization = %q, want %q", got, want)
+			}
+
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			if got, want := body["name"], "CLI token"; got != want {
+				t.Fatalf("name = %#v, want %#v", got, want)
+			}
+
+			writeJSON(t, w, http.StatusCreated, map[string]any{
+				"token": "secret-token",
+				"authToken": map[string]any{
+					"id":        "tok_1",
+					"name":      "CLI token",
+					"kind":      "api",
+					"createdAt": "2026-04-11T12:00:00Z",
+				},
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	stdout, _, err := executeRoot(t, "--json", "auth", "token", "create", "--name", "CLI token")
+	if err != nil {
+		t.Fatalf("execute auth token create: %v", err)
+	}
+
+	var out map[string]any
+	if err := json.Unmarshal([]byte(stdout), &out); err != nil {
+		t.Fatalf("decode output: %v\noutput=%s", err, stdout)
+	}
+	if got, want := out["token"], "secret-token"; got != want {
+		t.Fatalf("token = %#v, want %#v", got, want)
+	}
+}
+
+func TestAuthTokenRevokeUsesDelete(t *testing.T) {
+	sawDelete := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/auth/tokens/tok_1":
+			sawDelete = true
+			if got, want := r.Method, http.MethodDelete; got != want {
+				t.Fatalf("method = %q, want %q", got, want)
+			}
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(t, "auth", "token", "revoke", "tok_1")
+	if err != nil {
+		t.Fatalf("execute auth token revoke: %v", err)
+	}
+	if !sawDelete {
+		t.Fatalf("expected delete request")
+	}
+}
+
+func TestUserUpdateSendsOptionalFields(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/users/U1":
+			if got, want := r.Method, http.MethodPatch; got != want {
+				t.Fatalf("method = %q, want %q", got, want)
+			}
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+
+			if got, want := body["name"], "Updated"; got != want {
+				t.Fatalf("name = %#v, want %#v", got, want)
+			}
+			if got, want := body["email"], "updated@example.com"; got != want {
+				t.Fatalf("email = %#v, want %#v", got, want)
+			}
+			if got, want := body["isOwner"], false; got != want {
+				t.Fatalf("isOwner = %#v, want %#v", got, want)
+			}
+			if got, want := body["setPassword"], "new-password"; got != want {
+				t.Fatalf("setPassword = %#v, want %#v", got, want)
+			}
+
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"id":          "U1",
+				"email":       "updated@example.com",
+				"name":        "Updated",
+				"isOwner":     false,
+				"hasPassword": true,
+				"createdAt":   "2026-04-11T12:00:00Z",
+				"updatedAt":   "2026-04-11T13:00:00Z",
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	_, _, err := executeRoot(
+		t,
+		"user", "update", "U1",
+		"--name", "Updated",
+		"--email", "updated@example.com",
+		"--owner=false",
+		"--set-password", "new-password",
+	)
+	if err != nil {
+		t.Fatalf("execute user update: %v", err)
+	}
+}
+
+func TestUserTasksPassesPagination(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/users/U1/tasks":
+			if got, want := r.URL.Query().Get("cursor"), "next-1"; got != want {
+				t.Fatalf("cursor = %q, want %q", got, want)
+			}
+			if got, want := r.URL.Query().Get("limit"), "25"; got != want {
+				t.Fatalf("limit = %q, want %q", got, want)
+			}
+			writeJSON(t, w, http.StatusOK, map[string]any{
+				"items":      []map[string]any{},
+				"nextCursor": "next-2",
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+
+	stdout, _, err := executeRoot(t, "--json", "user", "tasks", "U1", "--cursor", "next-1", "--limit", "25")
+	if err != nil {
+		t.Fatalf("execute user tasks: %v", err)
+	}
+
+	var out struct {
+		NextCursor string `json:"nextCursor"`
+	}
+	if err := json.Unmarshal([]byte(stdout), &out); err != nil {
+		t.Fatalf("decode output: %v\noutput=%s", err, stdout)
+	}
+	if got, want := out.NextCursor, "next-2"; got != want {
+		t.Fatalf("next cursor = %q, want %q", got, want)
+	}
+}
+
 func executeRoot(t *testing.T, args ...string) (stdout string, stderr string, err error) {
 	t.Helper()
 

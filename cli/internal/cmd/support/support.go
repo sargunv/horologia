@@ -3,6 +3,7 @@ package support
 import (
 	"fmt"
 
+	apigen "github.com/sargunv/tend/api/gen"
 	"github.com/spf13/cobra"
 
 	"github.com/sargunv/tend/cli/internal/runtime"
@@ -70,4 +71,12 @@ func StubCommand(use string, short string) *cobra.Command {
 			return fmt.Errorf("%s is not implemented yet", cmd.CommandPath())
 		},
 	}
+}
+
+// RequireAPI returns the initialized generated API client.
+func RequireAPI(app *runtime.App) (*apigen.Client, error) {
+	if app.API == nil {
+		return nil, runtime.MissingServerError()
+	}
+	return app.API, nil
 }

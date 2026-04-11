@@ -13,13 +13,13 @@ func New(flags *support.RootFlags) *cobra.Command {
 
 	cmd.AddCommand(
 		newMeCmd(flags),
-		support.StubCommand("show <user>", "Show a user account"),
-		support.StubCommand("update <user>", "Update a user account"),
-		support.StubCommand("tasks <user>", "List tasks assigned to a user"),
-		support.StubCommand("activity <user>", "Show activity for a user"),
-		support.StubCommand("list", "List users"),
-		support.StubCommand("create", "Create a user"),
-		support.StubCommand("delete <user>", "Delete a user"),
+		newShowCmd(flags),
+		newUpdateCmd(flags),
+		newTasksCmd(flags),
+		newActivityCmd(flags),
+		newListCmd(flags),
+		newCreateCmd(flags),
+		newDeleteCmd(flags),
 	)
 
 	return cmd
