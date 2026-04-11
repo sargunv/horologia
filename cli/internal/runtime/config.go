@@ -25,9 +25,10 @@ const (
 type ValueSource string
 
 const (
-	ValueSourceUnset ValueSource = "unset"
-	ValueSourceFile  ValueSource = "file"
-	ValueSourceEnv   ValueSource = "env"
+	ValueSourceUnset    ValueSource = "unset"
+	ValueSourceFile     ValueSource = "file"
+	ValueSourceEnv      ValueSource = "env"
+	ValueSourceKeychain ValueSource = "keychain"
 )
 
 // ResolveInput contains raw env/flag inputs before normalization.
@@ -43,6 +44,7 @@ type Config struct {
 
 	Token       string
 	TokenSource ValueSource
+	OAuth       *OAuthCredentials
 
 	JSON bool
 }
@@ -90,6 +92,19 @@ func ResolveConfig(input ResolveInput) (Config, error) {
 	}
 	cfg.Token = strings.TrimSpace(token)
 	cfg.TokenSource = tokenSource
+	if cfg.Token == "" && cfg.Server != nil {
+		creds, err := LoadOAuthCredentials(cfg.ServerString())
+		if err != nil {
+			return Config{}, err
+		}
+		if creds != nil {
+			cfg.OAuth = creds
+			cfg.Token = strings.TrimSpace(creds.AccessToken)
+			if cfg.Token != "" {
+				cfg.TokenSource = ValueSourceKeychain
+			}
+		}
+	}
 
 	return cfg, nil
 }

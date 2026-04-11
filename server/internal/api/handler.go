@@ -22,6 +22,7 @@ type Handler struct {
 	apigen.UnimplementedHandler
 	Pool                   *pgxpool.Pool
 	Log                    *slog.Logger
+	PublicURL              string
 	SecureCookies          bool
 	OIDCEnabled            bool
 	OIDCLabel              string
@@ -113,6 +114,10 @@ func errorHandler(log *slog.Logger) ogenerrors.ErrorHandler {
 			log.DebugContext(ctx, "client error", attrs...)
 		} else {
 			log.ErrorContext(ctx, "server error", attrs...)
+		}
+
+		if errors.As(err, &secErr) {
+			SetOAuthChallengeHeader(w, r)
 		}
 
 		ogenerrors.DefaultErrorHandler(ctx, w, r, err)

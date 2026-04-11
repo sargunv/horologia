@@ -490,6 +490,53 @@ func TestOIDCLinkConsent(t *testing.T) {
 	}
 }
 
+func TestOIDCLinkConsentPreservesOAuthRedirect(t *testing.T) {
+	env := setupOIDCConsentEnv(t)
+
+	_, err := taskengine.CreateUserWithPassword(t.Context(), env.pool, "oauth-consent@example.com", "OAuth Consent User", "password123", false, nil, time.Now())
+	if err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	env.addOIDCUser("oauth-consent-subject", "oauth-consent@example.com", true)
+
+	client := newOIDCClient(t)
+	stopAfterCallback(client, env.Server.URL)
+
+	const redirectPath = "/oauth/authorize?client_id=tend-cli&redirect_uri=http%3A%2F%2F127.0.0.1%3A49439%2Foauth%2Fcallback&response_type=code&scope=profile%3Aread&state=test-state"
+	resp := driveOIDCFlow(t, env, client, "oauth-consent-subject", redirectPath)
+	_ = resp.Body.Close()
+
+	if resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("got status %d, want 303", resp.StatusCode)
+	}
+	if loc := resp.Header.Get("Location"); loc != "/link-account" {
+		t.Fatalf("redirect location = %q, want /link-account", loc)
+	}
+
+	linkReq, err := http.NewRequestWithContext(t.Context(), http.MethodPost,
+		env.Server.URL+"/auth/link",
+		strings.NewReader(`{"password":"password123"}`))
+	if err != nil {
+		t.Fatalf("new request: %v", err)
+	}
+	linkReq.Header.Set("Content-Type", "application/json")
+	linkResp, err := client.Do(linkReq)
+	if err != nil {
+		t.Fatalf("post link: %v", err)
+	}
+	assertStatus(t, linkResp, http.StatusOK)
+
+	var linkResult map[string]any
+	readJSON(t, linkResp, &linkResult)
+	if linkResult["linked"] != true {
+		t.Errorf("linked = %v, want true", linkResult["linked"])
+	}
+	if got := jsonAs[string](t, linkResult["redirectTo"]); got != redirectPath {
+		t.Fatalf("redirectTo = %q, want %q", got, redirectPath)
+	}
+}
+
 func TestOIDCLinkConsentWrongPassword(t *testing.T) {
 	env := setupOIDCConsentEnv(t)
 

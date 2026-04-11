@@ -151,3 +151,39 @@ func TestMCPInitializeHandshake(t *testing.T) {
 		t.Errorf("serverInfo.name = %v, want Tend", serverInfo["name"])
 	}
 }
+
+func TestMCPOAuthAccessTokenInitializeHandshake(t *testing.T) {
+	env := setupTestServer(t)
+	handler := mcp.NewTransport(env.pool, env.Handler)
+
+	ownerID := getUserID(t, env, env.Token)
+	ownerNumericID, err := types.ParseUserID(ownerID)
+	if err != nil {
+		t.Fatalf("parse owner ID %q: %v", ownerID, err)
+	}
+
+	rawToken := "oauth-mcp-test-token"
+	hash := sha256.Sum256([]byte(rawToken))
+	tokenHash := hex.EncodeToString(hash[:])
+
+	q := dbgen.New(env.pool)
+	_, err = q.CreateAuthToken(t.Context(), dbgen.CreateAuthTokenParams{
+		UserID:        ownerNumericID,
+		TokenHash:     tokenHash,
+		Name:          "Tend MCP",
+		Kind:          dbgen.AuthTokenKindOauthAccess,
+		ExpiresAt:     pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
+		CreatedAt:     pgtype.Timestamptz{Time: time.Now(), Valid: true},
+		OauthClientID: pgtype.Text{String: "remote-mcp", Valid: true},
+		OauthScopes:   []string{"profile:read", "spaces:read"},
+		OauthResource: pgtype.Text{String: env.Server.URL + "/mcp", Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("create oauth access token: %v", err)
+	}
+
+	resp := doMCP(t, handler, rawToken)
+	defer func() { _ = resp.Body.Close() }()
+
+	assertStatus(t, resp, http.StatusOK)
+}

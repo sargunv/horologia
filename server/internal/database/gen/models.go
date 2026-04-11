@@ -106,8 +106,10 @@ func (ns NullActivityEntityType) Value() (driver.Value, error) {
 type AuthTokenKind string
 
 const (
-	AuthTokenKindSession AuthTokenKind = "session"
-	AuthTokenKindApi     AuthTokenKind = "api"
+	AuthTokenKindSession      AuthTokenKind = "session"
+	AuthTokenKindApi          AuthTokenKind = "api"
+	AuthTokenKindOauthAccess  AuthTokenKind = "oauth_access"
+	AuthTokenKindOauthRefresh AuthTokenKind = "oauth_refresh"
 )
 
 func (e *AuthTokenKind) Scan(src interface{}) error {
@@ -386,13 +388,48 @@ type ActivityLogDetail struct {
 }
 
 type AuthToken struct {
-	ID        int64
+	ID            int64
+	UserID        int64
+	TokenHash     string
+	Name          string
+	Kind          AuthTokenKind
+	ExpiresAt     pgtype.Timestamptz
+	CreatedAt     pgtype.Timestamptz
+	OauthClientID pgtype.Text
+	OauthScopes   []string
+	OauthResource pgtype.Text
+}
+
+type OauthAuthorizationCode struct {
+	CodeHash            string
+	UserID              int64
+	ClientID            string
+	RedirectUri         string
+	Scopes              []string
+	Resource            pgtype.Text
+	CodeChallenge       string
+	CodeChallengeMethod string
+	ExpiresAt           pgtype.Timestamptz
+	CreatedAt           pgtype.Timestamptz
+}
+
+type OauthClient struct {
+	ClientID          string
+	DisplayName       string
+	RedirectUris      []string
+	LoopbackRedirects bool
+	ClientSecretHash  pgtype.Text
+	IsFirstParty      bool
+	CreatedAt         pgtype.Timestamptz
+}
+
+type OauthConsentGrant struct {
 	UserID    int64
-	TokenHash string
-	Name      string
-	Kind      AuthTokenKind
-	ExpiresAt pgtype.Timestamptz
+	ClientID  string
+	ScopeKey  string
+	Scopes    []string
 	CreatedAt pgtype.Timestamptz
+	UpdatedAt pgtype.Timestamptz
 }
 
 type Space struct {

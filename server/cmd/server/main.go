@@ -116,6 +116,7 @@ var serveCmd = &cobra.Command{
 		handler := &api.Handler{
 			Pool:                   pool,
 			Log:                    log,
+			PublicURL:              cfg.PublicURL,
 			SecureCookies:          cfg.SecureCookies,
 			OIDCEnabled:            cfg.OIDCIssuer != "",
 			OIDCLabel:              cfg.OIDCLabel,
@@ -161,6 +162,7 @@ var serveCmd = &cobra.Command{
 
 		// Mount web auth routes (cookie login/logout) and cookie-to-bearer middleware.
 		finalHandler = api.MountWebAuth(finalHandler, handler)
+		finalHandler = api.MountOAuth(finalHandler, handler)
 
 		// Mount MCP Streamable HTTP endpoint at /mcp with bearer auth.
 		mcpHandler := mcp.NewTransport(pool, handler)

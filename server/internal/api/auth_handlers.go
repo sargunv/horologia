@@ -13,6 +13,9 @@ import (
 // --- Auth: Tokens ---
 
 func (h *Handler) AuthListTokens(ctx context.Context) (*apigen.AuthTokenList, error) {
+	if err := h.requireNonDelegatedToken(ctx); err != nil {
+		return nil, err
+	}
 	user := auth.UserFromContext(ctx)
 	now := time.Now()
 
@@ -34,6 +37,9 @@ func (h *Handler) AuthListTokens(ctx context.Context) (*apigen.AuthTokenList, er
 }
 
 func (h *Handler) AuthCreateToken(ctx context.Context, req *apigen.AuthTokenCreate) (*apigen.AuthTokenCreateResponse, error) {
+	if err := h.requireNonDelegatedToken(ctx); err != nil {
+		return nil, err
+	}
 	user := auth.UserFromContext(ctx)
 
 	raw, hash, err := generateToken()
@@ -62,6 +68,9 @@ func (h *Handler) AuthCreateToken(ctx context.Context, req *apigen.AuthTokenCrea
 }
 
 func (h *Handler) AuthDeleteToken(ctx context.Context, params apigen.AuthDeleteTokenParams) error {
+	if err := h.requireNonDelegatedToken(ctx); err != nil {
+		return err
+	}
 	user := auth.UserFromContext(ctx)
 
 	id, err := parseTokenID(params.TokenId)

@@ -8,12 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	mcpserver "github.com/mark3labs/mcp-go/server"
 
+	apiinternal "github.com/sargunv/tend/server/internal/api"
 	"github.com/sargunv/tend/server/internal/auth"
-	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	mcpgen "github.com/sargunv/tend/server/internal/mcp/gen"
 )
 
@@ -41,38 +40,20 @@ func bearerAuthMiddleware(pool *pgxpool.Pool, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := extractBearerToken(r)
 		if token == "" {
+			apiinternal.SetOAuthChallengeHeader(w, r)
 			writeJSONError(w, http.StatusUnauthorized, "unauthorized")
 			return
 		}
 
-		hash := auth.HashToken(token)
-		q := dbgen.New(pool)
-		row, err := q.GetAuthTokenByHash(r.Context(), hash)
-		if errors.Is(err, pgx.ErrNoRows) {
+		user, err := auth.AuthenticateBearerToken(r.Context(), pool, token, time.Now())
+		if errors.Is(err, auth.ErrUnauthorized) {
+			apiinternal.SetOAuthChallengeHeader(w, r)
 			writeJSONError(w, http.StatusUnauthorized, "unauthorized")
 			return
 		}
 		if err != nil {
 			writeJSONError(w, http.StatusInternalServerError, "internal server error")
 			return
-		}
-
-		if row.ExpiresAt.Valid && time.Now().After(row.ExpiresAt.Time) {
-			writeJSONError(w, http.StatusUnauthorized, "unauthorized")
-			return
-		}
-
-		user := &auth.User{
-			ID:      row.UserID,
-			Email:   row.UserEmail,
-			Name:    row.UserName,
-			IsOwner: row.UserIsOwner,
-		}
-
-		if row.Kind == dbgen.AuthTokenKindApi {
-			user.Token = &auth.TokenInfo{ID: row.ID, Name: row.Name}
-		} else {
-			user.SessionTokenHash = hash
 		}
 
 		next.ServeHTTP(w, r.WithContext(auth.ContextWithUser(r.Context(), user)))

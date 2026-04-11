@@ -12,6 +12,7 @@ import (
 type Config struct {
 	DB            string `koanf:"db"`
 	Addr          string `koanf:"addr"`
+	PublicURL     string `koanf:"public_url"`
 	LogFormat     string `koanf:"log_format"`
 	LogLevel      string `koanf:"log_level"`
 	SecureCookies bool   `koanf:"secure_cookies"`
@@ -58,6 +59,12 @@ func Load() (Config, error) {
 
 	if cfg.DB == "" {
 		return Config{}, errors.New("TEND_DB is required")
+	}
+	if cfg.PublicURL != "" {
+		if !(strings.HasPrefix(cfg.PublicURL, "http://") || strings.HasPrefix(cfg.PublicURL, "https://")) {
+			return Config{}, errors.New("TEND_PUBLIC_URL must start with http:// or https://")
+		}
+		cfg.PublicURL = strings.TrimRight(cfg.PublicURL, "/")
 	}
 
 	// Disabling password auth without OIDC would lock out all users.

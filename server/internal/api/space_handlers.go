@@ -15,6 +15,9 @@ import (
 // --- Spaces ---
 
 func (h *Handler) SpacesCreate(ctx context.Context, req *apigen.SpaceCreate) (*apigen.Space, error) {
+	if err := h.requireScope(ctx, "spaces:write"); err != nil {
+		return nil, err
+	}
 	user := auth.UserFromContext(ctx)
 	space, err := taskengine.CreateSpaceWithDefaults(
 		ctx, h.Pool,
@@ -32,6 +35,9 @@ func (h *Handler) SpacesCreate(ctx context.Context, req *apigen.SpaceCreate) (*a
 }
 
 func (h *Handler) SpacesList(ctx context.Context) (*apigen.SpaceList, error) {
+	if err := h.requireScope(ctx, "spaces:read"); err != nil {
+		return nil, err
+	}
 	user := auth.UserFromContext(ctx)
 
 	q := dbgen.New(h.Pool)
@@ -53,6 +59,9 @@ func (h *Handler) SpacesList(ctx context.Context) (*apigen.SpaceList, error) {
 }
 
 func (h *Handler) SpacesRead(ctx context.Context, params apigen.SpacesReadParams) (*apigen.Space, error) {
+	if err := h.requireScope(ctx, "spaces:read"); err != nil {
+		return nil, err
+	}
 	if err := h.requireSpaceRead(ctx, params.SpaceSlug); err != nil {
 		return nil, err
 	}
@@ -65,6 +74,9 @@ func (h *Handler) SpacesRead(ctx context.Context, params apigen.SpacesReadParams
 }
 
 func (h *Handler) SpacesUpdate(ctx context.Context, req *apigen.SpaceUpdate, params apigen.SpacesUpdateParams) (*apigen.Space, error) {
+	if err := h.requireScope(ctx, "spaces:write"); err != nil {
+		return nil, err
+	}
 	if err := h.requireSpaceRole(ctx, params.SpaceSlug, dbgen.SpaceRoleAdmin); err != nil {
 		return nil, err
 	}
@@ -126,6 +138,9 @@ func (h *Handler) SpacesUpdate(ctx context.Context, req *apigen.SpaceUpdate, par
 }
 
 func (h *Handler) SpacesDelete(ctx context.Context, params apigen.SpacesDeleteParams) error {
+	if err := h.requireScope(ctx, "spaces:write"); err != nil {
+		return err
+	}
 	if err := h.requireSpaceRole(ctx, params.SpaceSlug, dbgen.SpaceRoleAdmin); err != nil {
 		return err
 	}

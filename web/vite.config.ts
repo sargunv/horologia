@@ -49,6 +49,18 @@ export default defineConfig({
       "/api": {
         target: `http://localhost:${serverPort}`,
       },
+      "/auth": {
+        target: `http://localhost:${serverPort}`,
+      },
+      "/oauth": {
+        target: `http://localhost:${serverPort}`,
+      },
+      "/.well-known": {
+        target: `http://localhost:${serverPort}`,
+      },
+      "/mcp/.well-known": {
+        target: `http://localhost:${serverPort}`,
+      },
       "/healthz": {
         target: `http://localhost:${serverPort}`,
       },

@@ -20,6 +20,9 @@ func rejectSpawnKind(kind apigen.TaskRelationKind) error {
 }
 
 func (h *Handler) SpaceTaskRelationsCreate(ctx context.Context, req *apigen.TaskRelationCreate, params apigen.SpaceTaskRelationsCreateParams) (*apigen.TaskRelation, error) {
+	if err := h.requireScope(ctx, "tasks:write"); err != nil {
+		return nil, err
+	}
 	if err := h.requireSpaceWrite(ctx, params.SpaceSlug); err != nil {
 		return nil, err
 	}
@@ -96,6 +99,9 @@ func (h *Handler) SpaceTaskRelationsCreate(ctx context.Context, req *apigen.Task
 }
 
 func (h *Handler) SpaceTaskRelationsDelete(ctx context.Context, params apigen.SpaceTaskRelationsDeleteParams) error {
+	if err := h.requireScope(ctx, "tasks:write"); err != nil {
+		return err
+	}
 	if err := h.requireSpaceWrite(ctx, params.SpaceSlug); err != nil {
 		return err
 	}

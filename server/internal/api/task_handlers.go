@@ -159,6 +159,9 @@ func (h *Handler) enrichTasks(ctx context.Context, q *dbgen.Queries, tasks []dbg
 // --- Tasks ---
 
 func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, params apigen.SpaceTasksCreateParams) (*apigen.Task, error) {
+	if err := h.requireScope(ctx, "tasks:write"); err != nil {
+		return nil, err
+	}
 	if err := h.requireSpaceWrite(ctx, params.SpaceSlug); err != nil {
 		return nil, err
 	}
@@ -271,6 +274,9 @@ func (h *Handler) SpaceTasksCreate(ctx context.Context, req *apigen.TaskCreate, 
 }
 
 func (h *Handler) SpaceTasksList(ctx context.Context, params apigen.SpaceTasksListParams) (*apigen.TaskPage, error) {
+	if err := h.requireScope(ctx, "tasks:read"); err != nil {
+		return nil, err
+	}
 	if err := h.requireSpaceRead(ctx, params.SpaceSlug); err != nil {
 		return nil, err
 	}
@@ -314,6 +320,9 @@ func (h *Handler) SpaceTasksList(ctx context.Context, params apigen.SpaceTasksLi
 }
 
 func (h *Handler) SpaceTasksRead(ctx context.Context, params apigen.SpaceTasksReadParams) (*apigen.Task, error) {
+	if err := h.requireScope(ctx, "tasks:read"); err != nil {
+		return nil, err
+	}
 	if err := h.requireSpaceRead(ctx, params.SpaceSlug); err != nil {
 		return nil, err
 	}
@@ -326,6 +335,9 @@ func (h *Handler) SpaceTasksRead(ctx context.Context, params apigen.SpaceTasksRe
 }
 
 func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, params apigen.SpaceTasksUpdateParams) (*apigen.Task, error) {
+	if err := h.requireScope(ctx, "tasks:write"); err != nil {
+		return nil, err
+	}
 	if err := h.requireSpaceWrite(ctx, params.SpaceSlug); err != nil {
 		return nil, err
 	}
@@ -545,6 +557,9 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 }
 
 func (h *Handler) SpaceTasksDelete(ctx context.Context, params apigen.SpaceTasksDeleteParams) error {
+	if err := h.requireScope(ctx, "tasks:write"); err != nil {
+		return err
+	}
 	if err := h.requireSpaceWrite(ctx, params.SpaceSlug); err != nil {
 		return err
 	}

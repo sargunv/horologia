@@ -12,8 +12,8 @@ func New(flags *support.RootFlags) *cobra.Command {
 	cmd.GroupID = "auth"
 
 	cmd.AddCommand(
-		support.StubCommand("login", "Log in to a Tend server (not yet implemented)"),
-		support.StubCommand("logout", "Log out and clear credentials (not yet implemented)"),
+		newLoginCmd(flags),
+		newLogoutCmd(flags),
 		newStatusCmd(flags),
 		newTokenCmd(flags),
 	)

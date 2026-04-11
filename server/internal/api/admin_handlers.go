@@ -16,6 +16,9 @@ import (
 )
 
 func (h *Handler) UsersList(ctx context.Context) (*apigen.UserList, error) {
+	if err := h.requireScope(ctx, "users:read"); err != nil {
+		return nil, err
+	}
 	q := dbgen.New(h.Pool)
 	users, err := q.ListUsers(ctx)
 	if err != nil {
@@ -25,6 +28,9 @@ func (h *Handler) UsersList(ctx context.Context) (*apigen.UserList, error) {
 }
 
 func (h *Handler) UsersGet(ctx context.Context, params apigen.UsersGetParams) (*apigen.User, error) {
+	if err := h.requireScope(ctx, "users:read"); err != nil {
+		return nil, err
+	}
 	userID, err := types.ParseUserID(params.UserId)
 	if err != nil {
 		return nil, badRequest(err.Error())
@@ -38,6 +44,9 @@ func (h *Handler) UsersGet(ctx context.Context, params apigen.UsersGetParams) (*
 }
 
 func (h *Handler) UsersCreate(ctx context.Context, req *apigen.UserCreate) (*apigen.User, error) {
+	if err := h.requireScope(ctx, "users:write"); err != nil {
+		return nil, err
+	}
 	if err := h.requireOwner(ctx); err != nil {
 		return nil, err
 	}
@@ -84,6 +93,9 @@ func (h *Handler) UsersCreate(ctx context.Context, req *apigen.UserCreate) (*api
 }
 
 func (h *Handler) UsersUpdate(ctx context.Context, req *apigen.UserUpdate, params apigen.UsersUpdateParams) (*apigen.User, error) {
+	if err := h.requireScope(ctx, "users:write"); err != nil {
+		return nil, err
+	}
 	authUser := auth.UserFromContext(ctx)
 	if authUser == nil {
 		return nil, &ogenerrors.SecurityError{Err: ogenerrors.ErrSecurityRequirementIsNotSatisfied}
@@ -213,6 +225,9 @@ func (h *Handler) UsersUpdate(ctx context.Context, req *apigen.UserUpdate, param
 }
 
 func (h *Handler) UsersDelete(ctx context.Context, params apigen.UsersDeleteParams) error {
+	if err := h.requireScope(ctx, "users:write"); err != nil {
+		return err
+	}
 	authUser := auth.UserFromContext(ctx)
 	if authUser == nil {
 		return &ogenerrors.SecurityError{Err: ogenerrors.ErrSecurityRequirementIsNotSatisfied}

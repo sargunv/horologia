@@ -145,6 +145,9 @@ func computeBulkDiff(oldNames, newNames []string) (added, removed []string) {
 // --- Task Statuses ---
 
 func (h *Handler) SpaceTaskStatusesList(ctx context.Context, params apigen.SpaceTaskStatusesListParams) (*apigen.TaskStatusList, error) {
+	if err := h.requireScope(ctx, "spaces:read"); err != nil {
+		return nil, err
+	}
 	if err := h.requireSpaceRead(ctx, params.SpaceSlug); err != nil {
 		return nil, err
 	}
@@ -160,6 +163,9 @@ func (h *Handler) SpaceTaskStatusesList(ctx context.Context, params apigen.Space
 }
 
 func (h *Handler) SpaceTaskStatusesReplace(ctx context.Context, req *apigen.TaskStatusReplace, params apigen.SpaceTaskStatusesReplaceParams) (*apigen.TaskStatusList, error) {
+	if err := h.requireScope(ctx, "spaces:write"); err != nil {
+		return nil, err
+	}
 	if err := h.requireSpaceRole(ctx, params.SpaceSlug, dbgen.SpaceRoleAdmin); err != nil {
 		return nil, err
 	}
@@ -293,6 +299,9 @@ func (h *Handler) SpaceTaskStatusesReplace(ctx context.Context, req *apigen.Task
 // --- Task Effort Levels ---
 
 func (h *Handler) SpaceTaskEffortLevelsList(ctx context.Context, params apigen.SpaceTaskEffortLevelsListParams) (*apigen.TaskEffortLevelList, error) {
+	if err := h.requireScope(ctx, "spaces:read"); err != nil {
+		return nil, err
+	}
 	if err := h.requireSpaceRead(ctx, params.SpaceSlug); err != nil {
 		return nil, err
 	}
@@ -308,6 +317,9 @@ func (h *Handler) SpaceTaskEffortLevelsList(ctx context.Context, params apigen.S
 }
 
 func (h *Handler) SpaceTaskEffortLevelsReplace(ctx context.Context, req *apigen.TaskEffortLevelReplace, params apigen.SpaceTaskEffortLevelsReplaceParams) (*apigen.TaskEffortLevelList, error) {
+	if err := h.requireScope(ctx, "spaces:write"); err != nil {
+		return nil, err
+	}
 	if err := h.requireSpaceRole(ctx, params.SpaceSlug, dbgen.SpaceRoleAdmin); err != nil {
 		return nil, err
 	}
@@ -403,6 +415,9 @@ func (h *Handler) SpaceTaskEffortLevelsReplace(ctx context.Context, req *apigen.
 // --- Task Priority Levels ---
 
 func (h *Handler) SpaceTaskPriorityLevelsList(ctx context.Context, params apigen.SpaceTaskPriorityLevelsListParams) (*apigen.TaskPriorityLevelList, error) {
+	if err := h.requireScope(ctx, "spaces:read"); err != nil {
+		return nil, err
+	}
 	if err := h.requireSpaceRead(ctx, params.SpaceSlug); err != nil {
 		return nil, err
 	}
@@ -418,6 +433,9 @@ func (h *Handler) SpaceTaskPriorityLevelsList(ctx context.Context, params apigen
 }
 
 func (h *Handler) SpaceTaskPriorityLevelsReplace(ctx context.Context, req *apigen.TaskPriorityLevelReplace, params apigen.SpaceTaskPriorityLevelsReplaceParams) (*apigen.TaskPriorityLevelList, error) {
+	if err := h.requireScope(ctx, "spaces:write"); err != nil {
+		return nil, err
+	}
 	if err := h.requireSpaceRole(ctx, params.SpaceSlug, dbgen.SpaceRoleAdmin); err != nil {
 		return nil, err
 	}

@@ -15,12 +15,18 @@ import (
 // MountRoot composes the top-level HTTP handler:
 //   - /healthz returns health status (pings the database connection pool)
 //   - /api/* routes to the API handler (with /api prefix stripped)
+//   - /auth/*, /oauth/*, /.well-known/*, and /mcp/.well-known/* route to the
+//     auth/OAuth stack without a prefix rewrite
 //   - /mcp routes to the MCP Streamable HTTP handler (if non-nil)
 //   - /* routes to the embedded SPA (static files + index.html fallback)
 func MountRoot(apiHandler http.Handler, mcpHandler http.Handler, pool *pgxpool.Pool, log *slog.Logger) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", healthHandler(pool, log))
 	mux.Handle("/api/", http.StripPrefix("/api", apiHandler))
+	mux.Handle("/auth/", apiHandler)
+	mux.Handle("/oauth/", apiHandler)
+	mux.Handle("/.well-known/", apiHandler)
+	mux.Handle("/mcp/.well-known/", apiHandler)
 	if mcpHandler != nil {
 		mux.Handle("/mcp", mcpHandler)
 	}

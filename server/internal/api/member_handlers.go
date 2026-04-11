@@ -14,6 +14,9 @@ import (
 )
 
 func (h *Handler) SpaceMembersList(ctx context.Context, params apigen.SpaceMembersListParams) (*apigen.SpaceMemberList, error) {
+	if err := h.requireScope(ctx, "spaces:read"); err != nil {
+		return nil, err
+	}
 	if err := h.requireSpaceRead(ctx, params.SpaceSlug); err != nil {
 		return nil, err
 	}
@@ -34,6 +37,9 @@ func (h *Handler) SpaceMembersList(ctx context.Context, params apigen.SpaceMembe
 }
 
 func (h *Handler) SpaceMembersCreate(ctx context.Context, req *apigen.SpaceMemberCreate, params apigen.SpaceMembersCreateParams) (*apigen.SpaceMember, error) {
+	if err := h.requireScope(ctx, "spaces:write"); err != nil {
+		return nil, err
+	}
 	if err := h.requireSpaceRole(ctx, params.SpaceSlug, dbgen.SpaceRoleAdmin); err != nil {
 		return nil, err
 	}
@@ -91,6 +97,9 @@ func (h *Handler) SpaceMembersCreate(ctx context.Context, req *apigen.SpaceMembe
 }
 
 func (h *Handler) SpaceMembersUpdate(ctx context.Context, req *apigen.SpaceMemberUpdate, params apigen.SpaceMembersUpdateParams) (*apigen.SpaceMember, error) {
+	if err := h.requireScope(ctx, "spaces:write"); err != nil {
+		return nil, err
+	}
 	if err := h.requireSpaceRole(ctx, params.SpaceSlug, dbgen.SpaceRoleAdmin); err != nil {
 		return nil, err
 	}
@@ -158,6 +167,9 @@ func (h *Handler) SpaceMembersUpdate(ctx context.Context, req *apigen.SpaceMembe
 }
 
 func (h *Handler) SpaceMembersDelete(ctx context.Context, params apigen.SpaceMembersDeleteParams) error {
+	if err := h.requireScope(ctx, "spaces:write"); err != nil {
+		return err
+	}
 	if err := h.requireSpaceRole(ctx, params.SpaceSlug, dbgen.SpaceRoleAdmin); err != nil {
 		return err
 	}

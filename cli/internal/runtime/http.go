@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"path"
 	"strings"
+	"sync"
 
 	apigen "github.com/sargunv/tend/api/gen"
 )
@@ -35,23 +36,28 @@ type App struct {
 	Stdout io.Writer
 	Stderr io.Writer
 
-	client *http.Client
-	API    *apigen.Client
+	mu            sync.Mutex
+	client        *http.Client
+	baseTransport http.RoundTripper
+	API           *apigen.Client
 }
 
 // NewApp builds the shared CLI runtime.
 func NewApp(cfg Config, stdout io.Writer, stderr io.Writer) *App {
 	app := &App{
-		Config: cfg,
-		Stdout: stdout,
-		Stderr: stderr,
-		client: &http.Client{},
+		Config:        cfg,
+		Stdout:        stdout,
+		Stderr:        stderr,
+		baseTransport: http.DefaultTransport,
+	}
+	app.client = &http.Client{
+		Transport: &oauthTransport{base: app.baseTransport, app: app},
 	}
 
 	if cfg.HasServer() {
 		client, err := apigen.NewClient(
 			cfg.APIBaseString(),
-			securitySource{token: cfg.Token},
+			securitySource{app: app},
 			apigen.WithClient(app.client),
 		)
 		if err != nil {
@@ -61,6 +67,41 @@ func NewApp(cfg Config, stdout io.Writer, stderr io.Writer) *App {
 	}
 
 	return app
+}
+
+func (a *App) BearerToken() string {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.Config.Token
+}
+
+func (a *App) OAuthCredentials() *OAuthCredentials {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if a.Config.OAuth == nil {
+		return nil
+	}
+	copy := *a.Config.OAuth
+	return &copy
+}
+
+func (a *App) SetOAuthCredentials(creds OAuthCredentials) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	copy := creds
+	a.Config.OAuth = &copy
+	a.Config.Token = creds.AccessToken
+	a.Config.TokenSource = ValueSourceKeychain
+}
+
+func (a *App) ClearOAuthCredentials() {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.Config.OAuth = nil
+	if a.Config.TokenSource == ValueSourceKeychain {
+		a.Config.Token = ""
+		a.Config.TokenSource = ValueSourceUnset
+	}
 }
 
 // Health checks server liveness through /healthz.
@@ -105,7 +146,7 @@ func (a *App) doJSON(parent context.Context, spec requestSpec, out any) error {
 		req.Header.Set("Content-Type", "application/json")
 	}
 	if spec.Auth {
-		req.Header.Set("Authorization", "Bearer "+a.Config.Token)
+		req.Header.Set("Authorization", "Bearer "+a.BearerToken())
 	}
 
 	resp, err := a.client.Do(req)
@@ -175,18 +216,85 @@ func NormalizeError(err error) error {
 	return err
 }
 
-type securitySource struct {
-	token string
-}
+type securitySource struct{ app *App }
 
 func (s securitySource) BearerAuth(ctx context.Context, operationName apigen.OperationName) (apigen.BearerAuth, error) {
-	if strings.TrimSpace(s.token) == "" {
+	token := strings.TrimSpace(s.app.BearerToken())
+	if token == "" {
 		return apigen.BearerAuth{}, MissingTokenError()
 	}
 
 	return apigen.BearerAuth{
-		Token: s.token,
+		Token: token,
 	}, nil
+}
+
+type oauthTransport struct {
+	base http.RoundTripper
+	app  *App
+}
+
+func (t *oauthTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp, err := t.base.RoundTrip(req)
+	if err != nil || resp.StatusCode != http.StatusUnauthorized {
+		return resp, err
+	}
+	if req.Header.Get("X-Tend-Retry") == "1" {
+		return resp, nil
+	}
+	if t.app.Config.Server == nil || t.app.OAuthCredentials() == nil {
+		return resp, nil
+	}
+	if req.GetBody == nil && req.Body != nil {
+		return resp, nil
+	}
+
+	if err := t.app.refreshAccessToken(req.Context()); err != nil {
+		_ = resp.Body.Close()
+		return nil, err
+	}
+
+	_ = resp.Body.Close()
+	retry := req.Clone(req.Context())
+	if req.GetBody != nil {
+		body, err := req.GetBody()
+		if err != nil {
+			return resp, nil
+		}
+		retry.Body = body
+	}
+	retry.Header = req.Header.Clone()
+	retry.Header.Set("Authorization", "Bearer "+t.app.BearerToken())
+	retry.Header.Set("X-Tend-Retry", "1")
+	return t.base.RoundTrip(retry)
+}
+
+func (a *App) refreshAccessToken(ctx context.Context) error {
+	a.mu.Lock()
+	server := a.Config.Server
+	creds := a.Config.OAuth
+	a.mu.Unlock()
+	if server == nil || creds == nil {
+		return MissingTokenError()
+	}
+
+	updated, err := RefreshOAuthCredentials(ctx, server, *creds)
+	if err != nil {
+		var apiErr *APIError
+		if stderrors.As(err, &apiErr) && apiErr.Code == "invalid_grant" {
+			a.ClearOAuthCredentials()
+			if deleteErr := DeleteOAuthCredentials(a.Config.ServerString()); deleteErr != nil {
+				return deleteErr
+			}
+			return &ConfigError{Message: "stored login has expired; run `tend auth login` again"}
+		}
+		return err
+	}
+	if err := SaveOAuthCredentials(a.Config.ServerString(), updated); err != nil {
+		return err
+	}
+	a.SetOAuthCredentials(updated)
+	return nil
 }
 
 func resolveURL(base *url.URL, refPath string) *url.URL {

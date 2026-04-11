@@ -2,6 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { CircleAlert } from "lucide-react";
 import { type FormEvent, useState } from "react";
+import { shouldUseDocumentNavigation } from "../lib/redirects.ts";
 import * as v from "valibot";
 import { linkPendingQueryOptions } from "../lib/queries.ts";
 
@@ -42,7 +43,12 @@ function LinkAccountPage() {
       return v.parse(LinkResponseSchema, raw);
     },
     onSuccess: (data) => {
-      void navigate({ to: data.redirectTo ?? "/" });
+      const target = data.redirectTo || "/";
+      if (shouldUseDocumentNavigation(target)) {
+        window.location.assign(target);
+        return;
+      }
+      void navigate({ to: target });
     },
   });
 
