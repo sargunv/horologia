@@ -125,6 +125,12 @@ func NewOAuthHandler(handler *Handler) http.Handler {
 
 func (h *Handler) oauthAuthorizationServerMetadata(w http.ResponseWriter, r *http.Request) {
 	base := h.publicBaseURL(r)
+	if base == "" {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "public URL is not configured",
+		})
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"issuer":                                base,
 		"authorization_endpoint":                base + "/oauth/authorize",
@@ -140,6 +146,12 @@ func (h *Handler) oauthAuthorizationServerMetadata(w http.ResponseWriter, r *htt
 
 func (h *Handler) oauthProtectedResourceMetadata(w http.ResponseWriter, r *http.Request) {
 	base := h.publicBaseURL(r)
+	if base == "" {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "public URL is not configured",
+		})
+		return
+	}
 	resource := base + "/api"
 	switch r.URL.Path {
 	case "/mcp/.well-known/oauth-protected-resource":
@@ -344,7 +356,7 @@ func (h *Handler) oauthTokenRefresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	now := time.Now()
-	user, err := auth.AuthenticateBearerToken(r.Context(), h.Pool, refreshToken, now)
+	user, err := auth.AuthenticateRefreshToken(r.Context(), h.Pool, refreshToken, now)
 	if errors.Is(err, auth.ErrUnauthorized) {
 		h.writeOAuthJSONError(w, http.StatusBadRequest, "invalid_grant", "refresh token is invalid")
 		return
@@ -355,10 +367,6 @@ func (h *Handler) oauthTokenRefresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if user.Token == nil || user.Token.Kind != dbgen.AuthTokenKindOauthRefresh {
-		h.writeOAuthJSONError(w, http.StatusBadRequest, "invalid_grant", "refresh token is invalid")
-		return
-	}
 	if user.Token.ClientID != clientID {
 		h.writeOAuthJSONError(w, http.StatusBadRequest, "invalid_grant", "refresh token client mismatch")
 		return
@@ -464,7 +472,11 @@ func (h *Handler) validateAuthorizeValues(r *http.Request, values url.Values) (o
 		return req, dbgen.OauthClient{}, nil, errors.New("redirect_uri is not registered for this client")
 	}
 
-	if req.Resource != "" && !oauthResourceAllowed(h.publicBaseURL(r), req.Resource) {
+	base := h.publicBaseURL(r)
+	if req.Resource != "" && base == "" {
+		return req, dbgen.OauthClient{}, nil, errors.New("public URL is not configured")
+	}
+	if req.Resource != "" && !oauthResourceAllowed(base, req.Resource) {
 		return req, dbgen.OauthClient{}, nil, errors.New("resource is not supported")
 	}
 

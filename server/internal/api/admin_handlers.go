@@ -160,21 +160,32 @@ func (h *Handler) UsersUpdate(ctx context.Context, req *apigen.UserUpdate, param
 		return nil, err
 	}
 
-	// Handle password changes.
+	// Handle password changes. Preserve only the current session when the user
+	// changes their own password from a session-backed request.
+	currentSessionHash := ""
+	if authUser.ID == userID {
+		currentSessionHash = authUser.SessionTokenHash
+	}
 	if req.SetPassword.IsSet() {
 		if err := taskengine.SetUserPassword(ctx, tx, userID, req.SetPassword.Value, h.PasswordChecker, now); err != nil {
 			return nil, err
 		}
-		// Revoke all other session tokens for this user so stale sessions
-		// cannot survive a password change. API tokens are not affected.
-		if err := q.DeleteOtherSessionTokens(ctx, dbgen.DeleteOtherSessionTokensParams{
+		// Revoke every other credential for this user so stale sessions,
+		// API tokens, and OAuth tokens cannot survive a password change.
+		if err := q.DeleteOtherAuthTokens(ctx, dbgen.DeleteOtherAuthTokensParams{
 			UserID:    userID,
-			TokenHash: authUser.SessionTokenHash,
+			TokenHash: currentSessionHash,
 		}); err != nil {
 			return nil, err
 		}
 	} else if req.ClearPassword.Or(false) {
 		if err := taskengine.ClearUserPassword(ctx, tx, userID, now); err != nil {
+			return nil, err
+		}
+		if err := q.DeleteOtherAuthTokens(ctx, dbgen.DeleteOtherAuthTokensParams{
+			UserID:    userID,
+			TokenHash: currentSessionHash,
+		}); err != nil {
 			return nil, err
 		}
 	}

@@ -59,3 +59,8 @@ DELETE FROM auth_tokens WHERE token_hash = $1;
 -- name: DeleteOtherSessionTokens :exec
 DELETE FROM auth_tokens
 WHERE user_id = $1 AND kind = 'session' AND token_hash != $2;
+
+-- name: DeleteOtherAuthTokens :exec
+DELETE FROM auth_tokens
+WHERE user_id = $1
+  AND ($2 = '' OR token_hash != $2);

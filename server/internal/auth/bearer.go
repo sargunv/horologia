@@ -12,9 +12,7 @@ import (
 
 var ErrUnauthorized = errors.New("unauthorized")
 
-// AuthenticateBearerToken resolves the raw bearer token against the auth token
-// table and returns the authenticated user context for downstream handlers.
-func AuthenticateBearerToken(ctx context.Context, db dbgen.DBTX, token string, now time.Time) (*User, error) {
+func authenticateToken(ctx context.Context, db dbgen.DBTX, token string, now time.Time) (*User, error) {
 	hash := HashToken(token)
 
 	row, err := dbgen.New(db).GetAuthTokenByHash(ctx, hash)
@@ -57,5 +55,33 @@ func AuthenticateBearerToken(ctx context.Context, db dbgen.DBTX, token string, n
 		return nil, ErrUnauthorized
 	}
 
+	return user, nil
+}
+
+// AuthenticateBearerToken resolves the raw bearer token against the auth token
+// table and returns the authenticated user context for downstream handlers.
+// Refresh tokens are not valid bearer credentials for API or MCP access.
+func AuthenticateBearerToken(ctx context.Context, db dbgen.DBTX, token string, now time.Time) (*User, error) {
+	user, err := authenticateToken(ctx, db, token, now)
+	if err != nil {
+		return nil, err
+	}
+	if user.Token != nil && user.Token.Kind == dbgen.AuthTokenKindOauthRefresh {
+		return nil, ErrUnauthorized
+	}
+	return user, nil
+}
+
+// AuthenticateRefreshToken resolves and validates a refresh token for the
+// token endpoint. Refresh tokens are intentionally not accepted by the normal
+// bearer-auth path used by API and MCP requests.
+func AuthenticateRefreshToken(ctx context.Context, db dbgen.DBTX, token string, now time.Time) (*User, error) {
+	user, err := authenticateToken(ctx, db, token, now)
+	if err != nil {
+		return nil, err
+	}
+	if user.Token == nil || user.Token.Kind != dbgen.AuthTokenKindOauthRefresh {
+		return nil, ErrUnauthorized
+	}
 	return user, nil
 }

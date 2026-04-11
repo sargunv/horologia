@@ -82,6 +82,25 @@ func TestMCPInvalidToken(t *testing.T) {
 	}
 }
 
+func TestMCPUnauthenticatedDoesNotReflectUntrustedHostInChallenge(t *testing.T) {
+	handler, _ := mcpHandler(t)
+
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/mcp", mcpInitBody(t))
+	req.Host = "attacker.example"
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json, text/event-stream")
+
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	resp := w.Result()
+	defer func() { _ = resp.Body.Close() }()
+
+	assertStatus(t, resp, http.StatusUnauthorized)
+	if got := resp.Header.Get("WWW-Authenticate"); got != `Bearer realm="Tend"` {
+		t.Fatalf("WWW-Authenticate = %q, want %q", got, `Bearer realm="Tend"`)
+	}
+}
+
 // TestMCPExpiredToken verifies that an expired bearer token is rejected.
 func TestMCPExpiredToken(t *testing.T) {
 	env := setupTestServer(t)
@@ -186,4 +205,40 @@ func TestMCPOAuthAccessTokenInitializeHandshake(t *testing.T) {
 	defer func() { _ = resp.Body.Close() }()
 
 	assertStatus(t, resp, http.StatusOK)
+}
+
+func TestMCPOAuthRefreshTokenRejected(t *testing.T) {
+	env := setupTestServer(t)
+	handler := mcp.NewTransport(env.pool, env.Handler)
+
+	ownerID := getUserID(t, env, env.Token)
+	ownerNumericID, err := types.ParseUserID(ownerID)
+	if err != nil {
+		t.Fatalf("parse owner ID %q: %v", ownerID, err)
+	}
+
+	rawToken := "oauth-mcp-refresh-token" //nolint:gosec // test token fixture
+	hash := sha256.Sum256([]byte(rawToken))
+	tokenHash := hex.EncodeToString(hash[:])
+
+	q := dbgen.New(env.pool)
+	_, err = q.CreateAuthToken(t.Context(), dbgen.CreateAuthTokenParams{
+		UserID:        ownerNumericID,
+		TokenHash:     tokenHash,
+		Name:          "Tend MCP",
+		Kind:          dbgen.AuthTokenKindOauthRefresh,
+		ExpiresAt:     pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
+		CreatedAt:     pgtype.Timestamptz{Time: time.Now(), Valid: true},
+		OauthClientID: pgtype.Text{String: "remote-mcp", Valid: true},
+		OauthScopes:   []string{"profile:read", "spaces:read"},
+		OauthResource: pgtype.Text{String: env.Server.URL + "/mcp", Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("create oauth refresh token: %v", err)
+	}
+
+	resp := doMCP(t, handler, rawToken)
+	defer func() { _ = resp.Body.Close() }()
+
+	assertStatus(t, resp, http.StatusUnauthorized)
 }
