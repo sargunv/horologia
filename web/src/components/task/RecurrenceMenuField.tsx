@@ -309,208 +309,13 @@ function parseDateInput(input: string): { label: string; value: string } | null 
   return { label: formatDateDisplay(parsed), value: toISODate(parsed) };
 }
 
-// ─── Shared types for submenus ──────────────────────────────────────────────
-
-interface SubMenuProps {
-  interval: number;
-  currentRule: ParsedRule;
-  recurrenceType: TaskRecurrenceType;
-  onSave: (update: { recurrenceType: TaskRecurrenceType; recurrenceRule?: string | null }) => void;
-}
-
-// ─── Weekly Detail Submenu ──────────────────────────────────────────────────
-
-function WeeklySubMenu({ interval, currentRule, recurrenceType, onSave }: SubMenuProps) {
-  const search = useMenuSearch();
-  const isCurrentFreq = currentRule.freq === "WEEKLY" && currentRule.interval === interval;
-  const currentDays = isCurrentFreq ? currentRule.byweekday : [];
-
-  const filteredDays = useMemo(() => {
-    if (!search.query) return [...WEEKDAY_CODES];
-    return WEEKDAY_CODES.filter((d) =>
-      WEEKDAY_LABELS[d].toLowerCase().includes(search.query.toLowerCase()),
-    );
-  }, [search.query]);
-
-  function toggleDay(day: WeekdayCode) {
-    const newDays = currentDays.includes(day)
-      ? currentDays.filter((d) => d !== day)
-      : [...currentDays, day];
-    const newRule: ParsedRule = {
-      ...currentRule,
-      freq: "WEEKLY",
-      interval,
-      byweekday: newDays,
-      bymonthday: null,
-      nthWeekday: null,
-      bymonth: [],
-    };
-    onSave({ recurrenceType, recurrenceRule: buildRRule(newRule) });
-  }
-
-  return (
-    <SearchableMenuContent inputProps={search.inputProps} placeholder="Search days...">
-      {filteredDays.length === 0 ? (
-        <div className="text-surface-500 px-3 py-2 text-sm">No matching days</div>
-      ) : (
-        filteredDays.map((day) => (
-          <Menu.OptionItem
-            key={day}
-            type="checkbox"
-            checked={currentDays.includes(day)}
-            value={day}
-            onCheckedChange={() => toggleDay(day)}
-            className={ITEM_CLASS}
-          >
-            <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
-              <Check className="size-4" />
-            </Menu.ItemIndicator>
-            <Menu.ItemText>{WEEKDAY_LABELS[day]}</Menu.ItemText>
-          </Menu.OptionItem>
-        ))
-      )}
-    </SearchableMenuContent>
-  );
-}
-
-// ─── Monthly Detail Submenu ─────────────────────────────────────────────────
-
-function MonthlySubMenu({ interval, currentRule, recurrenceType, onSave }: SubMenuProps) {
-  const search = useMenuSearch();
-
-  const items = useMemo(() => {
-    const dayItems = DAY_NUMBERS.map((d) => ({
-      value: `day-${d}`,
-      label: `On day ${d}`,
-      apply: () => {
-        const newRule: ParsedRule = {
-          ...currentRule,
-          freq: "MONTHLY",
-          interval,
-          bymonthday: d,
-          nthWeekday: null,
-          byweekday: [],
-          bymonth: [],
-        };
-        onSave({ recurrenceType, recurrenceRule: buildRRule(newRule) });
-      },
-    }));
-
-    const nthItems: typeof dayItems = [];
-    for (const ordinal of [1, 2, 3, 4, -1]) {
-      for (const day of WEEKDAY_CODES) {
-        const ordLabel = ORDINAL_LABELS[ordinal] ?? String(ordinal);
-        nthItems.push({
-          value: `nth-${ordinal}-${day}`,
-          label: `${ordLabel} ${WEEKDAY_LABELS[day]}`,
-          apply: () => {
-            const newRule: ParsedRule = {
-              ...currentRule,
-              freq: "MONTHLY",
-              interval,
-              bymonthday: null,
-              nthWeekday: { ordinal, weekday: day },
-              byweekday: [],
-              bymonth: [],
-            };
-            onSave({ recurrenceType, recurrenceRule: buildRRule(newRule) });
-          },
-        });
-      }
-    }
-
-    return [...dayItems, ...nthItems];
-  }, [currentRule, interval, recurrenceType, onSave]);
-
-  const filtered = useMemo(() => {
-    if (!search.query) return items.slice(0, 15);
-    return items.filter((item) => item.label.toLowerCase().includes(search.query.toLowerCase()));
-  }, [items, search.query]);
-
-  return (
-    <SearchableMenuContent inputProps={search.inputProps} placeholder='e.g. "day 15", "1st Monday"'>
-      {filtered.length === 0 ? (
-        <div className="text-surface-500 px-3 py-2 text-sm">No matching options</div>
-      ) : (
-        filtered.map((item) => (
-          <Menu.Item
-            key={item.value}
-            value={item.value}
-            className={ITEM_CLASS}
-            closeOnSelect
-            onClick={item.apply}
-          >
-            <Menu.ItemText>{item.label}</Menu.ItemText>
-          </Menu.Item>
-        ))
-      )}
-    </SearchableMenuContent>
-  );
-}
-
-// ─── Yearly Detail Submenu ──────────────────────────────────────────────────
-
-function YearlySubMenu({ interval, currentRule, recurrenceType, onSave }: SubMenuProps) {
-  const search = useMenuSearch();
-  const isCurrentFreq = currentRule.freq === "YEARLY" && currentRule.interval === interval;
-  const currentMonths = isCurrentFreq ? currentRule.bymonth : [];
-
-  const filtered = useMemo(() => {
-    if (!search.query) return MONTH_LABELS;
-    return MONTH_LABELS.filter((m) => m.toLowerCase().includes(search.query.toLowerCase()));
-  }, [search.query]);
-
-  function toggleMonth(monthIndex: number) {
-    const month = monthIndex + 1;
-    const newMonths = currentMonths.includes(month)
-      ? currentMonths.filter((m) => m !== month)
-      : [...currentMonths, month].sort((a, b) => a - b);
-    const newRule: ParsedRule = {
-      ...currentRule,
-      freq: "YEARLY",
-      interval,
-      bymonth: newMonths,
-      byweekday: [],
-    };
-    onSave({ recurrenceType, recurrenceRule: buildRRule(newRule) });
-  }
-
-  return (
-    <SearchableMenuContent inputProps={search.inputProps} placeholder="Search months...">
-      {filtered.length === 0 ? (
-        <div className="text-surface-500 px-3 py-2 text-sm">No matching months</div>
-      ) : (
-        filtered.map((label) => {
-          const index = MONTH_LABELS.indexOf(label);
-          const month = index + 1;
-          return (
-            <Menu.OptionItem
-              key={label}
-              type="checkbox"
-              checked={currentMonths.includes(month)}
-              value={label}
-              onCheckedChange={() => toggleMonth(index)}
-              className={ITEM_CLASS}
-            >
-              <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
-                <Check className="size-4" />
-              </Menu.ItemIndicator>
-              <Menu.ItemText>{label}</Menu.ItemText>
-            </Menu.OptionItem>
-          );
-        })
-      )}
-    </SearchableMenuContent>
-  );
-}
-
 // ─── Frequency Submenu ──────────────────────────────────────────────────────
 
 const FREQ_SHORTCUTS = [
-  { label: "Daily", freq: "DAILY" as const, interval: 1 },
-  { label: "Weekly", freq: "WEEKLY" as const, interval: 1 },
-  { label: "Monthly", freq: "MONTHLY" as const, interval: 1 },
-  { label: "Yearly", freq: "YEARLY" as const, interval: 1 },
+  { label: "Daily", freq: "DAILY" as const },
+  { label: "Weekly", freq: "WEEKLY" as const },
+  { label: "Monthly", freq: "MONTHLY" as const },
+  { label: "Yearly", freq: "YEARLY" as const },
 ];
 
 function FreqSubMenu({
@@ -538,95 +343,213 @@ function FreqSubMenu({
     onSave({ recurrenceType, recurrenceRule: buildRRule(newRule) });
   }
 
+  function toggleWeekday(day: WeekdayCode) {
+    const newDays = currentRule.byweekday.includes(day)
+      ? currentRule.byweekday.filter((d) => d !== day)
+      : [...currentRule.byweekday, day];
+    const newRule: ParsedRule = { ...currentRule, byweekday: newDays };
+    onSave({ recurrenceType, recurrenceRule: buildRRule(newRule) });
+  }
+
+  function selectMonthlyOption(bymonthday: number | null, nthWeekday: ParsedRule["nthWeekday"]) {
+    const newRule: ParsedRule = {
+      ...currentRule,
+      bymonthday,
+      nthWeekday,
+      byweekday: [],
+    };
+    onSave({ recurrenceType, recurrenceRule: buildRRule(newRule) });
+  }
+
+  function toggleYearlyMonth(monthIndex: number) {
+    const month = monthIndex + 1;
+    const newMonths = currentRule.bymonth.includes(month)
+      ? currentRule.bymonth.filter((m) => m !== month)
+      : [...currentRule.bymonth, month].sort((a, b) => a - b);
+    const newRule: ParsedRule = { ...currentRule, bymonth: newMonths };
+    onSave({ recurrenceType, recurrenceRule: buildRRule(newRule) });
+  }
+
   const filteredShortcuts = useMemo(() => {
     if (!search.query) return FREQ_SHORTCUTS;
     return FREQ_SHORTCUTS.filter((s) => s.label.toLowerCase().includes(search.query.toLowerCase()));
   }, [search.query]);
 
-  function renderDetailSubMenu(freq: FreqCode, interval: number) {
-    const props: SubMenuProps = { interval, currentRule, recurrenceType, onSave };
-    if (freq === "WEEKLY") return <WeeklySubMenu {...props} />;
-    if (freq === "MONTHLY") return <MonthlySubMenu {...props} />;
-    if (freq === "YEARLY") return <YearlySubMenu {...props} />;
-    return null;
+  // Build the monthly options list (used when monthly is active)
+  interface MonthlyOption {
+    value: string;
+    label: string;
+    bymonthday: number | null;
+    nthWeekday: ParsedRule["nthWeekday"];
   }
+
+  const monthlyItems = useMemo(() => {
+    const items: MonthlyOption[] = DAY_NUMBERS.map((d) => ({
+      value: `day-${d}`,
+      label: `On day ${d}`,
+      bymonthday: d,
+      nthWeekday: null,
+    }));
+
+    for (const ordinal of [1, 2, 3, 4, -1]) {
+      for (const day of WEEKDAY_CODES) {
+        const ordLabel = ORDINAL_LABELS[ordinal] ?? String(ordinal);
+        items.push({
+          value: `nth-${ordinal}-${day}`,
+          label: `${ordLabel} ${WEEKDAY_LABELS[day]}`,
+          bymonthday: null,
+          nthWeekday: { ordinal, weekday: day },
+        });
+      }
+    }
+
+    return items;
+  }, []);
+
+  const isSearching = search.query.length > 0;
 
   return (
     <SearchableMenuContent inputProps={search.inputProps} placeholder='e.g. "2 weeks", "3 months"'>
-      {search.query ? (
+      {/* Parsed duration from search input */}
+      {isSearching && parsedDuration && (
+        <Menu.Item
+          value={`parsed-${parsedDuration.freq}-${parsedDuration.interval}`}
+          className={ITEM_CLASS}
+          closeOnSelect
+          onClick={() => selectFreq(parsedDuration.freq, parsedDuration.interval)}
+        >
+          <Menu.ItemText>{parsedDuration.label}</Menu.ItemText>
+        </Menu.Item>
+      )}
+
+      {/* Frequency shortcuts */}
+      {filteredShortcuts.map((shortcut) => {
+        const isCurrent = currentRule.freq === shortcut.freq;
+        return (
+          <Menu.OptionItem
+            key={shortcut.label}
+            type="radio"
+            checked={isCurrent}
+            value={shortcut.label}
+            onCheckedChange={(checked) => {
+              if (checked)
+                selectFreq(
+                  shortcut.freq,
+                  currentRule.freq === shortcut.freq ? currentRule.interval : 1,
+                );
+            }}
+            className={ITEM_CLASS}
+          >
+            <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
+              <Check className="size-4" />
+            </Menu.ItemIndicator>
+            <Menu.ItemText>{shortcut.label}</Menu.ItemText>
+          </Menu.OptionItem>
+        );
+      })}
+
+      {isSearching && !parsedDuration && filteredShortcuts.length === 0 && (
+        <div className="text-surface-500 px-3 py-2 text-sm">No matching options</div>
+      )}
+
+      {/* Conditional detail options below freq shortcuts */}
+      {!isSearching && currentRule.freq === "WEEKLY" && (
         <>
-          {parsedDuration && (
+          <Menu.Separator />
+          <Menu.ItemGroupLabel className="text-surface-500 px-3 py-1 text-xs">
+            On days
+          </Menu.ItemGroupLabel>
+          {WEEKDAY_CODES.map((day) => (
+            <Menu.OptionItem
+              key={day}
+              type="checkbox"
+              checked={currentRule.byweekday.includes(day)}
+              value={`weekday-${day}`}
+              onCheckedChange={() => toggleWeekday(day)}
+              className={ITEM_CLASS}
+            >
+              <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
+                <Check className="size-4" />
+              </Menu.ItemIndicator>
+              <Menu.ItemText>{WEEKDAY_LABELS[day]}</Menu.ItemText>
+            </Menu.OptionItem>
+          ))}
+        </>
+      )}
+
+      {!isSearching && currentRule.freq === "MONTHLY" && (
+        <>
+          <Menu.Separator />
+          <Menu.ItemGroupLabel className="text-surface-500 px-3 py-1 text-xs">
+            On which day
+          </Menu.ItemGroupLabel>
+          {monthlyItems.slice(0, 10).map((item) => (
             <Menu.Item
-              value={`parsed-${parsedDuration.freq}-${parsedDuration.interval}`}
+              key={item.value}
+              value={item.value}
               className={ITEM_CLASS}
               closeOnSelect
-              onClick={() => selectFreq(parsedDuration.freq, parsedDuration.interval)}
+              onClick={() => selectMonthlyOption(item.bymonthday, item.nthWeekday)}
             >
-              <Menu.ItemText>{parsedDuration.label}</Menu.ItemText>
-            </Menu.Item>
-          )}
-          {filteredShortcuts.map((shortcut) => (
-            <Menu.Item
-              key={shortcut.label}
-              value={shortcut.label}
-              className={ITEM_CLASS}
-              closeOnSelect
-              onClick={() => selectFreq(shortcut.freq, shortcut.interval)}
-            >
-              <Menu.ItemText>{shortcut.label}</Menu.ItemText>
+              <Menu.ItemText>{item.label}</Menu.ItemText>
             </Menu.Item>
           ))}
-          {!parsedDuration && filteredShortcuts.length === 0 && (
-            <div className="text-surface-500 px-3 py-2 text-sm">No matching options</div>
-          )}
         </>
-      ) : (
-        filteredShortcuts.map((shortcut) => {
-          const isCurrent =
-            currentRule.freq === shortcut.freq && currentRule.interval === shortcut.interval;
-          const hasSubmenu =
-            shortcut.freq === "WEEKLY" || shortcut.freq === "MONTHLY" || shortcut.freq === "YEARLY";
+      )}
 
-          if (hasSubmenu) {
+      {!isSearching && currentRule.freq === "YEARLY" && (
+        <>
+          <Menu.Separator />
+          <Menu.ItemGroupLabel className="text-surface-500 px-3 py-1 text-xs">
+            In months
+          </Menu.ItemGroupLabel>
+          {MONTH_LABELS.map((label, index) => {
+            const month = index + 1;
             return (
-              <Menu key={shortcut.label} typeahead={false}>
-                <Menu.TriggerItem value={shortcut.label} className="justify-start gap-2 text-sm">
-                  {isCurrent ? (
-                    <Check className="size-4" aria-hidden="true" />
-                  ) : (
-                    <span className="size-4" />
-                  )}
-                  <Menu.ItemText>{shortcut.label}</Menu.ItemText>
-                  <Menu.ItemIndicator className="ml-auto">
-                    <ChevronRight className="size-4" />
-                  </Menu.ItemIndicator>
-                </Menu.TriggerItem>
-                <Portal>
-                  <Menu.Positioner>
-                    {renderDetailSubMenu(shortcut.freq, shortcut.interval)}
-                  </Menu.Positioner>
-                </Portal>
-              </Menu>
+              <Menu.OptionItem
+                key={label}
+                type="checkbox"
+                checked={currentRule.bymonth.includes(month)}
+                value={`month-${month}`}
+                onCheckedChange={() => toggleYearlyMonth(index)}
+                className={ITEM_CLASS}
+              >
+                <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
+                  <Check className="size-4" />
+                </Menu.ItemIndicator>
+                <Menu.ItemText>{label}</Menu.ItemText>
+              </Menu.OptionItem>
             );
-          }
+          })}
+        </>
+      )}
 
-          return (
-            <Menu.Item
-              key={shortcut.label}
-              value={shortcut.label}
-              className={ITEM_CLASS}
-              closeOnSelect
-              onClick={() => selectFreq(shortcut.freq, shortcut.interval)}
-            >
-              {isCurrent ? (
-                <Check className="size-4" aria-hidden="true" />
-              ) : (
-                <span className="size-4" />
-              )}
-              <Menu.ItemText>{shortcut.label}</Menu.ItemText>
-            </Menu.Item>
-          );
-        })
+      {/* Until date — only when a rule is active */}
+      {!isSearching && (
+        <>
+          <Menu.Separator />
+          <Menu typeahead={false}>
+            <Menu.TriggerItem value="until" className="justify-start gap-2 text-sm">
+              <Calendar className="size-4" aria-hidden="true" />
+              <Menu.ItemText>
+                {currentRule.until ? `Until ${currentRule.until}` : "Until (no end date)"}
+              </Menu.ItemText>
+              <Menu.ItemIndicator className="ml-auto">
+                <ChevronRight className="size-4" />
+              </Menu.ItemIndicator>
+            </Menu.TriggerItem>
+            <Portal>
+              <Menu.Positioner>
+                <UntilDateSubMenu
+                  currentUntil={currentRule.until}
+                  currentRule={currentRule}
+                  recurrenceType={recurrenceType}
+                  onSave={onSave}
+                />
+              </Menu.Positioner>
+            </Portal>
+          </Menu>
+        </>
       )}
     </SearchableMenuContent>
   );
@@ -738,8 +661,6 @@ export function RecurrenceMenuField({
     [recurrenceType, recurrenceRule],
   );
 
-  const hasRule = TYPES_WITH_RULE.has(recurrenceType);
-
   function handleSave(update: {
     recurrenceType: TaskRecurrenceType;
     recurrenceRule?: string | null;
@@ -824,33 +745,6 @@ export function RecurrenceMenuField({
                     </Menu.Item>
                   ),
                 )
-              )}
-
-              {hasRule && (
-                <>
-                  <Menu.Separator />
-                  <Menu typeahead={false}>
-                    <Menu.TriggerItem value="until" className="justify-start gap-2 text-sm">
-                      <Calendar className="size-4" aria-hidden="true" />
-                      <Menu.ItemText>
-                        {currentRule.until ? `Until ${currentRule.until}` : "Until (no end date)"}
-                      </Menu.ItemText>
-                      <Menu.ItemIndicator className="ml-auto">
-                        <ChevronRight className="size-4" />
-                      </Menu.ItemIndicator>
-                    </Menu.TriggerItem>
-                    <Portal>
-                      <Menu.Positioner>
-                        <UntilDateSubMenu
-                          currentUntil={currentRule.until}
-                          currentRule={currentRule}
-                          recurrenceType={recurrenceType}
-                          onSave={handleSave}
-                        />
-                      </Menu.Positioner>
-                    </Portal>
-                  </Menu>
-                </>
               )}
             </SearchableMenuContent>
           </Menu.Positioner>
