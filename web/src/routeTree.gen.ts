@@ -12,6 +12,7 @@ import { Route as LinkAccountRouteImport } from './routes/link-account.tsx'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated.tsx'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index.tsx'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings.tsx'
+import { Route as AuthenticatedPlaygroundRouteImport } from './routes/_authenticated/playground.tsx'
 import { Route as AuthenticatedActivityRouteImport } from './routes/_authenticated/activity.tsx'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route.tsx'
 import { Route as AuthenticatedSpacesIndexRouteImport } from './routes/_authenticated/spaces/index.tsx'
@@ -47,6 +48,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedPlaygroundRoute = AuthenticatedPlaygroundRouteImport.update({
+  id: '/playground',
+  path: '/playground',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedActivityRoute = AuthenticatedActivityRouteImport.update({
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/activity': typeof AuthenticatedActivityRoute
+  '/playground': typeof AuthenticatedPlaygroundRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/spaces/$spaceSlug': typeof AuthenticatedSpacesSpaceSlugRouteRouteWithChildren
   '/admin/about': typeof AuthenticatedAdminAboutRoute
@@ -138,6 +145,7 @@ export interface FileRoutesByTo {
   '/link-account': typeof LinkAccountRoute
   '/login': typeof LoginRoute
   '/activity': typeof AuthenticatedActivityRoute
+  '/playground': typeof AuthenticatedPlaygroundRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/': typeof AuthenticatedIndexRoute
   '/admin/about': typeof AuthenticatedAdminAboutRoute
@@ -157,6 +165,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/_authenticated/activity': typeof AuthenticatedActivityRoute
+  '/_authenticated/playground': typeof AuthenticatedPlaygroundRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/spaces/$spaceSlug': typeof AuthenticatedSpacesSpaceSlugRouteRouteWithChildren
@@ -178,6 +187,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/admin'
     | '/activity'
+    | '/playground'
     | '/settings'
     | '/spaces/$spaceSlug'
     | '/admin/about'
@@ -194,6 +204,7 @@ export interface FileRouteTypes {
     | '/link-account'
     | '/login'
     | '/activity'
+    | '/playground'
     | '/settings'
     | '/'
     | '/admin/about'
@@ -212,6 +223,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authenticated/admin'
     | '/_authenticated/activity'
+    | '/_authenticated/playground'
     | '/_authenticated/settings'
     | '/_authenticated/'
     | '/_authenticated/spaces/$spaceSlug'
@@ -267,6 +279,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/playground': {
+      id: '/_authenticated/playground'
+      path: '/playground'
+      fullPath: '/playground'
+      preLoaderRoute: typeof AuthenticatedPlaygroundRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/activity': {
@@ -401,6 +420,7 @@ const AuthenticatedSpacesSpaceSlugRouteRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRouteRoute: typeof AuthenticatedAdminRouteRouteWithChildren
   AuthenticatedActivityRoute: typeof AuthenticatedActivityRoute
+  AuthenticatedPlaygroundRoute: typeof AuthenticatedPlaygroundRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedSpacesSpaceSlugRouteRoute: typeof AuthenticatedSpacesSpaceSlugRouteRouteWithChildren
@@ -411,6 +431,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRouteRoute: AuthenticatedAdminRouteRouteWithChildren,
   AuthenticatedActivityRoute: AuthenticatedActivityRoute,
+  AuthenticatedPlaygroundRoute: AuthenticatedPlaygroundRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedSpacesSpaceSlugRouteRoute:
