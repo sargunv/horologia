@@ -70,8 +70,8 @@ function CreateTaskDialog({ spaceSlug }: { spaceSlug: string }) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <Dialog.Trigger className="btn preset-filled-primary-500 flex items-center gap-2">
-        <Plus className="size-4" />
+      <Dialog.Trigger className="flex w-full items-center justify-center gap-2 rounded-base border-2 border-dashed border-surface-300-700 p-3 text-sm text-surface-500 transition-colors hover:border-surface-400-600 hover:text-surface-700-300">
+        <Plus className="size-4" aria-hidden="true" />
         Create task
       </Dialog.Trigger>
       <Portal>
@@ -143,15 +143,14 @@ export function TaskListPane({ spaceSlug }: { spaceSlug: string }) {
   const tasks = useMemo(() => taskPages.pages.flatMap((p) => p.items), [taskPages]);
 
   return (
-    <div>
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="h5">{space.name}</h2>
-        <div className="flex items-center gap-2">
-          <CreateTaskDialog spaceSlug={spaceSlug} />
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <h2 className="h5 truncate">{space.name}</h2>
+        <div className="flex shrink-0 items-center gap-1">
           <ActivityLink
             to="/spaces/$spaceSlug/activity"
             params={{ spaceSlug }}
-            className="btn-icon preset-outlined-surface-200-800"
+            className="btn-icon btn-sm preset-tonal-surface"
             aria-label="Activity"
           >
             <Activity className="size-4" />
@@ -159,7 +158,7 @@ export function TaskListPane({ spaceSlug }: { spaceSlug: string }) {
           <SettingsLink
             to="/spaces/$spaceSlug/settings"
             params={{ spaceSlug }}
-            className="btn-icon preset-outlined-surface-200-800"
+            className="btn-icon btn-sm preset-tonal-surface"
             aria-label="Settings"
           >
             <Settings className="size-4" />
@@ -170,7 +169,13 @@ export function TaskListPane({ spaceSlug }: { spaceSlug: string }) {
       {tasks.length > 0 ? (
         <div className="card preset-outlined-surface-200-800 divide-surface-200-800 overflow-hidden">
           {tasks.map((task) => (
-            <TaskRow key={task.id} task={task} spaceSlug={spaceSlug} statusMap={statusMap} />
+            <TaskRow
+              key={task.id}
+              task={task}
+              spaceSlug={spaceSlug}
+              statusMap={statusMap}
+              compact
+            />
           ))}
         </div>
       ) : (
@@ -185,14 +190,16 @@ export function TaskListPane({ spaceSlug }: { spaceSlug: string }) {
         </div>
       )}
 
+      <CreateTaskDialog spaceSlug={spaceSlug} />
+
       {isError && (
-        <p className="text-error-500 mt-4 text-center text-sm">
+        <p className="text-error-500 text-center text-sm">
           Failed to load more tasks: {error?.message ?? "Unknown error"}
         </p>
       )}
 
       {hasNextPage && (
-        <div className="mt-4 flex justify-center">
+        <div className="flex justify-center">
           <button
             className="btn preset-outlined-surface-200-800 flex items-center gap-2"
             onClick={() => fetchNextPage()}

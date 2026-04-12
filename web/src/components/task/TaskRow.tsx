@@ -14,11 +14,14 @@ export function TaskRow({
   spaceSlug,
   statusMap,
   spaceLabel,
+  compact,
 }: {
   task: Task;
   spaceSlug: string;
   statusMap: Map<string, TaskStatus>;
   spaceLabel?: string;
+  /** Compact mode for narrow list panes — shows only ID, title, and status badge */
+  compact?: boolean;
 }) {
   const memberMap = useSpaceMemberMap(spaceSlug);
   const assigneeNames = task.assigneeIds.map((id) => memberMap.get(id)?.userName ?? id).join(", ");
@@ -27,20 +30,20 @@ export function TaskRow({
     <TaskLink
       to="/spaces/$spaceSlug/tasks/$taskId"
       params={{ spaceSlug, taskId: task.id }}
-      className="group flex items-center gap-4 border-b border-surface-200-800 px-4 py-3 transition-colors last:border-b-0 hover:bg-surface-100-900 data-[status=active]:bg-surface-200-800"
+      className="group flex items-center gap-3 border-b border-surface-200-800 px-3 py-2.5 transition-colors last:border-b-0 hover:bg-surface-100-900 data-[status=active]:bg-surface-200-800"
     >
-      <div className="flex min-w-0 flex-1 items-center gap-3">
+      <div className="flex min-w-0 flex-1 items-center gap-2">
         <span className="text-surface-500 shrink-0 font-mono text-xs">{task.id}</span>
-        <span className="truncate font-medium">{task.title}</span>
+        <span className="truncate text-sm font-medium">{task.title}</span>
         {spaceLabel && (
           <span className="chip preset-tonal-surface shrink-0 text-xs">{spaceLabel}</span>
         )}
       </div>
 
-      <div className="flex shrink-0 items-center gap-3">
+      <div className="flex shrink-0 items-center gap-2">
         <StatusBadge status={task.status} statusMap={statusMap} />
 
-        {task.assigneeIds.length > 0 && (
+        {!compact && task.assigneeIds.length > 0 && (
           <span
             className="text-surface-600-400 flex items-center gap-1 text-xs"
             title={assigneeNames}
@@ -50,28 +53,28 @@ export function TaskRow({
           </span>
         )}
 
-        {task.due && (
+        {!compact && task.due && (
           <span className="text-surface-600-400 flex items-center gap-1 text-xs whitespace-nowrap">
             <Calendar className="size-3.5" />
             {new Date(task.due.at).toLocaleDateString()}
           </span>
         )}
 
-        {task.effort && (
+        {!compact && task.effort && (
           <span className="text-surface-600-400 flex items-center gap-1 text-xs whitespace-nowrap">
             <Gauge className="size-3.5" />
             {task.effort}
           </span>
         )}
 
-        {task.priority && (
+        {!compact && task.priority && (
           <span className="text-surface-600-400 flex items-center gap-1 text-xs whitespace-nowrap">
             <SignalHigh className="size-3.5" />
             {task.priority}
           </span>
         )}
 
-        {task.tags.length > 0 && (
+        {!compact && task.tags.length > 0 && (
           <span
             className="text-surface-600-400 flex items-center gap-1 text-xs"
             title={task.tags.join(", ")}
