@@ -1,9 +1,19 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { type QueryClient, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../api/client.ts";
 import type { components } from "../api/schema.d.ts";
 import { notifyStaleData } from "./toaster.ts";
 
 type TaskUpdate = components["schemas"]["TaskUpdate"];
+
+/** Invalidate all user task list queries (for the "My Tasks" view). */
+async function invalidateUserTaskLists(queryClient: QueryClient) {
+  await queryClient.invalidateQueries({
+    predicate: (query) =>
+      query.queryKey[0] === "users" &&
+      query.queryKey[2] === "tasks" &&
+      query.queryKey[3] === "list",
+  });
+}
 
 export function useTaskPatch(spaceSlug: string, taskId: string) {
   const queryClient = useQueryClient();
@@ -21,6 +31,7 @@ export function useTaskPatch(spaceSlug: string, taskId: string) {
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", taskId] }),
           queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", "list"] }),
+          invalidateUserTaskLists(queryClient),
         ]);
       } catch (err) {
         console.error("Cache invalidation failed after mutation:", err);
@@ -70,6 +81,7 @@ export function useAddRelation(spaceSlug: string, taskId: string) {
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", taskId] }),
           queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", "list"] }),
+          invalidateUserTaskLists(queryClient),
         ]);
       } catch (err) {
         console.error("Cache invalidation failed after mutation:", err);
@@ -102,6 +114,7 @@ export function useDeleteRelation(spaceSlug: string, taskId: string) {
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", taskId] }),
           queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", "list"] }),
+          invalidateUserTaskLists(queryClient),
         ]);
       } catch (err) {
         console.error("Cache invalidation failed after mutation:", err);
