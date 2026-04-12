@@ -70,3 +70,11 @@ code.hljs {
   content: attr(data-placeholder);
   @apply text-surface-500 pointer-events-none float-left h-0;
 }
+
+/* Override Zag.js inline --z-index on menu positioners for nested submenus */
+.menu-z-submenu {
+  --z-index: 10 !important;
+}
+.menu-z-detail {
+  --z-index: 20 !important;
+}

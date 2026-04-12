@@ -17,6 +17,16 @@ type TaskRecurrenceType = components["schemas"]["TaskRecurrenceType"];
 
 const ITEM_CLASS = "justify-start gap-2 text-sm";
 
+// Zag.js sets inline `z-index: var(--z-index)` on menu positioners,
+// so Tailwind z-index classes are overridden. We set the CSS variable
+// directly to control stacking of nested submenus (child portals
+// render before parent portals in DOM order).
+// Zag.js sets inline `z-index: var(--z-index)` and dynamically updates
+// `--z-index` to `auto`. We use CSS classes with !important to override
+// for nested submenu z-ordering (defined in main.css).
+const Z_SUBMENU = "menu-z-submenu";
+const Z_DETAIL = "menu-z-detail";
+
 type FreqCode = "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
 
 const RECURRENCE_TYPE_LABELS: Record<TaskRecurrenceType, string> = {
@@ -483,7 +493,7 @@ function FreqSubMenu({
               </Menu.ItemIndicator>
             </Menu.TriggerItem>
             <Portal>
-              <Menu.Positioner className="z-20">
+              <Menu.Positioner className={Z_DETAIL}>
                 <Menu.Content>
                   <div className="flex items-center gap-1">
                     {WEEKDAY_CODES.map((day) => {
@@ -537,7 +547,7 @@ function FreqSubMenu({
               </Menu.ItemIndicator>
             </Menu.TriggerItem>
             <Portal>
-              <Menu.Positioner className="z-20">
+              <Menu.Positioner className={Z_DETAIL}>
                 <Menu.Content>
                   <div className="text-surface-500 mb-1.5 text-xs">Day of month</div>
                   <div className="grid grid-cols-7 gap-1">
@@ -660,7 +670,7 @@ function FreqSubMenu({
               </Menu.ItemIndicator>
             </Menu.TriggerItem>
             <Portal>
-              <Menu.Positioner className="z-20">
+              <Menu.Positioner className={Z_DETAIL}>
                 <Menu.Content>
                   <div className="grid grid-cols-6 gap-1">
                     {MONTH_SHORT_LABELS.map((label, index) => {
@@ -704,7 +714,7 @@ function FreqSubMenu({
               </Menu.ItemIndicator>
             </Menu.TriggerItem>
             <Portal>
-              <Menu.Positioner className="z-20">
+              <Menu.Positioner className={Z_DETAIL}>
                 <UntilDateSubMenu
                   currentUntil={currentRule.until}
                   currentRule={currentRule}
@@ -852,7 +862,7 @@ export function RecurrenceMenuField({
           value={displayValue}
         />
         <Portal>
-          <Menu.Positioner className="z-10">
+          <Menu.Positioner className={Z_SUBMENU}>
             <SearchableMenuContent
               inputProps={search.inputProps}
               placeholder="Search recurrence..."
@@ -875,7 +885,7 @@ export function RecurrenceMenuField({
                         </Menu.ItemIndicator>
                       </Menu.TriggerItem>
                       <Portal>
-                        <Menu.Positioner className="z-10">
+                        <Menu.Positioner className={Z_SUBMENU}>
                           <FreqSubMenu
                             recurrenceType={item.value}
                             currentRule={currentRule}
