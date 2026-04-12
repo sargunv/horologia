@@ -159,10 +159,7 @@ interface SpaceTasks {
     ...PageParams,
   ): TaskPage | ApiError;
 
-  @mcpTool(
-    "task_create",
-    "Create a new task in a space. Complex fields (due date, assignees, tags) are not settable via MCP."
-  )
+  @mcpTool("task_create", "Create a new task in a space.")
   @post
   create(
     /** Slug of the space. */
@@ -186,7 +183,7 @@ interface SpaceTasks {
 
   @mcpTool(
     "task_update",
-    "Update an existing task. Obtain task IDs from task_list. Complex fields (due date, assignees, tags) are not settable via MCP."
+    "Update an existing task. Obtain task IDs from task_list."
   )
   @patch
   update(
