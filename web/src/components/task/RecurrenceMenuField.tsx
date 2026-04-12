@@ -283,6 +283,8 @@ function describeRule(parsed: ParsedRule): string {
       const ordLabel =
         ORDINAL_LABELS[parsed.nthWeekday.ordinal] ?? String(parsed.nthWeekday.ordinal);
       desc += ` on the ${ordLabel} ${WEEKDAY_LABELS[parsed.nthWeekday.weekday]}`;
+    } else if (parsed.bymonthday === -1) {
+      desc += " on the last day";
     } else if (parsed.bymonthday != null) {
       desc += ` on day ${parsed.bymonthday}`;
     }
@@ -503,9 +505,11 @@ function FreqSubMenu({
               <Menu.ItemText>
                 {currentRule.nthWeekday
                   ? `On the ${ORDINAL_LABELS[currentRule.nthWeekday.ordinal] ?? ""} ${WEEKDAY_LABELS[currentRule.nthWeekday.weekday]}`
-                  : currentRule.bymonthday != null
-                    ? `On day ${currentRule.bymonthday}`
-                    : "On day..."}
+                  : currentRule.bymonthday === -1
+                    ? "On the last day"
+                    : currentRule.bymonthday != null
+                      ? `On day ${currentRule.bymonthday}`
+                      : "On day..."}
               </Menu.ItemText>
               <Menu.ItemIndicator className="ml-auto">
                 <ChevronRight className="size-4" />
@@ -516,9 +520,12 @@ function FreqSubMenu({
                 <Menu.Content>
                   <div className="px-2 py-2">
                     <div className="text-surface-500 mb-1.5 text-xs">Day of month</div>
-                    <div className="grid grid-cols-7 gap-1">
+                    <div className="grid grid-cols-8 gap-1">
                       {DAY_NUMBERS.map((d) => {
+                        const isLast = currentRule.bymonthday === -1 && !currentRule.nthWeekday;
                         const active = currentRule.bymonthday === d && !currentRule.nthWeekday;
+                        const isShortMonthDay = d >= 29;
+                        const lastDayHint = isLast && d >= 28;
                         return (
                           <button
                             key={d}
@@ -528,13 +535,33 @@ function FreqSubMenu({
                             className={`flex size-7 items-center justify-center rounded text-xs font-medium transition-colors ${
                               active
                                 ? "preset-filled-primary-500"
-                                : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
+                                : lastDayHint
+                                  ? "preset-tonal-primary hover:preset-tonal-surface"
+                                  : isShortMonthDay
+                                    ? "border border-dashed border-surface-300-700 hover:preset-tonal-surface"
+                                    : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
                             }`}
                           >
                             {d}
                           </button>
                         );
                       })}
+                      <button
+                        type="button"
+                        onClick={() => selectMonthlyOption(-1, null)}
+                        aria-pressed={currentRule.bymonthday === -1 && !currentRule.nthWeekday}
+                        className={`flex size-7 items-center justify-center rounded text-xs font-medium transition-colors ${
+                          currentRule.bymonthday === -1 && !currentRule.nthWeekday
+                            ? "preset-filled-primary-500"
+                            : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
+                        }`}
+                        title="Last day of the month"
+                      >
+                        ∞
+                      </button>
+                    </div>
+                    <div className="text-surface-500 mt-1 text-xs">
+                      Dashed days are skipped in shorter months
                     </div>
                   </div>
                   <Menu.Separator />
