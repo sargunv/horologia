@@ -456,9 +456,7 @@ function FreqSubMenu({
       {!isSearching && currentRule.freq === "WEEKLY" && (
         <>
           <Menu.Separator />
-          <Menu.ItemGroupLabel className="text-surface-500 px-3 py-1 text-xs">
-            On days
-          </Menu.ItemGroupLabel>
+          <div className="text-surface-500 px-3 py-1 text-xs">On days</div>
           {WEEKDAY_CODES.map((day) => (
             <Menu.OptionItem
               key={day}
@@ -480,9 +478,7 @@ function FreqSubMenu({
       {!isSearching && currentRule.freq === "MONTHLY" && (
         <>
           <Menu.Separator />
-          <Menu.ItemGroupLabel className="text-surface-500 px-3 py-1 text-xs">
-            On which day
-          </Menu.ItemGroupLabel>
+          <div className="text-surface-500 px-3 py-1 text-xs">On which day</div>
           {monthlyItems.slice(0, 10).map((item) => (
             <Menu.Item
               key={item.value}
@@ -500,9 +496,7 @@ function FreqSubMenu({
       {!isSearching && currentRule.freq === "YEARLY" && (
         <>
           <Menu.Separator />
-          <Menu.ItemGroupLabel className="text-surface-500 px-3 py-1 text-xs">
-            In months
-          </Menu.ItemGroupLabel>
+          <div className="text-surface-500 px-3 py-1 text-xs">In months</div>
           {MONTH_LABELS.map((label, index) => {
             const month = index + 1;
             return (
