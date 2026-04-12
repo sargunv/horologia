@@ -67,6 +67,11 @@ export function useMenuSearch(): MenuSearchResult {
   }, []);
 
   const handleKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {
+    // Prevent Space from being consumed by Menu's keyboard handler
+    if (e.key === " ") {
+      e.stopPropagation();
+      return;
+    }
     if (e.key === "ArrowDown") {
       e.preventDefault();
       const menu = inputRef.current?.closest("[role='menu']");
