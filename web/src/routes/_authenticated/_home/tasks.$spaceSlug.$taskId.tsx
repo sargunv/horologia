@@ -1,6 +1,7 @@
-import { createFileRoute, createLink, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { TaskDetailView } from "../../../components/task/TaskDetail.tsx";
+import { AnchorLink } from "../../../lib/links.ts";
 import {
   spaceEffortLevelsQueryOptions,
   spaceMembersQueryOptions,
@@ -23,9 +24,6 @@ export const Route = createFileRoute("/_authenticated/_home/tasks/$spaceSlug/$ta
   component: HomeTaskDetailPage,
 });
 
-const BackLink = createLink("a");
-const BreadcrumbLink = createLink("a");
-
 function HomeTaskDetailPage() {
   const { spaceSlug, taskId } = Route.useParams();
   const navigate = useNavigate();
@@ -35,33 +33,33 @@ function HomeTaskDetailPage() {
       spaceSlug={spaceSlug}
       taskId={taskId}
       backLink={
-        <BackLink
+        <AnchorLink
           to="/"
           className="text-surface-600-400 hover:text-surface-950-50 inline-flex items-center gap-1 text-sm transition-colors lg:hidden"
         >
           <ArrowLeft className="size-4" aria-hidden="true" />
           Back to My Tasks
-        </BackLink>
+        </AnchorLink>
       }
       breadcrumb={
         <ol className="flex min-w-0 items-center gap-1 text-sm">
           <li>
-            <BreadcrumbLink to="/" className="text-surface-600-400 truncate hover:underline">
+            <AnchorLink to="/" className="text-surface-600-400 truncate hover:underline">
               My Tasks
-            </BreadcrumbLink>
+            </AnchorLink>
           </li>
           <li className="text-surface-500" aria-hidden="true">
             <ChevronRight className="size-3" />
           </li>
           <li>
-            <BreadcrumbLink
+            <AnchorLink
               to="/tasks/$spaceSlug/$taskId"
               params={{ spaceSlug, taskId }}
               className="shrink-0 font-mono hover:underline"
               aria-current="page"
             >
               {taskId}
-            </BreadcrumbLink>
+            </AnchorLink>
           </li>
         </ol>
       }

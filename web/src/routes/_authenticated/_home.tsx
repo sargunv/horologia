@@ -1,4 +1,4 @@
-import { Outlet, createFileRoute, useRouterState } from "@tanstack/react-router";
+import { Outlet, createFileRoute, useMatchRoute } from "@tanstack/react-router";
 import { ListChecks } from "lucide-react";
 import { Suspense } from "react";
 import type { components } from "../../api/schema.d.ts";
@@ -32,8 +32,8 @@ export const Route = createFileRoute("/_authenticated/_home")({
 });
 
 function HomeLayout() {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isTaskDetail = pathname.startsWith("/tasks/");
+  const matchRoute = useMatchRoute();
+  const isTaskDetail = !!matchRoute({ to: "/tasks/$spaceSlug/$taskId" });
 
   return (
     <div className="p-6">

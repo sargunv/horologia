@@ -1,7 +1,8 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, createLink, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { TaskDetailView } from "../../../../../components/task/TaskDetail.tsx";
+import { AnchorLink } from "../../../../../lib/links.ts";
 import {
   spaceEffortLevelsQueryOptions,
   spaceMembersQueryOptions,
@@ -24,9 +25,6 @@ export const Route = createFileRoute("/_authenticated/spaces/$spaceSlug/tasks/$t
   component: TaskDetailPage,
 });
 
-const BackLink = createLink("a");
-const BreadcrumbLink = createLink("a");
-
 function TaskDetailPage() {
   const { spaceSlug, taskId } = Route.useParams();
   const { data: space } = useSuspenseQuery(spaceQueryOptions(spaceSlug));
@@ -37,38 +35,38 @@ function TaskDetailPage() {
       spaceSlug={spaceSlug}
       taskId={taskId}
       backLink={
-        <BackLink
+        <AnchorLink
           to="/spaces/$spaceSlug"
           params={{ spaceSlug }}
           className="text-surface-600-400 hover:text-surface-950-50 inline-flex items-center gap-1 text-sm transition-colors lg:hidden"
         >
           <ArrowLeft className="size-4" aria-hidden="true" />
           Back to {space.name}
-        </BackLink>
+        </AnchorLink>
       }
       breadcrumb={
         <ol className="flex min-w-0 items-center gap-1 text-sm">
           <li>
-            <BreadcrumbLink
+            <AnchorLink
               to="/spaces/$spaceSlug"
               params={{ spaceSlug }}
               className="text-surface-600-400 truncate hover:underline"
             >
               {space.name}
-            </BreadcrumbLink>
+            </AnchorLink>
           </li>
           <li className="text-surface-500" aria-hidden="true">
             <ChevronRight className="size-3" />
           </li>
           <li>
-            <BreadcrumbLink
+            <AnchorLink
               to="/spaces/$spaceSlug/tasks/$taskId"
               params={{ spaceSlug, taskId }}
               className="shrink-0 font-mono hover:underline"
               aria-current="page"
             >
               {taskId}
-            </BreadcrumbLink>
+            </AnchorLink>
           </li>
         </ol>
       }
