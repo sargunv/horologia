@@ -321,7 +321,7 @@ function StatusField({
   );
 
   return (
-    <Menu {...search.menuProps}>
+    <Menu {...search.menuProps} closeOnSelect={false}>
       <FieldPill
         icon={<CircleAlert className="size-3.5" aria-hidden="true" />}
         label="Status"
@@ -390,7 +390,7 @@ function NullableMenuField({
   );
 
   return (
-    <Menu {...search.menuProps}>
+    <Menu {...search.menuProps} closeOnSelect={false}>
       <FieldPill icon={icon} label={label} value={value} />
       <Portal>
         <Menu.Positioner>
@@ -402,7 +402,6 @@ function NullableMenuField({
               <Menu.Item
                 value="none"
                 className={`text-error-500 ${ITEM_CLASS}`}
-                closeOnSelect
                 onClick={() => {
                   mutation.reset();
                   mutation.mutate({ [field]: null });
@@ -605,7 +604,7 @@ function DueDateField({
   }
 
   return (
-    <Menu {...search.menuProps}>
+    <Menu {...search.menuProps} closeOnSelect={false}>
       <FieldPill
         icon={<Calendar className="size-3.5" aria-hidden="true" />}
         label="Due date"
@@ -621,7 +620,6 @@ function DueDateField({
               <Menu.Item
                 value="clear"
                 className={`text-error-500 ${ITEM_CLASS}`}
-                closeOnSelect
                 onClick={() => {
                   mutation.reset();
                   mutation.mutate({ due: null });
@@ -637,7 +635,6 @@ function DueDateField({
                 <Menu.Item
                   value={parsedDate.value}
                   className={ITEM_CLASS}
-                  closeOnSelect
                   onClick={() => selectDate(parsedDate.value)}
                 >
                   <Calendar className="size-4" aria-hidden="true" />
@@ -656,7 +653,6 @@ function DueDateField({
                     key={shortcut.label}
                     value={isoDate}
                     className={ITEM_CLASS}
-                    closeOnSelect
                     onClick={() => selectDate(isoDate)}
                   >
                     <Menu.ItemText>{shortcut.label}</Menu.ItemText>

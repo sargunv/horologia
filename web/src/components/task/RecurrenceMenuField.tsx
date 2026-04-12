@@ -415,7 +415,6 @@ function FreqSubMenu({
         <Menu.Item
           value={`parsed-${parsedDuration.freq}-${parsedDuration.interval}`}
           className={ITEM_CLASS}
-          closeOnSelect
           onClick={() => selectFreq(parsedDuration.freq, parsedDuration.interval)}
         >
           <Menu.ItemText>{parsedDuration.label}</Menu.ItemText>
@@ -484,7 +483,6 @@ function FreqSubMenu({
               key={item.value}
               value={item.value}
               className={ITEM_CLASS}
-              closeOnSelect
               onClick={() => selectMonthlyOption(item.bymonthday, item.nthWeekday)}
             >
               <Menu.ItemText>{item.label}</Menu.ItemText>
@@ -522,7 +520,7 @@ function FreqSubMenu({
       {!isSearching && (
         <>
           <Menu.Separator />
-          <Menu typeahead={false}>
+          <Menu typeahead={false} closeOnSelect={false}>
             <Menu.TriggerItem value="until" className="justify-start gap-2 text-sm">
               <Calendar className="size-4" aria-hidden="true" />
               <Menu.ItemText>
@@ -587,7 +585,6 @@ function UntilDateSubMenu({
         <Menu.Item
           value="clear-until"
           className={`text-error-500 ${ITEM_CLASS}`}
-          closeOnSelect
           onClick={() => selectUntil(null)}
         >
           <X className="size-4" aria-hidden="true" />
@@ -600,7 +597,6 @@ function UntilDateSubMenu({
           <Menu.Item
             value={parsedDate.value}
             className={ITEM_CLASS}
-            closeOnSelect
             onClick={() => selectUntil(parsedDate.value)}
           >
             <Calendar className="size-4" aria-hidden="true" />
@@ -620,7 +616,6 @@ function UntilDateSubMenu({
               key={shortcut.label}
               value={isoDate}
               className={ITEM_CLASS}
-              closeOnSelect
               onClick={() => selectUntil(isoDate)}
             >
               <Menu.ItemText>{shortcut.label}</Menu.ItemText>
@@ -694,7 +689,7 @@ export function RecurrenceMenuField({
               ) : (
                 typeItems.map((item) =>
                   item.hasSubmenu ? (
-                    <Menu key={item.value} typeahead={false}>
+                    <Menu key={item.value} typeahead={false} closeOnSelect={false}>
                       <Menu.TriggerItem value={item.value} className="justify-start gap-2 text-sm">
                         {recurrenceType === item.value ? (
                           <Check className="size-4" aria-hidden="true" />
@@ -721,7 +716,6 @@ export function RecurrenceMenuField({
                       key={item.value}
                       value={item.value}
                       className={ITEM_CLASS}
-                      closeOnSelect
                       onClick={() => {
                         const update: Parameters<typeof handleSave>[0] = {
                           recurrenceType: item.value,
