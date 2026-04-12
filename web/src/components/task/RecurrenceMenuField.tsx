@@ -97,7 +97,9 @@ const ORDINAL_LABELS: Record<number, string> = {
   [-1]: "Last",
 };
 
-const DAY_NUMBERS = Array.from({ length: 28 }, (_, i) => i + 1);
+const DAY_NUMBERS = Array.from({ length: 31 }, (_, i) => i + 1);
+
+const ORDINALS = [1, 2, 3, 4, -1] as const;
 
 const MONTH_SHORT_LABELS = [
   "Jan",
@@ -127,20 +129,6 @@ const MONTH_LABELS = [
   "October",
   "November",
   "December",
-];
-
-interface NthWeekdayShortcut {
-  value: string;
-  label: string;
-  nthWeekday: { ordinal: number; weekday: WeekdayCode };
-}
-
-const NTH_WEEKDAY_SHORTCUTS: NthWeekdayShortcut[] = [
-  { value: "1st-MO", label: "1st Monday", nthWeekday: { ordinal: 1, weekday: "MO" } },
-  { value: "1st-FR", label: "1st Friday", nthWeekday: { ordinal: 1, weekday: "FR" } },
-  { value: "2nd-MO", label: "2nd Monday", nthWeekday: { ordinal: 2, weekday: "MO" } },
-  { value: "last-FR", label: "Last Friday", nthWeekday: { ordinal: -1, weekday: "FR" } },
-  { value: "last-MO", label: "Last Monday", nthWeekday: { ordinal: -1, weekday: "MO" } },
 ];
 
 // ─── RRULE Parsing ──────────────────────────────────────────────────────────
@@ -459,121 +447,211 @@ function FreqSubMenu({
         <div className="text-surface-500 px-3 py-2 text-sm">No matching options</div>
       )}
 
-      {/* Conditional detail options below freq shortcuts */}
+      {/* Conditional submenu entries for freq-specific options */}
       {!isSearching && currentRule.freq === "WEEKLY" && (
         <>
           <Menu.Separator />
-          <div className="px-2 py-1.5">
-            <div className="text-surface-500 mb-1.5 text-xs">On days</div>
-            <div className="flex items-center gap-1">
-              {WEEKDAY_CODES.map((day) => {
-                const active = currentRule.byweekday.includes(day);
-                return (
-                  <button
-                    key={day}
-                    type="button"
-                    onClick={() => toggleWeekday(day)}
-                    aria-label={WEEKDAY_LABELS[day]}
-                    aria-pressed={active}
-                    className={`flex size-7 items-center justify-center rounded-full text-xs font-medium transition-colors ${
-                      active
-                        ? "preset-filled-primary-500"
-                        : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
-                    }`}
-                  >
-                    {WEEKDAY_SHORT_LABELS[day]}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <Menu typeahead={false} closeOnSelect={false}>
+            <Menu.TriggerItem value="weekdays" className="justify-start gap-2 text-sm">
+              <Menu.ItemText>
+                {currentRule.byweekday.length > 0
+                  ? `On ${currentRule.byweekday.map((d) => WEEKDAY_SHORT_LABELS[d]).join(", ")}`
+                  : "On days..."}
+              </Menu.ItemText>
+              <Menu.ItemIndicator className="ml-auto">
+                <ChevronRight className="size-4" />
+              </Menu.ItemIndicator>
+            </Menu.TriggerItem>
+            <Portal>
+              <Menu.Positioner>
+                <Menu.Content>
+                  <div className="px-2 py-2">
+                    <div className="flex items-center gap-1">
+                      {WEEKDAY_CODES.map((day) => {
+                        const active = currentRule.byweekday.includes(day);
+                        return (
+                          <button
+                            key={day}
+                            type="button"
+                            onClick={() => toggleWeekday(day)}
+                            aria-label={WEEKDAY_LABELS[day]}
+                            aria-pressed={active}
+                            className={`flex size-7 items-center justify-center rounded-full text-xs font-medium transition-colors ${
+                              active
+                                ? "preset-filled-primary-500"
+                                : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
+                            }`}
+                          >
+                            {WEEKDAY_SHORT_LABELS[day]}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </Menu.Content>
+              </Menu.Positioner>
+            </Portal>
+          </Menu>
         </>
       )}
 
       {!isSearching && currentRule.freq === "MONTHLY" && (
         <>
           <Menu.Separator />
-          <div className="px-2 py-1.5">
-            <div className="text-surface-500 mb-1.5 text-xs">On day</div>
-            <div className="grid grid-cols-7 gap-1">
-              {DAY_NUMBERS.map((d) => {
-                const active = currentRule.bymonthday === d;
-                return (
-                  <button
-                    key={d}
-                    type="button"
-                    onClick={() => selectMonthlyOption(d, null)}
-                    aria-pressed={active}
-                    className={`flex size-7 items-center justify-center rounded text-xs font-medium transition-colors ${
-                      active
-                        ? "preset-filled-primary-500"
-                        : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
-                    }`}
-                  >
-                    {d}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <div className="text-surface-500 px-2 py-1 text-xs">Or on the</div>
-          {NTH_WEEKDAY_SHORTCUTS.map((item) => (
-            <Menu.Item
-              key={item.value}
-              value={item.value}
-              className={ITEM_CLASS}
-              onClick={() => selectMonthlyOption(null, item.nthWeekday)}
-            >
-              {currentRule.nthWeekday?.ordinal === item.nthWeekday.ordinal &&
-              currentRule.nthWeekday?.weekday === item.nthWeekday.weekday ? (
-                <Check className="size-4" aria-hidden="true" />
-              ) : (
-                <span className="size-4" />
-              )}
-              <Menu.ItemText>{item.label}</Menu.ItemText>
-            </Menu.Item>
-          ))}
+          <Menu typeahead={false} closeOnSelect={false}>
+            <Menu.TriggerItem value="monthday" className="justify-start gap-2 text-sm">
+              <Menu.ItemText>
+                {currentRule.nthWeekday
+                  ? `On the ${ORDINAL_LABELS[currentRule.nthWeekday.ordinal] ?? ""} ${WEEKDAY_LABELS[currentRule.nthWeekday.weekday]}`
+                  : currentRule.bymonthday != null
+                    ? `On day ${currentRule.bymonthday}`
+                    : "On day..."}
+              </Menu.ItemText>
+              <Menu.ItemIndicator className="ml-auto">
+                <ChevronRight className="size-4" />
+              </Menu.ItemIndicator>
+            </Menu.TriggerItem>
+            <Portal>
+              <Menu.Positioner>
+                <Menu.Content>
+                  <div className="px-2 py-2">
+                    <div className="text-surface-500 mb-1.5 text-xs">Day of month</div>
+                    <div className="grid grid-cols-7 gap-1">
+                      {DAY_NUMBERS.map((d) => {
+                        const active = currentRule.bymonthday === d && !currentRule.nthWeekday;
+                        return (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() => selectMonthlyOption(d, null)}
+                            aria-pressed={active}
+                            className={`flex size-7 items-center justify-center rounded text-xs font-medium transition-colors ${
+                              active
+                                ? "preset-filled-primary-500"
+                                : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
+                            }`}
+                          >
+                            {d}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <Menu.Separator />
+                  <div className="px-2 py-2">
+                    <div className="text-surface-500 mb-1.5 text-xs">Or on the Nth weekday</div>
+                    <div className="mb-1.5 flex items-center gap-1">
+                      {ORDINALS.map((ord) => {
+                        const active = currentRule.nthWeekday?.ordinal === ord;
+                        return (
+                          <button
+                            key={ord}
+                            type="button"
+                            onClick={() =>
+                              selectMonthlyOption(null, {
+                                ordinal: ord,
+                                weekday: currentRule.nthWeekday?.weekday ?? "MO",
+                              })
+                            }
+                            aria-pressed={active}
+                            className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
+                              active
+                                ? "preset-filled-primary-500"
+                                : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
+                            }`}
+                          >
+                            {ORDINAL_LABELS[ord]}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {WEEKDAY_CODES.map((day) => {
+                        const active = currentRule.nthWeekday?.weekday === day;
+                        return (
+                          <button
+                            key={day}
+                            type="button"
+                            onClick={() =>
+                              selectMonthlyOption(null, {
+                                ordinal: currentRule.nthWeekday?.ordinal ?? 1,
+                                weekday: day,
+                              })
+                            }
+                            aria-label={WEEKDAY_LABELS[day]}
+                            aria-pressed={active}
+                            className={`flex size-7 items-center justify-center rounded-full text-xs font-medium transition-colors ${
+                              active
+                                ? "preset-filled-primary-500"
+                                : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
+                            }`}
+                          >
+                            {WEEKDAY_SHORT_LABELS[day]}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </Menu.Content>
+              </Menu.Positioner>
+            </Portal>
+          </Menu>
         </>
       )}
 
       {!isSearching && currentRule.freq === "YEARLY" && (
         <>
           <Menu.Separator />
-          <div className="px-2 py-1.5">
-            <div className="text-surface-500 mb-1.5 text-xs">In months</div>
-            <div className="grid grid-cols-6 gap-1">
-              {MONTH_SHORT_LABELS.map((label, index) => {
-                const month = index + 1;
-                const active = currentRule.bymonth.includes(month);
-                return (
-                  <button
-                    key={label}
-                    type="button"
-                    onClick={() => toggleYearlyMonth(index)}
-                    aria-label={MONTH_LABELS[index]}
-                    aria-pressed={active}
-                    className={`rounded px-1.5 py-1 text-xs font-medium transition-colors ${
-                      active
-                        ? "preset-filled-primary-500"
-                        : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <Menu typeahead={false} closeOnSelect={false}>
+            <Menu.TriggerItem value="months" className="justify-start gap-2 text-sm">
+              <Menu.ItemText>
+                {currentRule.bymonth.length > 0
+                  ? `In ${currentRule.bymonth.map((m) => MONTH_SHORT_LABELS[m - 1]).join(", ")}`
+                  : "In months..."}
+              </Menu.ItemText>
+              <Menu.ItemIndicator className="ml-auto">
+                <ChevronRight className="size-4" />
+              </Menu.ItemIndicator>
+            </Menu.TriggerItem>
+            <Portal>
+              <Menu.Positioner>
+                <Menu.Content>
+                  <div className="px-2 py-2">
+                    <div className="grid grid-cols-6 gap-1">
+                      {MONTH_SHORT_LABELS.map((label, index) => {
+                        const month = index + 1;
+                        const active = currentRule.bymonth.includes(month);
+                        return (
+                          <button
+                            key={label}
+                            type="button"
+                            onClick={() => toggleYearlyMonth(index)}
+                            aria-label={MONTH_LABELS[index]}
+                            aria-pressed={active}
+                            className={`rounded px-1.5 py-1 text-xs font-medium transition-colors ${
+                              active
+                                ? "preset-filled-primary-500"
+                                : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </Menu.Content>
+              </Menu.Positioner>
+            </Portal>
+          </Menu>
         </>
       )}
 
-      {/* Until date — only when a rule is active */}
+      {/* Until date */}
       {!isSearching && (
         <>
-          <Menu.Separator />
           <Menu typeahead={false} closeOnSelect={false}>
             <Menu.TriggerItem value="until" className="justify-start gap-2 text-sm">
-              <Calendar className="size-4" aria-hidden="true" />
               <Menu.ItemText>
                 {currentRule.until ? `Until ${currentRule.until}` : "Until (no end date)"}
               </Menu.ItemText>
