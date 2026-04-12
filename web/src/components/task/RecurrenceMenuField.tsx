@@ -862,7 +862,7 @@ export function RecurrenceMenuField({
           value={displayValue}
         />
         <Portal>
-          <Menu.Positioner className={Z_SUBMENU}>
+          <Menu.Positioner>
             <SearchableMenuContent
               inputProps={search.inputProps}
               placeholder="Search recurrence..."
