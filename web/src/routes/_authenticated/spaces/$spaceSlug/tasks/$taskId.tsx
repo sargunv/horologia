@@ -668,11 +668,11 @@ function TaskDetailPage() {
   const memberMap = useSpaceMemberMap(spaceSlug);
 
   return (
-    <div className="mx-auto max-w-3xl p-6">
+    <div className="space-y-6">
       <BackLink
         to="/spaces/$spaceSlug"
         params={{ spaceSlug }}
-        className="text-surface-600-400 hover:text-surface-950-50 mb-4 inline-flex items-center gap-1 text-sm transition-colors"
+        className="text-surface-600-400 hover:text-surface-950-50 inline-flex items-center gap-1 text-sm transition-colors lg:hidden"
       >
         <ArrowLeft className="size-4" aria-hidden="true" />
         Back to {space.name}

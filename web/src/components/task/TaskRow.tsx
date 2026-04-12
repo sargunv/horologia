@@ -27,7 +27,7 @@ export function TaskRow({
     <TaskLink
       to="/spaces/$spaceSlug/tasks/$taskId"
       params={{ spaceSlug, taskId: task.id }}
-      className="group flex items-center gap-4 border-b border-surface-200-800 px-4 py-3 transition-colors last:border-b-0 hover:bg-surface-100-900"
+      className="group flex items-center gap-4 border-b border-surface-200-800 px-4 py-3 transition-colors last:border-b-0 hover:bg-surface-100-900 data-[status=active]:bg-surface-200-800"
     >
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <span className="text-surface-500 shrink-0 font-mono text-xs">{task.id}</span>
