@@ -53,6 +53,16 @@ const WEEKDAY_LABELS: Record<WeekdayCode, string> = {
   SU: "Sunday",
 };
 
+const WEEKDAY_SHORT_LABELS: Record<WeekdayCode, string> = {
+  MO: "M",
+  TU: "Tu",
+  WE: "W",
+  TH: "Th",
+  FR: "F",
+  SA: "Sa",
+  SU: "Su",
+};
+
 const RRULE_WEEKDAY: Record<WeekdayCode, Weekday> = {
   MO: RRule.MO,
   TU: RRule.TU,
@@ -89,6 +99,21 @@ const ORDINAL_LABELS: Record<number, string> = {
 
 const DAY_NUMBERS = Array.from({ length: 28 }, (_, i) => i + 1);
 
+const MONTH_SHORT_LABELS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
 const MONTH_LABELS = [
   "January",
   "February",
@@ -102,6 +127,20 @@ const MONTH_LABELS = [
   "October",
   "November",
   "December",
+];
+
+interface NthWeekdayShortcut {
+  value: string;
+  label: string;
+  nthWeekday: { ordinal: number; weekday: WeekdayCode };
+}
+
+const NTH_WEEKDAY_SHORTCUTS: NthWeekdayShortcut[] = [
+  { value: "1st-MO", label: "1st Monday", nthWeekday: { ordinal: 1, weekday: "MO" } },
+  { value: "1st-FR", label: "1st Friday", nthWeekday: { ordinal: 1, weekday: "FR" } },
+  { value: "2nd-MO", label: "2nd Monday", nthWeekday: { ordinal: 2, weekday: "MO" } },
+  { value: "last-FR", label: "Last Friday", nthWeekday: { ordinal: -1, weekday: "FR" } },
+  { value: "last-MO", label: "Last Monday", nthWeekday: { ordinal: -1, weekday: "MO" } },
 ];
 
 // ─── RRULE Parsing ──────────────────────────────────────────────────────────
@@ -375,37 +414,6 @@ function FreqSubMenu({
     return FREQ_SHORTCUTS.filter((s) => s.label.toLowerCase().includes(search.query.toLowerCase()));
   }, [search.query]);
 
-  // Build the monthly options list (used when monthly is active)
-  interface MonthlyOption {
-    value: string;
-    label: string;
-    bymonthday: number | null;
-    nthWeekday: ParsedRule["nthWeekday"];
-  }
-
-  const monthlyItems = useMemo(() => {
-    const items: MonthlyOption[] = DAY_NUMBERS.map((d) => ({
-      value: `day-${d}`,
-      label: `On day ${d}`,
-      bymonthday: d,
-      nthWeekday: null,
-    }));
-
-    for (const ordinal of [1, 2, 3, 4, -1]) {
-      for (const day of WEEKDAY_CODES) {
-        const ordLabel = ORDINAL_LABELS[ordinal] ?? String(ordinal);
-        items.push({
-          value: `nth-${ordinal}-${day}`,
-          label: `${ordLabel} ${WEEKDAY_LABELS[day]}`,
-          bymonthday: null,
-          nthWeekday: { ordinal, weekday: day },
-        });
-      }
-    }
-
-    return items;
-  }, []);
-
   const isSearching = search.query.length > 0;
 
   return (
@@ -455,36 +463,73 @@ function FreqSubMenu({
       {!isSearching && currentRule.freq === "WEEKLY" && (
         <>
           <Menu.Separator />
-          <div className="text-surface-500 px-3 py-1 text-xs">On days</div>
-          {WEEKDAY_CODES.map((day) => (
-            <Menu.OptionItem
-              key={day}
-              type="checkbox"
-              checked={currentRule.byweekday.includes(day)}
-              value={`weekday-${day}`}
-              onCheckedChange={() => toggleWeekday(day)}
-              className={ITEM_CLASS}
-            >
-              <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
-                <Check className="size-4" />
-              </Menu.ItemIndicator>
-              <Menu.ItemText>{WEEKDAY_LABELS[day]}</Menu.ItemText>
-            </Menu.OptionItem>
-          ))}
+          <div className="px-2 py-1.5">
+            <div className="text-surface-500 mb-1.5 text-xs">On days</div>
+            <div className="flex items-center gap-1">
+              {WEEKDAY_CODES.map((day) => {
+                const active = currentRule.byweekday.includes(day);
+                return (
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() => toggleWeekday(day)}
+                    aria-label={WEEKDAY_LABELS[day]}
+                    aria-pressed={active}
+                    className={`flex size-7 items-center justify-center rounded-full text-xs font-medium transition-colors ${
+                      active
+                        ? "preset-filled-primary-500"
+                        : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
+                    }`}
+                  >
+                    {WEEKDAY_SHORT_LABELS[day]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </>
       )}
 
       {!isSearching && currentRule.freq === "MONTHLY" && (
         <>
           <Menu.Separator />
-          <div className="text-surface-500 px-3 py-1 text-xs">On which day</div>
-          {monthlyItems.slice(0, 10).map((item) => (
+          <div className="px-2 py-1.5">
+            <div className="text-surface-500 mb-1.5 text-xs">On day</div>
+            <div className="grid grid-cols-7 gap-1">
+              {DAY_NUMBERS.map((d) => {
+                const active = currentRule.bymonthday === d;
+                return (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => selectMonthlyOption(d, null)}
+                    aria-pressed={active}
+                    className={`flex size-7 items-center justify-center rounded text-xs font-medium transition-colors ${
+                      active
+                        ? "preset-filled-primary-500"
+                        : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
+                    }`}
+                  >
+                    {d}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="text-surface-500 px-2 py-1 text-xs">Or on the</div>
+          {NTH_WEEKDAY_SHORTCUTS.map((item) => (
             <Menu.Item
               key={item.value}
               value={item.value}
               className={ITEM_CLASS}
-              onClick={() => selectMonthlyOption(item.bymonthday, item.nthWeekday)}
+              onClick={() => selectMonthlyOption(null, item.nthWeekday)}
             >
+              {currentRule.nthWeekday?.ordinal === item.nthWeekday.ordinal &&
+              currentRule.nthWeekday?.weekday === item.nthWeekday.weekday ? (
+                <Check className="size-4" aria-hidden="true" />
+              ) : (
+                <span className="size-4" />
+              )}
               <Menu.ItemText>{item.label}</Menu.ItemText>
             </Menu.Item>
           ))}
@@ -494,25 +539,31 @@ function FreqSubMenu({
       {!isSearching && currentRule.freq === "YEARLY" && (
         <>
           <Menu.Separator />
-          <div className="text-surface-500 px-3 py-1 text-xs">In months</div>
-          {MONTH_LABELS.map((label, index) => {
-            const month = index + 1;
-            return (
-              <Menu.OptionItem
-                key={label}
-                type="checkbox"
-                checked={currentRule.bymonth.includes(month)}
-                value={`month-${month}`}
-                onCheckedChange={() => toggleYearlyMonth(index)}
-                className={ITEM_CLASS}
-              >
-                <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
-                  <Check className="size-4" />
-                </Menu.ItemIndicator>
-                <Menu.ItemText>{label}</Menu.ItemText>
-              </Menu.OptionItem>
-            );
-          })}
+          <div className="px-2 py-1.5">
+            <div className="text-surface-500 mb-1.5 text-xs">In months</div>
+            <div className="grid grid-cols-6 gap-1">
+              {MONTH_SHORT_LABELS.map((label, index) => {
+                const month = index + 1;
+                const active = currentRule.bymonth.includes(month);
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => toggleYearlyMonth(index)}
+                    aria-label={MONTH_LABELS[index]}
+                    aria-pressed={active}
+                    className={`rounded px-1.5 py-1 text-xs font-medium transition-colors ${
+                      active
+                        ? "preset-filled-primary-500"
+                        : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </>
       )}
 
