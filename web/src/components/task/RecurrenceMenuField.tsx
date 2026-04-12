@@ -543,7 +543,7 @@ function FreqSubMenu({
                 <Menu.Content>
                   <div className="p-2">
                     <div className="text-surface-500 mb-1.5 text-xs">Day of month</div>
-                    <div className="grid grid-cols-7 gap-0.5">
+                    <div className="grid grid-cols-7 gap-1">
                       {DAY_NUMBERS.map((d) => {
                         const hasLast =
                           currentRule.bymonthday.includes(-1) && !currentRule.nthWeekday;
@@ -577,7 +577,7 @@ function FreqSubMenu({
                         aria-pressed={
                           currentRule.bymonthday.includes(-1) && !currentRule.nthWeekday
                         }
-                        className={`flex size-7 items-center justify-center rounded text-xs font-medium transition-colors ${
+                        className={`col-span-4 flex items-center justify-center rounded py-1 text-xs font-medium transition-colors ${
                           currentRule.bymonthday.includes(-1) && !currentRule.nthWeekday
                             ? "preset-filled-primary-500"
                             : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
