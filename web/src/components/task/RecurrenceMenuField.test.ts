@@ -13,7 +13,7 @@ describe("parseRRule", () => {
     expect(result.interval).toBe(1);
     expect(result.byweekday).toEqual([]);
     expect(result.bymonthday).toEqual([]);
-    expect(result.nthWeekday).toBeNull();
+    expect(result.nthWeekday).toEqual([]);
     expect(result.bymonth).toEqual([]);
     expect(result.until).toBeNull();
     expect(result.parseError).toBe(false);
@@ -50,19 +50,19 @@ describe("parseRRule", () => {
     const result = parseRRule("FREQ=MONTHLY;BYMONTHDAY=15");
     expect(result.freq).toBe("MONTHLY");
     expect(result.bymonthday).toEqual([15]);
-    expect(result.nthWeekday).toBeNull();
+    expect(result.nthWeekday).toEqual([]);
   });
 
   it("parses monthly by nth weekday", () => {
     const result = parseRRule("FREQ=MONTHLY;BYDAY=2MO");
     expect(result.freq).toBe("MONTHLY");
-    expect(result.nthWeekday).toEqual({ ordinal: 2, weekday: "MO" });
+    expect(result.nthWeekday).toEqual([{ ordinal: 2, weekday: "MO" }]);
   });
 
   it("parses monthly by last weekday", () => {
     const result = parseRRule("FREQ=MONTHLY;BYDAY=-1FR");
     expect(result.freq).toBe("MONTHLY");
-    expect(result.nthWeekday).toEqual({ ordinal: -1, weekday: "FR" });
+    expect(result.nthWeekday).toEqual([{ ordinal: -1, weekday: "FR" }]);
   });
 
   it("parses yearly with months", () => {
@@ -96,10 +96,12 @@ describe("parseRRule", () => {
     expect(rebuilt).not.toContain("INTERVAL");
   });
 
-  it("keeps only the last nth weekday when multiple are present", () => {
+  it("preserves multiple nth weekdays", () => {
     const result = parseRRule("FREQ=MONTHLY;BYDAY=2MO,3FR");
-    // Current limitation: only the last nth weekday is preserved
-    expect(result.nthWeekday).toEqual({ ordinal: 3, weekday: "FR" });
+    expect(result.nthWeekday).toEqual([
+      { ordinal: 2, weekday: "MO" },
+      { ordinal: 3, weekday: "FR" },
+    ]);
   });
 });
 
@@ -110,7 +112,7 @@ describe("buildRRule", () => {
       interval: 1,
       byweekday: [],
       bymonthday: [],
-      nthWeekday: null,
+      nthWeekday: [],
       bymonth: [],
       until: null,
       parseError: false,
@@ -125,7 +127,7 @@ describe("buildRRule", () => {
       interval: 3,
       byweekday: [],
       bymonthday: [],
-      nthWeekday: null,
+      nthWeekday: [],
       bymonth: [],
       until: null,
       parseError: false,
@@ -140,7 +142,7 @@ describe("buildRRule", () => {
       interval: 1,
       byweekday: ["MO", "WE", "FR"],
       bymonthday: [],
-      nthWeekday: null,
+      nthWeekday: [],
       bymonth: [],
       until: null,
       parseError: false,
@@ -155,7 +157,7 @@ describe("buildRRule", () => {
       interval: 1,
       byweekday: [],
       bymonthday: [15],
-      nthWeekday: null,
+      nthWeekday: [],
       bymonth: [],
       until: null,
       parseError: false,
@@ -170,7 +172,7 @@ describe("buildRRule", () => {
       interval: 1,
       byweekday: [],
       bymonthday: [],
-      nthWeekday: { ordinal: 2, weekday: "MO" },
+      nthWeekday: [{ ordinal: 2, weekday: "MO" }],
       bymonth: [],
       until: null,
       parseError: false,
@@ -185,7 +187,7 @@ describe("buildRRule", () => {
       interval: 1,
       byweekday: [],
       bymonthday: [],
-      nthWeekday: null,
+      nthWeekday: [],
       bymonth: [1, 6],
       until: null,
       parseError: false,
@@ -200,7 +202,7 @@ describe("buildRRule", () => {
       interval: 1,
       byweekday: [],
       bymonthday: [],
-      nthWeekday: null,
+      nthWeekday: [],
       bymonth: [],
       until: "2026-12-31",
       parseError: false,
@@ -220,6 +222,7 @@ describe("parseRRule/buildRRule roundtrip", () => {
     "FREQ=YEARLY;BYMONTH=1,6,12",
     "FREQ=YEARLY",
     "FREQ=WEEKLY;UNTIL=20261231T000000Z",
+    "FREQ=MONTHLY;BYDAY=2MO,3FR",
   ];
 
   for (const rrule of cases) {
@@ -313,7 +316,7 @@ describe("describeRule", () => {
         interval: 1,
         byweekday: [],
         bymonthday: [],
-        nthWeekday: null,
+        nthWeekday: [],
         bymonth: [],
         until: null,
         parseError: false,
@@ -328,7 +331,7 @@ describe("describeRule", () => {
         interval: 3,
         byweekday: [],
         bymonthday: [],
-        nthWeekday: null,
+        nthWeekday: [],
         bymonth: [],
         until: null,
         parseError: false,
@@ -343,7 +346,7 @@ describe("describeRule", () => {
         interval: 1,
         byweekday: ["MO", "FR"],
         bymonthday: [],
-        nthWeekday: null,
+        nthWeekday: [],
         bymonth: [],
         until: null,
         parseError: false,
@@ -358,7 +361,7 @@ describe("describeRule", () => {
         interval: 1,
         byweekday: [],
         bymonthday: [15],
-        nthWeekday: null,
+        nthWeekday: [],
         bymonth: [],
         until: null,
         parseError: false,
@@ -373,7 +376,7 @@ describe("describeRule", () => {
         interval: 1,
         byweekday: [],
         bymonthday: [-1],
-        nthWeekday: null,
+        nthWeekday: [],
         bymonth: [],
         until: null,
         parseError: false,
@@ -388,7 +391,7 @@ describe("describeRule", () => {
         interval: 1,
         byweekday: [],
         bymonthday: [],
-        nthWeekday: { ordinal: 1, weekday: "MO" },
+        nthWeekday: [{ ordinal: 1, weekday: "MO" }],
         bymonth: [],
         until: null,
         parseError: false,
@@ -403,7 +406,7 @@ describe("describeRule", () => {
         interval: 1,
         byweekday: [],
         bymonthday: [],
-        nthWeekday: null,
+        nthWeekday: [],
         bymonth: [],
         until: "2026-12-31",
         parseError: false,

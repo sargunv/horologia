@@ -139,7 +139,7 @@ export interface ParsedRule {
   interval: number;
   byweekday: WeekdayCode[];
   bymonthday: number[];
-  nthWeekday: { ordinal: number; weekday: WeekdayCode } | null;
+  nthWeekday: { ordinal: number; weekday: WeekdayCode }[];
   bymonth: number[];
   until: string | null;
   parseError: boolean;
@@ -155,7 +155,7 @@ export function parseRRule(rruleStr: string | null): ParsedRule {
     interval: 1,
     byweekday: [],
     bymonthday: [],
-    nthWeekday: null,
+    nthWeekday: [],
     bymonth: [],
     until: null,
     parseError: false,
@@ -172,14 +172,14 @@ export function parseRRule(rruleStr: string | null): ParsedRule {
     const interval = opts.interval ?? 1;
     const byweekday: WeekdayCode[] = [];
     const bymonthday: number[] = [];
-    let nthWeekday: ParsedRule["nthWeekday"] = null;
+    const nthWeekday: ParsedRule["nthWeekday"] = [];
 
     if (opts.byweekday) {
       for (const w of toArray(opts.byweekday)) {
         if (w instanceof Weekday) {
           if (w.n !== undefined && w.n !== 0) {
             const code = WEEKDAY_CODES[w.weekday];
-            if (code) nthWeekday = { ordinal: w.n, weekday: code };
+            if (code) nthWeekday.push({ ordinal: w.n, weekday: code });
           } else {
             const code = WEEKDAY_CODES[w.weekday];
             if (code) byweekday.push(code);
@@ -214,8 +214,8 @@ export function buildRRule(parsed: ParsedRule): string {
   if (parsed.freq === "WEEKLY" && parsed.byweekday.length > 0) {
     options.byweekday = parsed.byweekday.map((d) => RRULE_WEEKDAY[d]);
   }
-  if ((parsed.freq === "MONTHLY" || parsed.freq === "YEARLY") && parsed.nthWeekday) {
-    options.byweekday = [RRULE_WEEKDAY[parsed.nthWeekday.weekday].nth(parsed.nthWeekday.ordinal)];
+  if ((parsed.freq === "MONTHLY" || parsed.freq === "YEARLY") && parsed.nthWeekday.length > 0) {
+    options.byweekday = parsed.nthWeekday.map((nw) => RRULE_WEEKDAY[nw.weekday].nth(nw.ordinal));
   } else if (
     (parsed.freq === "MONTHLY" || parsed.freq === "YEARLY") &&
     parsed.bymonthday.length > 0
@@ -298,10 +298,12 @@ export function describeRule(parsed: ParsedRule): string {
     desc += ` on ${parsed.byweekday.map((d) => WEEKDAY_LABELS[d].slice(0, 3)).join(", ")}`;
   }
   if (parsed.freq === "MONTHLY" || parsed.freq === "YEARLY") {
-    if (parsed.nthWeekday) {
-      const ordLabel =
-        ORDINAL_LABELS[parsed.nthWeekday.ordinal] ?? String(parsed.nthWeekday.ordinal);
-      desc += ` on the ${ordLabel} ${WEEKDAY_LABELS[parsed.nthWeekday.weekday]}`;
+    if (parsed.nthWeekday.length > 0) {
+      const nthParts = parsed.nthWeekday.map((nw) => {
+        const ordLabel = ORDINAL_LABELS[nw.ordinal] ?? String(nw.ordinal);
+        return `${ordLabel} ${WEEKDAY_LABELS[nw.weekday]}`;
+      });
+      desc += ` on the ${nthParts.join(", ")}`;
     } else if (parsed.bymonthday.length > 0) {
       desc += ` on day ${describeMonthDays(parsed.bymonthday)}`;
     }
@@ -360,7 +362,7 @@ function FreqSubMenu({
       interval,
       byweekday: freq === "WEEKLY" ? currentRule.byweekday : [],
       bymonthday: freq === "MONTHLY" || freq === "YEARLY" ? currentRule.bymonthday : [],
-      nthWeekday: freq === "MONTHLY" || freq === "YEARLY" ? currentRule.nthWeekday : null,
+      nthWeekday: freq === "MONTHLY" || freq === "YEARLY" ? currentRule.nthWeekday : [],
       bymonth: freq === "YEARLY" ? currentRule.bymonth : [],
     };
     onSave({ recurrenceType, recurrenceRule: buildRRule(newRule) });
@@ -381,17 +383,25 @@ function FreqSubMenu({
     const newRule: ParsedRule = {
       ...currentRule,
       bymonthday: newDays,
-      nthWeekday: null,
+      nthWeekday: [],
       byweekday: [],
     };
     onSave({ recurrenceType, recurrenceRule: buildRRule(newRule) });
   }
 
-  function selectNthWeekday(nthWeekday: ParsedRule["nthWeekday"]) {
+  function toggleNthWeekday(entry: { ordinal: number; weekday: WeekdayCode }) {
+    const exists = currentRule.nthWeekday.some(
+      (nw) => nw.ordinal === entry.ordinal && nw.weekday === entry.weekday,
+    );
+    const newNth = exists
+      ? currentRule.nthWeekday.filter(
+          (nw) => nw.ordinal !== entry.ordinal || nw.weekday !== entry.weekday,
+        )
+      : [...currentRule.nthWeekday, entry];
     const newRule: ParsedRule = {
       ...currentRule,
       bymonthday: [],
-      nthWeekday,
+      nthWeekday: newNth,
       byweekday: [],
     };
     onSave({ recurrenceType, recurrenceRule: buildRRule(newRule) });
@@ -512,8 +522,8 @@ function FreqSubMenu({
           <Menu typeahead={false} closeOnSelect={false}>
             <Menu.TriggerItem value="monthday" className="justify-start gap-2 text-sm">
               <Menu.ItemText>
-                {currentRule.nthWeekday
-                  ? `On the ${ORDINAL_LABELS[currentRule.nthWeekday.ordinal] ?? ""} ${WEEKDAY_LABELS[currentRule.nthWeekday.weekday]}`
+                {currentRule.nthWeekday.length > 0
+                  ? `On the ${currentRule.nthWeekday.map((nw) => `${ORDINAL_LABELS[nw.ordinal] ?? ""} ${WEEKDAY_LABELS[nw.weekday]}`).join(", ")}`
                   : currentRule.bymonthday.length > 0
                     ? `On day ${describeMonthDays(currentRule.bymonthday)}`
                     : "On day..."}
@@ -529,8 +539,9 @@ function FreqSubMenu({
                   <div className="grid grid-cols-7 gap-1">
                     {DAY_NUMBERS.map((d) => {
                       const hasLast =
-                        currentRule.bymonthday.includes(-1) && !currentRule.nthWeekday;
-                      const active = currentRule.bymonthday.includes(d) && !currentRule.nthWeekday;
+                        currentRule.bymonthday.includes(-1) && currentRule.nthWeekday.length === 0;
+                      const active =
+                        currentRule.bymonthday.includes(d) && currentRule.nthWeekday.length === 0;
                       const isShortMonthDay = d >= 29;
                       const lastDayHint = hasLast && d >= 28 && !active;
                       return (
@@ -558,10 +569,10 @@ function FreqSubMenu({
                         type="button"
                         onClick={() => toggleMonthDay(-1)}
                         aria-pressed={
-                          currentRule.bymonthday.includes(-1) && !currentRule.nthWeekday
+                          currentRule.bymonthday.includes(-1) && currentRule.nthWeekday.length === 0
                         }
                         className={`flex h-7 items-center rounded px-2 text-xs font-medium transition-colors ${
-                          currentRule.bymonthday.includes(-1) && !currentRule.nthWeekday
+                          currentRule.bymonthday.includes(-1) && currentRule.nthWeekday.length === 0
                             ? "preset-filled-primary-500"
                             : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
                         }`}
@@ -575,17 +586,16 @@ function FreqSubMenu({
                   <div className="text-surface-500 mb-1.5 text-xs">Or on the Nth weekday</div>
                   <div className="mb-1 flex items-center justify-between">
                     {ORDINALS.map((ord) => {
-                      const active = currentRule.nthWeekday?.ordinal === ord;
+                      const active = currentRule.nthWeekday.some((nw) => nw.ordinal === ord);
                       return (
                         <button
                           key={ord}
                           type="button"
-                          onClick={() =>
-                            selectNthWeekday({
-                              ordinal: ord,
-                              weekday: currentRule.nthWeekday?.weekday ?? "MO",
-                            })
-                          }
+                          onClick={() => {
+                            const firstEntry = currentRule.nthWeekday[0];
+                            const weekday: WeekdayCode = firstEntry ? firstEntry.weekday : "MO";
+                            toggleNthWeekday({ ordinal: ord, weekday });
+                          }}
                           aria-label={`${ORDINAL_LABELS[ord]} week of month`}
                           aria-pressed={active}
                           className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
@@ -601,17 +611,16 @@ function FreqSubMenu({
                   </div>
                   <div className="flex items-center justify-between">
                     {WEEKDAY_CODES.map((day) => {
-                      const active = currentRule.nthWeekday?.weekday === day;
+                      const active = currentRule.nthWeekday.some((nw) => nw.weekday === day);
                       return (
                         <button
                           key={day}
                           type="button"
-                          onClick={() =>
-                            selectNthWeekday({
-                              ordinal: currentRule.nthWeekday?.ordinal ?? 1,
-                              weekday: day,
-                            })
-                          }
+                          onClick={() => {
+                            const firstEntry = currentRule.nthWeekday[0];
+                            const ordinal = firstEntry ? firstEntry.ordinal : 1;
+                            toggleNthWeekday({ ordinal, weekday: day });
+                          }}
                           aria-label={WEEKDAY_LABELS[day]}
                           aria-pressed={active}
                           className={`flex size-7 items-center justify-center rounded-full text-xs font-medium transition-colors ${
