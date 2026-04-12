@@ -91,9 +91,18 @@ sdkmanager \
   "platforms;android-$ANDROID_COMPILE_SDK"
 """
 
+[tasks._verify-clean-worktree]
+description = "Fail if tracked files changed during the task run"
+hide = true
+run = """
+git update-index -q --refresh
+git diff --exit-code
+git diff --cached --exit-code
+"""
+
 [tasks.ci]
 description = "Run the full suite: generate → fix → build → test"
-run = "mise run generate && mise run fix && mise run build && mise run test"
+run = "mise run generate && mise run fix && mise run build && mise run test && mise run _verify-clean-worktree"
 
 [tasks.dev]
 description = "Start local dev environment"

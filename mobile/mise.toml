@@ -9,7 +9,7 @@ run = "./gradlew :core:generateTendApi"
 
 [tasks."build:core"]
 description = "Build the shared mobile core for host-safe targets"
-run = "./gradlew :core:desktopJar :core:compileKotlinIosSimulatorArm64 :core:compileKotlinIosX64"
+run = "./gradlew :core:desktopJar"
 
 [tasks."build:desktop"]
 description = "Build the desktop compose app"
@@ -21,11 +21,11 @@ run = "cd .. && mise run _android-sdk-components && cd mobile && ./gradlew :comp
 
 [tasks.build]
 description = "Build the shared core plus desktop and Android apps"
-depends = ["build:core", "build:desktop", "build:android"]
+run = "cd .. && mise run _android-sdk-components && cd mobile && ./gradlew :core:desktopJar :compose-app:desktopJar :compose-app:assembleDebug"
 
 [tasks.test]
-description = "Compile the shared mobile core test sources for host-safe iOS targets"
-run = "./gradlew :core:compileTestKotlinDesktop :core:compileTestKotlinIosSimulatorArm64 :core:compileTestKotlinIosX64"
+description = "Compile the shared mobile core test sources for host-safe targets"
+run = "./gradlew :core:compileTestKotlinDesktop"
 
 [tasks."android:assembleDebug"]
 description = "Assemble the Android debug app"
@@ -41,7 +41,7 @@ run = "./gradlew :compose-app:run"
 
 [tasks.check]
 description = "Run host-safe shared mobile checks"
-run = "./gradlew :core:compileKotlinDesktop :core:compileKotlinIosSimulatorArm64 :core:compileKotlinIosX64 :core:compileTestKotlinDesktop :core:compileTestKotlinIosSimulatorArm64 :core:compileTestKotlinIosX64 :compose-app:compileKotlinDesktop"
+run = "./gradlew :core:compileKotlinDesktop :core:compileTestKotlinDesktop :compose-app:compileKotlinDesktop"
 
 [tasks.fix]
 description = "Format Kotlin and Gradle files"

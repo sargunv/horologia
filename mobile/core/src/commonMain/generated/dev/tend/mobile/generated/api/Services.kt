@@ -1,10 +1,10 @@
-/*
+/* 
  * NOTE: This file is auto generated. Do not edit the file manually!
- *
+ * 
  * Tend API
  * Version 0.0.0
- *
- * Generated Sat, 11 Apr 2026 18:23:35 -0700
+ * 
+ * Generated reproducibly; timestamp omitted.
  * OpenAPI KMP Gen (version 1.3.0) by kroegerama
  */
 @file:Suppress("ArrayInDataClass", "RedundantVisibilityModifier", "unused", "ConstPropertyName")
@@ -70,54 +70,55 @@ public object AuthApi {
    *
    * @return The request has succeeded.
    */
-  public suspend fun authListTokens(
-    decorator: HttpRequestBuilder.() -> Unit = {}
-  ): Either<CallException, HttpCallResponse<AuthTokenList>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("GET")
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments("auth", "tokens")
-      decorator()
-    }
+  public suspend fun authListTokens(decorator: HttpRequestBuilder.() -> Unit = {}): Either<CallException, HttpCallResponse<AuthTokenList>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("GET")
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "auth",
+      "tokens",
+    )
+    decorator()
+  }
 
   /**
    * `POST /auth/tokens`
    *
    * @return The request has succeeded and a new resource has been created as a result.
    */
-  public suspend fun authCreateToken(
-    body: AuthTokenCreate,
-    decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<AuthTokenCreateResponse>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("POST")
-      contentType(ContentType.Application.Json)
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments("auth", "tokens")
-      setBody(body)
-      decorator()
-    }
+  public suspend fun authCreateToken(body: AuthTokenCreate, decorator: HttpRequestBuilder.() -> Unit = {}): Either<CallException, HttpCallResponse<AuthTokenCreateResponse>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("POST")
+    contentType(ContentType.Application.Json)
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "auth",
+      "tokens",
+    )
+    setBody(body)
+    decorator()
+  }
 
   /**
    * `DELETE /auth/tokens/{tokenId}`
    *
    * @param tokenId Token ID.
-   * @return There is no content to send for this request, but the headers may be useful.
+   * @return There is no content to send for this request, but the headers may be useful. 
    */
-  public suspend fun authDeleteToken(
-    tokenId: String,
-    decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<Unit>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("DELETE")
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "auth",
-        "tokens",
-        createSerializedPathSegment(value = tokenId, explode = false, json = Api.json),
-      )
-      decorator()
-    }
+  public suspend fun authDeleteToken(tokenId: String, decorator: HttpRequestBuilder.() -> Unit = {}): Either<CallException, HttpCallResponse<Unit>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("DELETE")
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "auth",
+      "tokens",
+      createSerializedPathSegment(value = tokenId, explode = false, json = Api.json),
+    )
+    decorator()
+  }
 }
 
 public object SpacesApi {
@@ -126,33 +127,34 @@ public object SpacesApi {
    *
    * @return The request has succeeded.
    */
-  public suspend fun spacesList(
-    decorator: HttpRequestBuilder.() -> Unit = {}
-  ): Either<CallException, HttpCallResponse<SpaceList>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("GET")
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments("spaces")
-      decorator()
-    }
+  public suspend fun spacesList(decorator: HttpRequestBuilder.() -> Unit = {}): Either<CallException, HttpCallResponse<SpaceList>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("GET")
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+    )
+    decorator()
+  }
 
   /**
    * `POST /spaces`
    *
    * @return The request has succeeded and a new resource has been created as a result.
    */
-  public suspend fun spacesCreate(
-    body: SpaceCreate,
-    decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<Space>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("POST")
-      contentType(ContentType.Application.Json)
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments("spaces")
-      setBody(body)
-      decorator()
-    }
+  public suspend fun spacesCreate(body: SpaceCreate, decorator: HttpRequestBuilder.() -> Unit = {}): Either<CallException, HttpCallResponse<Space>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("POST")
+    contentType(ContentType.Application.Json)
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+    )
+    setBody(body)
+    decorator()
+  }
 
   /**
    * `GET /spaces/{spaceSlug}`
@@ -160,39 +162,35 @@ public object SpacesApi {
    * @param spaceSlug Slug of the space.
    * @return The request has succeeded.
    */
-  public suspend fun spacesRead(
-    spaceSlug: String,
-    decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<Space>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("GET")
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "spaces",
-        createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
-      )
-      decorator()
-    }
+  public suspend fun spacesRead(spaceSlug: String, decorator: HttpRequestBuilder.() -> Unit = {}): Either<CallException, HttpCallResponse<Space>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("GET")
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+      createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
+    )
+    decorator()
+  }
 
   /**
    * `DELETE /spaces/{spaceSlug}`
    *
    * @param spaceSlug Slug of the space.
-   * @return There is no content to send for this request, but the headers may be useful.
+   * @return There is no content to send for this request, but the headers may be useful. 
    */
-  public suspend fun spacesDelete(
-    spaceSlug: String,
-    decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<Unit>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("DELETE")
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "spaces",
-        createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
-      )
-      decorator()
-    }
+  public suspend fun spacesDelete(spaceSlug: String, decorator: HttpRequestBuilder.() -> Unit = {}): Either<CallException, HttpCallResponse<Unit>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("DELETE")
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+      createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
+    )
+    decorator()
+  }
 
   /**
    * `PATCH /spaces/{spaceSlug}`
@@ -204,18 +202,19 @@ public object SpacesApi {
     spaceSlug: String,
     body: SpaceUpdate,
     decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<Space>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("PATCH")
-      contentType(ContentType.Application.Json)
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "spaces",
-        createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
-      )
-      setBody(body)
-      decorator()
-    }
+  ): Either<CallException, HttpCallResponse<Space>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("PATCH")
+    contentType(ContentType.Application.Json)
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+      createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
+    )
+    setBody(body)
+    decorator()
+  }
 }
 
 public object ActivityApi {
@@ -232,29 +231,20 @@ public object ActivityApi {
     cursor: String? = null,
     limit: Int? = null,
     decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<ActivityLogPage>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("GET")
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "spaces",
-        createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
-        "activity",
-      )
-      appendSerializedQueryParameter(
-        name = "cursor",
-        value = cursor,
-        explode = false,
-        json = Api.json,
-      )
-      appendSerializedQueryParameter(
-        name = "limit",
-        value = limit,
-        explode = false,
-        json = Api.json,
-      )
-      decorator()
-    }
+  ): Either<CallException, HttpCallResponse<ActivityLogPage>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("GET")
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+      createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
+      "activity",
+    )
+    appendSerializedQueryParameter(name = "cursor", value = cursor, explode = false, json = Api.json)
+    appendSerializedQueryParameter(name = "limit", value = limit, explode = false, json = Api.json)
+    decorator()
+  }
 
   /**
    * `GET /spaces/{spaceSlug}/tasks/{taskId}/activity`
@@ -271,31 +261,22 @@ public object ActivityApi {
     cursor: String? = null,
     limit: Int? = null,
     decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<ActivityLogPage>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("GET")
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "spaces",
-        createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
-        "tasks",
-        createSerializedPathSegment(value = taskId, explode = false, json = Api.json),
-        "activity",
-      )
-      appendSerializedQueryParameter(
-        name = "cursor",
-        value = cursor,
-        explode = false,
-        json = Api.json,
-      )
-      appendSerializedQueryParameter(
-        name = "limit",
-        value = limit,
-        explode = false,
-        json = Api.json,
-      )
-      decorator()
-    }
+  ): Either<CallException, HttpCallResponse<ActivityLogPage>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("GET")
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+      createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
+      "tasks",
+      createSerializedPathSegment(value = taskId, explode = false, json = Api.json),
+      "activity",
+    )
+    appendSerializedQueryParameter(name = "cursor", value = cursor, explode = false, json = Api.json)
+    appendSerializedQueryParameter(name = "limit", value = limit, explode = false, json = Api.json)
+    decorator()
+  }
 
   /**
    * `GET /users/{userId}/activity`
@@ -310,29 +291,20 @@ public object ActivityApi {
     cursor: String? = null,
     limit: Int? = null,
     decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<ActivityLogPage>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("GET")
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "users",
-        createSerializedPathSegment(value = userId, explode = false, json = Api.json),
-        "activity",
-      )
-      appendSerializedQueryParameter(
-        name = "cursor",
-        value = cursor,
-        explode = false,
-        json = Api.json,
-      )
-      appendSerializedQueryParameter(
-        name = "limit",
-        value = limit,
-        explode = false,
-        json = Api.json,
-      )
-      decorator()
-    }
+  ): Either<CallException, HttpCallResponse<ActivityLogPage>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("GET")
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "users",
+      createSerializedPathSegment(value = userId, explode = false, json = Api.json),
+      "activity",
+    )
+    appendSerializedQueryParameter(name = "cursor", value = cursor, explode = false, json = Api.json)
+    appendSerializedQueryParameter(name = "limit", value = limit, explode = false, json = Api.json)
+    decorator()
+  }
 }
 
 public object SpaceMembersApi {
@@ -342,20 +314,18 @@ public object SpaceMembersApi {
    * @param spaceSlug Slug of the space.
    * @return The request has succeeded.
    */
-  public suspend fun spaceMembersList(
-    spaceSlug: String,
-    decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<SpaceMemberList>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("GET")
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "spaces",
-        createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
-        "members",
-      )
-      decorator()
-    }
+  public suspend fun spaceMembersList(spaceSlug: String, decorator: HttpRequestBuilder.() -> Unit = {}): Either<CallException, HttpCallResponse<SpaceMemberList>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("GET")
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+      createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
+      "members",
+    )
+    decorator()
+  }
 
   /**
    * `POST /spaces/{spaceSlug}/members`
@@ -367,43 +337,45 @@ public object SpaceMembersApi {
     spaceSlug: String,
     body: SpaceMemberCreate,
     decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<SpaceMember>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("POST")
-      contentType(ContentType.Application.Json)
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "spaces",
-        createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
-        "members",
-      )
-      setBody(body)
-      decorator()
-    }
+  ): Either<CallException, HttpCallResponse<SpaceMember>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("POST")
+    contentType(ContentType.Application.Json)
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+      createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
+      "members",
+    )
+    setBody(body)
+    decorator()
+  }
 
   /**
    * `DELETE /spaces/{spaceSlug}/members/{userId}`
    *
    * @param spaceSlug Slug of the space.
    * @param userId User ID of the member.
-   * @return There is no content to send for this request, but the headers may be useful.
+   * @return There is no content to send for this request, but the headers may be useful. 
    */
   public suspend fun spaceMembersDelete(
     spaceSlug: String,
     userId: String,
     decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<Unit>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("DELETE")
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "spaces",
-        createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
-        "members",
-        createSerializedPathSegment(value = userId, explode = false, json = Api.json),
-      )
-      decorator()
-    }
+  ): Either<CallException, HttpCallResponse<Unit>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("DELETE")
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+      createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
+      "members",
+      createSerializedPathSegment(value = userId, explode = false, json = Api.json),
+    )
+    decorator()
+  }
 
   /**
    * `PATCH /spaces/{spaceSlug}/members/{userId}`
@@ -417,20 +389,21 @@ public object SpaceMembersApi {
     userId: String,
     body: SpaceMemberUpdate,
     decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<SpaceMember>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("PATCH")
-      contentType(ContentType.Application.Json)
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "spaces",
-        createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
-        "members",
-        createSerializedPathSegment(value = userId, explode = false, json = Api.json),
-      )
-      setBody(body)
-      decorator()
-    }
+  ): Either<CallException, HttpCallResponse<SpaceMember>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("PATCH")
+    contentType(ContentType.Application.Json)
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+      createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
+      "members",
+      createSerializedPathSegment(value = userId, explode = false, json = Api.json),
+    )
+    setBody(body)
+    decorator()
+  }
 }
 
 public object TagsApi {
@@ -440,20 +413,18 @@ public object TagsApi {
    * @param spaceSlug Slug of the space.
    * @return The request has succeeded.
    */
-  public suspend fun spaceTagsList(
-    spaceSlug: String,
-    decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<TagList>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("GET")
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "spaces",
-        createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
-        "tags",
-      )
-      decorator()
-    }
+  public suspend fun spaceTagsList(spaceSlug: String, decorator: HttpRequestBuilder.() -> Unit = {}): Either<CallException, HttpCallResponse<TagList>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("GET")
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+      createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
+      "tags",
+    )
+    decorator()
+  }
 
   /**
    * `POST /spaces/{spaceSlug}/tags`
@@ -465,43 +436,45 @@ public object TagsApi {
     spaceSlug: String,
     body: TagCreate,
     decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<Tag>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("POST")
-      contentType(ContentType.Application.Json)
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "spaces",
-        createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
-        "tags",
-      )
-      setBody(body)
-      decorator()
-    }
+  ): Either<CallException, HttpCallResponse<Tag>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("POST")
+    contentType(ContentType.Application.Json)
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+      createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
+      "tags",
+    )
+    setBody(body)
+    decorator()
+  }
 
   /**
    * `DELETE /spaces/{spaceSlug}/tags/{tagName}`
    *
    * @param spaceSlug Slug of the space.
    * @param tagName Tag name to delete.
-   * @return There is no content to send for this request, but the headers may be useful.
+   * @return There is no content to send for this request, but the headers may be useful. 
    */
   public suspend fun spaceTagsDelete(
     spaceSlug: String,
     tagName: String,
     decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<Unit>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("DELETE")
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "spaces",
-        createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
-        "tags",
-        createSerializedPathSegment(value = tagName, explode = false, json = Api.json),
-      )
-      decorator()
-    }
+  ): Either<CallException, HttpCallResponse<Unit>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("DELETE")
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+      createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
+      "tags",
+      createSerializedPathSegment(value = tagName, explode = false, json = Api.json),
+    )
+    decorator()
+  }
 
   /**
    * `PATCH /spaces/{spaceSlug}/tags/{tagName}`
@@ -515,20 +488,21 @@ public object TagsApi {
     tagName: String,
     body: TagUpdate,
     decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<Tag>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("PATCH")
-      contentType(ContentType.Application.Json)
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "spaces",
-        createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
-        "tags",
-        createSerializedPathSegment(value = tagName, explode = false, json = Api.json),
-      )
-      setBody(body)
-      decorator()
-    }
+  ): Either<CallException, HttpCallResponse<Tag>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("PATCH")
+    contentType(ContentType.Application.Json)
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+      createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
+      "tags",
+      createSerializedPathSegment(value = tagName, explode = false, json = Api.json),
+    )
+    setBody(body)
+    decorator()
+  }
 }
 
 public object TaskEffortLevelsApi {
@@ -538,20 +512,18 @@ public object TaskEffortLevelsApi {
    * @param spaceSlug Slug of the space.
    * @return The request has succeeded.
    */
-  public suspend fun spaceTaskEffortLevelsList(
-    spaceSlug: String,
-    decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<TaskEffortLevelList>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("GET")
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "spaces",
-        createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
-        "task-effort-levels",
-      )
-      decorator()
-    }
+  public suspend fun spaceTaskEffortLevelsList(spaceSlug: String, decorator: HttpRequestBuilder.() -> Unit = {}): Either<CallException, HttpCallResponse<TaskEffortLevelList>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("GET")
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+      createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
+      "task-effort-levels",
+    )
+    decorator()
+  }
 
   /**
    * `PUT /spaces/{spaceSlug}/task-effort-levels`
@@ -563,19 +535,20 @@ public object TaskEffortLevelsApi {
     spaceSlug: String,
     body: TaskEffortLevelReplace,
     decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<TaskEffortLevelList>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("PUT")
-      contentType(ContentType.Application.Json)
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "spaces",
-        createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
-        "task-effort-levels",
-      )
-      setBody(body)
-      decorator()
-    }
+  ): Either<CallException, HttpCallResponse<TaskEffortLevelList>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("PUT")
+    contentType(ContentType.Application.Json)
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+      createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
+      "task-effort-levels",
+    )
+    setBody(body)
+    decorator()
+  }
 }
 
 public object TaskPriorityLevelsApi {
@@ -585,20 +558,18 @@ public object TaskPriorityLevelsApi {
    * @param spaceSlug Slug of the space.
    * @return The request has succeeded.
    */
-  public suspend fun spaceTaskPriorityLevelsList(
-    spaceSlug: String,
-    decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<TaskPriorityLevelList>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("GET")
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "spaces",
-        createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
-        "task-priority-levels",
-      )
-      decorator()
-    }
+  public suspend fun spaceTaskPriorityLevelsList(spaceSlug: String, decorator: HttpRequestBuilder.() -> Unit = {}): Either<CallException, HttpCallResponse<TaskPriorityLevelList>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("GET")
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+      createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
+      "task-priority-levels",
+    )
+    decorator()
+  }
 
   /**
    * `PUT /spaces/{spaceSlug}/task-priority-levels`
@@ -610,19 +581,20 @@ public object TaskPriorityLevelsApi {
     spaceSlug: String,
     body: TaskPriorityLevelReplace,
     decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<TaskPriorityLevelList>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("PUT")
-      contentType(ContentType.Application.Json)
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "spaces",
-        createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
-        "task-priority-levels",
-      )
-      setBody(body)
-      decorator()
-    }
+  ): Either<CallException, HttpCallResponse<TaskPriorityLevelList>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("PUT")
+    contentType(ContentType.Application.Json)
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+      createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
+      "task-priority-levels",
+    )
+    setBody(body)
+    decorator()
+  }
 }
 
 public object TaskStatusesApi {
@@ -632,20 +604,18 @@ public object TaskStatusesApi {
    * @param spaceSlug Slug of the space.
    * @return The request has succeeded.
    */
-  public suspend fun spaceTaskStatusesList(
-    spaceSlug: String,
-    decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<TaskStatusList>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("GET")
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "spaces",
-        createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
-        "task-statuses",
-      )
-      decorator()
-    }
+  public suspend fun spaceTaskStatusesList(spaceSlug: String, decorator: HttpRequestBuilder.() -> Unit = {}): Either<CallException, HttpCallResponse<TaskStatusList>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("GET")
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+      createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
+      "task-statuses",
+    )
+    decorator()
+  }
 
   /**
    * `PUT /spaces/{spaceSlug}/task-statuses`
@@ -657,19 +627,20 @@ public object TaskStatusesApi {
     spaceSlug: String,
     body: TaskStatusReplace,
     decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<TaskStatusList>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("PUT")
-      contentType(ContentType.Application.Json)
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "spaces",
-        createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
-        "task-statuses",
-      )
-      setBody(body)
-      decorator()
-    }
+  ): Either<CallException, HttpCallResponse<TaskStatusList>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("PUT")
+    contentType(ContentType.Application.Json)
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+      createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
+      "task-statuses",
+    )
+    setBody(body)
+    decorator()
+  }
 }
 
 public object TasksApi {
@@ -686,29 +657,20 @@ public object TasksApi {
     cursor: String? = null,
     limit: Int? = null,
     decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<TaskPage>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("GET")
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "spaces",
-        createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
-        "tasks",
-      )
-      appendSerializedQueryParameter(
-        name = "cursor",
-        value = cursor,
-        explode = false,
-        json = Api.json,
-      )
-      appendSerializedQueryParameter(
-        name = "limit",
-        value = limit,
-        explode = false,
-        json = Api.json,
-      )
-      decorator()
-    }
+  ): Either<CallException, HttpCallResponse<TaskPage>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("GET")
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+      createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
+      "tasks",
+    )
+    appendSerializedQueryParameter(name = "cursor", value = cursor, explode = false, json = Api.json)
+    appendSerializedQueryParameter(name = "limit", value = limit, explode = false, json = Api.json)
+    decorator()
+  }
 
   /**
    * `POST /spaces/{spaceSlug}/tasks`
@@ -720,19 +682,20 @@ public object TasksApi {
     spaceSlug: String,
     body: TaskCreate,
     decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<Task>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("POST")
-      contentType(ContentType.Application.Json)
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "spaces",
-        createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
-        "tasks",
-      )
-      setBody(body)
-      decorator()
-    }
+  ): Either<CallException, HttpCallResponse<Task>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("POST")
+    contentType(ContentType.Application.Json)
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+      createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
+      "tasks",
+    )
+    setBody(body)
+    decorator()
+  }
 
   /**
    * `GET /spaces/{spaceSlug}/tasks/{taskId}`
@@ -745,42 +708,44 @@ public object TasksApi {
     spaceSlug: String,
     taskId: String,
     decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<Task>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("GET")
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "spaces",
-        createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
-        "tasks",
-        createSerializedPathSegment(value = taskId, explode = false, json = Api.json),
-      )
-      decorator()
-    }
+  ): Either<CallException, HttpCallResponse<Task>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("GET")
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+      createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
+      "tasks",
+      createSerializedPathSegment(value = taskId, explode = false, json = Api.json),
+    )
+    decorator()
+  }
 
   /**
    * `DELETE /spaces/{spaceSlug}/tasks/{taskId}`
    *
    * @param spaceSlug Slug of the space.
    * @param taskId Task ID.
-   * @return There is no content to send for this request, but the headers may be useful.
+   * @return There is no content to send for this request, but the headers may be useful. 
    */
   public suspend fun spaceTasksDelete(
     spaceSlug: String,
     taskId: String,
     decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<Unit>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("DELETE")
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "spaces",
-        createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
-        "tasks",
-        createSerializedPathSegment(value = taskId, explode = false, json = Api.json),
-      )
-      decorator()
-    }
+  ): Either<CallException, HttpCallResponse<Unit>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("DELETE")
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+      createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
+      "tasks",
+      createSerializedPathSegment(value = taskId, explode = false, json = Api.json),
+    )
+    decorator()
+  }
 
   /**
    * `PATCH /spaces/{spaceSlug}/tasks/{taskId}`
@@ -794,20 +759,21 @@ public object TasksApi {
     taskId: String,
     body: TaskUpdate,
     decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<Task>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("PATCH")
-      contentType(ContentType.Application.Json)
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "spaces",
-        createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
-        "tasks",
-        createSerializedPathSegment(value = taskId, explode = false, json = Api.json),
-      )
-      setBody(body)
-      decorator()
-    }
+  ): Either<CallException, HttpCallResponse<Task>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("PATCH")
+    contentType(ContentType.Application.Json)
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+      createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
+      "tasks",
+      createSerializedPathSegment(value = taskId, explode = false, json = Api.json),
+    )
+    setBody(body)
+    decorator()
+  }
 
   /**
    * `POST /spaces/{spaceSlug}/tasks/{taskId}/relations`
@@ -821,21 +787,22 @@ public object TasksApi {
     taskId: String,
     body: TaskRelationCreate,
     decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<TaskRelation>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("POST")
-      contentType(ContentType.Application.Json)
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "spaces",
-        createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
-        "tasks",
-        createSerializedPathSegment(value = taskId, explode = false, json = Api.json),
-        "relations",
-      )
-      setBody(body)
-      decorator()
-    }
+  ): Either<CallException, HttpCallResponse<TaskRelation>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("POST")
+    contentType(ContentType.Application.Json)
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+      createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
+      "tasks",
+      createSerializedPathSegment(value = taskId, explode = false, json = Api.json),
+      "relations",
+    )
+    setBody(body)
+    decorator()
+  }
 
   /**
    * `DELETE /spaces/{spaceSlug}/tasks/{taskId}/relations/{kind}/{relatedTaskId}`
@@ -844,7 +811,7 @@ public object TasksApi {
    * @param taskId Task ID of the source task.
    * @param kind Relation kind.
    * @param relatedTaskId Task ID of the related task.
-   * @return There is no content to send for this request, but the headers may be useful.
+   * @return There is no content to send for this request, but the headers may be useful. 
    */
   public suspend fun spaceTaskRelationsDelete(
     spaceSlug: String,
@@ -852,21 +819,22 @@ public object TasksApi {
     kind: TaskRelationKind,
     relatedTaskId: String,
     decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<Unit>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("DELETE")
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "spaces",
-        createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
-        "tasks",
-        createSerializedPathSegment(value = taskId, explode = false, json = Api.json),
-        "relations",
-        createSerializedPathSegment(value = kind, explode = false, json = Api.json),
-        createSerializedPathSegment(value = relatedTaskId, explode = false, json = Api.json),
-      )
-      decorator()
-    }
+  ): Either<CallException, HttpCallResponse<Unit>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("DELETE")
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "spaces",
+      createSerializedPathSegment(value = spaceSlug, explode = false, json = Api.json),
+      "tasks",
+      createSerializedPathSegment(value = taskId, explode = false, json = Api.json),
+      "relations",
+      createSerializedPathSegment(value = kind, explode = false, json = Api.json),
+      createSerializedPathSegment(value = relatedTaskId, explode = false, json = Api.json),
+    )
+    decorator()
+  }
 }
 
 public object UsersApi {
@@ -875,48 +843,51 @@ public object UsersApi {
    *
    * @return The request has succeeded.
    */
-  public suspend fun usersList(
-    decorator: HttpRequestBuilder.() -> Unit = {}
-  ): Either<CallException, HttpCallResponse<UserList>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("GET")
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments("users")
-      decorator()
-    }
+  public suspend fun usersList(decorator: HttpRequestBuilder.() -> Unit = {}): Either<CallException, HttpCallResponse<UserList>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("GET")
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "users",
+    )
+    decorator()
+  }
 
   /**
    * `POST /users`
    *
    * @return The request has succeeded and a new resource has been created as a result.
    */
-  public suspend fun usersCreate(
-    body: UserCreate,
-    decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<User>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("POST")
-      contentType(ContentType.Application.Json)
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments("users")
-      setBody(body)
-      decorator()
-    }
+  public suspend fun usersCreate(body: UserCreate, decorator: HttpRequestBuilder.() -> Unit = {}): Either<CallException, HttpCallResponse<User>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("POST")
+    contentType(ContentType.Application.Json)
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "users",
+    )
+    setBody(body)
+    decorator()
+  }
 
   /**
    * `GET /users/me`
    *
    * @return The request has succeeded.
    */
-  public suspend fun usersMe(
-    decorator: HttpRequestBuilder.() -> Unit = {}
-  ): Either<CallException, HttpCallResponse<User>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("GET")
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments("users", "me")
-      decorator()
-    }
+  public suspend fun usersMe(decorator: HttpRequestBuilder.() -> Unit = {}): Either<CallException, HttpCallResponse<User>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("GET")
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "users",
+      "me",
+    )
+    decorator()
+  }
 
   /**
    * `GET /users/{userId}`
@@ -924,39 +895,35 @@ public object UsersApi {
    * @param userId User ID.
    * @return The request has succeeded.
    */
-  public suspend fun usersGet(
-    userId: String,
-    decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<User>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("GET")
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "users",
-        createSerializedPathSegment(value = userId, explode = false, json = Api.json),
-      )
-      decorator()
-    }
+  public suspend fun usersGet(userId: String, decorator: HttpRequestBuilder.() -> Unit = {}): Either<CallException, HttpCallResponse<User>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("GET")
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "users",
+      createSerializedPathSegment(value = userId, explode = false, json = Api.json),
+    )
+    decorator()
+  }
 
   /**
    * `DELETE /users/{userId}`
    *
    * @param userId User ID.
-   * @return There is no content to send for this request, but the headers may be useful.
+   * @return There is no content to send for this request, but the headers may be useful. 
    */
-  public suspend fun usersDelete(
-    userId: String,
-    decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<Unit>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("DELETE")
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "users",
-        createSerializedPathSegment(value = userId, explode = false, json = Api.json),
-      )
-      decorator()
-    }
+  public suspend fun usersDelete(userId: String, decorator: HttpRequestBuilder.() -> Unit = {}): Either<CallException, HttpCallResponse<Unit>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("DELETE")
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "users",
+      createSerializedPathSegment(value = userId, explode = false, json = Api.json),
+    )
+    decorator()
+  }
 
   /**
    * `PATCH /users/{userId}`
@@ -968,18 +935,19 @@ public object UsersApi {
     userId: String,
     body: UserUpdate,
     decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<User>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("PATCH")
-      contentType(ContentType.Application.Json)
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "users",
-        createSerializedPathSegment(value = userId, explode = false, json = Api.json),
-      )
-      setBody(body)
-      decorator()
-    }
+  ): Either<CallException, HttpCallResponse<User>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("PATCH")
+    contentType(ContentType.Application.Json)
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "users",
+      createSerializedPathSegment(value = userId, explode = false, json = Api.json),
+    )
+    setBody(body)
+    decorator()
+  }
 
   /**
    * `GET /users/{userId}/tasks`
@@ -994,27 +962,18 @@ public object UsersApi {
     cursor: String? = null,
     limit: Int? = null,
     decorator: HttpRequestBuilder.() -> Unit = {},
-  ): Either<CallException, HttpCallResponse<TaskPage>> =
-    Api.client.eitherRequest {
-      method = HttpMethod.parse("GET")
-      authKeys(Auth.BearerAuth.ID)
-      url.appendPathSegments(
-        "users",
-        createSerializedPathSegment(value = userId, explode = false, json = Api.json),
-        "tasks",
-      )
-      appendSerializedQueryParameter(
-        name = "cursor",
-        value = cursor,
-        explode = false,
-        json = Api.json,
-      )
-      appendSerializedQueryParameter(
-        name = "limit",
-        value = limit,
-        explode = false,
-        json = Api.json,
-      )
-      decorator()
-    }
+  ): Either<CallException, HttpCallResponse<TaskPage>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("GET")
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "users",
+      createSerializedPathSegment(value = userId, explode = false, json = Api.json),
+      "tasks",
+    )
+    appendSerializedQueryParameter(name = "cursor", value = cursor, explode = false, json = Api.json)
+    appendSerializedQueryParameter(name = "limit", value = limit, explode = false, json = Api.json)
+    decorator()
+  }
 }

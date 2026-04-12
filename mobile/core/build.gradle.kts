@@ -1,7 +1,10 @@
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.CacheableTask
+import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
@@ -162,6 +165,38 @@ abstract class PrepareTendOpenApiTask : DefaultTask() {
   }
 }
 
+@CacheableTask
+abstract class NormalizeGeneratedKotlinSourcesTask : DefaultTask() {
+  @get:InputDirectory
+  @get:PathSensitive(PathSensitivity.RELATIVE)
+  abstract val sourceDir: DirectoryProperty
+
+  @get:OutputDirectory abstract val normalizedSourceDir: DirectoryProperty
+
+  @TaskAction
+  fun normalize() {
+    val generatedCommentPattern = Regex("""(?m)^ \* Generated .*$""")
+    val createdAtConstantPattern =
+      Regex("""(?m)^(\s*public const val createdAt: String = )"[^"]*"$""")
+
+    sourceDir.asFile
+      .get()
+      .walkTopDown()
+      .filter { it.isFile && it.extension == "kt" }
+      .forEach { file ->
+        val originalText = file.readText()
+        val normalizedText =
+          originalText
+            .replace(generatedCommentPattern, " * Generated reproducibly; timestamp omitted.")
+            .replace(createdAtConstantPattern, """$1"1970-01-01T00:00:00Z"""")
+
+        if (normalizedText != originalText) {
+          file.writeText(normalizedText)
+        }
+      }
+  }
+}
+
 val openApiSpec = rootProject.layout.projectDirectory.file("../api/tsp-output/schema/openapi.yaml")
 val resolvedOpenApiSpec = layout.buildDirectory.file("generated/openapi/tend-openapi-resolved.yaml")
 val generatedSourceDir = layout.projectDirectory.dir("src/commonMain/generated")
@@ -204,27 +239,45 @@ val prepareTendOpenApi by
     outputSpec.set(resolvedOpenApiSpec)
   }
 
-tasks.register<JavaExec>("generateTendApi") {
+val generateRawTendApi by
+  tasks.registering(JavaExec::class) {
+    group = "code generation"
+    description = "Generate the committed Tend KMP client from the emitted OpenAPI spec"
+
+    dependsOn(prepareTendOpenApi)
+    inputs.file(resolvedOpenApiSpec)
+    outputs.dir(generatedSourceDir)
+
+    classpath = openapiKmpGenCli
+    mainClass.set("com.kroegerama.openapi.kmp.gen.cli.CommandLineKt")
+
+    args(
+      "generate",
+      "-p",
+      "dev.tend.mobile.generated",
+      "-o",
+      generatedSourceDir.asFile.path,
+      "-s",
+      "-a",
+      resolvedOpenApiSpec.get().asFile.path,
+    )
+  }
+
+val normalizeGeneratedTendApi by
+  tasks.registering(NormalizeGeneratedKotlinSourcesTask::class) {
+    group = "code generation"
+    description = "Normalize generated Tend KMP sources for reproducible commits"
+
+    dependsOn(generateRawTendApi)
+    sourceDir.set(generatedSourceDir)
+    normalizedSourceDir.set(generatedSourceDir)
+  }
+
+tasks.register("generateTendApi") {
   group = "code generation"
   description = "Generate the committed Tend KMP client from the emitted OpenAPI spec"
 
-  dependsOn(prepareTendOpenApi)
-  inputs.file(resolvedOpenApiSpec)
-  outputs.dir(generatedSourceDir)
-
-  classpath = openapiKmpGenCli
-  mainClass.set("com.kroegerama.openapi.kmp.gen.cli.CommandLineKt")
-
-  args(
-    "generate",
-    "-p",
-    "dev.tend.mobile.generated",
-    "-o",
-    generatedSourceDir.asFile.path,
-    "-s",
-    "-a",
-    resolvedOpenApiSpec.get().asFile.path,
-  )
+  dependsOn(normalizeGeneratedTendApi)
 }
 
 tasks

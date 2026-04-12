@@ -18,7 +18,7 @@ tasks. Key commands:
 - `mise run check` — run all linting/checks (hk)
 - `mise run test` — run all tests across all packages
 - `mise run fix` — auto-fix linting issues
-- `mise run ci` — run the full suite: generate → fix → test
+- `mise run ci` — run the full suite: generate → fix → build → test
 
 Package-scoped tasks use a `//` prefix, e.g. `mise run //server:generate`,
 `mise run //server:build`, `mise run //server:test`.

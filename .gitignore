@@ -24,6 +24,7 @@ dist/
 
 # gradle
 mobile/.gradle/
+mobile/.kotlin/
 mobile/**/build/
 mobile/local.properties
 
