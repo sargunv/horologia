@@ -483,7 +483,7 @@ function FreqSubMenu({
               </Menu.ItemIndicator>
             </Menu.TriggerItem>
             <Portal>
-              <Menu.Positioner className="z-[1]">
+              <Menu.Positioner className="z-20">
                 <Menu.Content>
                   <div className="flex items-center gap-1">
                     {WEEKDAY_CODES.map((day) => {
@@ -537,7 +537,7 @@ function FreqSubMenu({
               </Menu.ItemIndicator>
             </Menu.TriggerItem>
             <Portal>
-              <Menu.Positioner className="z-[1]">
+              <Menu.Positioner className="z-20">
                 <Menu.Content>
                   <div className="text-surface-500 mb-1.5 text-xs">Day of month</div>
                   <div className="grid grid-cols-7 gap-1">
@@ -660,7 +660,7 @@ function FreqSubMenu({
               </Menu.ItemIndicator>
             </Menu.TriggerItem>
             <Portal>
-              <Menu.Positioner className="z-[1]">
+              <Menu.Positioner className="z-20">
                 <Menu.Content>
                   <div className="grid grid-cols-6 gap-1">
                     {MONTH_SHORT_LABELS.map((label, index) => {
@@ -704,7 +704,7 @@ function FreqSubMenu({
               </Menu.ItemIndicator>
             </Menu.TriggerItem>
             <Portal>
-              <Menu.Positioner className="z-[1]">
+              <Menu.Positioner className="z-20">
                 <UntilDateSubMenu
                   currentUntil={currentRule.until}
                   currentRule={currentRule}
@@ -852,7 +852,7 @@ export function RecurrenceMenuField({
           value={displayValue}
         />
         <Portal>
-          <Menu.Positioner>
+          <Menu.Positioner className="z-10">
             <SearchableMenuContent
               inputProps={search.inputProps}
               placeholder="Search recurrence..."
@@ -875,7 +875,7 @@ export function RecurrenceMenuField({
                         </Menu.ItemIndicator>
                       </Menu.TriggerItem>
                       <Portal>
-                        <Menu.Positioner>
+                        <Menu.Positioner className="z-10">
                           <FreqSubMenu
                             recurrenceType={item.value}
                             currentRule={currentRule}
