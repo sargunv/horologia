@@ -543,7 +543,7 @@ function FreqSubMenu({
                 <Menu.Content>
                   <div className="p-2">
                     <div className="text-surface-500 mb-1.5 text-xs">Day of month</div>
-                    <div className="flex flex-wrap gap-1">
+                    <div className="grid grid-cols-7 gap-1">
                       {DAY_NUMBERS.map((d) => {
                         const hasLast =
                           currentRule.bymonthday.includes(-1) && !currentRule.nthWeekday;
@@ -563,7 +563,7 @@ function FreqSubMenu({
                                 : lastDayHint
                                   ? "preset-tonal-primary hover:preset-tonal-surface"
                                   : isShortMonthDay
-                                    ? "border border-dashed border-surface-300-700 hover:preset-tonal-surface"
+                                    ? "outline outline-1 outline-dashed outline-surface-300-700 hover:preset-tonal-surface"
                                     : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
                             }`}
                           >
@@ -571,20 +571,22 @@ function FreqSubMenu({
                           </button>
                         );
                       })}
-                      <button
-                        type="button"
-                        onClick={() => toggleMonthDay(-1)}
-                        aria-pressed={
-                          currentRule.bymonthday.includes(-1) && !currentRule.nthWeekday
-                        }
-                        className={`flex h-7 items-center justify-center rounded px-2 text-xs font-medium transition-colors ${
-                          currentRule.bymonthday.includes(-1) && !currentRule.nthWeekday
-                            ? "preset-filled-primary-500"
-                            : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
-                        }`}
-                      >
-                        Last
-                      </button>
+                      <div className="col-span-4">
+                        <button
+                          type="button"
+                          onClick={() => toggleMonthDay(-1)}
+                          aria-pressed={
+                            currentRule.bymonthday.includes(-1) && !currentRule.nthWeekday
+                          }
+                          className={`flex h-7 items-center rounded px-2 text-xs font-medium transition-colors ${
+                            currentRule.bymonthday.includes(-1) && !currentRule.nthWeekday
+                              ? "preset-filled-primary-500"
+                              : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
+                          }`}
+                        >
+                          Last
+                        </button>
+                      </div>
                     </div>
                     <div className="text-surface-500 mt-1 text-xs">
                       29–31 are skipped in shorter months
