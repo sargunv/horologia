@@ -1,4 +1,5 @@
 server/internal/api/gen/** linguist-generated=true
 server/internal/database/gen/** linguist-generated=true
+mobile/core/src/commonMain/generated/** linguist-generated=true
 web/src/api/schema.d.ts linguist-generated=true
 web/src/routeTree.gen.ts linguist-generated=true

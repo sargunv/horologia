@@ -4,12 +4,16 @@ experimental_monorepo_root = true
 config_roots = [
   "api",
   "cli",
+  "mobile",
   "server",
   "web",
 ]
 
 [env]
 _.file = ".env.local"
+ANDROID_AVD_HOME = "{{env.HOME}}/.config/.android/avd"
+ANDROID_BUILD_TOOLS = "36.0.0"
+ANDROID_COMPILE_SDK = "36"
 POSTGRES_PORT = "{{env.POSTGRES_PORT | default(value='5432')}}"
 PGDATA = "{{config_root}}/.postgres/{{exec(command='git rev-parse --abbrev-ref HEAD 2>/dev/null | tr / - || echo main')}}/data"
 OIDC_PORT = "{{env.OIDC_PORT | default(value='5556')}}"
@@ -26,14 +30,17 @@ pin = true
 corepack = true
 
 [tools]
+dprint = "0.53.0"
 go = "1.26.1"
 goreleaser = "2.14.3"
+android-sdk = "20.0"
+java = "21.0.2"
 node = "24.14.1"
-dprint = "0.53.0"
 hk = "1.38.0"
 golangci-lint = "2.11.3"
 pkl = "0.31.0"
 "github:sargunv/jvl" = "2026.04.03"
+"aqua:facebook/ktfmt" = "0.62"
 tilt = "0.37.0"
 "npm:@playwright/cli" = "0.1.1"
 "conda:postgresql" = "17.9"
@@ -68,9 +75,23 @@ run = "hk check --all"
 description = "Fix all auto-fixable issues"
 run = "hk fix --all"
 
+[tasks._ktfmt]
+description = "Called by dprint.json"
+hide = true
+run = 'java -jar {{ tools["aqua:facebook/ktfmt"].path }}/ktfmt'
+
+[tasks._verify-clean-worktree]
+description = "Fail if tracked files changed during the task run"
+hide = true
+run = """
+git update-index -q --refresh
+git diff --exit-code
+git diff --cached --exit-code
+"""
+
 [tasks.ci]
-description = "Run the full suite: generate → fix → test"
-run = "mise run generate && mise run fix && mise run test"
+description = "Run the full suite: generate → fix → build → test"
+run = "mise run generate && mise run fix && mise run build && mise run test && mise run _verify-clean-worktree"
 
 [tasks.dev]
 description = "Start local dev environment"
