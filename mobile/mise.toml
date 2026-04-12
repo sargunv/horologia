@@ -1,6 +1,17 @@
+[tasks._android-sdk-components]
+description = "Provision Android SDK components into the mise-managed SDK root"
+hide = true
+run = """
+yes | sdkmanager --licenses >/dev/null
+sdkmanager \
+  "platform-tools" \
+  "build-tools;$ANDROID_BUILD_TOOLS" \
+  "platforms;android-$ANDROID_COMPILE_SDK"
+"""
+
 [tasks.setup]
 description = "Install mobile prerequisites, including Android SDK components"
-run = "cd .. && mise run _android-sdk-components"
+depends = ["_android-sdk-components"]
 
 [tasks.generate]
 description = "Generate the committed KMP client sources"
@@ -17,11 +28,13 @@ run = "./gradlew :compose-app:desktopJar"
 
 [tasks."build:android"]
 description = "Build the Android compose app"
-run = "cd .. && mise run _android-sdk-components && cd mobile && ./gradlew :compose-app:assembleDebug"
+depends = ["_android-sdk-components"]
+run = "./gradlew :compose-app:assembleDebug"
 
 [tasks.build]
 description = "Build the shared core plus desktop and Android apps"
-run = "cd .. && mise run _android-sdk-components && cd mobile && ./gradlew :core:desktopJar :compose-app:desktopJar :compose-app:assembleDebug"
+depends = ["_android-sdk-components"]
+run = "./gradlew :core:desktopJar :compose-app:desktopJar :compose-app:assembleDebug"
 
 [tasks.test]
 description = "Compile the shared mobile core test sources for host-safe targets"
