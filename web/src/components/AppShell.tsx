@@ -1,9 +1,10 @@
 import { Navigation, Toast } from "@skeletonlabs/skeleton-react";
 import { createLink } from "@tanstack/react-router";
 import { CircleUser, House, Layers, LayoutGrid, Plus, X } from "lucide-react";
-import type { ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import type { components } from "../api/schema.d.ts";
 import { toaster } from "../lib/toaster.ts";
+import { TaskSearchCombobox } from "./task/TaskSearchCombobox.tsx";
 import { UserMenu } from "./UserMenu.tsx";
 
 type User = components["schemas"]["User"];
@@ -13,15 +14,23 @@ const NavLink = createLink(Navigation.TriggerAnchor);
 const PlainLink = createLink("a");
 
 function DesktopSidebar({ user, spaces }: { user: User; spaces: Space[] }) {
+  const spaceLabels = useMemo(
+    () => new Map(spaces.map((space) => [space.slug, space.name])),
+    [spaces],
+  );
+
   return (
     <Navigation
       layout="sidebar"
       className="hidden shrink-0 border-r border-surface-200-800 md:flex md:flex-col"
     >
       <Navigation.Header>
-        <NavLink to="/" className="flex items-center gap-2 px-1">
-          <span className="text-lg font-bold">Tend</span>
-        </NavLink>
+        <div className="flex flex-col gap-3 px-1">
+          <NavLink to="/" className="flex items-center gap-2">
+            <span className="text-lg font-bold">Tend</span>
+          </NavLink>
+          <TaskSearchCombobox spaceLabels={spaceLabels} className="w-full" />
+        </div>
       </Navigation.Header>
 
       <Navigation.Content className="flex-1">

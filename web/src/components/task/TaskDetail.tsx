@@ -40,7 +40,7 @@ import { TaskDescriptionEditor } from "../TaskDescriptionEditor.tsx";
 import { ErrorAlert } from "../space-settings/ErrorAlert.tsx";
 import { DueDateMenuField } from "./DueDateMenuField.tsx";
 import { RecurrenceMenuField } from "./RecurrenceMenuField.tsx";
-import { RelationsSection } from "./RelationsSection.tsx";
+import { TaskRelationChipRow, TaskRelationMenuField } from "./TaskRelationMenuField.tsx";
 
 type TaskStatus = components["schemas"]["TaskStatus"];
 type SpaceMember = components["schemas"]["SpaceMember"];
@@ -661,6 +661,7 @@ export function TaskDetailView({
           recurrenceType={task.recurrenceType}
           recurrenceRule={task.recurrenceRule}
         />
+        <TaskRelationMenuField spaceSlug={spaceSlug} taskId={task.id} relations={task.relations} />
         <MemberMenuField
           spaceSlug={spaceSlug}
           taskId={taskId}
@@ -673,11 +674,11 @@ export function TaskDetailView({
         />
       </div>
 
+      <TaskRelationChipRow spaceSlug={spaceSlug} taskId={task.id} relations={task.relations} />
+
       <TagsField spaceSlug={spaceSlug} taskId={taskId} value={task.tags} />
 
       <TaskDescriptionEditor spaceSlug={spaceSlug} taskId={taskId} value={task.description} />
-
-      <RelationsSection spaceSlug={spaceSlug} taskId={task.id} relations={task.relations} />
 
       <div>
         <h2 className="h5 mb-4 flex items-center gap-2">
