@@ -1,4 +1,4 @@
-import { createLink } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { Calendar, Gauge, SignalHigh, Tag, Users } from "lucide-react";
 import type { components } from "../../api/schema.d.ts";
 import { useSpaceMemberMap } from "../../lib/hooks.ts";
@@ -7,14 +7,13 @@ import { StatusBadge } from "./StatusBadge.tsx";
 type Task = components["schemas"]["Task"];
 type TaskStatus = components["schemas"]["TaskStatus"];
 
-const TaskLink = createLink("a");
-
 export function TaskRow({
   task,
   spaceSlug,
   statusMap,
   spaceLabel,
   compact,
+  to = "/spaces/$spaceSlug/tasks/$taskId",
 }: {
   task: Task;
   spaceSlug: string;
@@ -22,13 +21,15 @@ export function TaskRow({
   spaceLabel?: string;
   /** Compact mode for narrow list panes — shows only ID, title, and status badge */
   compact?: boolean;
+  /** Override the link target route (default: space task detail) */
+  to?: "/spaces/$spaceSlug/tasks/$taskId" | "/tasks/$spaceSlug/$taskId";
 }) {
   const memberMap = useSpaceMemberMap(spaceSlug);
   const assigneeNames = task.assigneeIds.map((id) => memberMap.get(id)?.userName ?? id).join(", ");
 
   return (
-    <TaskLink
-      to="/spaces/$spaceSlug/tasks/$taskId"
+    <Link
+      to={to}
       params={{ spaceSlug, taskId: task.id }}
       className="group flex items-center gap-3 border-b border-surface-200-800 px-3 py-2.5 transition-colors last:border-b-0 hover:bg-surface-100-900 data-[status=active]:bg-surface-200-800"
     >
@@ -84,6 +85,6 @@ export function TaskRow({
           </span>
         )}
       </div>
-    </TaskLink>
+    </Link>
   );
 }

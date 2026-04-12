@@ -1,6 +1,6 @@
 import { Navigation, Toast } from "@skeletonlabs/skeleton-react";
 import { createLink } from "@tanstack/react-router";
-import { Activity, CircleUser, House, Layers, LayoutGrid, Plus, X } from "lucide-react";
+import { CircleUser, House, Layers, LayoutGrid, Plus, X } from "lucide-react";
 import type { ReactNode } from "react";
 import type { components } from "../api/schema.d.ts";
 import { toaster } from "../lib/toaster.ts";
@@ -34,10 +34,6 @@ function DesktopSidebar({ user, spaces }: { user: User; spaces: Space[] }) {
             >
               <House className="size-5" />
               <Navigation.TriggerText>Home</Navigation.TriggerText>
-            </NavLink>
-            <NavLink to="/activity" activeProps={{ className: "preset-filled-primary-500" }}>
-              <Activity className="size-5" />
-              <Navigation.TriggerText>Activity</Navigation.TriggerText>
             </NavLink>
           </Navigation.Menu>
         </Navigation.Group>
@@ -93,10 +89,6 @@ function MobileBar() {
         >
           <House className="size-5" />
           <Navigation.TriggerText>Home</Navigation.TriggerText>
-        </NavLink>
-        <NavLink to="/activity" activeProps={{ className: "text-primary-500" }}>
-          <Activity className="size-5" />
-          <Navigation.TriggerText>Activity</Navigation.TriggerText>
         </NavLink>
         <NavLink to="/spaces" activeProps={{ className: "text-primary-500" }}>
           <Layers className="size-5" />

@@ -1,8 +1,7 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ChevronRight } from "lucide-react";
-import { TaskDetailView } from "../../../../../components/task/TaskDetail.tsx";
-import { AnchorLink } from "../../../../../lib/links.ts";
+import { TaskDetailView } from "../../../components/task/TaskDetail.tsx";
+import { AnchorLink } from "../../../lib/links.ts";
 import {
   spaceEffortLevelsQueryOptions,
   spaceMembersQueryOptions,
@@ -10,9 +9,9 @@ import {
   spaceQueryOptions,
   spaceTaskQueryOptions,
   spaceTaskStatusesQueryOptions,
-} from "../../../../../lib/queries.ts";
+} from "../../../lib/queries.ts";
 
-export const Route = createFileRoute("/_authenticated/spaces/$spaceSlug/tasks/$taskId")({
+export const Route = createFileRoute("/_authenticated/_home/tasks/$spaceSlug/$taskId")({
   loader: ({ context: { queryClient }, params: { spaceSlug, taskId } }) =>
     Promise.all([
       queryClient.ensureQueryData(spaceQueryOptions(spaceSlug)),
@@ -22,12 +21,11 @@ export const Route = createFileRoute("/_authenticated/spaces/$spaceSlug/tasks/$t
       queryClient.ensureQueryData(spaceEffortLevelsQueryOptions(spaceSlug)),
       queryClient.ensureQueryData(spacePriorityLevelsQueryOptions(spaceSlug)),
     ]),
-  component: TaskDetailPage,
+  component: HomeTaskDetailPage,
 });
 
-function TaskDetailPage() {
+function HomeTaskDetailPage() {
   const { spaceSlug, taskId } = Route.useParams();
-  const { data: space } = useSuspenseQuery(spaceQueryOptions(spaceSlug));
   const navigate = useNavigate();
 
   return (
@@ -36,23 +34,18 @@ function TaskDetailPage() {
       taskId={taskId}
       backLink={
         <AnchorLink
-          to="/spaces/$spaceSlug"
-          params={{ spaceSlug }}
+          to="/"
           className="text-surface-600-400 hover:text-surface-950-50 inline-flex items-center gap-1 text-sm transition-colors lg:hidden"
         >
           <ArrowLeft className="size-4" aria-hidden="true" />
-          Back to {space.name}
+          Back to My Tasks
         </AnchorLink>
       }
       breadcrumb={
         <ol className="flex min-w-0 items-center gap-1 text-sm">
           <li>
-            <AnchorLink
-              to="/spaces/$spaceSlug"
-              params={{ spaceSlug }}
-              className="text-surface-600-400 truncate hover:underline"
-            >
-              {space.name}
+            <AnchorLink to="/" className="text-surface-600-400 truncate hover:underline">
+              My Tasks
             </AnchorLink>
           </li>
           <li className="text-surface-500" aria-hidden="true">
@@ -60,7 +53,7 @@ function TaskDetailPage() {
           </li>
           <li>
             <AnchorLink
-              to="/spaces/$spaceSlug/tasks/$taskId"
+              to="/tasks/$spaceSlug/$taskId"
               params={{ spaceSlug, taskId }}
               className="shrink-0 font-mono hover:underline"
               aria-current="page"
@@ -71,7 +64,7 @@ function TaskDetailPage() {
         </ol>
       }
       onDeleteSuccess={() => {
-        void navigate({ to: "/spaces/$spaceSlug", params: { spaceSlug } });
+        void navigate({ to: "/" });
       }}
     />
   );
