@@ -595,7 +595,7 @@ function FreqSubMenu({
                   <Menu.Separator />
                   <div className="p-2">
                     <div className="text-surface-500 mb-1.5 text-xs">Or on the Nth weekday</div>
-                    <div className="mb-1 flex items-center justify-evenly">
+                    <div className="mb-1 flex items-center justify-between">
                       {ORDINALS.map((ord) => {
                         const active = currentRule.nthWeekday?.ordinal === ord;
                         return (
@@ -620,7 +620,7 @@ function FreqSubMenu({
                         );
                       })}
                     </div>
-                    <div className="flex items-center justify-evenly">
+                    <div className="flex items-center justify-between">
                       {WEEKDAY_CODES.map((day) => {
                         const active = currentRule.nthWeekday?.weekday === day;
                         return (
