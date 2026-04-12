@@ -541,36 +541,16 @@ function FreqSubMenu({
             <Portal>
               <Menu.Positioner>
                 <Menu.Content>
-                  <div className="px-2 py-2">
+                  <div className="p-2">
                     <div className="text-surface-500 mb-1.5 text-xs">Day of month</div>
-                    <div className="grid grid-cols-7 gap-1">
-                      {DAY_NUMBERS.filter((d) => d <= 28).map((d) => {
-                        const active =
-                          currentRule.bymonthday.includes(d) && !currentRule.nthWeekday;
-                        return (
-                          <button
-                            key={d}
-                            type="button"
-                            onClick={() => toggleMonthDay(d)}
-                            aria-pressed={active}
-                            className={`flex size-7 items-center justify-center rounded text-xs font-medium transition-colors ${
-                              active
-                                ? "preset-filled-primary-500"
-                                : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
-                            }`}
-                          >
-                            {d}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <div className="mt-1 flex items-center gap-1">
-                      {[29, 30, 31].map((d) => {
+                    <div className="grid grid-cols-7 gap-0.5">
+                      {DAY_NUMBERS.map((d) => {
                         const hasLast =
                           currentRule.bymonthday.includes(-1) && !currentRule.nthWeekday;
                         const active =
                           currentRule.bymonthday.includes(d) && !currentRule.nthWeekday;
-                        const lastDayHint = hasLast && !active;
+                        const isShortMonthDay = d >= 29;
+                        const lastDayHint = hasLast && d >= 28 && !active;
                         return (
                           <button
                             key={d}
@@ -582,7 +562,9 @@ function FreqSubMenu({
                                 ? "preset-filled-primary-500"
                                 : lastDayHint
                                   ? "preset-tonal-primary hover:preset-tonal-surface"
-                                  : "border border-dashed border-surface-300-700 hover:preset-tonal-surface"
+                                  : isShortMonthDay
+                                    ? "border border-dashed border-surface-300-700 hover:preset-tonal-surface"
+                                    : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
                             }`}
                           >
                             {d}
@@ -595,7 +577,7 @@ function FreqSubMenu({
                         aria-pressed={
                           currentRule.bymonthday.includes(-1) && !currentRule.nthWeekday
                         }
-                        className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
+                        className={`flex size-7 items-center justify-center rounded text-xs font-medium transition-colors ${
                           currentRule.bymonthday.includes(-1) && !currentRule.nthWeekday
                             ? "preset-filled-primary-500"
                             : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
@@ -605,13 +587,13 @@ function FreqSubMenu({
                       </button>
                     </div>
                     <div className="text-surface-500 mt-1 text-xs">
-                      Dashed days are skipped in shorter months
+                      29–31 are skipped in shorter months
                     </div>
                   </div>
                   <Menu.Separator />
-                  <div className="px-2 py-2">
+                  <div className="p-2">
                     <div className="text-surface-500 mb-1.5 text-xs">Or on the Nth weekday</div>
-                    <div className="mb-1.5 flex items-center gap-1">
+                    <div className="mb-1 flex items-center justify-evenly">
                       {ORDINALS.map((ord) => {
                         const active = currentRule.nthWeekday?.ordinal === ord;
                         return (
@@ -636,7 +618,7 @@ function FreqSubMenu({
                         );
                       })}
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center justify-evenly">
                       {WEEKDAY_CODES.map((day) => {
                         const active = currentRule.nthWeekday?.weekday === day;
                         return (
