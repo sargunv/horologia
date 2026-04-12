@@ -114,6 +114,22 @@ func (q *Queries) DeleteOtherSessionTokens(ctx context.Context, arg DeleteOtherS
 	return err
 }
 
+const deleteOtherAuthTokens = `-- name: DeleteOtherAuthTokens :exec
+DELETE FROM auth_tokens
+WHERE user_id = $1
+  AND ($2 = '' OR token_hash != $2)
+`
+
+type DeleteOtherAuthTokensParams struct {
+	UserID    int64
+	TokenHash string
+}
+
+func (q *Queries) DeleteOtherAuthTokens(ctx context.Context, arg DeleteOtherAuthTokensParams) error {
+	_, err := q.db.Exec(ctx, deleteOtherAuthTokens, arg.UserID, arg.TokenHash)
+	return err
+}
+
 const getAuthTokenByHash = `-- name: GetAuthTokenByHash :one
 SELECT
     t.id,

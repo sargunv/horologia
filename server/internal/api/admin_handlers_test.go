@@ -1,9 +1,17 @@
 package api_test
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"io"
 	"net/http"
 	"testing"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
+
+	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/tend/server/internal/types"
 )
 
 func TestUsersGet(t *testing.T) {
@@ -351,7 +359,7 @@ func TestUsersUpdate(t *testing.T) {
 		_ = resp.Body.Close()
 	})
 
-	t.Run("password change revokes other sessions but keeps current", func(t *testing.T) {
+	t.Run("password change revokes other credentials but keeps current session", func(t *testing.T) {
 		// Create a user and log in twice to get two session tokens.
 		token1 := createTestUser(t, env, "sessiontest@example.com", "SessionTest", "password")
 		selfID := getUserID(t, env, token1)
@@ -371,10 +379,24 @@ func TestUsersUpdate(t *testing.T) {
 			t.Fatal("second login missing tend_session cookie")
 		}
 
-		// Both sessions should work.
+		// Create API and OAuth credentials for the same user.
+		resp = doRequestAs(t, env, token1, "POST", "/auth/tokens", `{"name":"CLI"}`)
+		assertStatus(t, resp, http.StatusCreated)
+		var apiTokenBody map[string]any
+		readJSON(t, resp, &apiTokenBody)
+		apiToken := jsonAs[string](t, apiTokenBody["token"])
+
+		oauthAccessToken := createOAuthAccessTokenForBearerUser(t, env, token1, "profile:read")
+		oauthRefreshToken := createOAuthRefreshTokenForBearerUser(t, env, token1)
+
+		// All credentials should work before the password change.
 		resp = doRequestAs(t, env, token1, "GET", "/users/me", "")
 		assertStatusClose(t, resp, http.StatusOK)
 		resp = doRequestAs(t, env, token2, "GET", "/users/me", "")
+		assertStatusClose(t, resp, http.StatusOK)
+		resp = doRequestAs(t, env, apiToken, "GET", "/users/me", "")
+		assertStatusClose(t, resp, http.StatusOK)
+		resp = doRequestAs(t, env, oauthAccessToken, "GET", "/users/me", "")
 		assertStatusClose(t, resp, http.StatusOK)
 
 		// Change password using token1.
@@ -386,8 +408,14 @@ func TestUsersUpdate(t *testing.T) {
 		resp = doRequestAs(t, env, token1, "GET", "/users/me", "")
 		assertStatusClose(t, resp, http.StatusOK)
 
-		// token2 (other session) should be revoked.
+		// Every other credential should be revoked.
 		resp = doRequestAs(t, env, token2, "GET", "/users/me", "")
+		assertStatusClose(t, resp, http.StatusUnauthorized)
+		resp = doRequestAs(t, env, apiToken, "GET", "/users/me", "")
+		assertStatusClose(t, resp, http.StatusUnauthorized)
+		resp = doRequestAs(t, env, oauthAccessToken, "GET", "/users/me", "")
+		assertStatusClose(t, resp, http.StatusUnauthorized)
+		resp = doRequestAs(t, env, oauthRefreshToken, "GET", "/users/me", "")
 		assertStatusClose(t, resp, http.StatusUnauthorized)
 	})
 
@@ -402,6 +430,38 @@ func TestUsersUpdate(t *testing.T) {
 			`{"name":"Anon"}`)
 		assertStatusClose(t, resp, http.StatusUnauthorized)
 	})
+}
+
+func createOAuthRefreshTokenForBearerUser(t *testing.T, env *testEnv, bearerToken string) string {
+	t.Helper()
+
+	userID := getUserID(t, env, bearerToken)
+	userNumericID, err := types.ParseUserID(userID)
+	if err != nil {
+		t.Fatalf("parse user ID %q: %v", userID, err)
+	}
+
+	rawToken := "oauth-refresh-" + userID
+	hash := sha256.Sum256([]byte(rawToken))
+	tokenHash := hex.EncodeToString(hash[:])
+
+	q := dbgen.New(env.pool)
+	_, err = q.CreateAuthToken(t.Context(), dbgen.CreateAuthTokenParams{
+		UserID:        userNumericID,
+		TokenHash:     tokenHash,
+		Name:          "Tend CLI",
+		Kind:          dbgen.AuthTokenKindOauthRefresh,
+		ExpiresAt:     pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
+		CreatedAt:     pgtype.Timestamptz{Time: time.Now(), Valid: true},
+		OauthClientID: pgtype.Text{String: "tend-cli", Valid: true},
+		OauthScopes:   []string{"profile:read"},
+		OauthResource: pgtype.Text{String: env.Server.URL + "/api", Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("create oauth refresh token: %v", err)
+	}
+
+	return rawToken
 }
 
 func TestUsersDelete(t *testing.T) {
