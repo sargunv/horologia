@@ -19,7 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { type ReactNode, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getLevelIcon } from "../../lib/level-icons.ts";
+import { getIcon } from "../../lib/level-icons.ts";
 import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
 import { useSpaceMemberMap } from "../../lib/hooks.ts";
@@ -282,40 +282,48 @@ function StatusField({
     [statuses, search.query],
   );
 
+  // Resolve icon for the currently selected status.
+  const selectedStatus = useMemo(() => statuses.find((s) => s.name === value), [statuses, value]);
+  let statusIcon: ReactNode = <CircleAlert className="size-3.5" aria-hidden="true" />;
+  if (selectedStatus?.icon) {
+    const Icon = getIcon(selectedStatus.icon);
+    statusIcon = <Icon className="size-3.5" aria-hidden="true" />;
+  }
+
   return (
     <>
       <Menu {...search.menuProps} closeOnSelect={false}>
-        <FieldPill
-          icon={<CircleAlert className="size-3.5" aria-hidden="true" />}
-          label="Status"
-          value={value}
-        />
+        <FieldPill icon={statusIcon} label="Status" value={value} />
         <Portal>
           <Menu.Positioner>
             <SearchableMenuContent inputProps={search.inputProps} placeholder="Search statuses...">
               {filtered.length === 0 ? (
                 <div className="text-surface-500 px-3 py-2 text-sm">No matching statuses</div>
               ) : (
-                filtered.map((status) => (
-                  <Menu.OptionItem
-                    key={status.name}
-                    type="radio"
-                    checked={value === status.name}
-                    value={status.name}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        mutation.mutate({ status: status.name });
-                      }
-                    }}
-                    className={MENU_ITEM_CLASS}
-                  >
-                    <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
-                      <Check className="size-4" />
-                    </Menu.ItemIndicator>
-                    <Menu.ItemText>{status.name}</Menu.ItemText>
-                    <span className="text-surface-500 ml-auto text-xs">{status.category}</span>
-                  </Menu.OptionItem>
-                ))
+                filtered.map((status) => {
+                  const StatusIcon = status.icon ? getIcon(status.icon) : null;
+                  return (
+                    <Menu.OptionItem
+                      key={status.name}
+                      type="radio"
+                      checked={value === status.name}
+                      value={status.name}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          mutation.mutate({ status: status.name });
+                        }
+                      }}
+                      className={MENU_ITEM_CLASS}
+                    >
+                      <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
+                        <Check className="size-4" />
+                      </Menu.ItemIndicator>
+                      {StatusIcon && <StatusIcon className="size-4" aria-hidden="true" />}
+                      <Menu.ItemText>{status.name}</Menu.ItemText>
+                      <span className="text-surface-500 ml-auto text-xs">{status.category}</span>
+                    </Menu.OptionItem>
+                  );
+                })
               )}
             </SearchableMenuContent>
           </Menu.Positioner>
@@ -341,7 +349,7 @@ function NullableMenuField({
   taskId: string;
   field: "effort" | "priority";
   value: string | null;
-  options: { name: string; icon: string | null }[];
+  options: { name: string; icon: string }[];
   label: string;
   /** Fallback icon shown when the selected level has no per-level icon. */
   defaultIcon: ReactNode;
@@ -361,7 +369,7 @@ function NullableMenuField({
   );
   let pillIcon: ReactNode = defaultIcon;
   if (selectedOption?.icon) {
-    const Icon = getLevelIcon(selectedOption.icon);
+    const Icon = getIcon(selectedOption.icon);
     pillIcon = <Icon className="size-3.5" aria-hidden="true" />;
   }
 
@@ -391,7 +399,7 @@ function NullableMenuField({
                 <div className="text-surface-500 px-3 py-2 text-sm">No matching options</div>
               ) : (
                 filtered.map((option) => {
-                  const OptionIcon = option.icon ? getLevelIcon(option.icon) : null;
+                  const OptionIcon = option.icon ? getIcon(option.icon) : null;
                   return (
                     <Menu.OptionItem
                       key={option.name}

@@ -12,20 +12,20 @@ import (
 )
 
 var defaultStatuses = []dbgen.CreateTaskStatusParams{
-	{Name: "todo", Category: dbgen.StatusCategoryInitial, Position: 0},
-	{Name: "done", Category: dbgen.StatusCategoryCompletion, Position: 1},
+	{Name: "todo", Category: dbgen.StatusCategoryInitial, Position: 0, Icon: "circle"},
+	{Name: "done", Category: dbgen.StatusCategoryCompletion, Position: 1, Icon: "circle-check"},
 }
 
 var defaultEffortLevels = []dbgen.CreateTaskEffortLevelParams{
-	{Name: "small", Position: 0},
-	{Name: "medium", Position: 1},
-	{Name: "large", Position: 2},
+	{Name: "small", Position: 0, Icon: "feather"},
+	{Name: "medium", Position: 1, Icon: "gauge"},
+	{Name: "large", Position: 2, Icon: "mountain"},
 }
 
 var defaultPriorityLevels = []dbgen.CreateTaskPriorityLevelParams{
-	{Name: "low", Position: 0},
-	{Name: "medium", Position: 1},
-	{Name: "high", Position: 2},
+	{Name: "low", Position: 0, Icon: "signal-low"},
+	{Name: "medium", Position: 1, Icon: "signal-medium"},
+	{Name: "high", Position: 2, Icon: "signal-high"},
 }
 
 // CreateSpaceWithDefaults creates a space, its default statuses, effort levels,

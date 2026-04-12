@@ -533,13 +533,13 @@ export interface components {
             name: string;
             /** Format: int64 */
             position: number;
-            /** @description Lucide icon name in kebab-case (e.g. "gauge", "flame"). Null if no icon is set. */
-            icon: string | null;
+            /** @description Lucide icon name in kebab-case (e.g. "gauge", "flame"). Empty string if no icon is set. */
+            icon: string;
         };
         TaskEffortLevelInput: {
             name: string;
-            /** @description Lucide icon name in kebab-case (e.g. "gauge", "flame"). Omit or set to null to clear. */
-            icon?: string | null;
+            /** @description Lucide icon name in kebab-case (e.g. "gauge", "flame"). Omit or set to empty string to clear. */
+            icon?: string;
         };
         TaskEffortLevelList: {
             items: components["schemas"]["TaskEffortLevel"][];
@@ -567,13 +567,13 @@ export interface components {
             name: string;
             /** Format: int64 */
             position: number;
-            /** @description Lucide icon name in kebab-case (e.g. "signal-high", "flag"). Null if no icon is set. */
-            icon: string | null;
+            /** @description Lucide icon name in kebab-case (e.g. "signal-high", "flag"). Empty string if no icon is set. */
+            icon: string;
         };
         TaskPriorityLevelInput: {
             name: string;
-            /** @description Lucide icon name in kebab-case (e.g. "signal-high", "flag"). Omit or set to null to clear. */
-            icon?: string | null;
+            /** @description Lucide icon name in kebab-case (e.g. "signal-high", "flag"). Omit or set to empty string to clear. */
+            icon?: string;
         };
         TaskPriorityLevelList: {
             items: components["schemas"]["TaskPriorityLevel"][];
@@ -611,12 +611,16 @@ export interface components {
             category: components["schemas"]["TaskStatusCategory"];
             /** Format: int64 */
             position: number;
+            /** @description Lucide icon name in kebab-case (e.g. "circle-check", "loader"). Empty string if no icon is set. */
+            icon: string;
         };
         /** @enum {string} */
         TaskStatusCategory: "initial" | "intermediate" | "completion";
         TaskStatusInput: {
             name: string;
             category: components["schemas"]["TaskStatusCategory"];
+            /** @description Lucide icon name in kebab-case (e.g. "circle-check", "loader"). Omit or set to empty string to clear. */
+            icon?: string;
         };
         TaskStatusList: {
             items: components["schemas"]["TaskStatus"][];

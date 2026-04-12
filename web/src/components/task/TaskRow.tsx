@@ -3,7 +3,7 @@ import { Calendar, Gauge, SignalHigh, Tag, Users } from "lucide-react";
 import { useMemo } from "react";
 import type { components } from "../../api/schema.d.ts";
 import { useSpaceMemberMap } from "../../lib/hooks.ts";
-import { getLevelIcon } from "../../lib/level-icons.ts";
+import { getIcon } from "../../lib/level-icons.ts";
 import { StatusBadge } from "./StatusBadge.tsx";
 
 type Task = components["schemas"]["Task"];
@@ -40,13 +40,13 @@ export function TaskRow({
   const EffortIcon = useMemo(() => {
     if (!task.effort || !effortLevels) return Gauge;
     const level = effortLevels.find((l) => l.name === task.effort);
-    return level?.icon ? getLevelIcon(level.icon) : Gauge;
+    return level?.icon ? getIcon(level.icon) : Gauge;
   }, [task.effort, effortLevels]);
 
   const PriorityIcon = useMemo(() => {
     if (!task.priority || !priorityLevels) return SignalHigh;
     const level = priorityLevels.find((l) => l.name === task.priority);
-    return level?.icon ? getLevelIcon(level.icon) : SignalHigh;
+    return level?.icon ? getIcon(level.icon) : SignalHigh;
   }, [task.priority, priorityLevels]);
 
   return (

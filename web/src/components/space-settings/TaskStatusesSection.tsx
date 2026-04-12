@@ -21,8 +21,10 @@ import { GripVertical, ListChecks, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
+import { STATUS_SUGGESTED_ICONS } from "../../lib/level-icons.ts";
 import { spaceTaskStatusesQueryOptions } from "../../lib/queries.ts";
 import { ErrorAlert } from "./ErrorAlert.tsx";
+import { IconPicker } from "./IconPicker.tsx";
 import { SettingsSection } from "./SettingsSection.tsx";
 
 type TaskStatus = components["schemas"]["TaskStatus"];
@@ -32,6 +34,7 @@ interface StatusItem {
   id: string;
   name: string;
   category: TaskStatusCategory;
+  icon: string;
 }
 
 function toItems(
@@ -39,9 +42,15 @@ function toItems(
   category: TaskStatusCategory,
   existing?: StatusItem[],
 ): StatusItem[] {
+  const nameToId = new Map(existing?.map((e) => [e.name, e.id]));
   return statuses
     .filter((s) => s.category === category)
-    .map((s, i) => ({ id: existing?.[i]?.id ?? crypto.randomUUID(), name: s.name, category }));
+    .map((s) => ({
+      id: nameToId.get(s.name) ?? crypto.randomUUID(),
+      name: s.name,
+      category,
+      icon: s.icon ?? "",
+    }));
 }
 
 function allEqual(
@@ -54,7 +63,9 @@ function allEqual(
   if (merged.length !== serverStatuses.length) return false;
   return merged.every(
     (item, i) =>
-      item.name.trim() === serverStatuses[i]?.name && item.category === serverStatuses[i]?.category,
+      item.name.trim() === serverStatuses[i]?.name &&
+      item.category === serverStatuses[i]?.category &&
+      (item.icon || "") === (serverStatuses[i]?.icon || ""),
   );
 }
 
@@ -84,7 +95,7 @@ export function TaskStatusesSection({
       description="Configure the workflow statuses for tasks in this space."
     >
       <TaskStatusesForm
-        key={taskStatuses.map((s) => `${s.name}:${s.category}`).join(",")}
+        key={taskStatuses.map((s) => `${s.name}:${s.category}:${s.icon}`).join(",")}
         spaceSlug={spaceSlug}
         taskStatuses={taskStatuses}
       />
@@ -159,6 +170,7 @@ function TaskStatusesForm({
       [...initial, ...intermediate, ...completion].map((item) => ({
         name: item.name.trim(),
         category: item.category,
+        icon: item.icon || "",
       })),
     );
   }
@@ -287,8 +299,14 @@ function CategoryGroup({
 
   function handleAdd() {
     const newId = crypto.randomUUID();
-    setItems([...items, { id: newId, name: "", category }]);
+    setItems([...items, { id: newId, name: "", category, icon: "" }]);
     setEditingId(newId);
+  }
+
+  function handleIconChange(id: string, icon: string) {
+    const next = items.map((i) => (i.id === id ? { ...i, icon } : i));
+    setItems(next);
+    onSave(next);
   }
 
   function handleRemove(id: string) {
@@ -337,6 +355,7 @@ function CategoryGroup({
                 onStartEdit={() => setEditingId(item.id)}
                 onEndEdit={handleEndEdit}
                 onRename={(name) => handleRename(item.id, name)}
+                onIconChange={(icon: string) => handleIconChange(item.id, icon)}
                 onRemove={canRemoveItem ? () => handleRemove(item.id) : undefined}
                 disabled={disabled}
                 draggable={items.length > 1}
@@ -368,6 +387,7 @@ function SortableStatusRow({
   onStartEdit,
   onEndEdit,
   onRename,
+  onIconChange,
   onRemove,
   disabled,
   draggable,
@@ -378,6 +398,7 @@ function SortableStatusRow({
   onStartEdit: () => void;
   onEndEdit: () => void;
   onRename: (name: string) => void;
+  onIconChange: (icon: string) => void;
   onRemove?: (() => void) | undefined;
   disabled: boolean;
   draggable: boolean;
@@ -392,7 +413,7 @@ function SortableStatusRow({
     transition,
   };
 
-  const { role: _role, ...handleAttributes } = attributes;
+  const handleAttributes = attributes;
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter" || e.key === "Escape") {
@@ -416,6 +437,14 @@ function SortableStatusRow({
       >
         <GripVertical className="size-4" aria-hidden="true" />
       </button>
+
+      <IconPicker
+        value={item.icon || undefined}
+        onChange={onIconChange}
+        disabled={disabled}
+        label={`Icon for ${item.name || `status ${index + 1}`}`}
+        suggestedIcons={STATUS_SUGGESTED_ICONS}
+      />
 
       {isEditing ? (
         <input

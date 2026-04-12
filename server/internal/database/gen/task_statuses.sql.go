@@ -29,9 +29,9 @@ func (q *Queries) CountTasksByStatusName(ctx context.Context, arg CountTasksBySt
 }
 
 const createTaskStatus = `-- name: CreateTaskStatus :one
-INSERT INTO task_statuses (space_slug, name, category, position)
-VALUES ($1, $2, $3, $4)
-RETURNING space_slug, name, category, position
+INSERT INTO task_statuses (space_slug, name, category, position, icon)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING space_slug, name, category, position, icon
 `
 
 type CreateTaskStatusParams struct {
@@ -39,6 +39,7 @@ type CreateTaskStatusParams struct {
 	Name      string
 	Category  StatusCategory
 	Position  int32
+	Icon      string
 }
 
 func (q *Queries) CreateTaskStatus(ctx context.Context, arg CreateTaskStatusParams) (TaskStatus, error) {
@@ -47,6 +48,7 @@ func (q *Queries) CreateTaskStatus(ctx context.Context, arg CreateTaskStatusPara
 		arg.Name,
 		arg.Category,
 		arg.Position,
+		arg.Icon,
 	)
 	var i TaskStatus
 	err := row.Scan(
@@ -54,6 +56,7 @@ func (q *Queries) CreateTaskStatus(ctx context.Context, arg CreateTaskStatusPara
 		&i.Name,
 		&i.Category,
 		&i.Position,
+		&i.Icon,
 	)
 	return i, err
 }
@@ -73,7 +76,7 @@ func (q *Queries) DeleteTaskStatus(ctx context.Context, arg DeleteTaskStatusPara
 }
 
 const listTaskStatusesBySpace = `-- name: ListTaskStatusesBySpace :many
-SELECT space_slug, name, category, position FROM task_statuses
+SELECT space_slug, name, category, position, icon FROM task_statuses
 WHERE space_slug = $1
 ORDER BY position ASC
 `
@@ -92,6 +95,7 @@ func (q *Queries) ListTaskStatusesBySpace(ctx context.Context, spaceSlug string)
 			&i.Name,
 			&i.Category,
 			&i.Position,
+			&i.Icon,
 		); err != nil {
 			return nil, err
 		}
@@ -104,13 +108,14 @@ func (q *Queries) ListTaskStatusesBySpace(ctx context.Context, spaceSlug string)
 }
 
 const updateTaskStatus = `-- name: UpdateTaskStatus :exec
-UPDATE task_statuses SET category = $1, position = $2
-WHERE space_slug = $3 AND name = $4
+UPDATE task_statuses SET category = $1, position = $2, icon = $3
+WHERE space_slug = $4 AND name = $5
 `
 
 type UpdateTaskStatusParams struct {
 	Category  StatusCategory
 	Position  int32
+	Icon      string
 	SpaceSlug string
 	Name      string
 }
@@ -119,6 +124,7 @@ func (q *Queries) UpdateTaskStatus(ctx context.Context, arg UpdateTaskStatusPara
 	_, err := q.db.Exec(ctx, updateTaskStatus,
 		arg.Category,
 		arg.Position,
+		arg.Icon,
 		arg.SpaceSlug,
 		arg.Name,
 	)

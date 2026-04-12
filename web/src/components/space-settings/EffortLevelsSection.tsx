@@ -1,6 +1,7 @@
 import { Gauge } from "lucide-react";
 import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
+import { EFFORT_SUGGESTED_ICONS } from "../../lib/level-icons.ts";
 import { spaceEffortLevelsQueryOptions } from "../../lib/queries.ts";
 import { OrderedNameListForm } from "./OrderedNameListForm.tsx";
 import { SettingsSection } from "./SettingsSection.tsx";
@@ -35,6 +36,7 @@ export function EffortLevelsSection({
         }}
         itemLabel="Effort level"
         showIcons
+        suggestedIcons={EFFORT_SUGGESTED_ICONS}
       />
     </SettingsSection>
   );

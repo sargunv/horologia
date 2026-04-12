@@ -1,6 +1,6 @@
 -- name: CreateTaskStatus :one
-INSERT INTO task_statuses (space_slug, name, category, position)
-VALUES ($1, $2, $3, $4)
+INSERT INTO task_statuses (space_slug, name, category, position, icon)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
 -- name: ListTaskStatusesBySpace :many
@@ -9,8 +9,8 @@ WHERE space_slug = $1
 ORDER BY position ASC;
 
 -- name: UpdateTaskStatus :exec
-UPDATE task_statuses SET category = $1, position = $2
-WHERE space_slug = $3 AND name = $4;
+UPDATE task_statuses SET category = $1, position = $2, icon = $3
+WHERE space_slug = $4 AND name = $5;
 
 -- name: DeleteTaskStatus :execresult
 DELETE FROM task_statuses

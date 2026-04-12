@@ -19,19 +19,20 @@ import { CSS } from "@dnd-kit/utilities";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { GripVertical, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { EFFORT_SUGGESTED_ICONS } from "../../lib/level-icons.ts";
 import { ErrorAlert } from "./ErrorAlert.tsx";
 import { IconPicker } from "./IconPicker.tsx";
 
 interface NamedItem {
   id: string;
   name: string;
-  icon?: string | null;
+  icon: string;
 }
 
 interface ServerItem {
   name: string;
   position: number;
-  icon?: string | null;
+  icon?: string;
 }
 
 function toItems(serverItems: ServerItem[], existing?: NamedItem[]): NamedItem[] {
@@ -39,14 +40,14 @@ function toItems(serverItems: ServerItem[], existing?: NamedItem[]): NamedItem[]
   return serverItems.map((s) => ({
     id: nameToId.get(s.name) ?? crypto.randomUUID(),
     name: s.name,
-    icon: s.icon ?? null,
+    icon: s.icon ?? "",
   }));
 }
 
 function arraysEqual(a: NamedItem[], b: ServerItem[]): boolean {
   if (a.length !== b.length) return false;
   return a.every(
-    (item, i) => item.name.trim() === b[i]?.name && (item.icon ?? null) === (b[i]?.icon ?? null),
+    (item, i) => item.name.trim() === b[i]?.name && (item.icon || "") === (b[i]?.icon || ""),
   );
 }
 
@@ -57,14 +58,17 @@ export function OrderedNameListForm({
   itemLabel,
   minItems = 0,
   showIcons = false,
+  suggestedIcons = EFFORT_SUGGESTED_ICONS,
 }: {
   items: ServerItem[];
   queryKey: readonly unknown[];
-  mutationFn: (items: { name: string; icon?: string | null }[]) => Promise<{ items: ServerItem[] }>;
+  mutationFn: (items: { name: string; icon?: string }[]) => Promise<{ items: ServerItem[] }>;
   itemLabel: string;
   minItems?: number | undefined;
   /** Show an icon picker for each item. */
   showIcons?: boolean;
+  /** Which set of suggested icons to show in the icon picker. */
+  suggestedIcons?: string[];
 }) {
   const queryClient = useQueryClient();
   const [items, setItems] = useState(() => toItems(serverItems));
@@ -100,7 +104,7 @@ export function OrderedNameListForm({
     saveMutation.mutate(
       nextItems.map((item) => ({
         name: item.name.trim(),
-        ...(showIcons ? { icon: item.icon ?? null } : {}),
+        ...(showIcons ? { icon: item.icon || "" } : {}),
       })),
     );
   }
@@ -125,6 +129,7 @@ export function OrderedNameListForm({
         itemLabel={itemLabel}
         minItems={minItems}
         showIcons={showIcons}
+        suggestedIcons={suggestedIcons}
       />
 
       {validationError && <ErrorAlert key={validationError} message={validationError} />}
@@ -141,6 +146,7 @@ function SortableNameList({
   itemLabel,
   minItems,
   showIcons,
+  suggestedIcons,
 }: {
   items: NamedItem[];
   setItems: (value: NamedItem[]) => void;
@@ -149,6 +155,7 @@ function SortableNameList({
   itemLabel: string;
   minItems: number;
   showIcons: boolean;
+  suggestedIcons: string[];
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -204,7 +211,7 @@ function SortableNameList({
 
   function handleAdd() {
     const newId = crypto.randomUUID();
-    setItems([...items, { id: newId, name: "" }]);
+    setItems([...items, { id: newId, name: "", icon: "" }]);
     setEditingId(newId);
   }
 
@@ -219,7 +226,7 @@ function SortableNameList({
     setItems(items.map((i) => (i.id === id ? { ...i, name } : i)));
   }
 
-  function handleIconChange(id: string, icon: string | null) {
+  function handleIconChange(id: string, icon: string) {
     const next = items.map((i) => (i.id === id ? { ...i, icon } : i));
     setItems(next);
     onSave(next);
@@ -256,7 +263,10 @@ function SortableNameList({
                 onStartEdit={() => setEditingId(item.id)}
                 onEndEdit={handleEndEdit}
                 onRename={(name) => handleRename(item.id, name)}
-                onIconChange={showIcons ? (icon) => handleIconChange(item.id, icon) : undefined}
+                onIconChange={
+                  showIcons ? (icon: string) => handleIconChange(item.id, icon) : undefined
+                }
+                suggestedIcons={suggestedIcons}
                 onRemove={canRemoveItem ? () => handleRemove(item.id) : undefined}
                 disabled={disabled}
                 draggable={items.length > 1}
@@ -290,6 +300,7 @@ function SortableNameRow({
   onEndEdit,
   onRename,
   onIconChange,
+  suggestedIcons,
   onRemove,
   disabled,
   draggable,
@@ -301,7 +312,8 @@ function SortableNameRow({
   onStartEdit: () => void;
   onEndEdit: () => void;
   onRename: (name: string) => void;
-  onIconChange?: ((icon: string | null) => void) | undefined;
+  onIconChange?: ((icon: string) => void) | undefined;
+  suggestedIcons: string[];
   onRemove?: (() => void) | undefined;
   disabled: boolean;
   draggable: boolean;
@@ -344,10 +356,11 @@ function SortableNameRow({
 
       {onIconChange && (
         <IconPicker
-          value={item.icon}
+          value={item.icon || undefined}
           onChange={onIconChange}
           disabled={disabled}
           label={`Icon for ${item.name || `${itemLabel.toLowerCase()} ${index + 1}`}`}
+          suggestedIcons={suggestedIcons}
         />
       )}
 

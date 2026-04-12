@@ -9,7 +9,6 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createTaskPriorityLevel = `-- name: CreateTaskPriorityLevel :one
@@ -22,7 +21,7 @@ type CreateTaskPriorityLevelParams struct {
 	SpaceSlug string
 	Name      string
 	Position  int32
-	Icon      pgtype.Text
+	Icon      string
 }
 
 func (q *Queries) CreateTaskPriorityLevel(ctx context.Context, arg CreateTaskPriorityLevelParams) (TaskPriorityLevel, error) {
@@ -94,7 +93,7 @@ WHERE space_slug = $3 AND name = $4
 
 type UpdateTaskPriorityLevelParams struct {
 	Position  int32
-	Icon      pgtype.Text
+	Icon      string
 	SpaceSlug string
 	Name      string
 }

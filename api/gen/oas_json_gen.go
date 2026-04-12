@@ -3990,7 +3990,7 @@ func (s *TaskEffortLevel) encodeFields(e *jx.Encoder) {
 	}
 	{
 		e.FieldStart("icon")
-		s.Icon.Encode(e)
+		e.Str(s.Icon)
 	}
 }
 
@@ -4036,7 +4036,9 @@ func (s *TaskEffortLevel) Decode(d *jx.Decoder) error {
 		case "icon":
 			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
-				if err := s.Icon.Decode(d); err != nil {
+				v, err := d.Str()
+				s.Icon = string(v)
+				if err != nil {
 					return err
 				}
 				return nil
@@ -4732,7 +4734,7 @@ func (s *TaskPriorityLevel) encodeFields(e *jx.Encoder) {
 	}
 	{
 		e.FieldStart("icon")
-		s.Icon.Encode(e)
+		e.Str(s.Icon)
 	}
 }
 
@@ -4778,7 +4780,9 @@ func (s *TaskPriorityLevel) Decode(d *jx.Decoder) error {
 		case "icon":
 			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
-				if err := s.Icon.Decode(d); err != nil {
+				v, err := d.Str()
+				s.Icon = string(v)
+				if err != nil {
 					return err
 				}
 				return nil
@@ -5781,12 +5785,17 @@ func (s *TaskStatus) encodeFields(e *jx.Encoder) {
 		e.FieldStart("position")
 		e.Int64(s.Position)
 	}
+	{
+		e.FieldStart("icon")
+		e.Str(s.Icon)
+	}
 }
 
-var jsonFieldsNameOfTaskStatus = [3]string{
+var jsonFieldsNameOfTaskStatus = [4]string{
 	0: "name",
 	1: "category",
 	2: "position",
+	3: "icon",
 }
 
 // Decode decodes TaskStatus from json.
@@ -5832,6 +5841,18 @@ func (s *TaskStatus) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"position\"")
 			}
+		case "icon":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				v, err := d.Str()
+				s.Icon = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"icon\"")
+			}
 		default:
 			return d.Skip()
 		}
@@ -5842,7 +5863,7 @@ func (s *TaskStatus) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000111,
+		0b00001111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -5947,11 +5968,18 @@ func (s *TaskStatusInput) encodeFields(e *jx.Encoder) {
 		e.FieldStart("category")
 		s.Category.Encode(e)
 	}
+	{
+		if s.Icon.Set {
+			e.FieldStart("icon")
+			s.Icon.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfTaskStatusInput = [2]string{
+var jsonFieldsNameOfTaskStatusInput = [3]string{
 	0: "name",
 	1: "category",
+	2: "icon",
 }
 
 // Decode decodes TaskStatusInput from json.
@@ -5984,6 +6012,16 @@ func (s *TaskStatusInput) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"category\"")
+			}
+		case "icon":
+			if err := func() error {
+				s.Icon.Reset()
+				if err := s.Icon.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"icon\"")
 			}
 		default:
 			return d.Skip()

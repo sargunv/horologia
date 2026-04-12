@@ -359,6 +359,7 @@ func statusFromDB(s dbgen.TaskStatus) *apigen.TaskStatus {
 		Name:     s.Name,
 		Category: apigen.TaskStatusCategory(s.Category),
 		Position: int64(s.Position),
+		Icon:     s.Icon,
 	}
 }
 
@@ -366,7 +367,7 @@ func effortLevelFromDB(e dbgen.TaskEffortLevel) *apigen.TaskEffortLevel {
 	return &apigen.TaskEffortLevel{
 		Name:     e.Name,
 		Position: int64(e.Position),
-		Icon:     nilStringFromDB(e.Icon),
+		Icon:     e.Icon,
 	}
 }
 
@@ -374,30 +375,17 @@ func priorityLevelFromDB(p dbgen.TaskPriorityLevel) *apigen.TaskPriorityLevel {
 	return &apigen.TaskPriorityLevel{
 		Name:     p.Name,
 		Position: int64(p.Position),
-		Icon:     nilStringFromDB(p.Icon),
+		Icon:     p.Icon,
 	}
 }
 
-// optNilStringToDBZero converts an OptNilString to a pgtype.Text, treating
-// absent and null as SQL NULL. Used for full-replace endpoints where omission
-// means "no value" rather than "keep existing".
-func optNilStringToDBZero(opt apigen.OptNilString) pgtype.Text {
-	if !opt.IsSet() || opt.IsNull() {
-		return pgtype.Text{}
+// optStringOrEmpty extracts the value from an OptString, defaulting to empty
+// string when absent. Used for icon fields in full-replace endpoints.
+func optStringOrEmpty(opt apigen.OptString) string {
+	if opt.IsSet() {
+		return opt.Value
 	}
-	return pgtype.Text{String: opt.Value, Valid: true}
-}
-
-const maxIconLength = 50
-
-// validateIconField checks that a level icon value (if present and non-null)
-// does not exceed the maximum allowed length. This compensates for ogen not
-// enforcing maxLength on nullable anyOf fields.
-func validateIconField(icon apigen.OptNilString) error {
-	if icon.IsSet() && !icon.IsNull() && len(icon.Value) > maxIconLength {
-		return badRequest(fmt.Sprintf("icon name must be at most %d characters", maxIconLength))
-	}
-	return nil
+	return ""
 }
 
 // taskListCursor holds the compound keyset pagination state for task list queries.

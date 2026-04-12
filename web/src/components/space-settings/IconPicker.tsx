@@ -1,32 +1,41 @@
-import { Popover, Portal, ToggleGroup } from "@skeletonlabs/skeleton-react";
-import { CircleOff } from "lucide-react";
-import { useState } from "react";
-import { FALLBACK_ICON, LEVEL_ICONS, LEVEL_ICON_NAMES } from "../../lib/level-icons.ts";
+import { Menu, Portal } from "@skeletonlabs/skeleton-react";
+import { Check, CircleOff, X } from "lucide-react";
+import { useMemo } from "react";
+import { EFFORT_SUGGESTED_ICONS, getIcon, searchIcons } from "../../lib/level-icons.ts";
+import { useMenuSearch } from "../../lib/useMenuSearch.ts";
+import { MENU_ITEM_CLASS, SearchableMenuContent } from "../SearchableMenuContent.tsx";
 
 /**
- * A popover-based icon picker for selecting a Lucide icon.
- * Shows the currently selected icon as a button; clicking opens a grid of choices.
- * Uses Skeleton's ToggleGroup for roving focus and arrow-key navigation.
+ * A searchable menu-based icon picker for selecting a Lucide icon.
+ * Shows suggested icons by default; typing searches across all ~1700 Lucide icons.
  */
 export function IconPicker({
   value,
   onChange,
   disabled,
   label,
+  suggestedIcons = EFFORT_SUGGESTED_ICONS,
 }: {
-  /** Current icon name (kebab-case) or null for no icon. */
-  value: string | null | undefined;
+  /** Current icon name (kebab-case) or empty string for no icon. */
+  value: string | undefined;
   /** Called when the user picks an icon or clears it. */
-  onChange: (icon: string | null) => void;
+  onChange: (icon: string) => void;
   disabled?: boolean;
   label?: string;
+  /** Which set of suggested icons to show when not searching. */
+  suggestedIcons?: string[];
 }) {
-  const [open, setOpen] = useState(false);
-  const CurrentIcon = value ? (LEVEL_ICONS[value] ?? FALLBACK_ICON) : null;
+  const search = useMenuSearch();
+  const CurrentIcon = value ? getIcon(value) : null;
+
+  const results = useMemo(
+    () => searchIcons(search.query, suggestedIcons),
+    [search.query, suggestedIcons],
+  );
 
   return (
-    <Popover open={open} onOpenChange={(e) => setOpen(e.open)}>
-      <Popover.Trigger
+    <Menu {...search.menuProps} closeOnSelect={false}>
+      <Menu.Trigger
         className={`btn-icon btn-icon-sm shrink-0 ${value ? "preset-tonal-surface" : "preset-outlined-surface-200-800 opacity-60"}`}
         disabled={disabled}
         aria-label={label ?? "Pick icon"}
@@ -36,57 +45,49 @@ export function IconPicker({
         ) : (
           <CircleOff className="size-3.5" aria-hidden="true" />
         )}
-      </Popover.Trigger>
+      </Menu.Trigger>
       <Portal>
-        <Popover.Positioner>
-          <Popover.Content className="bg-surface-100-900 z-50 rounded-lg border border-surface-200-800 p-2 shadow-lg">
-            <div className="mb-1 flex items-center justify-between px-1">
-              <Popover.Title className="text-surface-600-400 text-xs font-medium">
-                Choose icon
-              </Popover.Title>
-              {value && (
-                <button
-                  type="button"
-                  className="text-error-500 text-xs hover:underline"
-                  aria-label="Clear icon selection"
-                  onClick={() => {
-                    onChange(null);
-                    setOpen(false);
-                  }}
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-            <ToggleGroup
-              className="grid grid-cols-8 gap-0.5"
-              multiple={false}
-              value={value ? [value] : []}
-              onValueChange={(details) => {
-                const selected = details.value[0] ?? null;
-                onChange(selected);
-                if (selected) setOpen(false);
-              }}
-            >
-              {LEVEL_ICON_NAMES.map((name) => {
-                const Icon = LEVEL_ICONS[name]!;
+        <Menu.Positioner>
+          <SearchableMenuContent inputProps={search.inputProps} placeholder="Search icons...">
+            {value && (
+              <Menu.Item
+                value="clear"
+                className={`text-error-500 ${MENU_ITEM_CLASS}`}
+                onClick={() => onChange("")}
+              >
+                <X className="size-4" aria-hidden="true" />
+                <Menu.ItemText>Clear icon</Menu.ItemText>
+              </Menu.Item>
+            )}
+            {results.length === 0 ? (
+              <div className="text-surface-500 px-3 py-2 text-sm">No matching icons</div>
+            ) : (
+              results.map((name) => {
+                const Icon = getIcon(name);
                 const isSelected = name === value;
                 return (
-                  <ToggleGroup.Item
+                  <Menu.OptionItem
                     key={name}
+                    type="radio"
+                    checked={isSelected}
                     value={name}
-                    className={`btn-icon btn-icon-sm rounded ${isSelected ? "preset-filled-primary-500" : "hover:bg-surface-200-800"}`}
-                    aria-label={name}
-                    title={name}
+                    onCheckedChange={(checked) => {
+                      if (checked) onChange(name);
+                    }}
+                    className={MENU_ITEM_CLASS}
                   >
+                    <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
+                      <Check className="size-4" />
+                    </Menu.ItemIndicator>
                     <Icon className="size-4" aria-hidden="true" />
-                  </ToggleGroup.Item>
+                    <Menu.ItemText>{name}</Menu.ItemText>
+                  </Menu.OptionItem>
                 );
-              })}
-            </ToggleGroup>
-          </Popover.Content>
-        </Popover.Positioner>
+              })
+            )}
+          </SearchableMenuContent>
+        </Menu.Positioner>
       </Portal>
-    </Popover>
+    </Menu>
   );
 }

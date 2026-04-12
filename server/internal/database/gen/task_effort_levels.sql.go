@@ -9,7 +9,6 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createTaskEffortLevel = `-- name: CreateTaskEffortLevel :one
@@ -22,7 +21,7 @@ type CreateTaskEffortLevelParams struct {
 	SpaceSlug string
 	Name      string
 	Position  int32
-	Icon      pgtype.Text
+	Icon      string
 }
 
 func (q *Queries) CreateTaskEffortLevel(ctx context.Context, arg CreateTaskEffortLevelParams) (TaskEffortLevel, error) {
@@ -94,7 +93,7 @@ WHERE space_slug = $3 AND name = $4
 
 type UpdateTaskEffortLevelParams struct {
 	Position  int32
-	Icon      pgtype.Text
+	Icon      string
 	SpaceSlug string
 	Name      string
 }

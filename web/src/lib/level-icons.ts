@@ -1,121 +1,104 @@
 /**
- * Curated set of Lucide icons available for effort and priority levels.
- * Keys are kebab-case icon names (matching the API/DB format).
- * Only icons relevant to effort/priority concepts are included to keep
- * the bundle small and the picker focused.
+ * Icon utilities for effort, priority, and status levels.
+ * Uses ALL Lucide icons — names stored in kebab-case in the DB/API.
  */
 
-import {
-  AlertTriangle,
-  ArrowDown,
-  ArrowUp,
-  Award,
-  Bell,
-  Bolt,
-  ChevronDown,
-  ChevronUp,
-  ChevronsUp,
-  CircleHelp,
-  Clock,
-  Cloud,
-  Crown,
-  Diamond,
-  Droplet,
-  Feather,
-  Flag,
-  Flame,
-  Gauge,
-  Heart,
-  Hexagon,
-  Hourglass,
-  Leaf,
-  Minus,
-  Mountain,
-  Rocket,
-  Shield,
-  Signal,
-  SignalHigh,
-  SignalLow,
-  SignalMedium,
-  Sparkles,
-  Star,
-  Target,
-  Timer,
-  TrendingUp,
-  Trophy,
-  Weight,
-  Wind,
-  Zap,
-  type LucideIcon,
-} from "lucide-react";
+import { CircleHelp, icons, type LucideIcon } from "lucide-react";
 
-/** All available level icons, keyed by their kebab-case API name. */
-export const LEVEL_ICONS: Record<string, LucideIcon> = {
-  // Intensity / scale
-  feather: Feather,
-  leaf: Leaf,
-  droplet: Droplet,
-  wind: Wind,
-  cloud: Cloud,
-  mountain: Mountain,
-  flame: Flame,
-  zap: Zap,
-  bolt: Bolt,
-  rocket: Rocket,
-  sparkles: Sparkles,
+// ─── Naming Conversion ──────────────────────────────────────────────────────
 
-  // Gauges / time
-  gauge: Gauge,
-  timer: Timer,
-  clock: Clock,
-  hourglass: Hourglass,
-  weight: Weight,
+/** Convert PascalCase (lucide component key) to kebab-case (API/DB format). */
+function pascalToKebab(str: string): string {
+  return str
+    .replace(/([a-z])(\d)/g, "$1-$2")
+    .replace(/([a-z\d])([A-Z])/g, "$1-$2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1-$2")
+    .toLowerCase();
+}
 
-  // Signal strength
-  "signal-low": SignalLow,
-  "signal-medium": SignalMedium,
-  "signal-high": SignalHigh,
-  signal: Signal,
+// ─── Icon Registry ──────────────────────────────────────────────────────────
 
-  // Arrows / direction
-  "arrow-down": ArrowDown,
-  minus: Minus,
-  "arrow-up": ArrowUp,
-  "chevron-down": ChevronDown,
-  "chevron-up": ChevronUp,
-  "chevrons-up": ChevronsUp,
-  "trending-up": TrendingUp,
+/** All Lucide icons, keyed by kebab-case name. Built once at module init. */
+const ALL_ICONS = new Map<string, LucideIcon>();
 
-  // Priority / alerts
-  flag: Flag,
-  "alert-triangle": AlertTriangle,
-  bell: Bell,
+/** All kebab-case icon names, sorted alphabetically. */
+const ALL_ICON_NAMES: string[] = [];
 
-  // Shapes / abstract
-  diamond: Diamond,
-  hexagon: Hexagon,
-  star: Star,
-  heart: Heart,
+for (const [pascal, component] of Object.entries(icons)) {
+  const kebab = pascalToKebab(pascal);
+  ALL_ICONS.set(kebab, component);
+  ALL_ICON_NAMES.push(kebab);
+}
 
-  // Achievement
-  target: Target,
-  shield: Shield,
-  crown: Crown,
-  trophy: Trophy,
-  award: Award,
-};
+ALL_ICON_NAMES.sort();
 
-/** Ordered list of icon names for the picker UI. */
-export const LEVEL_ICON_NAMES = Object.keys(LEVEL_ICONS);
+export { ALL_ICON_NAMES };
 
-/** Fallback icon shown when an icon name is unrecognized. */
+/** Fallback icon shown when an icon name is unrecognized or empty. */
 export const FALLBACK_ICON: LucideIcon = CircleHelp;
 
 /**
- * Resolve an icon name to its Lucide component.
- * Returns the fallback icon for null/undefined/unrecognized names.
+ * Resolve an icon name (kebab-case) to its Lucide component.
+ * Falls back to looking up by PascalCase if kebab lookup fails.
+ * Returns FALLBACK_ICON for empty/unrecognized names.
  */
-export function getLevelIcon(name: string | null | undefined): LucideIcon {
+export function getIcon(name: string | null | undefined): LucideIcon {
   if (!name) return FALLBACK_ICON;
-  return LEVEL_ICONS[name] ?? FALLBACK_ICON;
+  // Try kebab-case lookup first (canonical format)
+  const fromKebab = ALL_ICONS.get(name);
+  if (fromKebab) return fromKebab;
+  // Try PascalCase lookup as fallback (icons object uses PascalCase keys)
+  const iconsRecord: Record<string, LucideIcon | undefined> = icons;
+  const fromPascal = iconsRecord[name];
+  if (fromPascal) return fromPascal;
+  return FALLBACK_ICON;
+}
+
+/**
+ * Check whether an icon name resolves to a real Lucide icon.
+ */
+export function isValidIcon(name: string): boolean {
+  return ALL_ICONS.has(name) || name in icons;
+}
+
+// ─── Suggested Icon Sets ────────────────────────────────────────────────────
+
+/** Suggested icons for effort level pickers. */
+export const EFFORT_SUGGESTED_ICONS = ["feather", "leaf", "gauge", "mountain", "flame", "rocket"];
+
+/** Suggested icons for priority level pickers. */
+export const PRIORITY_SUGGESTED_ICONS = [
+  "signal-low",
+  "signal-medium",
+  "signal-high",
+  "flag",
+  "alert-triangle",
+  "siren",
+];
+
+/** Suggested icons for status pickers. */
+export const STATUS_SUGGESTED_ICONS = [
+  "circle",
+  "circle-dot",
+  "loader",
+  "circle-check",
+  "circle-x",
+  "ban",
+];
+
+/**
+ * Search icons by name substring match. Returns up to `limit` results.
+ * When query is empty, returns the suggested icons for the given field type.
+ */
+export function searchIcons(query: string, suggested: string[], limit = 20): string[] {
+  if (!query) return suggested;
+  const q = query.toLowerCase();
+  const results: string[] = [];
+  for (const name of ALL_ICON_NAMES) {
+    if (name.includes(q)) {
+      results.push(name);
+      if (results.length >= limit) break;
+    }
+  }
+  return results;
 }
