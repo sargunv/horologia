@@ -11,7 +11,7 @@ run = [
 [tasks.dev]
 description = "Start dev server"
 depends = ["generate"]
-run = "pnpm exec vp dev"
+run = "exec pnpm exec vp dev"
 
 [tasks.build]
 description = "Build for production"

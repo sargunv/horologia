@@ -9,7 +9,6 @@ import { createFileRoute, createLink, useNavigate } from "@tanstack/react-router
 import {
   Activity,
   ArrowLeft,
-  Calendar,
   Check,
   ChevronRight,
   CircleAlert,
@@ -30,14 +29,13 @@ import {
   MENU_ITEM_CLASS,
   SearchableMenuContent,
 } from "../../../../../components/SearchableMenuContent.tsx";
+import { DueDateMenuField } from "../../../../../components/task/DueDateMenuField.tsx";
 import { RecurrenceMenuField } from "../../../../../components/task/RecurrenceMenuField.tsx";
 import { TaskDescriptionEditor } from "../../../../../components/TaskDescriptionEditor.tsx";
 import { ActivityFeed } from "../../../../../components/ActivityFeed.tsx";
 import { ErrorAlert } from "../../../../../components/space-settings/ErrorAlert.tsx";
-import { OverdueActionEditor } from "../../../../../components/task/OverdueActionEditor.tsx";
 import { RelationsSection } from "../../../../../components/task/RelationsSection.tsx";
 import { useSpaceMemberMap } from "../../../../../lib/hooks.ts";
-import { addDays, formatDateDisplay, parseDateInput, toISODate } from "../../../../../lib/dates.ts";
 import { useMenuSearch } from "../../../../../lib/useMenuSearch.ts";
 import { useTaskPatch } from "../../../../../lib/mutations.ts";
 import {
@@ -50,8 +48,6 @@ import {
   taskActivityInfiniteQueryOptions,
 } from "../../../../../lib/queries.ts";
 
-type Task = components["schemas"]["Task"];
-type TaskOverdueActionRule = components["schemas"]["TaskOverdueActionRule"];
 type TaskStatus = components["schemas"]["TaskStatus"];
 type SpaceMember = components["schemas"]["SpaceMember"];
 
@@ -332,7 +328,9 @@ function StatusField({
           <Menu.Positioner>
             <SearchableMenuContent inputProps={search.inputProps} placeholder="Search statuses...">
               {filtered.length === 0 ? (
-                <div className="text-surface-500 px-3 py-2 text-sm">No matching statuses</div>
+                <div role="status" className="text-surface-500 px-3 py-2 text-sm">
+                  No matching statuses
+                </div>
               ) : (
                 filtered.map((status) => (
                   <Menu.OptionItem
@@ -414,7 +412,9 @@ function NullableMenuField({
                 </Menu.Item>
               )}
               {filtered.length === 0 ? (
-                <div className="text-surface-500 px-3 py-2 text-sm">No matching options</div>
+                <div role="status" className="text-surface-500 px-3 py-2 text-sm">
+                  No matching options
+                </div>
               ) : (
                 filtered.map((option) => (
                   <Menu.OptionItem
@@ -511,7 +511,9 @@ function MemberMenuField({
           <Menu.Positioner>
             <SearchableMenuContent inputProps={search.inputProps} placeholder="Search members...">
               {filtered.length === 0 ? (
-                <div className="text-surface-500 px-3 py-2 text-sm">No members found</div>
+                <div role="status" className="text-surface-500 px-3 py-2 text-sm">
+                  No members found
+                </div>
               ) : (
                 filtered.map((member) => (
                   <Menu.OptionItem
@@ -536,140 +538,6 @@ function MemberMenuField({
       </Menu>
       {mutation.error && <ErrorAlert message={mutation.error.message} />}
     </>
-  );
-}
-
-// ─── Due Date Field ─────────────────────────────────────────────────────────
-
-const BROWSER_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-const DATE_SHORTCUTS = [
-  { label: "Today", offsetDays: 0 },
-  { label: "Tomorrow", offsetDays: 1 },
-  { label: "In 1 week", offsetDays: 7 },
-  { label: "In 2 weeks", offsetDays: 14 },
-  { label: "In 1 month", offsetDays: 30 },
-];
-
-function DueDateField({
-  spaceSlug,
-  taskId,
-  value,
-}: {
-  spaceSlug: string;
-  taskId: string;
-  value: Task["due"];
-}) {
-  const mutation = useTaskPatch(spaceSlug, taskId);
-  const search = useMenuSearch();
-  const parsedDate = useMemo(() => parseDateInput(search.query), [search.query]);
-  const today = new Date();
-
-  const displayValue = useMemo(() => {
-    if (!value) return null;
-    return new Date(value.at).toLocaleDateString();
-  }, [value]);
-
-  function selectDate(isoDate: string) {
-    mutation.mutate({ due: { at: isoDate, timezone: BROWSER_TIMEZONE } });
-  }
-
-  return (
-    <>
-      <Menu {...search.menuProps} closeOnSelect={false}>
-        <FieldPill
-          icon={<Calendar className="size-3.5" aria-hidden="true" />}
-          label="Due date"
-          value={displayValue}
-        />
-        <Portal>
-          <Menu.Positioner>
-            <SearchableMenuContent
-              inputProps={search.inputProps}
-              placeholder='e.g. "tomorrow", "next friday"'
-            >
-              {value && (
-                <Menu.Item
-                  value="clear"
-                  className={`text-error-500 ${MENU_ITEM_CLASS}`}
-                  onClick={() => {
-                    mutation.mutate({ due: null });
-                  }}
-                >
-                  <X className="size-4" aria-hidden="true" />
-                  <Menu.ItemText>Clear due date</Menu.ItemText>
-                </Menu.Item>
-              )}
-
-              {search.query ? (
-                parsedDate ? (
-                  <Menu.Item
-                    value={parsedDate.value}
-                    className={MENU_ITEM_CLASS}
-                    onClick={() => selectDate(parsedDate.value)}
-                  >
-                    <Calendar className="size-4" aria-hidden="true" />
-                    <Menu.ItemText>{parsedDate.label}</Menu.ItemText>
-                    <span className="text-surface-500 ml-auto text-xs">{parsedDate.value}</span>
-                  </Menu.Item>
-                ) : (
-                  <div className="text-surface-500 px-3 py-2 text-sm">No matching dates</div>
-                )
-              ) : (
-                DATE_SHORTCUTS.map((shortcut) => {
-                  const date = addDays(today, shortcut.offsetDays);
-                  const isoDate = toISODate(date);
-                  return (
-                    <Menu.Item
-                      key={shortcut.label}
-                      value={isoDate}
-                      className={MENU_ITEM_CLASS}
-                      onClick={() => selectDate(isoDate)}
-                    >
-                      <Menu.ItemText>{shortcut.label}</Menu.ItemText>
-                      <span className="text-surface-500 ml-auto text-xs">
-                        {formatDateDisplay(date)}
-                      </span>
-                    </Menu.Item>
-                  );
-                })
-              )}
-            </SearchableMenuContent>
-          </Menu.Positioner>
-        </Portal>
-      </Menu>
-      {mutation.error && <ErrorAlert message={mutation.error.message} />}
-    </>
-  );
-}
-
-// ─── Overdue Action Field ───────────────────────────────────────────────────
-
-function OverdueActionField({
-  spaceSlug,
-  taskId,
-  overdueActionRule,
-  statuses,
-}: {
-  spaceSlug: string;
-  taskId: string;
-  overdueActionRule: TaskOverdueActionRule | null;
-  statuses: TaskStatus[];
-}) {
-  const mutation = useTaskPatch(spaceSlug, taskId);
-
-  return (
-    <div className="flex flex-col gap-1">
-      <OverdueActionEditor
-        overdueActionRule={overdueActionRule}
-        statuses={statuses}
-        onSave={(val) => {
-          mutation.mutate({ overdueActionRule: val });
-        }}
-        disabled={mutation.isPending}
-      />
-      {mutation.error && <ErrorAlert message={mutation.error.message} />}
-    </div>
   );
 }
 
@@ -809,7 +677,14 @@ function TaskDetailPage() {
           label="Assignees"
           icon={<Users className="size-3.5" aria-hidden="true" />}
         />
-        <DueDateField spaceSlug={spaceSlug} taskId={taskId} value={task.due} />
+        <DueDateMenuField
+          spaceSlug={spaceSlug}
+          taskId={taskId}
+          due={task.due}
+          overdueActionRule={task.overdueActionRule}
+          recurrenceType={task.recurrenceType}
+          statuses={statuses}
+        />
         <RecurrenceMenuField
           spaceSlug={spaceSlug}
           taskId={taskId}
@@ -831,17 +706,6 @@ function TaskDetailPage() {
       <TagsField spaceSlug={spaceSlug} taskId={taskId} value={task.tags} />
 
       <TaskDescriptionEditor spaceSlug={spaceSlug} taskId={taskId} value={task.description} />
-
-      <div className="space-y-4">
-        {task.recurrenceType !== "one_off" && task.due !== null && (
-          <OverdueActionField
-            spaceSlug={spaceSlug}
-            taskId={taskId}
-            overdueActionRule={task.overdueActionRule}
-            statuses={statuses}
-          />
-        )}
-      </div>
 
       <RelationsSection spaceSlug={spaceSlug} taskId={task.id} relations={task.relations} />
 
