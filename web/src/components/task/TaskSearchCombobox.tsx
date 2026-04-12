@@ -12,13 +12,7 @@ function getErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
-export function TaskSearchCombobox({
-  spaceLabels,
-  className,
-}: {
-  spaceLabels: Map<string, string>;
-  className?: string;
-}) {
+export function TaskSearchCombobox({ className }: { className?: string }) {
   const navigate = useNavigate();
   const listboxId = useId();
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -123,7 +117,7 @@ export function TaskSearchCombobox({
             setOpen(true);
           }}
           onKeyDown={handleKeyDown}
-          placeholder="Search tasks by ID or title…"
+          placeholder="Search tasks…"
           className="input preset-tonal-surface w-full pl-10 text-sm"
         />
         {showPanel && (
@@ -162,9 +156,6 @@ export function TaskSearchCombobox({
                 >
                   <div className="flex w-full items-center gap-2">
                     <span className="truncate text-sm font-medium">{result.title}</span>
-                    <span className="chip preset-tonal-surface shrink-0 text-xs">
-                      {spaceLabels.get(result.spaceSlug) ?? result.spaceSlug}
-                    </span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-surface-500">
                     <span className="font-mono">{result.id}</span>

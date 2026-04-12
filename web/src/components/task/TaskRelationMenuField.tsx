@@ -47,12 +47,10 @@ function getErrorMessage(error: unknown, fallback: string): string {
 function TaskPickerSubMenu({
   spaceSlug,
   currentTaskId,
-  kind,
   onSelect,
 }: {
   spaceSlug: string;
   currentTaskId: string;
-  kind: TaskRelationKind;
   onSelect: (relatedTaskId: string) => void;
 }) {
   const search = useMenuSearch();
@@ -99,7 +97,7 @@ function TaskPickerSubMenu({
   return (
     <SearchableMenuContent
       inputProps={search.inputProps}
-      placeholder={`Search tasks to ${KIND_LABELS[kind].toLowerCase()}...`}
+      placeholder={`Search tasks...`}
       className={Z_SUBMENU}
     >
       {isFetching ? (
@@ -188,7 +186,6 @@ export function TaskRelationMenuField({
                         <TaskPickerSubMenu
                           spaceSlug={spaceSlug}
                           currentTaskId={taskId}
-                          kind={kind}
                           onSelect={(relatedTaskId) => {
                             addMutation.reset();
                             addMutation.mutate({ kind, relatedTaskId });
