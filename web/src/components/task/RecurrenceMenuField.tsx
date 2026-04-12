@@ -481,7 +481,7 @@ function FreqSubMenu({
       )}
 
       {/* Conditional submenu entries for freq-specific options */}
-      {!isSearching && currentRule.freq === "WEEKLY" && (
+      {currentRule.freq === "WEEKLY" && (
         <>
           <Menu.Separator />
           <Menu typeahead={false} closeOnSelect={false}>
@@ -526,7 +526,7 @@ function FreqSubMenu({
         </>
       )}
 
-      {!isSearching && currentRule.freq === "MONTHLY" && (
+      {currentRule.freq === "MONTHLY" && (
         <>
           <Menu.Separator />
           <Menu typeahead={false} closeOnSelect={false}>
@@ -658,7 +658,7 @@ function FreqSubMenu({
         </>
       )}
 
-      {!isSearching && currentRule.freq === "YEARLY" && (
+      {currentRule.freq === "YEARLY" && (
         <>
           <Menu.Separator />
           <Menu typeahead={false} closeOnSelect={false}>
@@ -705,7 +705,7 @@ function FreqSubMenu({
       )}
 
       {/* Until date */}
-      {!isSearching && (
+      {
         <>
           <Menu typeahead={false} closeOnSelect={false}>
             <Menu.TriggerItem value="until" className="justify-start gap-2 text-sm">
@@ -729,7 +729,7 @@ function FreqSubMenu({
             </Portal>
           </Menu>
         </>
-      )}
+      }
     </SearchableMenuContent>
   );
 }

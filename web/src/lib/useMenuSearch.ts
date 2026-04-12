@@ -72,17 +72,28 @@ export function useMenuSearch(): MenuSearchResult {
       e.stopPropagation();
       return;
     }
+
+    const menu = inputRef.current?.closest("[role='menu']");
+    if (!menu) return;
+
+    const firstItem = menu.querySelector(
+      [
+        "[role='menuitem']:not([aria-disabled='true'])",
+        "[role='menuitemradio']:not([aria-disabled='true'])",
+        "[role='menuitemcheckbox']:not([aria-disabled='true'])",
+      ].join(", "),
+    );
+
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (firstItem instanceof HTMLElement) {
+        firstItem.click();
+      }
+      return;
+    }
+
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      const menu = inputRef.current?.closest("[role='menu']");
-      if (!menu) return;
-      const firstItem = menu.querySelector(
-        [
-          "[role='menuitem']:not([aria-disabled='true'])",
-          "[role='menuitemradio']:not([aria-disabled='true'])",
-          "[role='menuitemcheckbox']:not([aria-disabled='true'])",
-        ].join(", "),
-      );
       if (firstItem instanceof HTMLElement) {
         firstItem.focus();
       }
