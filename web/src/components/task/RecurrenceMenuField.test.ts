@@ -88,6 +88,19 @@ describe("parseRRule", () => {
     expect(result.parseError).toBe(true);
     expect(result.freq).toBe("WEEKLY"); // defaults
   });
+
+  it("normalizes explicit INTERVAL=1 away", () => {
+    const parsed = parseRRule("FREQ=DAILY;INTERVAL=1");
+    expect(parsed.interval).toBe(1);
+    const rebuilt = buildRRule(parsed);
+    expect(rebuilt).not.toContain("INTERVAL");
+  });
+
+  it("keeps only the last nth weekday when multiple are present", () => {
+    const result = parseRRule("FREQ=MONTHLY;BYDAY=2MO,3FR");
+    // Current limitation: only the last nth weekday is preserved
+    expect(result.nthWeekday).toEqual({ ordinal: 3, weekday: "FR" });
+  });
 });
 
 describe("buildRRule", () => {
@@ -206,6 +219,7 @@ describe("parseRRule/buildRRule roundtrip", () => {
     "FREQ=MONTHLY;BYDAY=-1FR",
     "FREQ=YEARLY;BYMONTH=1,6,12",
     "FREQ=YEARLY",
+    "FREQ=WEEKLY;UNTIL=20261231T000000Z",
   ];
 
   for (const rrule of cases) {
@@ -279,6 +293,15 @@ describe("parseDurationInput", () => {
     const result = parseDurationInput("45 days");
     expect(result?.freq).toBe("DAILY");
     expect(result?.interval).toBe(45);
+  });
+
+  it("rounds 12 hours up to 1 day", () => {
+    const result = parseDurationInput("12 hours");
+    expect(result).toEqual({ freq: "DAILY", interval: 1, label: "Every 1 day" });
+  });
+
+  it("returns null for durations less than ~12 hours", () => {
+    expect(parseDurationInput("6 hours")).toBeNull();
   });
 });
 

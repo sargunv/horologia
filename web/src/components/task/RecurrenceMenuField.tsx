@@ -1,12 +1,12 @@
 import { Menu, Portal } from "@skeletonlabs/skeleton-react";
 import { Calendar, Check, ChevronRight, RefreshCw, X } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import { useMemo } from "react";
 import parseDuration from "parse-duration";
 import { RRule, Weekday } from "rrule";
 import type { components } from "../../api/schema.d.ts";
 import { FieldPill } from "../FieldPill.tsx";
 import { MENU_ITEM_CLASS, SearchableMenuContent } from "../SearchableMenuContent.tsx";
-import { formatDateDisplay, parseDateInput, toISODate } from "../../lib/dates.ts";
+import { addDays, formatDateDisplay, parseDateInput, toISODate } from "../../lib/dates.ts";
 import { useMenuSearch } from "../../lib/useMenuSearch.ts";
 import { useTaskPatch } from "../../lib/mutations.ts";
 import { ErrorAlert } from "../space-settings/ErrorAlert.tsx";
@@ -244,30 +244,35 @@ export interface ParsedDuration {
   label: string;
 }
 
+function formatFreqLabel(freq: FreqCode, interval: number): string {
+  const { singular, plural } = FREQ_LABELS[freq];
+  return `Every ${interval} ${interval === 1 ? singular : plural}`;
+}
+
 export function parseDurationInput(input: string): ParsedDuration | null {
   const ms = parseDuration(input);
   if (ms == null || ms <= 0) return null;
 
   if (ms >= MS_YEAR && ms % MS_YEAR === 0) {
     const n = Math.round(ms / MS_YEAR);
-    return { freq: "YEARLY", interval: n, label: `Every ${n} ${n === 1 ? "year" : "years"}` };
+    return { freq: "YEARLY", interval: n, label: formatFreqLabel("YEARLY", n) };
   }
   if (ms >= MS_MONTH && ms % MS_MONTH === 0) {
     const n = Math.round(ms / MS_MONTH);
-    return { freq: "MONTHLY", interval: n, label: `Every ${n} ${n === 1 ? "month" : "months"}` };
+    return { freq: "MONTHLY", interval: n, label: formatFreqLabel("MONTHLY", n) };
   }
   if (ms >= MS_WEEK && ms % MS_WEEK === 0) {
     const n = Math.round(ms / MS_WEEK);
-    return { freq: "WEEKLY", interval: n, label: `Every ${n} ${n === 1 ? "week" : "weeks"}` };
+    return { freq: "WEEKLY", interval: n, label: formatFreqLabel("WEEKLY", n) };
   }
   if (ms >= MS_DAY && ms % MS_DAY === 0) {
     const n = Math.round(ms / MS_DAY);
-    return { freq: "DAILY", interval: n, label: `Every ${n} ${n === 1 ? "day" : "days"}` };
+    return { freq: "DAILY", interval: n, label: formatFreqLabel("DAILY", n) };
   }
 
   const days = Math.round(ms / MS_DAY);
   if (days > 0) {
-    return { freq: "DAILY", interval: days, label: `Every ${days} ${days === 1 ? "day" : "days"}` };
+    return { freq: "DAILY", interval: days, label: formatFreqLabel("DAILY", days) };
   }
 
   return null;
@@ -674,31 +679,27 @@ function FreqSubMenu({
       )}
 
       {/* Until date */}
-      {
-        <>
-          <Menu typeahead={false} closeOnSelect={false}>
-            <Menu.TriggerItem value="until" className="justify-start gap-2 text-sm">
-              <Menu.ItemText>
-                {currentRule.until ? `Until ${currentRule.until}` : "Until (no end date)"}
-              </Menu.ItemText>
-              <Menu.ItemIndicator className="ml-auto">
-                <ChevronRight className="size-4" />
-              </Menu.ItemIndicator>
-            </Menu.TriggerItem>
-            <Portal>
-              <Menu.Positioner>
-                <UntilDateSubMenu
-                  className={Z_DETAIL}
-                  currentUntil={currentRule.until}
-                  currentRule={currentRule}
-                  recurrenceType={recurrenceType}
-                  onSave={onSave}
-                />
-              </Menu.Positioner>
-            </Portal>
-          </Menu>
-        </>
-      }
+      <Menu typeahead={false} closeOnSelect={false}>
+        <Menu.TriggerItem value="until" className="justify-start gap-2 text-sm">
+          <Menu.ItemText>
+            {currentRule.until ? `Until ${currentRule.until}` : "Until (no end date)"}
+          </Menu.ItemText>
+          <Menu.ItemIndicator className="ml-auto">
+            <ChevronRight className="size-4" />
+          </Menu.ItemIndicator>
+        </Menu.TriggerItem>
+        <Portal>
+          <Menu.Positioner>
+            <UntilDateSubMenu
+              className={Z_DETAIL}
+              currentUntil={currentRule.until}
+              currentRule={currentRule}
+              recurrenceType={recurrenceType}
+              onSave={onSave}
+            />
+          </Menu.Positioner>
+        </Portal>
+      </Menu>
     </SearchableMenuContent>
   );
 }
@@ -767,8 +768,7 @@ function UntilDateSubMenu({
         )
       ) : (
         shortcuts.map((shortcut) => {
-          const date = new Date(today);
-          date.setDate(date.getDate() + shortcut.offsetDays);
+          const date = addDays(today, shortcut.offsetDays);
           const isoDate = toISODate(date);
           return (
             <Menu.Item
@@ -809,12 +809,7 @@ export function RecurrenceMenuField({
     [recurrenceType, recurrenceRule],
   );
 
-  const handleSave = useCallback(
-    (update: { recurrenceType: TaskRecurrenceType; recurrenceRule?: string | null }) => {
-      mutation.mutate(update);
-    },
-    [mutation],
-  );
+  const handleSave = mutation.mutate;
 
   const typeItems = useMemo(() => {
     const items = [
