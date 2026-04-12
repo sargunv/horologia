@@ -39,6 +39,10 @@ local allSteps = new Mapping<String, Step> {
     check = "cd api && pnpm exec tsp format . --check"
     fix = "cd api && pnpm exec tsp format ."
   }
+  ["generate-mobile-client"] {
+    glob = List("api/**/*.tsp", "mobile/core/src/commonMain/generated/**/*.kt")
+    fix = "mise run //mobile:generate"
+  }
 }
 
 hooks {

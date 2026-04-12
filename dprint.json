@@ -5,7 +5,9 @@
   "useTabs": false,
   "newLineKind": "lf",
   "excludes": [
+    "**/.gradle",
     "**/node_modules",
+    "**/build",
     "**/dist",
     "**/.dprint",
     "**/*-lock.yaml",
@@ -26,6 +28,15 @@
     "https://plugins.dprint.dev/g-plane/pretty_yaml-v0.6.0.wasm",
     "https://plugins.dprint.dev/g-plane/markup_fmt-v0.26.0.wasm",
     "https://plugins.dprint.dev/g-plane/malva-v0.15.2.wasm",
-    "https://plugins.dprint.dev/jakebailey/gofumpt-v0.0.7.wasm"
-  ]
+    "https://plugins.dprint.dev/jakebailey/gofumpt-v0.0.7.wasm",
+    "https://plugins.dprint.dev/exec-0.6.2.json@df98f54ffd3092b8a841aedd6d098a2651f16d0a796a40535774f1a8b4b9d463"
+  ],
+  "exec": {
+    "commands": [
+      {
+        "command": "mise run _ktfmt --google-style - --stdin-name={{file_path}}",
+        "exts": ["kt", "kts"]
+      }
+    ]
+  }
 }

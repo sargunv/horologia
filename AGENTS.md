@@ -23,6 +23,13 @@ tasks. Key commands:
 Package-scoped tasks use a `//` prefix, e.g. `mise run //server:generate`,
 `mise run //server:build`, `mise run //server:test`.
 
+Mobile bootstrap/setup uses package-scoped tasks as well:
+
+- `mise run //mobile:setup` — install Android SDK components into the mise-managed SDK root
+- `mise run //mobile:generate` — regenerate the committed KMP client
+- `mise run //mobile:android:assembleDebug` — build the Android target in `:compose-app`
+- `mise run //mobile:desktop:run` — run the desktop target in `:compose-app`
+
 To run any tool managed by mise, use `mise x -- [COMMAND]`
 
 ### Database

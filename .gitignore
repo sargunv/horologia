@@ -22,6 +22,11 @@ dist/
 # dprint
 .dprint/
 
+# gradle
+mobile/.gradle/
+mobile/**/build/
+mobile/local.properties
+
 # typespec
 tsp-output/
 

@@ -1,0 +1,48 @@
+[tasks.setup]
+description = "Install mobile prerequisites, including Android SDK components"
+run = "cd .. && mise run _android-sdk-components"
+
+[tasks.generate]
+description = "Generate the committed KMP client sources"
+depends = ["//api:generate"]
+run = "./gradlew :core:generateTendApi"
+
+[tasks."build:core"]
+description = "Build the shared mobile core for host-safe targets"
+run = "./gradlew :core:desktopJar :core:compileKotlinIosSimulatorArm64 :core:compileKotlinIosX64"
+
+[tasks."build:desktop"]
+description = "Build the desktop compose app"
+run = "./gradlew :compose-app:desktopJar"
+
+[tasks."build:android"]
+description = "Build the Android compose app"
+run = "cd .. && mise run _android-sdk-components && cd mobile && ./gradlew :compose-app:assembleDebug"
+
+[tasks.build]
+description = "Build the shared core plus desktop and Android apps"
+depends = ["build:core", "build:desktop", "build:android"]
+
+[tasks.test]
+description = "Compile the shared mobile core test sources for host-safe iOS targets"
+run = "./gradlew :core:compileTestKotlinDesktop :core:compileTestKotlinIosSimulatorArm64 :core:compileTestKotlinIosX64"
+
+[tasks."android:assembleDebug"]
+description = "Assemble the Android debug app"
+run = "./gradlew :compose-app:assembleDebug"
+
+[tasks."android:installDebug"]
+description = "Install the Android debug app"
+run = "./gradlew :compose-app:installDebug"
+
+[tasks."desktop:run"]
+description = "Run the desktop app"
+run = "./gradlew :compose-app:run"
+
+[tasks.check]
+description = "Run host-safe shared mobile checks"
+run = "./gradlew :core:compileKotlinDesktop :core:compileKotlinIosSimulatorArm64 :core:compileKotlinIosX64 :core:compileTestKotlinDesktop :core:compileTestKotlinIosSimulatorArm64 :core:compileTestKotlinIosX64 :compose-app:compileKotlinDesktop"
+
+[tasks.fix]
+description = "Format Kotlin and Gradle files"
+run = "cd .. && mise x -- dprint fmt --allow-no-files mobile/**/*.kt mobile/**/*.kts mobile/**/*.toml"
