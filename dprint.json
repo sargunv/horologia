@@ -11,12 +11,12 @@
     "**/dist",
     "**/.dprint",
     "**/*-lock.yaml",
-    "api/gen",
+    "api/gen/**",
     "mobile/core/src/commonMain/generated/**",
     "server/internal/database/gen/**",
     "web/src/api/schema.d.ts",
     "web/src/routeTree.gen.ts",
-    "api/tsp-output"
+    "api/tsp-output/**"
   ],
   "markdown": {
     "textWrap": "always"
