@@ -543,7 +543,7 @@ function FreqSubMenu({
                 <Menu.Content>
                   <div className="p-2">
                     <div className="text-surface-500 mb-1.5 text-xs">Day of month</div>
-                    <div className="grid grid-cols-[repeat(7,min-content)] gap-1">
+                    <div className="grid w-fit grid-cols-7 gap-1">
                       {DAY_NUMBERS.map((d) => {
                         const hasLast =
                           currentRule.bymonthday.includes(-1) && !currentRule.nthWeekday;
