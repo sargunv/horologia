@@ -58,6 +58,7 @@ function HomeTaskDetailPage() {
               to="/tasks/$spaceSlug/$taskId"
               params={{ spaceSlug, taskId }}
               className="shrink-0 font-mono hover:underline"
+              aria-current="page"
             >
               {taskId}
             </BreadcrumbLink>

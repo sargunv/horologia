@@ -16,6 +16,8 @@ const ActivityLink = createLink("a");
 type TaskStatus = components["schemas"]["TaskStatus"];
 type Space = components["schemas"]["Space"];
 
+const EMPTY_STATUS_MAP = new Map<string, TaskStatus>();
+
 function useAllSpaceStatusMaps(spaces: Space[]): Map<string, Map<string, TaskStatus>> {
   return useQueries({
     queries: spaces.map((s) => spaceTaskStatusesQueryOptions(s.slug)),
@@ -54,7 +56,7 @@ export function MyTaskListPane() {
           className="btn-icon btn-sm preset-tonal-surface"
           aria-label="Activity"
         >
-          <Activity className="size-4" />
+          <Activity className="size-4" aria-hidden="true" />
         </ActivityLink>
       </div>
 
@@ -65,7 +67,7 @@ export function MyTaskListPane() {
               key={`${task.spaceSlug}/${task.id}`}
               task={task}
               spaceSlug={task.spaceSlug}
-              statusMap={allStatusMaps.get(task.spaceSlug) ?? new Map()}
+              statusMap={allStatusMaps.get(task.spaceSlug) ?? EMPTY_STATUS_MAP}
               to="/tasks/$spaceSlug/$taskId"
               compact
             />
@@ -73,7 +75,7 @@ export function MyTaskListPane() {
         </div>
       ) : (
         <div className="card preset-outlined-surface-200-800 flex flex-col items-center gap-3 p-12 text-center">
-          <ListChecks className="text-surface-400 size-12" />
+          <ListChecks className="text-surface-400 size-12" aria-hidden="true" />
           <div>
             <p className="font-medium">No tasks assigned to you</p>
             <p className="text-surface-600-400 mt-1 text-sm">
@@ -91,10 +93,10 @@ export function MyTaskListPane() {
             disabled={isFetchingNextPage}
           >
             {isFetchingNextPage ? (
-              "Loading..."
+              "Loading\u2026"
             ) : (
               <>
-                <ChevronDown className="size-4" />
+                <ChevronDown className="size-4" aria-hidden="true" />
                 Load more
               </>
             )}

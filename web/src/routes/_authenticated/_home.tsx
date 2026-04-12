@@ -46,7 +46,7 @@ function HomeLayout() {
         detail={
           isTaskDetail ? (
             <Suspense
-              fallback={<div className="text-surface-500 p-6 text-center text-sm">Loading...</div>}
+              fallback={<div className="text-surface-500 p-6 text-center text-sm">Loading…</div>}
             >
               <Outlet />
             </Suspense>
@@ -54,7 +54,7 @@ function HomeLayout() {
         }
         emptyState={
           <>
-            <ListChecks className="text-surface-400 size-12" />
+            <ListChecks className="text-surface-400 size-12" aria-hidden="true" />
             <span className="text-surface-500 text-sm">Select a task to view details</span>
           </>
         }

@@ -22,7 +22,8 @@ import { type ReactNode, Suspense, useCallback, useEffect, useMemo, useRef, useS
 import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
 import { useSpaceMemberMap } from "../../lib/hooks.ts";
-import { useTaskPatch } from "../../lib/mutations.ts";
+import { invalidateUserTaskLists, useTaskPatch } from "../../lib/mutations.ts";
+import { notifyStaleData } from "../../lib/toaster.ts";
 import {
   spaceEffortLevelsQueryOptions,
   spaceMembersQueryOptions,
@@ -70,15 +71,15 @@ function TaskActionBar({
     },
     onSuccess: async () => {
       queryClient.removeQueries({ queryKey: ["spaces", spaceSlug, "tasks", taskId] });
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", "list"] }),
-        queryClient.invalidateQueries({
-          predicate: (query) =>
-            query.queryKey[0] === "users" &&
-            query.queryKey[2] === "tasks" &&
-            query.queryKey[3] === "list",
-        }),
-      ]);
+      try {
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", "list"] }),
+          invalidateUserTaskLists(queryClient),
+        ]);
+      } catch (err) {
+        console.error("Cache invalidation failed after mutation:", err);
+        notifyStaleData();
+      }
       onDeleteSuccess();
     },
   });
@@ -341,7 +342,7 @@ function NullableMenuField({
   value: string | null;
   options: { name: string }[];
   label: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
 }) {
   const mutation = useTaskPatch(spaceSlug, taskId);
   const search = useMenuSearch();
@@ -424,7 +425,7 @@ function MemberMenuField({
   members: SpaceMember[];
   memberMap: Map<string, SpaceMember>;
   label: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
 }) {
   const mutation = useTaskPatch(spaceSlug, taskId);
   const search = useMenuSearch();
@@ -471,7 +472,7 @@ function MemberMenuField({
           <Menu.Positioner>
             <SearchableMenuContent inputProps={search.inputProps} placeholder="Search members...">
               {filtered.length === 0 ? (
-                <div className="text-surface-500 px-3 py-2 text-sm">No members found</div>
+                <div className="text-surface-500 px-3 py-2 text-sm">No matching members</div>
               ) : (
                 filtered.map((member) => (
                   <Menu.OptionItem

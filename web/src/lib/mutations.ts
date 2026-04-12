@@ -6,7 +6,7 @@ import { notifyStaleData } from "./toaster.ts";
 type TaskUpdate = components["schemas"]["TaskUpdate"];
 
 /** Invalidate all user task list queries (for the "My Tasks" view). */
-async function invalidateUserTaskLists(queryClient: QueryClient) {
+export async function invalidateUserTaskLists(queryClient: QueryClient) {
   await queryClient.invalidateQueries({
     predicate: (query) =>
       query.queryKey[0] === "users" &&
