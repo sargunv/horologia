@@ -113,6 +113,9 @@ func TestOAuthAuthorizationCodeFlow(t *testing.T) {
 	meResp := doRequestAs(t, env, accessToken, http.MethodGet, "/users/me", "")
 	assertStatusClose(t, meResp, http.StatusOK)
 
+	refreshAsBearerResp := doRequestAs(t, env, refreshToken, http.MethodGet, "/users/me", "")
+	assertStatusClose(t, refreshAsBearerResp, http.StatusUnauthorized)
+
 	refreshResp, err := doOAuthRequest(t, client, http.MethodPost, env.Server.URL+"/oauth/token", strings.NewReader(url.Values{
 		"grant_type":    {"refresh_token"},
 		"client_id":     {"tend-cli"},
@@ -153,6 +156,22 @@ func TestOAuthAuthorizationCodeFlow(t *testing.T) {
 	assertStatusClose(t, revokeResp, http.StatusOK)
 
 	assertStatusClose(t, doRequestAs(t, env, newAccessToken, http.MethodGet, "/users/me", ""), http.StatusUnauthorized)
+}
+
+func TestOAuthAuthorizationServerMetadataRejectsUntrustedDynamicHost(t *testing.T) {
+	env := setupTestServer(t)
+
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, env.Server.URL+"/.well-known/oauth-authorization-server", nil)
+	if err != nil {
+		t.Fatalf("new request: %v", err)
+	}
+	req.Host = "attacker.example"
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("get metadata: %v", err)
+	}
+	assertStatusClose(t, resp, http.StatusInternalServerError)
 }
 
 func TestOAuthAuthorizeAcceptsConfiguredPublicResourceWhenProxied(t *testing.T) {
