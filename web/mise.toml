@@ -20,4 +20,4 @@ run = "pnpm exec vp build"
 
 [tasks.test]
 description = "Run tests"
-run = "echo 'No tests yet'"
+run = "pnpm exec vitest run"

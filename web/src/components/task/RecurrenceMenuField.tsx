@@ -134,7 +134,7 @@ const MONTH_LABELS = [
 
 // ─── RRULE Parsing ──────────────────────────────────────────────────────────
 
-interface ParsedRule {
+export interface ParsedRule {
   freq: FreqCode;
   interval: number;
   byweekday: WeekdayCode[];
@@ -149,7 +149,7 @@ function toArray<T>(value: T | T[]): T[] {
   return Array.isArray(value) ? value : [value];
 }
 
-function parseRRule(rruleStr: string | null): ParsedRule {
+export function parseRRule(rruleStr: string | null): ParsedRule {
   const defaults: ParsedRule = {
     freq: "WEEKLY",
     interval: 1,
@@ -206,7 +206,7 @@ function parseRRule(rruleStr: string | null): ParsedRule {
   }
 }
 
-function buildRRule(parsed: ParsedRule): string {
+export function buildRRule(parsed: ParsedRule): string {
   const options: ConstructorParameters<typeof RRule>[0] = {
     freq: FREQ_TO_RRULE[parsed.freq],
   };
@@ -238,13 +238,13 @@ const MS_WEEK = 604800000;
 const MS_MONTH = 2629800000;
 const MS_YEAR = 31557600000;
 
-interface ParsedDuration {
+export interface ParsedDuration {
   freq: FreqCode;
   interval: number;
   label: string;
 }
 
-function parseDurationInput(input: string): ParsedDuration | null {
+export function parseDurationInput(input: string): ParsedDuration | null {
   const ms = parseDuration(input);
   if (ms == null || ms <= 0) return null;
 
@@ -284,7 +284,7 @@ function describeMonthDays(bymonthday: number[]): string {
   return parts.join(", ");
 }
 
-function describeRule(parsed: ParsedRule): string {
+export function describeRule(parsed: ParsedRule): string {
   const labels = FREQ_LABELS[parsed.freq];
   const unit = parsed.interval === 1 ? labels.singular : labels.plural;
   let desc = parsed.interval === 1 ? `Every ${unit}` : `Every ${parsed.interval} ${unit}`;
