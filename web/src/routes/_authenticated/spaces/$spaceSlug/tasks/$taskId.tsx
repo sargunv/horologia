@@ -1,11 +1,4 @@
-import {
-  Combobox,
-  Dialog,
-  Portal,
-  TagsInput,
-  parseDate,
-  useListCollection,
-} from "@skeletonlabs/skeleton-react";
+import { Dialog, Menu, Portal, TagsInput } from "@skeletonlabs/skeleton-react";
 import {
   useMutation,
   useQueryClient,
@@ -18,29 +11,34 @@ import {
   ArrowLeft,
   Calendar,
   Check,
-  ChevronDown,
+  ChevronRight,
   CircleAlert,
-  Clock,
+  Copy,
+  Ellipsis,
   Gauge,
   RefreshCw,
   SignalHigh,
-  Tag,
   Trash2,
   Users,
   X,
 } from "lucide-react";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiClient } from "../../../../../api/client.ts";
 import type { components } from "../../../../../api/schema.d.ts";
-import { DateField } from "../../../../../components/DateField.tsx";
-import { RecurrenceRuleEditor } from "../../../../../components/RecurrenceRuleEditor.tsx";
-import { TimezoneCombobox } from "../../../../../components/TimezoneCombobox.tsx";
+import { FieldPill } from "../../../../../components/FieldPill.tsx";
+import {
+  MENU_ITEM_CLASS,
+  SearchableMenuContent,
+} from "../../../../../components/SearchableMenuContent.tsx";
+import { RecurrenceMenuField } from "../../../../../components/task/RecurrenceMenuField.tsx";
 import { TaskDescriptionEditor } from "../../../../../components/TaskDescriptionEditor.tsx";
 import { ActivityFeed } from "../../../../../components/ActivityFeed.tsx";
 import { ErrorAlert } from "../../../../../components/space-settings/ErrorAlert.tsx";
 import { OverdueActionEditor } from "../../../../../components/task/OverdueActionEditor.tsx";
 import { RelationsSection } from "../../../../../components/task/RelationsSection.tsx";
 import { useSpaceMemberMap } from "../../../../../lib/hooks.ts";
+import { addDays, formatDateDisplay, parseDateInput, toISODate } from "../../../../../lib/dates.ts";
+import { useMenuSearch } from "../../../../../lib/useMenuSearch.ts";
 import { useTaskPatch } from "../../../../../lib/mutations.ts";
 import {
   spaceEffortLevelsQueryOptions,
@@ -53,8 +51,6 @@ import {
 } from "../../../../../lib/queries.ts";
 
 type Task = components["schemas"]["Task"];
-
-type TaskRecurrenceType = components["schemas"]["TaskRecurrenceType"];
 type TaskOverdueActionRule = components["schemas"]["TaskOverdueActionRule"];
 type TaskStatus = components["schemas"]["TaskStatus"];
 type SpaceMember = components["schemas"]["SpaceMember"];
@@ -73,26 +69,151 @@ export const Route = createFileRoute("/_authenticated/spaces/$spaceSlug/tasks/$t
 });
 
 const BackLink = createLink("a");
+const BreadcrumbLink = createLink("a");
 
-function PropertyRow({
-  label,
-  icon,
-  children,
+// ─── Breadcrumb Bar ─────────────────────────────────────────────────────────
+
+function TaskBreadcrumbBar({
+  spaceName,
+  spaceSlug,
+  taskId,
 }: {
-  label: string;
-  icon?: React.ReactNode;
-  children: React.ReactNode;
+  spaceName: string;
+  spaceSlug: string;
+  taskId: string;
 }) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await apiClient.DELETE("/spaces/{spaceSlug}/tasks/{taskId}", {
+        params: { path: { spaceSlug, taskId } },
+      });
+      if (error) throw new Error(error.message ?? "Failed to delete task");
+    },
+    onSuccess: async () => {
+      queryClient.removeQueries({ queryKey: ["spaces", spaceSlug, "tasks", taskId] });
+      await queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", "list"] });
+      await navigate({ to: "/spaces/$spaceSlug", params: { spaceSlug } });
+    },
+  });
+
+  function handleCopyId() {
+    void navigator.clipboard.writeText(taskId).catch(() => {});
+  }
+
   return (
-    <div className="flex items-start gap-4 border-b border-surface-200-800 py-3 last:border-b-0">
-      <span className="text-surface-600-400 flex w-36 shrink-0 items-center gap-2 pt-1 text-sm">
-        {icon}
-        {label}
-      </span>
-      <div className="min-w-0 flex-1">{children}</div>
-    </div>
+    <nav aria-label="Breadcrumb" className="flex items-center gap-2">
+      <ol className="flex min-w-0 items-center gap-1 text-sm">
+        <li>
+          <BreadcrumbLink
+            to="/spaces/$spaceSlug"
+            params={{ spaceSlug }}
+            className="text-surface-600-400 truncate hover:underline"
+          >
+            {spaceName}
+          </BreadcrumbLink>
+        </li>
+        <li className="text-surface-500" aria-hidden="true">
+          <ChevronRight className="size-3" />
+        </li>
+        <li>
+          <BreadcrumbLink
+            to="/spaces/$spaceSlug/tasks/$taskId"
+            params={{ spaceSlug, taskId }}
+            className="shrink-0 font-mono hover:underline"
+          >
+            {taskId}
+          </BreadcrumbLink>
+        </li>
+      </ol>
+
+      <Menu>
+        <Menu.Trigger
+          className="btn-icon btn-sm preset-tonal-surface ml-auto"
+          aria-label="Task actions"
+        >
+          <Ellipsis className="size-3.5" />
+        </Menu.Trigger>
+        <Portal>
+          <Menu.Positioner>
+            <Menu.Content>
+              <Menu.Item value="copy-id" className={MENU_ITEM_CLASS} onClick={handleCopyId}>
+                <Copy className="size-4" aria-hidden="true" />
+                <Menu.ItemText>Copy task ID</Menu.ItemText>
+              </Menu.Item>
+              <Menu.Item
+                value="copy-url"
+                className={MENU_ITEM_CLASS}
+                onClick={() => {
+                  void navigator.clipboard.writeText(window.location.href).catch(() => {});
+                }}
+              >
+                <Copy className="size-4" aria-hidden="true" />
+                <Menu.ItemText>Copy URL</Menu.ItemText>
+              </Menu.Item>
+              <Menu.Separator />
+              <Menu.Item
+                value="delete"
+                className={`text-error-500 ${MENU_ITEM_CLASS}`}
+                onClick={() => setDeleteOpen(true)}
+              >
+                <Trash2 className="size-4" aria-hidden="true" />
+                <Menu.ItemText>Delete task</Menu.ItemText>
+              </Menu.Item>
+            </Menu.Content>
+          </Menu.Positioner>
+        </Portal>
+      </Menu>
+
+      <Dialog
+        open={deleteOpen}
+        onOpenChange={(d) => {
+          setDeleteOpen(d.open);
+          if (!d.open) deleteMutation.reset();
+        }}
+        role="alertdialog"
+        initialFocusEl={() => cancelRef.current}
+      >
+        <Portal>
+          <Dialog.Backdrop className="fixed inset-0 z-50 bg-surface-50-950/50" />
+          <Dialog.Positioner className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <Dialog.Content className="card bg-surface-100-900 w-full max-w-md space-y-4 p-6">
+              <Dialog.Title className="h4">Delete task</Dialog.Title>
+              <Dialog.Description className="text-surface-600-400 text-sm">
+                Are you sure you want to delete this task? This action cannot be undone.
+              </Dialog.Description>
+              <div role="alert" aria-live="assertive">
+                {deleteMutation.error && <ErrorAlert message={deleteMutation.error.message} />}
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => deleteMutation.mutate()}
+                  disabled={deleteMutation.isPending}
+                  className="btn preset-filled-error-500 flex-1"
+                >
+                  {deleteMutation.isPending ? "Deleting..." : "Delete"}
+                </button>
+                <Dialog.CloseTrigger
+                  ref={cancelRef}
+                  className="btn preset-outlined-surface-200-800"
+                >
+                  Cancel
+                </Dialog.CloseTrigger>
+              </div>
+            </Dialog.Content>
+          </Dialog.Positioner>
+        </Portal>
+      </Dialog>
+    </nav>
   );
 }
+
+// ─── Editable Title ─────────────────────────────────────────────────────────
 
 function EditableTitle({
   spaceSlug,
@@ -120,7 +241,6 @@ function EditableTitle({
     setEditing(false);
     const trimmed = draft.trim();
     if (trimmed && trimmed !== value) {
-      mutation.reset();
       mutation.mutate({ title: trimmed });
     } else {
       setDraft(value);
@@ -149,7 +269,7 @@ function EditableTitle({
               setEditing(false);
             }
           }}
-          className="h3 w-full border-b-2 border-primary-500 bg-transparent outline-none"
+          className="h4 w-full border-b-2 border-primary-500 bg-transparent outline-none"
           maxLength={500}
           disabled={mutation.isPending}
         />
@@ -161,7 +281,7 @@ function EditableTitle({
   return (
     <div>
       <h1
-        className="h3 cursor-pointer rounded px-1 -mx-1 hover:bg-surface-100-900 transition-colors"
+        className="h4 -mx-1 cursor-pointer rounded px-1 transition-colors hover:bg-surface-100-900"
         onClick={enterEditing}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
@@ -179,6 +299,8 @@ function EditableTitle({
   );
 }
 
+// ─── Status Field ───────────────────────────────────────────────────────────
+
 function StatusField({
   spaceSlug,
   taskId,
@@ -191,42 +313,67 @@ function StatusField({
   statuses: TaskStatus[];
 }) {
   const mutation = useTaskPatch(spaceSlug, taskId);
+  const search = useMenuSearch();
+
+  const filtered = useMemo(
+    () => statuses.filter((s) => s.name.toLowerCase().includes(search.query.toLowerCase())),
+    [statuses, search.query],
+  );
 
   return (
-    <div className="flex flex-col gap-1">
-      <select
-        value={value}
-        aria-label="Status"
-        onChange={(e) => {
-          mutation.reset();
-          mutation.mutate({ status: e.target.value });
-        }}
-        disabled={mutation.isPending}
-        className="select preset-outlined-surface-200-800 w-full"
-      >
-        {!statuses.some((s) => s.name === value) && (
-          <option value={value} disabled>
-            {value} (removed)
-          </option>
-        )}
-        {statuses.map((s) => (
-          <option key={s.name} value={s.name}>
-            {s.name}
-          </option>
-        ))}
-      </select>
+    <>
+      <Menu {...search.menuProps} closeOnSelect={false}>
+        <FieldPill
+          icon={<CircleAlert className="size-3.5" aria-hidden="true" />}
+          label="Status"
+          value={value}
+        />
+        <Portal>
+          <Menu.Positioner>
+            <SearchableMenuContent inputProps={search.inputProps} placeholder="Search statuses...">
+              {filtered.length === 0 ? (
+                <div className="text-surface-500 px-3 py-2 text-sm">No matching statuses</div>
+              ) : (
+                filtered.map((status) => (
+                  <Menu.OptionItem
+                    key={status.name}
+                    type="radio"
+                    checked={value === status.name}
+                    value={status.name}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        mutation.mutate({ status: status.name });
+                      }
+                    }}
+                    className={MENU_ITEM_CLASS}
+                  >
+                    <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
+                      <Check className="size-4" />
+                    </Menu.ItemIndicator>
+                    <Menu.ItemText>{status.name}</Menu.ItemText>
+                    <span className="text-surface-500 ml-auto text-xs">{status.category}</span>
+                  </Menu.OptionItem>
+                ))
+              )}
+            </SearchableMenuContent>
+          </Menu.Positioner>
+        </Portal>
+      </Menu>
       {mutation.error && <ErrorAlert message={mutation.error.message} />}
-    </div>
+    </>
   );
 }
 
-function NullableSelectField({
+// ─── Nullable Select Field (effort, priority) ───────────────────────────────
+
+function NullableMenuField({
   spaceSlug,
   taskId,
   field,
   value,
   options,
   label,
+  icon,
 }: {
   spaceSlug: string;
   taskId: string;
@@ -234,40 +381,81 @@ function NullableSelectField({
   value: string | null;
   options: { name: string }[];
   label: string;
+  icon: React.ReactNode;
 }) {
   const mutation = useTaskPatch(spaceSlug, taskId);
+  const search = useMenuSearch();
+
+  const filtered = useMemo(
+    () => options.filter((o) => o.name.toLowerCase().includes(search.query.toLowerCase())),
+    [options, search.query],
+  );
 
   return (
-    <div className="flex flex-col gap-1">
-      <select
-        value={value ?? ""}
-        aria-label={label}
-        onChange={(e) => {
-          mutation.reset();
-          mutation.mutate({ [field]: e.target.value || null });
-        }}
-        disabled={mutation.isPending}
-        className="select preset-outlined-surface-200-800 w-full"
-      >
-        <option value="">None</option>
-        {options.map((o) => (
-          <option key={o.name} value={o.name}>
-            {o.name}
-          </option>
-        ))}
-      </select>
+    <>
+      <Menu {...search.menuProps} closeOnSelect={false}>
+        <FieldPill icon={icon} label={label} value={value} />
+        <Portal>
+          <Menu.Positioner>
+            <SearchableMenuContent
+              inputProps={search.inputProps}
+              placeholder={`Search ${label.toLowerCase()}...`}
+            >
+              {value !== null && (
+                <Menu.Item
+                  value="none"
+                  className={`text-error-500 ${MENU_ITEM_CLASS}`}
+                  onClick={() => {
+                    mutation.mutate({ [field]: null });
+                  }}
+                >
+                  <X className="size-4" aria-hidden="true" />
+                  <Menu.ItemText>None</Menu.ItemText>
+                </Menu.Item>
+              )}
+              {filtered.length === 0 ? (
+                <div className="text-surface-500 px-3 py-2 text-sm">No matching options</div>
+              ) : (
+                filtered.map((option) => (
+                  <Menu.OptionItem
+                    key={option.name}
+                    type="radio"
+                    checked={value === option.name}
+                    value={option.name}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        mutation.mutate({ [field]: option.name });
+                      }
+                    }}
+                    className={MENU_ITEM_CLASS}
+                  >
+                    <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
+                      <Check className="size-4" />
+                    </Menu.ItemIndicator>
+                    <Menu.ItemText>{option.name}</Menu.ItemText>
+                  </Menu.OptionItem>
+                ))
+              )}
+            </SearchableMenuContent>
+          </Menu.Positioner>
+        </Portal>
+      </Menu>
       {mutation.error && <ErrorAlert message={mutation.error.message} />}
-    </div>
+    </>
   );
 }
 
-function MemberMultiSelectField({
+// ─── Member Multi-Select Field ──────────────────────────────────────────────
+
+function MemberMenuField({
   spaceSlug,
   taskId,
   field,
   value,
   members,
   memberMap,
+  label,
+  icon,
 }: {
   spaceSlug: string;
   taskId: string;
@@ -275,98 +463,93 @@ function MemberMultiSelectField({
   value: string[];
   members: SpaceMember[];
   memberMap: Map<string, SpaceMember>;
+  label: string;
+  icon: React.ReactNode;
 }) {
   const mutation = useTaskPatch(spaceSlug, taskId);
-  const [inputValue, setInputValue] = useState("");
+  const search = useMenuSearch();
+  const [draft, setDraft] = useState(value);
 
-  const filteredMembers = useMemo(
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
+
+  const filtered = useMemo(
     () =>
-      inputValue
-        ? members.filter(
-            (m) =>
-              m.userName.toLowerCase().includes(inputValue.toLowerCase()) ||
-              m.userEmail.toLowerCase().includes(inputValue.toLowerCase()),
-          )
-        : members,
-    [members, inputValue],
+      members.filter(
+        (m) =>
+          m.userName.toLowerCase().includes(search.query.toLowerCase()) ||
+          m.userEmail.toLowerCase().includes(search.query.toLowerCase()),
+      ),
+    [members, search.query],
   );
 
-  const collection = useListCollection({
-    items: filteredMembers,
-    itemToString: (m) => m.userName,
-    itemToValue: (m) => m.userId,
-  });
+  const displayValue = useMemo(() => {
+    if (draft.length === 0) return null;
+    return draft.map((id) => memberMap.get(id)?.userName ?? id).join(", ");
+  }, [draft, memberMap]);
+
+  const handleCheckedChange = useCallback((memberId: string, checked: boolean) => {
+    setDraft((prev) => (checked ? [...prev, memberId] : prev.filter((id) => id !== memberId)));
+  }, []);
 
   return (
-    <div className="flex flex-col gap-1">
-      <Combobox
-        multiple
-        collection={collection}
-        value={value}
-        inputValue={inputValue}
-        onInputValueChange={(e) => setInputValue(e.inputValue)}
-        onValueChange={(e) => {
-          mutation.reset();
-          mutation.mutate({ [field]: e.value });
+    <>
+      <Menu
+        typeahead={false}
+        closeOnSelect={false}
+        onOpenChange={(details) => {
+          search.handleOpenChange(details);
+          const changed = draft.length !== value.length || draft.some((id, i) => id !== value[i]);
+          if (!details.open && changed) {
+            mutation.mutate({ [field]: draft });
+          }
         }}
-        loopFocus
-        openOnClick
-        disabled={mutation.isPending}
       >
-        <Combobox.Control className="input-group preset-outlined-surface-200-800 grid grid-cols-[1fr_auto]">
-          <Combobox.Input placeholder="Search members..." className="ig-input" />
-          <Combobox.Trigger className="ig-btn preset-tonal-surface">
-            <ChevronDown className="size-4" aria-hidden="true" />
-          </Combobox.Trigger>
-        </Combobox.Control>
+        <FieldPill icon={icon} label={label} value={displayValue} />
         <Portal>
-          <Combobox.Positioner className="z-50">
-            <Combobox.Content className="card preset-outlined-surface-200-800 bg-surface-100-900 max-h-60 overflow-auto p-1">
-              {filteredMembers.length === 0 ? (
-                <div className="text-surface-600-400 px-3 py-2 text-sm">No members found</div>
+          <Menu.Positioner>
+            <SearchableMenuContent inputProps={search.inputProps} placeholder="Search members...">
+              {filtered.length === 0 ? (
+                <div className="text-surface-500 px-3 py-2 text-sm">No members found</div>
               ) : (
-                filteredMembers.map((m) => (
-                  <Combobox.Item
-                    key={m.userId}
-                    item={m}
-                    className="flex cursor-pointer items-center gap-2 rounded px-3 py-2 text-sm data-[highlighted]:bg-surface-200-800"
+                filtered.map((member) => (
+                  <Menu.OptionItem
+                    key={member.userId}
+                    type="checkbox"
+                    checked={draft.includes(member.userId)}
+                    value={member.userId}
+                    onCheckedChange={(checked) => handleCheckedChange(member.userId, checked)}
+                    className={MENU_ITEM_CLASS}
                   >
-                    <Combobox.ItemIndicator>
+                    <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
                       <Check className="size-4" />
-                    </Combobox.ItemIndicator>
-                    <Combobox.ItemText>{m.userName}</Combobox.ItemText>
-                    <span className="text-surface-500 ml-auto text-xs">{m.userEmail}</span>
-                  </Combobox.Item>
+                    </Menu.ItemIndicator>
+                    <Menu.ItemText>{member.userName}</Menu.ItemText>
+                    <span className="text-surface-500 ml-auto text-xs">{member.userEmail}</span>
+                  </Menu.OptionItem>
                 ))
               )}
-            </Combobox.Content>
-          </Combobox.Positioner>
+            </SearchableMenuContent>
+          </Menu.Positioner>
         </Portal>
-      </Combobox>
-      {value.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {value.map((id) => (
-            <span key={id} className="preset-tonal-surface rounded-base px-2 py-0.5 text-xs">
-              {memberMap.get(id)?.userName ?? "Unknown member"}
-            </span>
-          ))}
-        </div>
-      )}
+      </Menu>
       {mutation.error && <ErrorAlert message={mutation.error.message} />}
-    </div>
+    </>
   );
 }
+
+// ─── Due Date Field ─────────────────────────────────────────────────────────
 
 const BROWSER_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-function safeParseDateString(value: string) {
-  if (!value) return null;
-  try {
-    return parseDate(value);
-  } catch {
-    return null;
-  }
-}
+const DATE_SHORTCUTS = [
+  { label: "Today", offsetDays: 0 },
+  { label: "Tomorrow", offsetDays: 1 },
+  { label: "In 1 week", offsetDays: 7 },
+  { label: "In 2 weeks", offsetDays: 14 },
+  { label: "In 1 month", offsetDays: 30 },
+];
 
 function DueDateField({
   spaceSlug,
@@ -378,110 +561,89 @@ function DueDateField({
   value: Task["due"];
 }) {
   const mutation = useTaskPatch(spaceSlug, taskId);
-  const [draftAt, setDraftAt] = useState(value?.at ?? "");
-  const [draftTz, setDraftTz] = useState(value?.timezone ?? BROWSER_TIMEZONE);
-  const [editing, setEditing] = useState(false);
+  const search = useMenuSearch();
+  const parsedDate = useMemo(() => parseDateInput(search.query), [search.query]);
+  const today = new Date();
 
-  useEffect(() => {
-    if (!editing) {
-      setDraftAt(value?.at ?? "");
-      setDraftTz(value?.timezone ?? BROWSER_TIMEZONE);
-    }
-  }, [value, editing]);
+  const displayValue = useMemo(() => {
+    if (!value) return null;
+    return new Date(value.at).toLocaleDateString();
+  }, [value]);
 
-  function save(at: string, tz: string) {
-    setEditing(false);
-    if (at && tz) {
-      if (at !== (value?.at ?? "") || tz !== (value?.timezone ?? "")) {
-        mutation.reset();
-        mutation.mutate({ due: { at, timezone: tz } });
-      }
-    } else if (!at && value) {
-      mutation.reset();
-      mutation.mutate({ due: null });
-    }
+  function selectDate(isoDate: string) {
+    mutation.mutate({ due: { at: isoDate, timezone: BROWSER_TIMEZONE } });
   }
 
-  const draftDateValue = useMemo(() => safeParseDateString(draftAt), [draftAt]);
-
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <DateField
-          value={draftDateValue}
-          onChange={(dateValue) => {
-            const at = dateValue?.toString() ?? "";
-            setDraftAt(at);
-            save(at, draftTz);
-          }}
-          onOpenChange={(open) => {
-            if (open) setEditing(true);
-          }}
-          disabled={mutation.isPending}
-          aria-label="Due date"
+    <>
+      <Menu {...search.menuProps} closeOnSelect={false}>
+        <FieldPill
+          icon={<Calendar className="size-3.5" aria-hidden="true" />}
+          label="Due date"
+          value={displayValue}
         />
-        {value && (
-          <button
-            type="button"
-            onClick={() => {
-              setDraftAt("");
-              mutation.reset();
-              mutation.mutate({ due: null });
-            }}
-            disabled={mutation.isPending}
-            className="btn btn-sm preset-outlined-surface-200-800"
-            aria-label="Clear due date"
-            title="Clear due date"
-          >
-            <X className="size-4" aria-hidden="true" />
-          </button>
-        )}
-      </div>
-      <TimezoneCombobox
-        value={draftTz}
-        onChange={(tz) => {
-          setDraftTz(tz);
-          save(draftAt, tz);
-        }}
-        onOpenChange={(open) => {
-          if (open) setEditing(true);
-        }}
-        disabled={mutation.isPending}
-        aria-label="Due date timezone"
-      />
+        <Portal>
+          <Menu.Positioner>
+            <SearchableMenuContent
+              inputProps={search.inputProps}
+              placeholder='e.g. "tomorrow", "next friday"'
+            >
+              {value && (
+                <Menu.Item
+                  value="clear"
+                  className={`text-error-500 ${MENU_ITEM_CLASS}`}
+                  onClick={() => {
+                    mutation.mutate({ due: null });
+                  }}
+                >
+                  <X className="size-4" aria-hidden="true" />
+                  <Menu.ItemText>Clear due date</Menu.ItemText>
+                </Menu.Item>
+              )}
+
+              {search.query ? (
+                parsedDate ? (
+                  <Menu.Item
+                    value={parsedDate.value}
+                    className={MENU_ITEM_CLASS}
+                    onClick={() => selectDate(parsedDate.value)}
+                  >
+                    <Calendar className="size-4" aria-hidden="true" />
+                    <Menu.ItemText>{parsedDate.label}</Menu.ItemText>
+                    <span className="text-surface-500 ml-auto text-xs">{parsedDate.value}</span>
+                  </Menu.Item>
+                ) : (
+                  <div className="text-surface-500 px-3 py-2 text-sm">No matching dates</div>
+                )
+              ) : (
+                DATE_SHORTCUTS.map((shortcut) => {
+                  const date = addDays(today, shortcut.offsetDays);
+                  const isoDate = toISODate(date);
+                  return (
+                    <Menu.Item
+                      key={shortcut.label}
+                      value={isoDate}
+                      className={MENU_ITEM_CLASS}
+                      onClick={() => selectDate(isoDate)}
+                    >
+                      <Menu.ItemText>{shortcut.label}</Menu.ItemText>
+                      <span className="text-surface-500 ml-auto text-xs">
+                        {formatDateDisplay(date)}
+                      </span>
+                    </Menu.Item>
+                  );
+                })
+              )}
+            </SearchableMenuContent>
+          </Menu.Positioner>
+        </Portal>
+      </Menu>
       {mutation.error && <ErrorAlert message={mutation.error.message} />}
-    </div>
+    </>
   );
 }
 
-function RecurrenceField({
-  spaceSlug,
-  taskId,
-  recurrenceType,
-  recurrenceRule,
-}: {
-  spaceSlug: string;
-  taskId: string;
-  recurrenceType: TaskRecurrenceType;
-  recurrenceRule: string | null;
-}) {
-  const mutation = useTaskPatch(spaceSlug, taskId);
-
-  return (
-    <div className="flex flex-col gap-1">
-      <RecurrenceRuleEditor
-        recurrenceType={recurrenceType}
-        recurrenceRule={recurrenceRule}
-        onSave={(update) => {
-          mutation.reset();
-          mutation.mutate(update);
-        }}
-        disabled={mutation.isPending}
-      />
-      {mutation.error && <ErrorAlert message={mutation.error.message} />}
-    </div>
-  );
-}
+// ─── Overdue Action Field ───────────────────────────────────────────────────
 
 function OverdueActionField({
   spaceSlug,
@@ -501,9 +663,8 @@ function OverdueActionField({
       <OverdueActionEditor
         overdueActionRule={overdueActionRule}
         statuses={statuses}
-        onSave={(value) => {
-          mutation.reset();
-          mutation.mutate({ overdueActionRule: value });
+        onSave={(val) => {
+          mutation.mutate({ overdueActionRule: val });
         }}
         disabled={mutation.isPending}
       />
@@ -511,6 +672,8 @@ function OverdueActionField({
     </div>
   );
 }
+
+// ─── Tags Field ─────────────────────────────────────────────────────────────
 
 function TagsField({
   spaceSlug,
@@ -528,7 +691,6 @@ function TagsField({
       <TagsInput
         value={value}
         onValueChange={(e) => {
-          mutation.reset();
           mutation.mutate({ tags: e.value });
         }}
         validate={(details) => {
@@ -562,6 +724,8 @@ function TagsField({
   );
 }
 
+// ─── Activity Feed ──────────────────────────────────────────────────────────
+
 function TaskActivityFeed({ spaceSlug, taskId }: { spaceSlug: string; taskId: string }) {
   const memberMap = useSpaceMemberMap(spaceSlug);
   const {
@@ -583,79 +747,7 @@ function TaskActivityFeed({ spaceSlug, taskId }: { spaceSlug: string; taskId: st
   );
 }
 
-function DeleteTaskSection({ spaceSlug, taskId }: { spaceSlug: string; taskId: string }) {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const cancelRef = useRef<HTMLButtonElement>(null);
-
-  const deleteMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await apiClient.DELETE("/spaces/{spaceSlug}/tasks/{taskId}", {
-        params: { path: { spaceSlug, taskId } },
-      });
-      if (error) throw new Error(error.message ?? "Failed to delete task");
-    },
-    onSuccess: async () => {
-      queryClient.removeQueries({ queryKey: ["spaces", spaceSlug, "tasks", taskId] });
-      await queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", "list"] });
-      await navigate({ to: "/spaces/$spaceSlug", params: { spaceSlug } });
-    },
-  });
-
-  function handleOpenChange(details: { open: boolean }) {
-    setOpen(details.open);
-    if (!details.open) deleteMutation.reset();
-  }
-
-  return (
-    <div className="mt-8 border-t border-surface-200-800 pt-6">
-      <Dialog
-        open={open}
-        onOpenChange={handleOpenChange}
-        role="alertdialog"
-        initialFocusEl={() => cancelRef.current}
-      >
-        <Dialog.Trigger className="btn preset-filled-error-500 flex items-center gap-2">
-          <Trash2 className="size-4" aria-hidden="true" />
-          Delete task
-        </Dialog.Trigger>
-        <Portal>
-          <Dialog.Backdrop className="fixed inset-0 z-50 bg-surface-50-950/50" />
-          <Dialog.Positioner className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <Dialog.Content className="card bg-surface-100-900 w-full max-w-md space-y-4 p-6">
-              <Dialog.Title className="h4">Delete task</Dialog.Title>
-              <Dialog.Description className="text-surface-600-400 text-sm">
-                Are you sure you want to delete this task? This action cannot be undone.
-              </Dialog.Description>
-
-              <div role="alert" aria-live="assertive">
-                {deleteMutation.error && <ErrorAlert message={deleteMutation.error.message} />}
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => deleteMutation.mutate()}
-                  disabled={deleteMutation.isPending}
-                  className="btn preset-filled-error-500 flex-1"
-                >
-                  {deleteMutation.isPending ? "Deleting..." : "Delete"}
-                </button>
-                <Dialog.CloseTrigger
-                  ref={cancelRef}
-                  className="btn preset-outlined-surface-200-800"
-                >
-                  Cancel
-                </Dialog.CloseTrigger>
-              </div>
-            </Dialog.Content>
-          </Dialog.Positioner>
-        </Portal>
-      </Dialog>
-    </div>
-  );
-}
+// ─── Page ───────────────────────────────────────────────────────────────────
 
 function TaskDetailPage() {
   const { spaceSlug, taskId } = Route.useParams();
@@ -668,114 +760,92 @@ function TaskDetailPage() {
   const memberMap = useSpaceMemberMap(spaceSlug);
 
   return (
-    <div className="mx-auto max-w-3xl p-6">
+    <div className="space-y-4">
       <BackLink
         to="/spaces/$spaceSlug"
         params={{ spaceSlug }}
-        className="text-surface-600-400 hover:text-surface-950-50 mb-4 inline-flex items-center gap-1 text-sm transition-colors"
+        className="text-surface-600-400 hover:text-surface-950-50 inline-flex items-center gap-1 text-sm transition-colors lg:hidden"
       >
         <ArrowLeft className="size-4" aria-hidden="true" />
         Back to {space.name}
       </BackLink>
 
-      <div className="flex items-start gap-3">
-        <span className="text-surface-500 mt-1 shrink-0 font-mono text-sm">{task.id}</span>
-        <div className="min-w-0 flex-1">
-          <EditableTitle spaceSlug={spaceSlug} taskId={taskId} value={task.title} />
-        </div>
+      <TaskBreadcrumbBar spaceName={space.name} spaceSlug={spaceSlug} taskId={task.id} />
+
+      <EditableTitle spaceSlug={spaceSlug} taskId={taskId} value={task.title} />
+
+      <div className="flex flex-wrap items-center gap-2">
+        <StatusField
+          spaceSlug={spaceSlug}
+          taskId={taskId}
+          value={task.status}
+          statuses={statuses}
+        />
+        <NullableMenuField
+          spaceSlug={spaceSlug}
+          taskId={taskId}
+          field="priority"
+          value={task.priority}
+          options={priorityLevels}
+          label="Priority"
+          icon={<SignalHigh className="size-3.5" aria-hidden="true" />}
+        />
+        <NullableMenuField
+          spaceSlug={spaceSlug}
+          taskId={taskId}
+          field="effort"
+          value={task.effort}
+          options={effortLevels}
+          label="Effort"
+          icon={<Gauge className="size-3.5" aria-hidden="true" />}
+        />
+        <MemberMenuField
+          spaceSlug={spaceSlug}
+          taskId={taskId}
+          field="assigneeIds"
+          value={task.assigneeIds}
+          members={members}
+          memberMap={memberMap}
+          label="Assignees"
+          icon={<Users className="size-3.5" aria-hidden="true" />}
+        />
+        <DueDateField spaceSlug={spaceSlug} taskId={taskId} value={task.due} />
+        <RecurrenceMenuField
+          spaceSlug={spaceSlug}
+          taskId={taskId}
+          recurrenceType={task.recurrenceType}
+          recurrenceRule={task.recurrenceRule}
+        />
+        <MemberMenuField
+          spaceSlug={spaceSlug}
+          taskId={taskId}
+          field="rotationPool"
+          value={task.rotationPool}
+          members={members}
+          memberMap={memberMap}
+          label="Rotation"
+          icon={<RefreshCw className="size-3.5" aria-hidden="true" />}
+        />
       </div>
+
+      <TagsField spaceSlug={spaceSlug} taskId={taskId} value={task.tags} />
 
       <TaskDescriptionEditor spaceSlug={spaceSlug} taskId={taskId} value={task.description} />
 
-      <div className="card preset-outlined-surface-200-800 mt-6 p-4">
-        <PropertyRow label="Status" icon={<CircleAlert className="size-4" aria-hidden="true" />}>
-          <StatusField
+      <div className="space-y-4">
+        {task.recurrenceType !== "one_off" && task.due !== null && (
+          <OverdueActionField
             spaceSlug={spaceSlug}
             taskId={taskId}
-            value={task.status}
+            overdueActionRule={task.overdueActionRule}
             statuses={statuses}
           />
-        </PropertyRow>
-
-        <PropertyRow label="Effort" icon={<Gauge className="size-4" aria-hidden="true" />}>
-          <NullableSelectField
-            spaceSlug={spaceSlug}
-            taskId={taskId}
-            field="effort"
-            value={task.effort}
-            options={effortLevels}
-            label="Effort"
-          />
-        </PropertyRow>
-
-        <PropertyRow label="Priority" icon={<SignalHigh className="size-4" aria-hidden="true" />}>
-          <NullableSelectField
-            spaceSlug={spaceSlug}
-            taskId={taskId}
-            field="priority"
-            value={task.priority}
-            options={priorityLevels}
-            label="Priority"
-          />
-        </PropertyRow>
-
-        <PropertyRow label="Assignees" icon={<Users className="size-4" aria-hidden="true" />}>
-          <MemberMultiSelectField
-            spaceSlug={spaceSlug}
-            taskId={taskId}
-            field="assigneeIds"
-            value={task.assigneeIds}
-            members={members}
-            memberMap={memberMap}
-          />
-        </PropertyRow>
-
-        <PropertyRow label="Due date" icon={<Calendar className="size-4" aria-hidden="true" />}>
-          <DueDateField spaceSlug={spaceSlug} taskId={taskId} value={task.due} />
-        </PropertyRow>
-
-        <PropertyRow label="Recurrence" icon={<RefreshCw className="size-4" aria-hidden="true" />}>
-          <RecurrenceField
-            spaceSlug={spaceSlug}
-            taskId={taskId}
-            recurrenceType={task.recurrenceType}
-            recurrenceRule={task.recurrenceRule}
-          />
-        </PropertyRow>
-
-        {task.recurrenceType !== "one_off" && task.due !== null && (
-          <PropertyRow
-            label="Overdue action"
-            icon={<Clock className="size-4" aria-hidden="true" />}
-          >
-            <OverdueActionField
-              spaceSlug={spaceSlug}
-              taskId={taskId}
-              overdueActionRule={task.overdueActionRule}
-              statuses={statuses}
-            />
-          </PropertyRow>
         )}
-
-        <PropertyRow label="Tags" icon={<Tag className="size-4" aria-hidden="true" />}>
-          <TagsField spaceSlug={spaceSlug} taskId={taskId} value={task.tags} />
-        </PropertyRow>
-
-        <PropertyRow label="Rotation pool" icon={<Users className="size-4" aria-hidden="true" />}>
-          <MemberMultiSelectField
-            spaceSlug={spaceSlug}
-            taskId={taskId}
-            field="rotationPool"
-            value={task.rotationPool}
-            members={members}
-            memberMap={memberMap}
-          />
-        </PropertyRow>
       </div>
 
       <RelationsSection spaceSlug={spaceSlug} taskId={task.id} relations={task.relations} />
 
-      <div className="mt-8">
+      <div>
         <h2 className="h5 mb-4 flex items-center gap-2">
           <Activity className="size-4" aria-hidden="true" />
           Activity
@@ -788,8 +858,6 @@ function TaskDetailPage() {
           <TaskActivityFeed spaceSlug={spaceSlug} taskId={taskId} />
         </Suspense>
       </div>
-
-      <DeleteTaskSection spaceSlug={spaceSlug} taskId={taskId} />
     </div>
   );
 }
