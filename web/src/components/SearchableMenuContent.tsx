@@ -3,24 +3,14 @@ import type { ReactNode } from "react";
 import type { MenuSearchInputProps } from "../lib/useMenuSearch.ts";
 
 /**
+ * Default className for Menu.Item / Menu.OptionItem inside searchable menus.
+ * Overrides Skeleton's justify-content: space-between with justify-start.
+ */
+export const MENU_ITEM_CLASS = "justify-start gap-2 text-sm";
+
+/**
  * A Menu.Content wrapper that includes a search input at the top,
  * followed by a separator and a scrollable area for menu items.
- *
- * Usage:
- * ```tsx
- * const search = useMenuSearch();
- *
- * <Menu {...search.menuProps}>
- *   <FieldPill label="Status" value={selected} />
- *   <Portal>
- *     <Menu.Positioner>
- *       <SearchableMenuContent inputProps={search.inputProps} placeholder="Search statuses...">
- *         {items.map(item => <Menu.Item ...>...</Menu.Item>)}
- *       </SearchableMenuContent>
- *     </Menu.Positioner>
- *   </Portal>
- * </Menu>
- * ```
  */
 export function SearchableMenuContent({
   inputProps,
@@ -40,12 +30,10 @@ export function SearchableMenuContent({
   return (
     <Menu.Content className={className}>
       <input
-        ref={inputProps.ref}
+        {...inputProps}
         type="text"
-        value={inputProps.value}
-        onChange={inputProps.onChange}
-        onKeyDown={inputProps.onKeyDown}
         placeholder={placeholder}
+        aria-label={placeholder}
         className="w-full bg-transparent text-sm outline-none placeholder:text-surface-500"
       />
       <Menu.Separator />

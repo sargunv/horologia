@@ -1,21 +1,17 @@
 import { Menu, Portal } from "@skeletonlabs/skeleton-react";
-import * as chrono from "chrono-node/en";
 import { Calendar, Check, ChevronRight, RefreshCw, X } from "lucide-react";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import parseDuration from "parse-duration";
 import { RRule, Weekday } from "rrule";
 import type { components } from "../../api/schema.d.ts";
 import { FieldPill } from "../FieldPill.tsx";
-import { SearchableMenuContent } from "../SearchableMenuContent.tsx";
+import { MENU_ITEM_CLASS, SearchableMenuContent } from "../SearchableMenuContent.tsx";
+import { formatDateDisplay, parseDateInput, toISODate } from "../../lib/dates.ts";
 import { useMenuSearch } from "../../lib/useMenuSearch.ts";
 import { useTaskPatch } from "../../lib/mutations.ts";
 import { ErrorAlert } from "../space-settings/ErrorAlert.tsx";
 
 type TaskRecurrenceType = components["schemas"]["TaskRecurrenceType"];
-
-// ─── Constants ──────────────────────────────────────────────────────────────
-
-const ITEM_CLASS = "justify-start gap-2 text-sm";
 
 // Zag.js reads z-index from Menu.Content's computed style and propagates
 // it to the positioner via --z-index. Apply z-index to Content (not
@@ -79,8 +75,6 @@ const RRULE_WEEKDAY: Record<WeekdayCode, Weekday> = {
   SA: RRule.SA,
   SU: RRule.SU,
 };
-
-const WEEKDAY_INDEX_TO_CODE: WeekdayCode[] = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
 
 const RRULE_FREQ_TO_CODE: Partial<Record<number, FreqCode>> = {
   [RRule.DAILY]: "DAILY",
@@ -182,10 +176,10 @@ function parseRRule(rruleStr: string | null): ParsedRule {
       for (const w of toArray(opts.byweekday)) {
         if (w instanceof Weekday) {
           if (w.n !== undefined && w.n !== 0) {
-            const code = WEEKDAY_INDEX_TO_CODE[w.weekday];
+            const code = WEEKDAY_CODES[w.weekday];
             if (code) nthWeekday = { ordinal: w.n, weekday: code };
           } else {
-            const code = WEEKDAY_INDEX_TO_CODE[w.weekday];
+            const code = WEEKDAY_CODES[w.weekday];
             if (code) byweekday.push(code);
           }
         }
@@ -279,6 +273,15 @@ function parseDurationInput(input: string): ParsedDuration | null {
 
 // ─── Display Helpers ────────────────────────────────────────────────────────
 
+function describeMonthDays(bymonthday: number[]): string {
+  const hasLast = bymonthday.includes(-1);
+  const positives = bymonthday.filter((d) => d > 0).sort((a, b) => a - b);
+  const parts: string[] = [];
+  if (positives.length > 0) parts.push(...positives.map(String));
+  if (hasLast) parts.push("last");
+  return parts.join(", ");
+}
+
 function describeRule(parsed: ParsedRule): string {
   const labels = FREQ_LABELS[parsed.freq];
   const unit = parsed.interval === 1 ? labels.singular : labels.plural;
@@ -293,12 +296,7 @@ function describeRule(parsed: ParsedRule): string {
         ORDINAL_LABELS[parsed.nthWeekday.ordinal] ?? String(parsed.nthWeekday.ordinal);
       desc += ` on the ${ordLabel} ${WEEKDAY_LABELS[parsed.nthWeekday.weekday]}`;
     } else if (parsed.bymonthday.length > 0) {
-      const hasLast = parsed.bymonthday.includes(-1);
-      const positives = parsed.bymonthday.filter((d) => d > 0).sort((a, b) => a - b);
-      const parts: string[] = [];
-      if (positives.length > 0) parts.push(positives.join(", "));
-      if (hasLast) parts.push("last");
-      desc += ` on day ${parts.join(", ")}`;
+      desc += ` on day ${describeMonthDays(parsed.bymonthday)}`;
     }
   }
   if (parsed.freq === "YEARLY" && parsed.bymonth.length > 0) {
@@ -323,31 +321,6 @@ function getDisplayValue(
 
   const parsed = parseRRule(recurrenceRule);
   return `${typeLabel}: ${describeRule(parsed)}`;
-}
-
-// ─── Date helpers ───────────────────────────────────────────────────────────
-
-function toISODate(date: Date): string {
-  const y = date.getFullYear().toString().padStart(4, "0");
-  const m = (date.getMonth() + 1).toString().padStart(2, "0");
-  const d = date.getDate().toString().padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function formatDateDisplay(date: Date): string {
-  return date.toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function parseDateInput(input: string): { label: string; value: string } | null {
-  if (!input.trim()) return null;
-  const parsed = chrono.parseDate(input);
-  if (!parsed) return null;
-  return { label: formatDateDisplay(parsed), value: toISODate(parsed) };
 }
 
 // ─── Frequency Submenu ──────────────────────────────────────────────────────
@@ -443,7 +416,7 @@ function FreqSubMenu({
       {isSearching && parsedDuration && (
         <Menu.Item
           value={`parsed-${parsedDuration.freq}-${parsedDuration.interval}`}
-          className={ITEM_CLASS}
+          className={MENU_ITEM_CLASS}
           onClick={() => selectFreq(parsedDuration.freq, parsedDuration.interval)}
         >
           <Menu.ItemText>{parsedDuration.label}</Menu.ItemText>
@@ -466,7 +439,7 @@ function FreqSubMenu({
                   currentRule.freq === shortcut.freq ? currentRule.interval : 1,
                 );
             }}
-            className={ITEM_CLASS}
+            className={MENU_ITEM_CLASS}
           >
             <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
               <Check className="size-4" />
@@ -535,14 +508,7 @@ function FreqSubMenu({
                 {currentRule.nthWeekday
                   ? `On the ${ORDINAL_LABELS[currentRule.nthWeekday.ordinal] ?? ""} ${WEEKDAY_LABELS[currentRule.nthWeekday.weekday]}`
                   : currentRule.bymonthday.length > 0
-                    ? (() => {
-                        const hasLast = currentRule.bymonthday.includes(-1);
-                        const positives = currentRule.bymonthday.filter((d) => d > 0);
-                        const parts: string[] = [];
-                        if (positives.length > 0) parts.push(...positives.map(String));
-                        if (hasLast) parts.push("last");
-                        return `On day ${parts.join(", ")}`;
-                      })()
+                    ? `On day ${describeMonthDays(currentRule.bymonthday)}`
                     : "On day..."}
               </Menu.ItemText>
               <Menu.ItemIndicator className="ml-auto">
@@ -613,6 +579,7 @@ function FreqSubMenu({
                               weekday: currentRule.nthWeekday?.weekday ?? "MO",
                             })
                           }
+                          aria-label={`${ORDINAL_LABELS[ord]} week of month`}
                           aria-pressed={active}
                           className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
                             active
@@ -751,7 +718,7 @@ function UntilDateSubMenu({
 }) {
   const search = useMenuSearch();
   const parsedDate = useMemo(() => parseDateInput(search.query), [search.query]);
-  const today = useMemo(() => new Date(), []);
+  const today = new Date();
 
   function selectUntil(isoDate: string | null) {
     const newRule: ParsedRule = { ...currentRule, until: isoDate };
@@ -774,7 +741,7 @@ function UntilDateSubMenu({
       {currentUntil && (
         <Menu.Item
           value="clear-until"
-          className={`text-error-500 ${ITEM_CLASS}`}
+          className={`text-error-500 ${MENU_ITEM_CLASS}`}
           onClick={() => selectUntil(null)}
         >
           <X className="size-4" aria-hidden="true" />
@@ -786,7 +753,7 @@ function UntilDateSubMenu({
         parsedDate ? (
           <Menu.Item
             value={parsedDate.value}
-            className={ITEM_CLASS}
+            className={MENU_ITEM_CLASS}
             onClick={() => selectUntil(parsedDate.value)}
           >
             <Calendar className="size-4" aria-hidden="true" />
@@ -805,7 +772,7 @@ function UntilDateSubMenu({
             <Menu.Item
               key={shortcut.label}
               value={isoDate}
-              className={ITEM_CLASS}
+              className={MENU_ITEM_CLASS}
               onClick={() => selectUntil(isoDate)}
             >
               <Menu.ItemText>{shortcut.label}</Menu.ItemText>
@@ -840,13 +807,13 @@ export function RecurrenceMenuField({
     [recurrenceType, recurrenceRule],
   );
 
-  function handleSave(update: {
-    recurrenceType: TaskRecurrenceType;
-    recurrenceRule?: string | null;
-  }) {
-    mutation.reset();
-    mutation.mutate(update);
-  }
+  const handleSave = useCallback(
+    (update: { recurrenceType: TaskRecurrenceType; recurrenceRule?: string | null }) => {
+      mutation.reset();
+      mutation.mutate(update);
+    },
+    [mutation],
+  );
 
   const typeItems = useMemo(() => {
     const items = [
@@ -906,7 +873,7 @@ export function RecurrenceMenuField({
                     <Menu.Item
                       key={item.value}
                       value={item.value}
-                      className={ITEM_CLASS}
+                      className={MENU_ITEM_CLASS}
                       onClick={() => {
                         const update: Parameters<typeof handleSave>[0] = {
                           recurrenceType: item.value,

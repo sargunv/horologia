@@ -48,28 +48,28 @@ export function TaskRow({
             className="text-surface-600-400 flex items-center gap-1 text-xs"
             title={assigneeNames}
           >
-            <Users className="size-3.5" />
+            <Users className="size-3.5" aria-hidden="true" />
             <span className="max-w-24 truncate">{assigneeNames}</span>
           </span>
         )}
 
         {!compact && task.due && (
           <span className="text-surface-600-400 flex items-center gap-1 text-xs whitespace-nowrap">
-            <Calendar className="size-3.5" />
+            <Calendar className="size-3.5" aria-hidden="true" />
             {new Date(task.due.at).toLocaleDateString()}
           </span>
         )}
 
         {!compact && task.effort && (
           <span className="text-surface-600-400 flex items-center gap-1 text-xs whitespace-nowrap">
-            <Gauge className="size-3.5" />
+            <Gauge className="size-3.5" aria-hidden="true" />
             {task.effort}
           </span>
         )}
 
         {!compact && task.priority && (
           <span className="text-surface-600-400 flex items-center gap-1 text-xs whitespace-nowrap">
-            <SignalHigh className="size-3.5" />
+            <SignalHigh className="size-3.5" aria-hidden="true" />
             {task.priority}
           </span>
         )}
@@ -79,7 +79,7 @@ export function TaskRow({
             className="text-surface-600-400 flex items-center gap-1 text-xs"
             title={task.tags.join(", ")}
           >
-            <Tag className="size-3.5" />
+            <Tag className="size-3.5" aria-hidden="true" />
             <span className="max-w-20 truncate">{task.tags.join(", ")}</span>
           </span>
         )}

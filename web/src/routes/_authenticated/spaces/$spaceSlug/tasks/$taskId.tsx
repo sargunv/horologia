@@ -6,7 +6,6 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { createFileRoute, createLink, useNavigate } from "@tanstack/react-router";
-import * as chrono from "chrono-node/en";
 import {
   Activity,
   ArrowLeft,
@@ -27,7 +26,10 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { apiClient } from "../../../../../api/client.ts";
 import type { components } from "../../../../../api/schema.d.ts";
 import { FieldPill } from "../../../../../components/FieldPill.tsx";
-import { SearchableMenuContent } from "../../../../../components/SearchableMenuContent.tsx";
+import {
+  MENU_ITEM_CLASS,
+  SearchableMenuContent,
+} from "../../../../../components/SearchableMenuContent.tsx";
 import { RecurrenceMenuField } from "../../../../../components/task/RecurrenceMenuField.tsx";
 import { TaskDescriptionEditor } from "../../../../../components/TaskDescriptionEditor.tsx";
 import { ActivityFeed } from "../../../../../components/ActivityFeed.tsx";
@@ -35,6 +37,7 @@ import { ErrorAlert } from "../../../../../components/space-settings/ErrorAlert.
 import { OverdueActionEditor } from "../../../../../components/task/OverdueActionEditor.tsx";
 import { RelationsSection } from "../../../../../components/task/RelationsSection.tsx";
 import { useSpaceMemberMap } from "../../../../../lib/hooks.ts";
+import { addDays, formatDateDisplay, parseDateInput, toISODate } from "../../../../../lib/dates.ts";
 import { useMenuSearch } from "../../../../../lib/useMenuSearch.ts";
 import { useTaskPatch } from "../../../../../lib/mutations.ts";
 import {
@@ -68,8 +71,6 @@ export const Route = createFileRoute("/_authenticated/spaces/$spaceSlug/tasks/$t
 const BackLink = createLink("a");
 const BreadcrumbLink = createLink("a");
 
-const ITEM_CLASS = "justify-start gap-2 text-sm";
-
 // ─── Breadcrumb Bar ─────────────────────────────────────────────────────────
 
 function TaskBreadcrumbBar({
@@ -101,11 +102,11 @@ function TaskBreadcrumbBar({
   });
 
   function handleCopyId() {
-    void navigator.clipboard.writeText(taskId);
+    void navigator.clipboard.writeText(taskId).catch(() => {});
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <nav aria-label="Breadcrumb" className="flex items-center gap-2">
       <ol className="flex min-w-0 items-center gap-1 text-sm">
         <li>
           <BreadcrumbLink
@@ -140,15 +141,15 @@ function TaskBreadcrumbBar({
         <Portal>
           <Menu.Positioner>
             <Menu.Content>
-              <Menu.Item value="copy-id" className={ITEM_CLASS} onClick={handleCopyId}>
+              <Menu.Item value="copy-id" className={MENU_ITEM_CLASS} onClick={handleCopyId}>
                 <Copy className="size-4" aria-hidden="true" />
                 <Menu.ItemText>Copy task ID</Menu.ItemText>
               </Menu.Item>
               <Menu.Item
                 value="copy-url"
-                className={ITEM_CLASS}
+                className={MENU_ITEM_CLASS}
                 onClick={() => {
-                  void navigator.clipboard.writeText(window.location.href);
+                  void navigator.clipboard.writeText(window.location.href).catch(() => {});
                 }}
               >
                 <Copy className="size-4" aria-hidden="true" />
@@ -157,7 +158,7 @@ function TaskBreadcrumbBar({
               <Menu.Separator />
               <Menu.Item
                 value="delete"
-                className={`text-error-500 ${ITEM_CLASS}`}
+                className={`text-error-500 ${MENU_ITEM_CLASS}`}
                 onClick={() => setDeleteOpen(true)}
               >
                 <Trash2 className="size-4" aria-hidden="true" />
@@ -208,7 +209,7 @@ function TaskBreadcrumbBar({
           </Dialog.Positioner>
         </Portal>
       </Dialog>
-    </div>
+    </nav>
   );
 }
 
@@ -321,44 +322,47 @@ function StatusField({
   );
 
   return (
-    <Menu {...search.menuProps} closeOnSelect={false}>
-      <FieldPill
-        icon={<CircleAlert className="size-3.5" aria-hidden="true" />}
-        label="Status"
-        value={value}
-      />
-      <Portal>
-        <Menu.Positioner>
-          <SearchableMenuContent inputProps={search.inputProps} placeholder="Search statuses...">
-            {filtered.length === 0 ? (
-              <div className="text-surface-500 px-3 py-2 text-sm">No matching statuses</div>
-            ) : (
-              filtered.map((status) => (
-                <Menu.OptionItem
-                  key={status.name}
-                  type="radio"
-                  checked={value === status.name}
-                  value={status.name}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      mutation.reset();
-                      mutation.mutate({ status: status.name });
-                    }
-                  }}
-                  className={ITEM_CLASS}
-                >
-                  <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
-                    <Check className="size-4" />
-                  </Menu.ItemIndicator>
-                  <Menu.ItemText>{status.name}</Menu.ItemText>
-                  <span className="text-surface-500 ml-auto text-xs">{status.category}</span>
-                </Menu.OptionItem>
-              ))
-            )}
-          </SearchableMenuContent>
-        </Menu.Positioner>
-      </Portal>
-    </Menu>
+    <>
+      <Menu {...search.menuProps} closeOnSelect={false}>
+        <FieldPill
+          icon={<CircleAlert className="size-3.5" aria-hidden="true" />}
+          label="Status"
+          value={value}
+        />
+        <Portal>
+          <Menu.Positioner>
+            <SearchableMenuContent inputProps={search.inputProps} placeholder="Search statuses...">
+              {filtered.length === 0 ? (
+                <div className="text-surface-500 px-3 py-2 text-sm">No matching statuses</div>
+              ) : (
+                filtered.map((status) => (
+                  <Menu.OptionItem
+                    key={status.name}
+                    type="radio"
+                    checked={value === status.name}
+                    value={status.name}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        mutation.reset();
+                        mutation.mutate({ status: status.name });
+                      }
+                    }}
+                    className={MENU_ITEM_CLASS}
+                  >
+                    <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
+                      <Check className="size-4" />
+                    </Menu.ItemIndicator>
+                    <Menu.ItemText>{status.name}</Menu.ItemText>
+                    <span className="text-surface-500 ml-auto text-xs">{status.category}</span>
+                  </Menu.OptionItem>
+                ))
+              )}
+            </SearchableMenuContent>
+          </Menu.Positioner>
+        </Portal>
+      </Menu>
+      {mutation.error && <ErrorAlert message={mutation.error.message} />}
+    </>
   );
 }
 
@@ -390,55 +394,58 @@ function NullableMenuField({
   );
 
   return (
-    <Menu {...search.menuProps} closeOnSelect={false}>
-      <FieldPill icon={icon} label={label} value={value} />
-      <Portal>
-        <Menu.Positioner>
-          <SearchableMenuContent
-            inputProps={search.inputProps}
-            placeholder={`Search ${label.toLowerCase()}...`}
-          >
-            {value !== null && (
-              <Menu.Item
-                value="none"
-                className={`text-error-500 ${ITEM_CLASS}`}
-                onClick={() => {
-                  mutation.reset();
-                  mutation.mutate({ [field]: null });
-                }}
-              >
-                <X className="size-4" aria-hidden="true" />
-                <Menu.ItemText>None</Menu.ItemText>
-              </Menu.Item>
-            )}
-            {filtered.length === 0 ? (
-              <div className="text-surface-500 px-3 py-2 text-sm">No matching options</div>
-            ) : (
-              filtered.map((option) => (
-                <Menu.OptionItem
-                  key={option.name}
-                  type="radio"
-                  checked={value === option.name}
-                  value={option.name}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      mutation.reset();
-                      mutation.mutate({ [field]: option.name });
-                    }
+    <>
+      <Menu {...search.menuProps} closeOnSelect={false}>
+        <FieldPill icon={icon} label={label} value={value} />
+        <Portal>
+          <Menu.Positioner>
+            <SearchableMenuContent
+              inputProps={search.inputProps}
+              placeholder={`Search ${label.toLowerCase()}...`}
+            >
+              {value !== null && (
+                <Menu.Item
+                  value="none"
+                  className={`text-error-500 ${MENU_ITEM_CLASS}`}
+                  onClick={() => {
+                    mutation.reset();
+                    mutation.mutate({ [field]: null });
                   }}
-                  className={ITEM_CLASS}
                 >
-                  <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
-                    <Check className="size-4" />
-                  </Menu.ItemIndicator>
-                  <Menu.ItemText>{option.name}</Menu.ItemText>
-                </Menu.OptionItem>
-              ))
-            )}
-          </SearchableMenuContent>
-        </Menu.Positioner>
-      </Portal>
-    </Menu>
+                  <X className="size-4" aria-hidden="true" />
+                  <Menu.ItemText>None</Menu.ItemText>
+                </Menu.Item>
+              )}
+              {filtered.length === 0 ? (
+                <div className="text-surface-500 px-3 py-2 text-sm">No matching options</div>
+              ) : (
+                filtered.map((option) => (
+                  <Menu.OptionItem
+                    key={option.name}
+                    type="radio"
+                    checked={value === option.name}
+                    value={option.name}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        mutation.reset();
+                        mutation.mutate({ [field]: option.name });
+                      }
+                    }}
+                    className={MENU_ITEM_CLASS}
+                  >
+                    <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
+                      <Check className="size-4" />
+                    </Menu.ItemIndicator>
+                    <Menu.ItemText>{option.name}</Menu.ItemText>
+                  </Menu.OptionItem>
+                ))
+              )}
+            </SearchableMenuContent>
+          </Menu.Positioner>
+        </Portal>
+      </Menu>
+      {mutation.error && <ErrorAlert message={mutation.error.message} />}
+    </>
   );
 }
 
@@ -491,45 +498,49 @@ function MemberMenuField({
   }, []);
 
   return (
-    <Menu
-      typeahead={false}
-      closeOnSelect={false}
-      onOpenChange={(details) => {
-        search.handleOpenChange(details);
-        if (!details.open && draft !== value) {
-          mutation.reset();
-          mutation.mutate({ [field]: draft });
-        }
-      }}
-    >
-      <FieldPill icon={icon} label={label} value={displayValue} />
-      <Portal>
-        <Menu.Positioner>
-          <SearchableMenuContent inputProps={search.inputProps} placeholder="Search members...">
-            {filtered.length === 0 ? (
-              <div className="text-surface-500 px-3 py-2 text-sm">No members found</div>
-            ) : (
-              filtered.map((member) => (
-                <Menu.OptionItem
-                  key={member.userId}
-                  type="checkbox"
-                  checked={draft.includes(member.userId)}
-                  value={member.userId}
-                  onCheckedChange={(checked) => handleCheckedChange(member.userId, checked)}
-                  className={ITEM_CLASS}
-                >
-                  <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
-                    <Check className="size-4" />
-                  </Menu.ItemIndicator>
-                  <Menu.ItemText>{member.userName}</Menu.ItemText>
-                  <span className="text-surface-500 ml-auto text-xs">{member.userEmail}</span>
-                </Menu.OptionItem>
-              ))
-            )}
-          </SearchableMenuContent>
-        </Menu.Positioner>
-      </Portal>
-    </Menu>
+    <>
+      <Menu
+        typeahead={false}
+        closeOnSelect={false}
+        onOpenChange={(details) => {
+          search.handleOpenChange(details);
+          const changed = draft.length !== value.length || draft.some((id, i) => id !== value[i]);
+          if (!details.open && changed) {
+            mutation.reset();
+            mutation.mutate({ [field]: draft });
+          }
+        }}
+      >
+        <FieldPill icon={icon} label={label} value={displayValue} />
+        <Portal>
+          <Menu.Positioner>
+            <SearchableMenuContent inputProps={search.inputProps} placeholder="Search members...">
+              {filtered.length === 0 ? (
+                <div className="text-surface-500 px-3 py-2 text-sm">No members found</div>
+              ) : (
+                filtered.map((member) => (
+                  <Menu.OptionItem
+                    key={member.userId}
+                    type="checkbox"
+                    checked={draft.includes(member.userId)}
+                    value={member.userId}
+                    onCheckedChange={(checked) => handleCheckedChange(member.userId, checked)}
+                    className={MENU_ITEM_CLASS}
+                  >
+                    <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
+                      <Check className="size-4" />
+                    </Menu.ItemIndicator>
+                    <Menu.ItemText>{member.userName}</Menu.ItemText>
+                    <span className="text-surface-500 ml-auto text-xs">{member.userEmail}</span>
+                  </Menu.OptionItem>
+                ))
+              )}
+            </SearchableMenuContent>
+          </Menu.Positioner>
+        </Portal>
+      </Menu>
+      {mutation.error && <ErrorAlert message={mutation.error.message} />}
+    </>
   );
 }
 
@@ -537,47 +548,13 @@ function MemberMenuField({
 
 const BROWSER_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-interface DateShortcut {
-  label: string;
-  offsetDays: number;
-}
-
-const DATE_SHORTCUTS: DateShortcut[] = [
+const DATE_SHORTCUTS = [
   { label: "Today", offsetDays: 0 },
   { label: "Tomorrow", offsetDays: 1 },
   { label: "In 1 week", offsetDays: 7 },
   { label: "In 2 weeks", offsetDays: 14 },
   { label: "In 1 month", offsetDays: 30 },
 ];
-
-function addDays(date: Date, days: number): Date {
-  const result = new Date(date);
-  result.setDate(result.getDate() + days);
-  return result;
-}
-
-function toISODate(date: Date): string {
-  const y = date.getFullYear().toString().padStart(4, "0");
-  const m = (date.getMonth() + 1).toString().padStart(2, "0");
-  const d = date.getDate().toString().padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function formatDateDisplay(date: Date): string {
-  return date.toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function parseDateInput(input: string): { label: string; value: string } | null {
-  if (!input.trim()) return null;
-  const parsed = chrono.parseDate(input);
-  if (!parsed) return null;
-  return { label: formatDateDisplay(parsed), value: toISODate(parsed) };
-}
 
 function DueDateField({
   spaceSlug,
@@ -591,7 +568,7 @@ function DueDateField({
   const mutation = useTaskPatch(spaceSlug, taskId);
   const search = useMenuSearch();
   const parsedDate = useMemo(() => parseDateInput(search.query), [search.query]);
-  const today = useMemo(() => new Date(), []);
+  const today = new Date();
 
   const displayValue = useMemo(() => {
     if (!value) return null;
@@ -604,73 +581,74 @@ function DueDateField({
   }
 
   return (
-    <Menu {...search.menuProps} closeOnSelect={false}>
-      <FieldPill
-        icon={<Calendar className="size-3.5" aria-hidden="true" />}
-        label="Due date"
-        value={displayValue}
-      />
-      <Portal>
-        <Menu.Positioner>
-          <SearchableMenuContent
-            inputProps={search.inputProps}
-            placeholder='e.g. "tomorrow", "next friday"'
-          >
-            {value && (
-              <Menu.Item
-                value="clear"
-                className={`text-error-500 ${ITEM_CLASS}`}
-                onClick={() => {
-                  mutation.reset();
-                  mutation.mutate({ due: null });
-                }}
-              >
-                <X className="size-4" aria-hidden="true" />
-                <Menu.ItemText>Clear due date</Menu.ItemText>
-              </Menu.Item>
-            )}
-
-            {search.query ? (
-              parsedDate ? (
+    <>
+      <Menu {...search.menuProps} closeOnSelect={false}>
+        <FieldPill
+          icon={<Calendar className="size-3.5" aria-hidden="true" />}
+          label="Due date"
+          value={displayValue}
+        />
+        <Portal>
+          <Menu.Positioner>
+            <SearchableMenuContent
+              inputProps={search.inputProps}
+              placeholder='e.g. "tomorrow", "next friday"'
+            >
+              {value && (
                 <Menu.Item
-                  value={parsedDate.value}
-                  className={ITEM_CLASS}
-                  onClick={() => selectDate(parsedDate.value)}
+                  value="clear"
+                  className={`text-error-500 ${MENU_ITEM_CLASS}`}
+                  onClick={() => {
+                    mutation.reset();
+                    mutation.mutate({ due: null });
+                  }}
                 >
-                  <Calendar className="size-4" aria-hidden="true" />
-                  <Menu.ItemText>{parsedDate.label}</Menu.ItemText>
-                  <span className="text-surface-500 ml-auto text-xs">{parsedDate.value}</span>
+                  <X className="size-4" aria-hidden="true" />
+                  <Menu.ItemText>Clear due date</Menu.ItemText>
                 </Menu.Item>
-              ) : (
-                <div className="text-surface-500 px-3 py-2 text-sm">No matching dates</div>
-              )
-            ) : (
-              DATE_SHORTCUTS.map((shortcut) => {
-                const date = addDays(today, shortcut.offsetDays);
-                const isoDate = toISODate(date);
-                return (
+              )}
+
+              {search.query ? (
+                parsedDate ? (
                   <Menu.Item
-                    key={shortcut.label}
-                    value={isoDate}
-                    className={ITEM_CLASS}
-                    onClick={() => selectDate(isoDate)}
+                    value={parsedDate.value}
+                    className={MENU_ITEM_CLASS}
+                    onClick={() => selectDate(parsedDate.value)}
                   >
-                    <Menu.ItemText>{shortcut.label}</Menu.ItemText>
-                    <span className="text-surface-500 ml-auto text-xs">
-                      {formatDateDisplay(date)}
-                    </span>
+                    <Calendar className="size-4" aria-hidden="true" />
+                    <Menu.ItemText>{parsedDate.label}</Menu.ItemText>
+                    <span className="text-surface-500 ml-auto text-xs">{parsedDate.value}</span>
                   </Menu.Item>
-                );
-              })
-            )}
-          </SearchableMenuContent>
-        </Menu.Positioner>
-      </Portal>
-    </Menu>
+                ) : (
+                  <div className="text-surface-500 px-3 py-2 text-sm">No matching dates</div>
+                )
+              ) : (
+                DATE_SHORTCUTS.map((shortcut) => {
+                  const date = addDays(today, shortcut.offsetDays);
+                  const isoDate = toISODate(date);
+                  return (
+                    <Menu.Item
+                      key={shortcut.label}
+                      value={isoDate}
+                      className={MENU_ITEM_CLASS}
+                      onClick={() => selectDate(isoDate)}
+                    >
+                      <Menu.ItemText>{shortcut.label}</Menu.ItemText>
+                      <span className="text-surface-500 ml-auto text-xs">
+                        {formatDateDisplay(date)}
+                      </span>
+                    </Menu.Item>
+                  );
+                })
+              )}
+            </SearchableMenuContent>
+          </Menu.Positioner>
+        </Portal>
+      </Menu>
+      {mutation.error && <ErrorAlert message={mutation.error.message} />}
+    </>
   );
 }
-
-// RecurrenceField is now RecurrenceMenuField from components/task/
 
 // ─── Overdue Action Field ───────────────────────────────────────────────────
 

@@ -15,9 +15,10 @@ export const toaster = createToaster({
  * Show a transient warning when query-cache invalidation fails after a
  * successful mutation, leaving the UI potentially stale.
  *
- * This is the "tier 2" error path. The "tier 1" path (mutation failure itself)
- * is handled globally in MutationCache.onError in query-client.ts. The two
- * are mutually exclusive in the normal happy path.
+ * Mutation failures themselves are handled per-component via
+ * `mutation.error` rendering (e.g., ErrorAlert). This function covers
+ * the narrower case where the mutation succeeds but cache invalidation
+ * throws.
  */
 export function notifyStaleData() {
   toaster.warning({

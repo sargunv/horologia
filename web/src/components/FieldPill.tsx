@@ -31,6 +31,7 @@ export function FieldPill({
   return (
     <Menu.Trigger
       className={`chip preset-tonal-surface cursor-pointer gap-1 text-sm ${!hasValue ? "opacity-60" : ""} ${className ?? ""}`}
+      aria-label={value ? `${label}: ${value}` : label}
     >
       {icon}
       <span className="whitespace-nowrap">{children ?? value ?? label}</span>
