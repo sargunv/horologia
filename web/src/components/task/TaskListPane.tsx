@@ -166,6 +166,8 @@ export function TaskListPane({ spaceSlug }: { spaceSlug: string }) {
         </div>
       </div>
 
+      <CreateTaskDialog spaceSlug={spaceSlug} />
+
       {tasks.length > 0 ? (
         <div className="card preset-outlined-surface-200-800 divide-surface-200-800 overflow-hidden">
           {tasks.map((task) => (
@@ -189,8 +191,6 @@ export function TaskListPane({ spaceSlug }: { spaceSlug: string }) {
           </div>
         </div>
       )}
-
-      <CreateTaskDialog spaceSlug={spaceSlug} />
 
       {isError && (
         <p className="text-error-500 text-center text-sm">
