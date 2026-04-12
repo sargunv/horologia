@@ -146,12 +146,12 @@ func authTokenCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawName == nil {
 				return mcp.NewToolResultError("name is required"), nil
 			}
-			vName, ok := rawName.(string)
-			if !ok || vName == "" {
-				return mcp.NewToolResultError("name is required"), nil
-			}
-			convertedName := vName
-			body.Name = convertedName
+				vName, ok := rawName.(string)
+				if !ok || vName == "" {
+					return mcp.NewToolResultError("name is required"), nil
+				}
+				convertedName := vName
+				body.Name = convertedName
 		} else if true {
 			return mcp.NewToolResultError("name is required"), nil
 		}
@@ -269,12 +269,12 @@ func userCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawName == nil {
 				return mcp.NewToolResultError("name is required"), nil
 			}
-			vName, ok := rawName.(string)
-			if !ok || vName == "" {
-				return mcp.NewToolResultError("name is required"), nil
-			}
-			convertedName := vName
-			body.Name = convertedName
+				vName, ok := rawName.(string)
+				if !ok || vName == "" {
+					return mcp.NewToolResultError("name is required"), nil
+				}
+				convertedName := vName
+				body.Name = convertedName
 		} else if true {
 			return mcp.NewToolResultError("name is required"), nil
 		}
@@ -283,12 +283,12 @@ func userCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawEmail == nil {
 				return mcp.NewToolResultError("email is required"), nil
 			}
-			vEmail, ok := rawEmail.(string)
-			if !ok || vEmail == "" {
-				return mcp.NewToolResultError("email is required"), nil
-			}
-			convertedEmail := vEmail
-			body.Email = convertedEmail
+				vEmail, ok := rawEmail.(string)
+				if !ok || vEmail == "" {
+					return mcp.NewToolResultError("email is required"), nil
+				}
+				convertedEmail := vEmail
+				body.Email = convertedEmail
 		} else if true {
 			return mcp.NewToolResultError("email is required"), nil
 		}
@@ -297,12 +297,12 @@ func userCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawIsOwner == nil {
 				return mcp.NewToolResultError("isOwner must not be null"), nil
 			}
-			vIsOwner, ok := rawIsOwner.(bool)
-			if !ok {
-				return mcp.NewToolResultError("isOwner must be a boolean"), nil
-			}
-			convertedIsOwner := vIsOwner
-			body.IsOwner.SetTo(convertedIsOwner)
+				vIsOwner, ok := rawIsOwner.(bool)
+				if !ok {
+					return mcp.NewToolResultError("isOwner must be a boolean"), nil
+				}
+				convertedIsOwner := vIsOwner
+				body.IsOwner.SetTo(convertedIsOwner)
 		} else if false {
 			return mcp.NewToolResultError("isOwner is required"), nil
 		}
@@ -311,12 +311,12 @@ func userCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawPassword == nil {
 				return mcp.NewToolResultError("password must not be null"), nil
 			}
-			vPassword, ok := rawPassword.(string)
-			if !ok {
-				return mcp.NewToolResultError("password must be a string"), nil
-			}
-			convertedPassword := vPassword
-			body.Password.SetTo(convertedPassword)
+				vPassword, ok := rawPassword.(string)
+				if !ok {
+					return mcp.NewToolResultError("password must be a string"), nil
+				}
+				convertedPassword := vPassword
+				body.Password.SetTo(convertedPassword)
 		} else if false {
 			return mcp.NewToolResultError("password is required"), nil
 		}
@@ -356,12 +356,12 @@ func userUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawName == nil {
 				return mcp.NewToolResultError("name must not be null"), nil
 			}
-			vName, ok := rawName.(string)
-			if !ok {
-				return mcp.NewToolResultError("name must be a string"), nil
-			}
-			convertedName := vName
-			body.Name.SetTo(convertedName)
+				vName, ok := rawName.(string)
+				if !ok {
+					return mcp.NewToolResultError("name must be a string"), nil
+				}
+				convertedName := vName
+				body.Name.SetTo(convertedName)
 		} else if false {
 			return mcp.NewToolResultError("name is required"), nil
 		}
@@ -370,12 +370,12 @@ func userUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawEmail == nil {
 				return mcp.NewToolResultError("email must not be null"), nil
 			}
-			vEmail, ok := rawEmail.(string)
-			if !ok {
-				return mcp.NewToolResultError("email must be a string"), nil
-			}
-			convertedEmail := vEmail
-			body.Email.SetTo(convertedEmail)
+				vEmail, ok := rawEmail.(string)
+				if !ok {
+					return mcp.NewToolResultError("email must be a string"), nil
+				}
+				convertedEmail := vEmail
+				body.Email.SetTo(convertedEmail)
 		} else if false {
 			return mcp.NewToolResultError("email is required"), nil
 		}
@@ -384,12 +384,12 @@ func userUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawIsOwner == nil {
 				return mcp.NewToolResultError("isOwner must not be null"), nil
 			}
-			vIsOwner, ok := rawIsOwner.(bool)
-			if !ok {
-				return mcp.NewToolResultError("isOwner must be a boolean"), nil
-			}
-			convertedIsOwner := vIsOwner
-			body.IsOwner.SetTo(convertedIsOwner)
+				vIsOwner, ok := rawIsOwner.(bool)
+				if !ok {
+					return mcp.NewToolResultError("isOwner must be a boolean"), nil
+				}
+				convertedIsOwner := vIsOwner
+				body.IsOwner.SetTo(convertedIsOwner)
 		} else if false {
 			return mcp.NewToolResultError("isOwner is required"), nil
 		}
@@ -398,12 +398,12 @@ func userUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawSetPassword == nil {
 				return mcp.NewToolResultError("setPassword must not be null"), nil
 			}
-			vSetPassword, ok := rawSetPassword.(string)
-			if !ok {
-				return mcp.NewToolResultError("setPassword must be a string"), nil
-			}
-			convertedSetPassword := vSetPassword
-			body.SetPassword.SetTo(convertedSetPassword)
+				vSetPassword, ok := rawSetPassword.(string)
+				if !ok {
+					return mcp.NewToolResultError("setPassword must be a string"), nil
+				}
+				convertedSetPassword := vSetPassword
+				body.SetPassword.SetTo(convertedSetPassword)
 		} else if false {
 			return mcp.NewToolResultError("setPassword is required"), nil
 		}
@@ -412,12 +412,12 @@ func userUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawClearPassword == nil {
 				return mcp.NewToolResultError("clearPassword must not be null"), nil
 			}
-			vClearPassword, ok := rawClearPassword.(bool)
-			if !ok {
-				return mcp.NewToolResultError("clearPassword must be a boolean"), nil
-			}
-			convertedClearPassword := vClearPassword
-			body.ClearPassword.SetTo(convertedClearPassword)
+				vClearPassword, ok := rawClearPassword.(bool)
+				if !ok {
+					return mcp.NewToolResultError("clearPassword must be a boolean"), nil
+				}
+				convertedClearPassword := vClearPassword
+				body.ClearPassword.SetTo(convertedClearPassword)
 		} else if false {
 			return mcp.NewToolResultError("clearPassword is required"), nil
 		}
@@ -526,12 +526,12 @@ func spaceCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawSlug == nil {
 				return mcp.NewToolResultError("slug is required"), nil
 			}
-			vSlug, ok := rawSlug.(string)
-			if !ok || vSlug == "" {
-				return mcp.NewToolResultError("slug is required"), nil
-			}
-			convertedSlug := vSlug
-			body.Slug = convertedSlug
+				vSlug, ok := rawSlug.(string)
+				if !ok || vSlug == "" {
+					return mcp.NewToolResultError("slug is required"), nil
+				}
+				convertedSlug := vSlug
+				body.Slug = convertedSlug
 		} else if true {
 			return mcp.NewToolResultError("slug is required"), nil
 		}
@@ -540,12 +540,12 @@ func spaceCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawName == nil {
 				return mcp.NewToolResultError("name is required"), nil
 			}
-			vName, ok := rawName.(string)
-			if !ok || vName == "" {
-				return mcp.NewToolResultError("name is required"), nil
-			}
-			convertedName := vName
-			body.Name = convertedName
+				vName, ok := rawName.(string)
+				if !ok || vName == "" {
+					return mcp.NewToolResultError("name is required"), nil
+				}
+				convertedName := vName
+				body.Name = convertedName
 		} else if true {
 			return mcp.NewToolResultError("name is required"), nil
 		}
@@ -554,12 +554,12 @@ func spaceCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawDescription == nil {
 				return mcp.NewToolResultError("description must not be null"), nil
 			}
-			vDescription, ok := rawDescription.(string)
-			if !ok {
-				return mcp.NewToolResultError("description must be a string"), nil
-			}
-			convertedDescription := vDescription
-			body.Description.SetTo(convertedDescription)
+				vDescription, ok := rawDescription.(string)
+				if !ok {
+					return mcp.NewToolResultError("description must be a string"), nil
+				}
+				convertedDescription := vDescription
+				body.Description.SetTo(convertedDescription)
 		} else if false {
 			return mcp.NewToolResultError("description is required"), nil
 		}
@@ -622,12 +622,12 @@ func spaceUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawSlug == nil {
 				return mcp.NewToolResultError("slug must not be null"), nil
 			}
-			vSlug, ok := rawSlug.(string)
-			if !ok {
-				return mcp.NewToolResultError("slug must be a string"), nil
-			}
-			convertedSlug := vSlug
-			body.Slug.SetTo(convertedSlug)
+				vSlug, ok := rawSlug.(string)
+				if !ok {
+					return mcp.NewToolResultError("slug must be a string"), nil
+				}
+				convertedSlug := vSlug
+				body.Slug.SetTo(convertedSlug)
 		} else if false {
 			return mcp.NewToolResultError("slug is required"), nil
 		}
@@ -636,12 +636,12 @@ func spaceUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawName == nil {
 				return mcp.NewToolResultError("name must not be null"), nil
 			}
-			vName, ok := rawName.(string)
-			if !ok {
-				return mcp.NewToolResultError("name must be a string"), nil
-			}
-			convertedName := vName
-			body.Name.SetTo(convertedName)
+				vName, ok := rawName.(string)
+				if !ok {
+					return mcp.NewToolResultError("name must be a string"), nil
+				}
+				convertedName := vName
+				body.Name.SetTo(convertedName)
 		} else if false {
 			return mcp.NewToolResultError("name is required"), nil
 		}
@@ -650,12 +650,12 @@ func spaceUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawDescription == nil {
 				return mcp.NewToolResultError("description must not be null"), nil
 			}
-			vDescription, ok := rawDescription.(string)
-			if !ok {
-				return mcp.NewToolResultError("description must be a string"), nil
-			}
-			convertedDescription := vDescription
-			body.Description.SetTo(convertedDescription)
+				vDescription, ok := rawDescription.(string)
+				if !ok {
+					return mcp.NewToolResultError("description must be a string"), nil
+				}
+				convertedDescription := vDescription
+				body.Description.SetTo(convertedDescription)
 		} else if false {
 			return mcp.NewToolResultError("description is required"), nil
 		}
@@ -741,12 +741,12 @@ func memberCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawUserId == nil {
 				return mcp.NewToolResultError("userId is required"), nil
 			}
-			vUserId, ok := rawUserId.(string)
-			if !ok || vUserId == "" {
-				return mcp.NewToolResultError("userId is required"), nil
-			}
-			convertedUserId := vUserId
-			body.UserId = convertedUserId
+				vUserId, ok := rawUserId.(string)
+				if !ok || vUserId == "" {
+					return mcp.NewToolResultError("userId is required"), nil
+				}
+				convertedUserId := vUserId
+				body.UserId = convertedUserId
 		} else if true {
 			return mcp.NewToolResultError("userId is required"), nil
 		}
@@ -755,12 +755,12 @@ func memberCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawRole == nil {
 				return mcp.NewToolResultError("role is required"), nil
 			}
-			vRole, ok := rawRole.(string)
-			if !ok || vRole == "" {
-				return mcp.NewToolResultError("role is required"), nil
-			}
-			convertedRole := apigen.SpaceRole(vRole)
-			body.Role = convertedRole
+				vRole, ok := rawRole.(string)
+				if !ok || vRole == "" {
+					return mcp.NewToolResultError("role is required"), nil
+				}
+				convertedRole := apigen.SpaceRole(vRole)
+				body.Role = convertedRole
 		} else if true {
 			return mcp.NewToolResultError("role is required"), nil
 		}
@@ -801,12 +801,12 @@ func memberUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawRole == nil {
 				return mcp.NewToolResultError("role is required"), nil
 			}
-			vRole, ok := rawRole.(string)
-			if !ok || vRole == "" {
-				return mcp.NewToolResultError("role is required"), nil
-			}
-			convertedRole := apigen.SpaceRole(vRole)
-			body.Role = convertedRole
+				vRole, ok := rawRole.(string)
+				if !ok || vRole == "" {
+					return mcp.NewToolResultError("role is required"), nil
+				}
+				convertedRole := apigen.SpaceRole(vRole)
+				body.Role = convertedRole
 		} else if true {
 			return mcp.NewToolResultError("role is required"), nil
 		}
@@ -896,12 +896,12 @@ func tagCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawName == nil {
 				return mcp.NewToolResultError("name is required"), nil
 			}
-			vName, ok := rawName.(string)
-			if !ok || vName == "" {
-				return mcp.NewToolResultError("name is required"), nil
-			}
-			convertedName := vName
-			body.Name = convertedName
+				vName, ok := rawName.(string)
+				if !ok || vName == "" {
+					return mcp.NewToolResultError("name is required"), nil
+				}
+				convertedName := vName
+				body.Name = convertedName
 		} else if true {
 			return mcp.NewToolResultError("name is required"), nil
 		}
@@ -942,12 +942,12 @@ func tagUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawName == nil {
 				return mcp.NewToolResultError("name is required"), nil
 			}
-			vName, ok := rawName.(string)
-			if !ok || vName == "" {
-				return mcp.NewToolResultError("name is required"), nil
-			}
-			convertedName := vName
-			body.Name = convertedName
+				vName, ok := rawName.(string)
+				if !ok || vName == "" {
+					return mcp.NewToolResultError("name is required"), nil
+				}
+				convertedName := vName
+				body.Name = convertedName
 		} else if true {
 			return mcp.NewToolResultError("name is required"), nil
 		}
@@ -1070,7 +1070,7 @@ func taskCreateTool() mcp.Tool {
 			"type": []any{"object", "null"},
 			"properties": map[string]any{
 				"after": map[string]any{
-					"type":        []any{"number", "null"},
+					"type": []any{"number", "null"},
 					"description": "Grace period in days after the due date before the action fires.\n      null means act immediately when the task becomes overdue.",
 				},
 				"action": map[string]any{
@@ -1078,7 +1078,7 @@ func taskCreateTool() mcp.Tool {
 					"enum": []any{"advance_recurrence", "set_status", "clear_due_date"},
 				},
 				"status": map[string]any{
-					"type":        "string",
+					"type": "string",
 					"description": "Required when action is set_status; the status name to transition to.",
 				},
 			},
@@ -1101,12 +1101,12 @@ func taskCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawTitle == nil {
 				return mcp.NewToolResultError("title is required"), nil
 			}
-			vTitle, ok := rawTitle.(string)
-			if !ok || vTitle == "" {
-				return mcp.NewToolResultError("title is required"), nil
-			}
-			convertedTitle := vTitle
-			body.Title = convertedTitle
+				vTitle, ok := rawTitle.(string)
+				if !ok || vTitle == "" {
+					return mcp.NewToolResultError("title is required"), nil
+				}
+				convertedTitle := vTitle
+				body.Title = convertedTitle
 		} else if true {
 			return mcp.NewToolResultError("title is required"), nil
 		}
@@ -1115,12 +1115,12 @@ func taskCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawDescription == nil {
 				return mcp.NewToolResultError("description must not be null"), nil
 			}
-			vDescription, ok := rawDescription.(string)
-			if !ok {
-				return mcp.NewToolResultError("description must be a string"), nil
-			}
-			convertedDescription := vDescription
-			body.Description.SetTo(convertedDescription)
+				vDescription, ok := rawDescription.(string)
+				if !ok {
+					return mcp.NewToolResultError("description must be a string"), nil
+				}
+				convertedDescription := vDescription
+				body.Description.SetTo(convertedDescription)
 		} else if false {
 			return mcp.NewToolResultError("description is required"), nil
 		}
@@ -1129,12 +1129,12 @@ func taskCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawStatus == nil {
 				return mcp.NewToolResultError("status must not be null"), nil
 			}
-			vStatus, ok := rawStatus.(string)
-			if !ok {
-				return mcp.NewToolResultError("status must be a string"), nil
-			}
-			convertedStatus := vStatus
-			body.Status.SetTo(convertedStatus)
+				vStatus, ok := rawStatus.(string)
+				if !ok {
+					return mcp.NewToolResultError("status must be a string"), nil
+				}
+				convertedStatus := vStatus
+				body.Status.SetTo(convertedStatus)
 		} else if false {
 			return mcp.NewToolResultError("status is required"), nil
 		}
@@ -1143,12 +1143,12 @@ func taskCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawEffort == nil {
 				return mcp.NewToolResultError("effort must not be null"), nil
 			}
-			vEffort, ok := rawEffort.(string)
-			if !ok {
-				return mcp.NewToolResultError("effort must be a string"), nil
-			}
-			convertedEffort := vEffort
-			body.Effort.SetTo(convertedEffort)
+				vEffort, ok := rawEffort.(string)
+				if !ok {
+					return mcp.NewToolResultError("effort must be a string"), nil
+				}
+				convertedEffort := vEffort
+				body.Effort.SetTo(convertedEffort)
 		} else if false {
 			return mcp.NewToolResultError("effort is required"), nil
 		}
@@ -1157,12 +1157,12 @@ func taskCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawPriority == nil {
 				return mcp.NewToolResultError("priority must not be null"), nil
 			}
-			vPriority, ok := rawPriority.(string)
-			if !ok {
-				return mcp.NewToolResultError("priority must be a string"), nil
-			}
-			convertedPriority := vPriority
-			body.Priority.SetTo(convertedPriority)
+				vPriority, ok := rawPriority.(string)
+				if !ok {
+					return mcp.NewToolResultError("priority must be a string"), nil
+				}
+				convertedPriority := vPriority
+				body.Priority.SetTo(convertedPriority)
 		} else if false {
 			return mcp.NewToolResultError("priority is required"), nil
 		}
@@ -1171,12 +1171,12 @@ func taskCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawRecurrenceType == nil {
 				return mcp.NewToolResultError("recurrenceType must not be null"), nil
 			}
-			vRecurrenceType, ok := rawRecurrenceType.(string)
-			if !ok {
-				return mcp.NewToolResultError("recurrenceType must be a string"), nil
-			}
-			convertedRecurrenceType := apigen.TaskRecurrenceType(vRecurrenceType)
-			body.RecurrenceType.SetTo(convertedRecurrenceType)
+				vRecurrenceType, ok := rawRecurrenceType.(string)
+				if !ok {
+					return mcp.NewToolResultError("recurrenceType must be a string"), nil
+				}
+				convertedRecurrenceType := apigen.TaskRecurrenceType(vRecurrenceType)
+				body.RecurrenceType.SetTo(convertedRecurrenceType)
 		} else if false {
 			return mcp.NewToolResultError("recurrenceType is required"), nil
 		}
@@ -1185,12 +1185,12 @@ func taskCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawRecurrenceRule == nil {
 				return mcp.NewToolResultError("recurrenceRule must not be null"), nil
 			}
-			vRecurrenceRule, ok := rawRecurrenceRule.(string)
-			if !ok {
-				return mcp.NewToolResultError("recurrenceRule must be a string"), nil
-			}
-			convertedRecurrenceRule := vRecurrenceRule
-			body.RecurrenceRule.SetTo(convertedRecurrenceRule)
+				vRecurrenceRule, ok := rawRecurrenceRule.(string)
+				if !ok {
+					return mcp.NewToolResultError("recurrenceRule must be a string"), nil
+				}
+				convertedRecurrenceRule := vRecurrenceRule
+				body.RecurrenceRule.SetTo(convertedRecurrenceRule)
 		} else if false {
 			return mcp.NewToolResultError("recurrenceRule is required"), nil
 		}
@@ -1275,15 +1275,15 @@ func taskCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 					if rawvalueDueAt == nil {
 						return mcp.NewToolResultError("due.at is required"), nil
 					}
-					vvalueDueAt, ok := rawvalueDueAt.(string)
-					if !ok || vvalueDueAt == "" {
-						return mcp.NewToolResultError("due.at is required"), nil
-					}
-					convertedvalueDueAt, err := time.Parse(time.DateOnly, vvalueDueAt)
-					if err != nil {
-						return mcp.NewToolResultError("due.at must be a valid date"), nil
-					}
-					valueDue.At = convertedvalueDueAt
+						vvalueDueAt, ok := rawvalueDueAt.(string)
+						if !ok || vvalueDueAt == "" {
+							return mcp.NewToolResultError("due.at is required"), nil
+						}
+						convertedvalueDueAt, err := time.Parse(time.DateOnly, vvalueDueAt)
+						if err != nil {
+							return mcp.NewToolResultError("due.at must be a valid date"), nil
+						}
+						valueDue.At = convertedvalueDueAt
 				} else if true {
 					return mcp.NewToolResultError("due.at is required"), nil
 				}
@@ -1292,12 +1292,12 @@ func taskCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 					if rawvalueDueTimezone == nil {
 						return mcp.NewToolResultError("due.timezone is required"), nil
 					}
-					vvalueDueTimezone, ok := rawvalueDueTimezone.(string)
-					if !ok || vvalueDueTimezone == "" {
-						return mcp.NewToolResultError("due.timezone is required"), nil
-					}
-					convertedvalueDueTimezone := vvalueDueTimezone
-					valueDue.Timezone = convertedvalueDueTimezone
+						vvalueDueTimezone, ok := rawvalueDueTimezone.(string)
+						if !ok || vvalueDueTimezone == "" {
+							return mcp.NewToolResultError("due.timezone is required"), nil
+						}
+						convertedvalueDueTimezone := vvalueDueTimezone
+						valueDue.Timezone = convertedvalueDueTimezone
 				} else if true {
 					return mcp.NewToolResultError("due.timezone is required"), nil
 				}
@@ -1336,12 +1336,12 @@ func taskCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 					if rawvalueOverdueActionRuleAction == nil {
 						return mcp.NewToolResultError("overdueActionRule.action is required"), nil
 					}
-					vvalueOverdueActionRuleAction, ok := rawvalueOverdueActionRuleAction.(string)
-					if !ok || vvalueOverdueActionRuleAction == "" {
-						return mcp.NewToolResultError("overdueActionRule.action is required"), nil
-					}
-					convertedvalueOverdueActionRuleAction := apigen.TaskOverdueAction(vvalueOverdueActionRuleAction)
-					valueOverdueActionRule.Action = convertedvalueOverdueActionRuleAction
+						vvalueOverdueActionRuleAction, ok := rawvalueOverdueActionRuleAction.(string)
+						if !ok || vvalueOverdueActionRuleAction == "" {
+							return mcp.NewToolResultError("overdueActionRule.action is required"), nil
+						}
+						convertedvalueOverdueActionRuleAction := apigen.TaskOverdueAction(vvalueOverdueActionRuleAction)
+						valueOverdueActionRule.Action = convertedvalueOverdueActionRuleAction
 				} else if true {
 					return mcp.NewToolResultError("overdueActionRule.action is required"), nil
 				}
@@ -1350,12 +1350,12 @@ func taskCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 					if rawvalueOverdueActionRuleStatus == nil {
 						return mcp.NewToolResultError("overdueActionRule.status must not be null"), nil
 					}
-					vvalueOverdueActionRuleStatus, ok := rawvalueOverdueActionRuleStatus.(string)
-					if !ok {
-						return mcp.NewToolResultError("overdueActionRule.status must be a string"), nil
-					}
-					convertedvalueOverdueActionRuleStatus := vvalueOverdueActionRuleStatus
-					valueOverdueActionRule.Status.SetTo(convertedvalueOverdueActionRuleStatus)
+						vvalueOverdueActionRuleStatus, ok := rawvalueOverdueActionRuleStatus.(string)
+						if !ok {
+							return mcp.NewToolResultError("overdueActionRule.status must be a string"), nil
+						}
+						convertedvalueOverdueActionRuleStatus := vvalueOverdueActionRuleStatus
+						valueOverdueActionRule.Status.SetTo(convertedvalueOverdueActionRuleStatus)
 				} else if false {
 					return mcp.NewToolResultError("overdueActionRule.status is required"), nil
 				}
@@ -1413,16 +1413,16 @@ func taskUpdateTool() mcp.Tool {
 		mcp.WithString("description", mcp.Description("New description.")),
 		mcp.WithString("status", mcp.Description("New status name.")),
 		withRawProperty("effort", false, map[string]any{
-			"type":        []any{"string", "null"},
+			"type": []any{"string", "null"},
 			"description": "New effort level name.",
 		}),
 		withRawProperty("priority", false, map[string]any{
-			"type":        []any{"string", "null"},
+			"type": []any{"string", "null"},
 			"description": "New priority level name.",
 		}),
 		mcp.WithString("recurrenceType", mcp.Description("New recurrence type."), mcp.Enum("one_off", "completion_based", "fixed_non_accumulating", "fixed_accumulating", "on_dependency")),
 		withRawProperty("recurrenceRule", false, map[string]any{
-			"type":        []any{"string", "null"},
+			"type": []any{"string", "null"},
 			"description": "New recurrence rule (RRULE string, max 500 chars).",
 		}),
 		withRawProperty("assigneeIds", false, map[string]any{
@@ -1459,7 +1459,7 @@ func taskUpdateTool() mcp.Tool {
 			"type": []any{"object", "null"},
 			"properties": map[string]any{
 				"after": map[string]any{
-					"type":        []any{"number", "null"},
+					"type": []any{"number", "null"},
 					"description": "Grace period in days after the due date before the action fires.\n      null means act immediately when the task becomes overdue.",
 				},
 				"action": map[string]any{
@@ -1467,7 +1467,7 @@ func taskUpdateTool() mcp.Tool {
 					"enum": []any{"advance_recurrence", "set_status", "clear_due_date"},
 				},
 				"status": map[string]any{
-					"type":        "string",
+					"type": "string",
 					"description": "Required when action is set_status; the status name to transition to.",
 				},
 			},
@@ -1494,12 +1494,12 @@ func taskUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawTitle == nil {
 				return mcp.NewToolResultError("title must not be null"), nil
 			}
-			vTitle, ok := rawTitle.(string)
-			if !ok {
-				return mcp.NewToolResultError("title must be a string"), nil
-			}
-			convertedTitle := vTitle
-			body.Title.SetTo(convertedTitle)
+				vTitle, ok := rawTitle.(string)
+				if !ok {
+					return mcp.NewToolResultError("title must be a string"), nil
+				}
+				convertedTitle := vTitle
+				body.Title.SetTo(convertedTitle)
 		} else if false {
 			return mcp.NewToolResultError("title is required"), nil
 		}
@@ -1508,12 +1508,12 @@ func taskUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawDescription == nil {
 				return mcp.NewToolResultError("description must not be null"), nil
 			}
-			vDescription, ok := rawDescription.(string)
-			if !ok {
-				return mcp.NewToolResultError("description must be a string"), nil
-			}
-			convertedDescription := vDescription
-			body.Description.SetTo(convertedDescription)
+				vDescription, ok := rawDescription.(string)
+				if !ok {
+					return mcp.NewToolResultError("description must be a string"), nil
+				}
+				convertedDescription := vDescription
+				body.Description.SetTo(convertedDescription)
 		} else if false {
 			return mcp.NewToolResultError("description is required"), nil
 		}
@@ -1522,12 +1522,12 @@ func taskUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawStatus == nil {
 				return mcp.NewToolResultError("status must not be null"), nil
 			}
-			vStatus, ok := rawStatus.(string)
-			if !ok {
-				return mcp.NewToolResultError("status must be a string"), nil
-			}
-			convertedStatus := vStatus
-			body.Status.SetTo(convertedStatus)
+				vStatus, ok := rawStatus.(string)
+				if !ok {
+					return mcp.NewToolResultError("status must be a string"), nil
+				}
+				convertedStatus := vStatus
+				body.Status.SetTo(convertedStatus)
 		} else if false {
 			return mcp.NewToolResultError("status is required"), nil
 		}
@@ -1566,12 +1566,12 @@ func taskUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawRecurrenceType == nil {
 				return mcp.NewToolResultError("recurrenceType must not be null"), nil
 			}
-			vRecurrenceType, ok := rawRecurrenceType.(string)
-			if !ok {
-				return mcp.NewToolResultError("recurrenceType must be a string"), nil
-			}
-			convertedRecurrenceType := apigen.TaskRecurrenceType(vRecurrenceType)
-			body.RecurrenceType.SetTo(convertedRecurrenceType)
+				vRecurrenceType, ok := rawRecurrenceType.(string)
+				if !ok {
+					return mcp.NewToolResultError("recurrenceType must be a string"), nil
+				}
+				convertedRecurrenceType := apigen.TaskRecurrenceType(vRecurrenceType)
+				body.RecurrenceType.SetTo(convertedRecurrenceType)
 		} else if false {
 			return mcp.NewToolResultError("recurrenceType is required"), nil
 		}
@@ -1671,15 +1671,15 @@ func taskUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 					if rawvalueDueAt == nil {
 						return mcp.NewToolResultError("due.at is required"), nil
 					}
-					vvalueDueAt, ok := rawvalueDueAt.(string)
-					if !ok || vvalueDueAt == "" {
-						return mcp.NewToolResultError("due.at is required"), nil
-					}
-					convertedvalueDueAt, err := time.Parse(time.DateOnly, vvalueDueAt)
-					if err != nil {
-						return mcp.NewToolResultError("due.at must be a valid date"), nil
-					}
-					valueDue.At = convertedvalueDueAt
+						vvalueDueAt, ok := rawvalueDueAt.(string)
+						if !ok || vvalueDueAt == "" {
+							return mcp.NewToolResultError("due.at is required"), nil
+						}
+						convertedvalueDueAt, err := time.Parse(time.DateOnly, vvalueDueAt)
+						if err != nil {
+							return mcp.NewToolResultError("due.at must be a valid date"), nil
+						}
+						valueDue.At = convertedvalueDueAt
 				} else if true {
 					return mcp.NewToolResultError("due.at is required"), nil
 				}
@@ -1688,12 +1688,12 @@ func taskUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 					if rawvalueDueTimezone == nil {
 						return mcp.NewToolResultError("due.timezone is required"), nil
 					}
-					vvalueDueTimezone, ok := rawvalueDueTimezone.(string)
-					if !ok || vvalueDueTimezone == "" {
-						return mcp.NewToolResultError("due.timezone is required"), nil
-					}
-					convertedvalueDueTimezone := vvalueDueTimezone
-					valueDue.Timezone = convertedvalueDueTimezone
+						vvalueDueTimezone, ok := rawvalueDueTimezone.(string)
+						if !ok || vvalueDueTimezone == "" {
+							return mcp.NewToolResultError("due.timezone is required"), nil
+						}
+						convertedvalueDueTimezone := vvalueDueTimezone
+						valueDue.Timezone = convertedvalueDueTimezone
 				} else if true {
 					return mcp.NewToolResultError("due.timezone is required"), nil
 				}
@@ -1732,12 +1732,12 @@ func taskUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 					if rawvalueOverdueActionRuleAction == nil {
 						return mcp.NewToolResultError("overdueActionRule.action is required"), nil
 					}
-					vvalueOverdueActionRuleAction, ok := rawvalueOverdueActionRuleAction.(string)
-					if !ok || vvalueOverdueActionRuleAction == "" {
-						return mcp.NewToolResultError("overdueActionRule.action is required"), nil
-					}
-					convertedvalueOverdueActionRuleAction := apigen.TaskOverdueAction(vvalueOverdueActionRuleAction)
-					valueOverdueActionRule.Action = convertedvalueOverdueActionRuleAction
+						vvalueOverdueActionRuleAction, ok := rawvalueOverdueActionRuleAction.(string)
+						if !ok || vvalueOverdueActionRuleAction == "" {
+							return mcp.NewToolResultError("overdueActionRule.action is required"), nil
+						}
+						convertedvalueOverdueActionRuleAction := apigen.TaskOverdueAction(vvalueOverdueActionRuleAction)
+						valueOverdueActionRule.Action = convertedvalueOverdueActionRuleAction
 				} else if true {
 					return mcp.NewToolResultError("overdueActionRule.action is required"), nil
 				}
@@ -1746,12 +1746,12 @@ func taskUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 					if rawvalueOverdueActionRuleStatus == nil {
 						return mcp.NewToolResultError("overdueActionRule.status must not be null"), nil
 					}
-					vvalueOverdueActionRuleStatus, ok := rawvalueOverdueActionRuleStatus.(string)
-					if !ok {
-						return mcp.NewToolResultError("overdueActionRule.status must be a string"), nil
-					}
-					convertedvalueOverdueActionRuleStatus := vvalueOverdueActionRuleStatus
-					valueOverdueActionRule.Status.SetTo(convertedvalueOverdueActionRuleStatus)
+						vvalueOverdueActionRuleStatus, ok := rawvalueOverdueActionRuleStatus.(string)
+						if !ok {
+							return mcp.NewToolResultError("overdueActionRule.status must be a string"), nil
+						}
+						convertedvalueOverdueActionRuleStatus := vvalueOverdueActionRuleStatus
+						valueOverdueActionRule.Status.SetTo(convertedvalueOverdueActionRuleStatus)
 				} else if false {
 					return mcp.NewToolResultError("overdueActionRule.status is required"), nil
 				}
@@ -1827,12 +1827,12 @@ func relationCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawKind == nil {
 				return mcp.NewToolResultError("kind is required"), nil
 			}
-			vKind, ok := rawKind.(string)
-			if !ok || vKind == "" {
-				return mcp.NewToolResultError("kind is required"), nil
-			}
-			convertedKind := apigen.TaskRelationKind(vKind)
-			body.Kind = convertedKind
+				vKind, ok := rawKind.(string)
+				if !ok || vKind == "" {
+					return mcp.NewToolResultError("kind is required"), nil
+				}
+				convertedKind := apigen.TaskRelationKind(vKind)
+				body.Kind = convertedKind
 		} else if true {
 			return mcp.NewToolResultError("kind is required"), nil
 		}
@@ -1841,12 +1841,12 @@ func relationCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			if rawRelatedTaskId == nil {
 				return mcp.NewToolResultError("relatedTaskId is required"), nil
 			}
-			vRelatedTaskId, ok := rawRelatedTaskId.(string)
-			if !ok || vRelatedTaskId == "" {
-				return mcp.NewToolResultError("relatedTaskId is required"), nil
-			}
-			convertedRelatedTaskId := vRelatedTaskId
-			body.RelatedTaskId = convertedRelatedTaskId
+				vRelatedTaskId, ok := rawRelatedTaskId.(string)
+				if !ok || vRelatedTaskId == "" {
+					return mcp.NewToolResultError("relatedTaskId is required"), nil
+				}
+				convertedRelatedTaskId := vRelatedTaskId
+				body.RelatedTaskId = convertedRelatedTaskId
 		} else if true {
 			return mcp.NewToolResultError("relatedTaskId is required"), nil
 		}
@@ -1977,12 +1977,12 @@ func statusReplaceHandler(h Handlers) mcpserver.ToolHandlerFunc {
 					if rawvalueName == nil {
 						return mcp.NewToolResultError(fmt.Sprintf("items[%d].name is required", i)), nil
 					}
-					vvalueName, ok := rawvalueName.(string)
-					if !ok || vvalueName == "" {
-						return mcp.NewToolResultError(fmt.Sprintf("items[%d].name is required", i)), nil
-					}
-					convertedvalueName := vvalueName
-					value.Name = convertedvalueName
+						vvalueName, ok := rawvalueName.(string)
+						if !ok || vvalueName == "" {
+							return mcp.NewToolResultError(fmt.Sprintf("items[%d].name is required", i)), nil
+						}
+						convertedvalueName := vvalueName
+						value.Name = convertedvalueName
 				} else if true {
 					return mcp.NewToolResultError(fmt.Sprintf("items[%d].name is required", i)), nil
 				}
@@ -1991,12 +1991,12 @@ func statusReplaceHandler(h Handlers) mcpserver.ToolHandlerFunc {
 					if rawvalueCategory == nil {
 						return mcp.NewToolResultError(fmt.Sprintf("items[%d].category is required", i)), nil
 					}
-					vvalueCategory, ok := rawvalueCategory.(string)
-					if !ok || vvalueCategory == "" {
-						return mcp.NewToolResultError(fmt.Sprintf("items[%d].category is required", i)), nil
-					}
-					convertedvalueCategory := apigen.TaskStatusCategory(vvalueCategory)
-					value.Category = convertedvalueCategory
+						vvalueCategory, ok := rawvalueCategory.(string)
+						if !ok || vvalueCategory == "" {
+							return mcp.NewToolResultError(fmt.Sprintf("items[%d].category is required", i)), nil
+						}
+						convertedvalueCategory := apigen.TaskStatusCategory(vvalueCategory)
+						value.Category = convertedvalueCategory
 				} else if true {
 					return mcp.NewToolResultError(fmt.Sprintf("items[%d].category is required", i)), nil
 				}
@@ -2090,12 +2090,12 @@ func effortLevelReplaceHandler(h Handlers) mcpserver.ToolHandlerFunc {
 					if rawvalueName == nil {
 						return mcp.NewToolResultError(fmt.Sprintf("items[%d].name is required", i)), nil
 					}
-					vvalueName, ok := rawvalueName.(string)
-					if !ok || vvalueName == "" {
-						return mcp.NewToolResultError(fmt.Sprintf("items[%d].name is required", i)), nil
-					}
-					convertedvalueName := vvalueName
-					value.Name = convertedvalueName
+						vvalueName, ok := rawvalueName.(string)
+						if !ok || vvalueName == "" {
+							return mcp.NewToolResultError(fmt.Sprintf("items[%d].name is required", i)), nil
+						}
+						convertedvalueName := vvalueName
+						value.Name = convertedvalueName
 				} else if true {
 					return mcp.NewToolResultError(fmt.Sprintf("items[%d].name is required", i)), nil
 				}
@@ -2189,12 +2189,12 @@ func priorityLevelReplaceHandler(h Handlers) mcpserver.ToolHandlerFunc {
 					if rawvalueName == nil {
 						return mcp.NewToolResultError(fmt.Sprintf("items[%d].name is required", i)), nil
 					}
-					vvalueName, ok := rawvalueName.(string)
-					if !ok || vvalueName == "" {
-						return mcp.NewToolResultError(fmt.Sprintf("items[%d].name is required", i)), nil
-					}
-					convertedvalueName := vvalueName
-					value.Name = convertedvalueName
+						vvalueName, ok := rawvalueName.(string)
+						if !ok || vvalueName == "" {
+							return mcp.NewToolResultError(fmt.Sprintf("items[%d].name is required", i)), nil
+						}
+						convertedvalueName := vvalueName
+						value.Name = convertedvalueName
 				} else if true {
 					return mcp.NewToolResultError(fmt.Sprintf("items[%d].name is required", i)), nil
 				}

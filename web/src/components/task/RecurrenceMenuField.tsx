@@ -467,7 +467,9 @@ function FreqSubMenu({
       })}
 
       {isSearching && !parsedDuration && filteredShortcuts.length === 0 && (
-        <div className="text-surface-500 px-3 py-2 text-sm">No matching options</div>
+        <div role="status" className="text-surface-500 px-3 py-2 text-sm">
+          No matching options
+        </div>
       )}
 
       {/* Conditional submenu entries for freq-specific options */}
@@ -773,7 +775,9 @@ function UntilDateSubMenu({
             <span className="text-surface-500 ml-auto text-xs">{parsedDate.value}</span>
           </Menu.Item>
         ) : (
-          <div className="text-surface-500 px-3 py-2 text-sm">No matching dates</div>
+          <div role="status" className="text-surface-500 px-3 py-2 text-sm">
+            No matching dates
+          </div>
         )
       ) : (
         shortcuts.map((shortcut) => {
@@ -847,7 +851,9 @@ export function RecurrenceMenuField({
               placeholder="Search recurrence..."
             >
               {typeItems.length === 0 ? (
-                <div className="text-surface-500 px-3 py-2 text-sm">No matching types</div>
+                <div role="status" className="text-surface-500 px-3 py-2 text-sm">
+                  No matching types
+                </div>
               ) : (
                 typeItems.map((item) =>
                   item.hasSubmenu ? (

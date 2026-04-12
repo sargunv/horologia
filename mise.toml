@@ -95,7 +95,20 @@ run = "mise run generate && mise run fix && mise run build && mise run test && m
 
 [tasks.dev]
 description = "Start local dev environment"
+raw = true
 run = "tilt up --stream --port $TILT_PORT"
+
+[tasks."dev:kill"]
+description = "Kill stale dev server processes holding ports"
+run = """
+pids=$(lsof -ti :$POSTGRES_PORT -ti :$OIDC_PORT -ti :$SERVER_PORT -ti :$WEB_PORT -ti :$TILT_PORT 2>/dev/null | sort -u)
+if [ -z "$pids" ]; then
+  echo "No stale processes found"
+else
+  echo "Killing PIDs: $pids"
+  echo "$pids" | xargs kill
+fi
+"""
 
 [tasks.cli]
 description = "Run the CLI from the repo root"
