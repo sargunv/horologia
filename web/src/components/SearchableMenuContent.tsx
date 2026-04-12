@@ -35,7 +35,7 @@ export function SearchableMenuContent({
   /** Menu items to render in the scrollable area */
   children: ReactNode;
   /** Additional CSS classes for Menu.Content */
-  className?: string;
+  className?: string | undefined;
 }) {
   return (
     <Menu.Content className={className}>

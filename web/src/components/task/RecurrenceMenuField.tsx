@@ -17,15 +17,12 @@ type TaskRecurrenceType = components["schemas"]["TaskRecurrenceType"];
 
 const ITEM_CLASS = "justify-start gap-2 text-sm";
 
-// Zag.js sets inline `z-index: var(--z-index)` on menu positioners,
-// so Tailwind z-index classes are overridden. We set the CSS variable
-// directly to control stacking of nested submenus (child portals
-// render before parent portals in DOM order).
-// Zag.js sets inline `z-index: var(--z-index)` and dynamically updates
-// `--z-index` to `auto`. We use CSS classes with !important to override
-// for nested submenu z-ordering (defined in main.css).
-const Z_SUBMENU = "menu-z-submenu";
-const Z_DETAIL = "menu-z-detail";
+// Zag.js reads z-index from Menu.Content's computed style and propagates
+// it to the positioner via --z-index. Apply z-index to Content (not
+// Positioner) so Zag picks it up. Child portals render before parent
+// portals in DOM, so deeper menus need higher z-index.
+const Z_SUBMENU = "z-10";
+const Z_DETAIL = "z-20";
 
 type FreqCode = "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
 
@@ -366,10 +363,12 @@ function FreqSubMenu({
   recurrenceType,
   currentRule,
   onSave,
+  className,
 }: {
   recurrenceType: TaskRecurrenceType;
   currentRule: ParsedRule;
   onSave: (update: { recurrenceType: TaskRecurrenceType; recurrenceRule?: string | null }) => void;
+  className?: string;
 }) {
   const search = useMenuSearch();
   const parsedDuration = useMemo(() => parseDurationInput(search.query), [search.query]);
@@ -435,7 +434,11 @@ function FreqSubMenu({
   const isSearching = search.query.length > 0;
 
   return (
-    <SearchableMenuContent inputProps={search.inputProps} placeholder='e.g. "2 weeks", "3 months"'>
+    <SearchableMenuContent
+      inputProps={search.inputProps}
+      placeholder='e.g. "2 weeks", "3 months"'
+      className={className}
+    >
       {/* Parsed duration from search input */}
       {isSearching && parsedDuration && (
         <Menu.Item
@@ -493,8 +496,8 @@ function FreqSubMenu({
               </Menu.ItemIndicator>
             </Menu.TriggerItem>
             <Portal>
-              <Menu.Positioner className={Z_DETAIL}>
-                <Menu.Content>
+              <Menu.Positioner>
+                <Menu.Content className={Z_DETAIL}>
                   <div className="flex items-center gap-1">
                     {WEEKDAY_CODES.map((day) => {
                       const active = currentRule.byweekday.includes(day);
@@ -547,8 +550,8 @@ function FreqSubMenu({
               </Menu.ItemIndicator>
             </Menu.TriggerItem>
             <Portal>
-              <Menu.Positioner className={Z_DETAIL}>
-                <Menu.Content>
+              <Menu.Positioner>
+                <Menu.Content className={Z_DETAIL}>
                   <div className="text-surface-500 mb-1.5 text-xs">Day of month</div>
                   <div className="grid grid-cols-7 gap-1">
                     {DAY_NUMBERS.map((d) => {
@@ -670,8 +673,8 @@ function FreqSubMenu({
               </Menu.ItemIndicator>
             </Menu.TriggerItem>
             <Portal>
-              <Menu.Positioner className={Z_DETAIL}>
-                <Menu.Content>
+              <Menu.Positioner>
+                <Menu.Content className={Z_DETAIL}>
                   <div className="grid grid-cols-6 gap-1">
                     {MONTH_SHORT_LABELS.map((label, index) => {
                       const month = index + 1;
@@ -714,8 +717,9 @@ function FreqSubMenu({
               </Menu.ItemIndicator>
             </Menu.TriggerItem>
             <Portal>
-              <Menu.Positioner className={Z_DETAIL}>
+              <Menu.Positioner>
                 <UntilDateSubMenu
+                  className={Z_DETAIL}
                   currentUntil={currentRule.until}
                   currentRule={currentRule}
                   recurrenceType={recurrenceType}
@@ -737,11 +741,13 @@ function UntilDateSubMenu({
   currentRule,
   recurrenceType,
   onSave,
+  className,
 }: {
   currentUntil: string | null;
   currentRule: ParsedRule;
   recurrenceType: TaskRecurrenceType;
   onSave: (update: { recurrenceType: TaskRecurrenceType; recurrenceRule?: string | null }) => void;
+  className?: string;
 }) {
   const search = useMenuSearch();
   const parsedDate = useMemo(() => parseDateInput(search.query), [search.query]);
@@ -763,6 +769,7 @@ function UntilDateSubMenu({
     <SearchableMenuContent
       inputProps={search.inputProps}
       placeholder='e.g. "dec 2026", "in 6 months"'
+      className={className}
     >
       {currentUntil && (
         <Menu.Item
@@ -885,8 +892,9 @@ export function RecurrenceMenuField({
                         </Menu.ItemIndicator>
                       </Menu.TriggerItem>
                       <Portal>
-                        <Menu.Positioner className={Z_SUBMENU}>
+                        <Menu.Positioner>
                           <FreqSubMenu
+                            className={Z_SUBMENU}
                             recurrenceType={item.value}
                             currentRule={currentRule}
                             onSave={handleSave}
