@@ -230,6 +230,15 @@ func taskFromDB(task dbgen.Task, assigneeUserIDs []int64, tagNames []string, rel
 	return t, nil
 }
 
+func taskSearchResultFromDB(row dbgen.SearchVisibleTasksRow) *apigen.TaskSearchResult {
+	return &apigen.TaskSearchResult{
+		ID:        types.FormatTaskID(row.ID),
+		SpaceSlug: row.SpaceSlug,
+		Title:     row.Title,
+		Status:    row.StatusName,
+	}
+}
+
 // convertAll maps a slice of DB rows to API types using the given converter.
 func convertAll[DB any, API any](rows []DB, f func(DB) *API) []API {
 	items := make([]API, len(rows))

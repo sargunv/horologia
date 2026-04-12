@@ -132,6 +132,10 @@ type Handler interface {
 	//
 	// PATCH /spaces/{spaceSlug}
 	SpacesUpdate(ctx context.Context, req *SpaceUpdate, params SpacesUpdateParams) (*Space, error)
+	// TasksSearch implements Tasks_search operation.
+	//
+	// GET /tasks/search
+	TasksSearch(ctx context.Context, params TasksSearchParams) (*TaskSearchResultList, error)
 	// UserActivityList implements UserActivity_list operation.
 	//
 	// GET /users/{userId}/activity

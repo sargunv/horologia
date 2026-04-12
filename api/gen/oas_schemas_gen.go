@@ -2400,6 +2400,69 @@ func (s *TaskRelationKind) UnmarshalText(data []byte) error {
 	}
 }
 
+// Ref: #/components/schemas/TaskSearchResult
+type TaskSearchResult struct {
+	ID        string `json:"id"`
+	SpaceSlug string `json:"spaceSlug"`
+	Title     string `json:"title"`
+	Status    string `json:"status"`
+}
+
+// GetID returns the value of ID.
+func (s *TaskSearchResult) GetID() string {
+	return s.ID
+}
+
+// GetSpaceSlug returns the value of SpaceSlug.
+func (s *TaskSearchResult) GetSpaceSlug() string {
+	return s.SpaceSlug
+}
+
+// GetTitle returns the value of Title.
+func (s *TaskSearchResult) GetTitle() string {
+	return s.Title
+}
+
+// GetStatus returns the value of Status.
+func (s *TaskSearchResult) GetStatus() string {
+	return s.Status
+}
+
+// SetID sets the value of ID.
+func (s *TaskSearchResult) SetID(val string) {
+	s.ID = val
+}
+
+// SetSpaceSlug sets the value of SpaceSlug.
+func (s *TaskSearchResult) SetSpaceSlug(val string) {
+	s.SpaceSlug = val
+}
+
+// SetTitle sets the value of Title.
+func (s *TaskSearchResult) SetTitle(val string) {
+	s.Title = val
+}
+
+// SetStatus sets the value of Status.
+func (s *TaskSearchResult) SetStatus(val string) {
+	s.Status = val
+}
+
+// Ref: #/components/schemas/TaskSearchResultList
+type TaskSearchResultList struct {
+	Items []TaskSearchResult `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *TaskSearchResultList) GetItems() []TaskSearchResult {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *TaskSearchResultList) SetItems(val []TaskSearchResult) {
+	s.Items = val
+}
+
 // Ref: #/components/schemas/TaskStatus
 type TaskStatus struct {
 	Name     string             `json:"name"`

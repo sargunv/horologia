@@ -1,9 +1,10 @@
 import { Navigation, Toast } from "@skeletonlabs/skeleton-react";
 import { createLink } from "@tanstack/react-router";
 import { CircleUser, House, Layers, LayoutGrid, Plus, X } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode } from "react";
 import type { components } from "../api/schema.d.ts";
 import { toaster } from "../lib/toaster.ts";
+import { TaskSearchCombobox } from "./task/TaskSearchCombobox.tsx";
 import { UserMenu } from "./UserMenu.tsx";
 
 type User = components["schemas"]["User"];
@@ -19,7 +20,7 @@ function DesktopSidebar({ user, spaces }: { user: User; spaces: Space[] }) {
       className="hidden shrink-0 border-r border-surface-200-800 md:flex md:flex-col"
     >
       <Navigation.Header>
-        <NavLink to="/" className="flex items-center gap-2 px-1">
+        <NavLink to="/" className="flex items-center gap-2">
           <span className="text-lg font-bold">Tend</span>
         </NavLink>
       </Navigation.Header>
@@ -27,6 +28,7 @@ function DesktopSidebar({ user, spaces }: { user: User; spaces: Space[] }) {
       <Navigation.Content className="flex-1">
         <Navigation.Group>
           <Navigation.Menu>
+            <TaskSearchCombobox className="w-full" />
             <NavLink
               to="/"
               activeProps={{ className: "preset-filled-primary-500" }}

@@ -235,6 +235,36 @@ export const taskActivityInfiniteQueryOptions = (spaceSlug: string, taskId: stri
   });
 };
 
+export const taskSearchQueryOptions = ({
+  query,
+  spaceSlug,
+  excludeTaskId,
+  limit = 10,
+}: {
+  query: string;
+  spaceSlug?: string;
+  excludeTaskId?: string;
+  limit?: number;
+}) =>
+  queryOptions({
+    queryKey: ["tasks", "search", query, spaceSlug ?? null, excludeTaskId ?? null, limit],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET("/tasks/search", {
+        params: {
+          query: {
+            q: query,
+            ...(spaceSlug ? { spaceSlug } : {}),
+            ...(excludeTaskId ? { excludeTaskId } : {}),
+            limit,
+          },
+        },
+      });
+      if (error) throw error;
+      return data.items;
+    },
+    staleTime: 10_000,
+  });
+
 export const spaceActivityInfiniteQueryOptions = (spaceSlug: string) => {
   const initialPageParam: string | null = null;
   return infiniteQueryOptions({

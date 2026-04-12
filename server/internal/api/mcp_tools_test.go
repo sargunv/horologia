@@ -302,6 +302,30 @@ func TestMCPTaskGet(t *testing.T) {
 	}
 }
 
+func TestMCPTaskSearch(t *testing.T) {
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+
+	createSpace(t, env, "home", "Home")
+	task := createTask(t, env, "home", `{"title":"Task planning"}`)
+
+	rpcResp := s.call(t, "task_search", map[string]any{
+		"q": "Task",
+	})
+	items := toolResultList(t, rpcResp)
+	if len(items) != 1 {
+		t.Fatalf("got %d items, want 1", len(items))
+	}
+
+	row := jsonAs[map[string]any](t, items[0])
+	if row["id"] != task["id"] {
+		t.Fatalf("id = %v, want %v", row["id"], task["id"])
+	}
+	if row["spaceSlug"] != "home" {
+		t.Fatalf("spaceSlug = %v, want home", row["spaceSlug"])
+	}
+}
+
 func TestMCPTaskUpdate(t *testing.T) {
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)

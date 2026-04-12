@@ -531,3 +531,24 @@ type User struct {
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
 }
+
+type VisibleTask struct {
+	ViewerUserID           int64
+	ID                     int64
+	SpaceSlug              string
+	Title                  string
+	Description            string
+	StatusName             string
+	EffortName             pgtype.Text
+	PriorityName           pgtype.Text
+	DueAt                  pgtype.Date
+	DueTz                  pgtype.Text
+	RecurrenceType         RecurrenceType
+	RecurrenceRule         pgtype.Text
+	LastCompletedAt        pgtype.Timestamptz
+	CreatedAt              pgtype.Timestamptz
+	UpdatedAt              pgtype.Timestamptz
+	OverdueActionAfterDays pgtype.Int4
+	OverdueAction          NullOverdueAction
+	OverdueActionStatus    pgtype.Text
+}

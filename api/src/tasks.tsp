@@ -144,6 +144,17 @@ model TaskUpdate {
 
 model TaskPage is Page<Task>;
 
+model TaskSearchResult {
+  id: string;
+  spaceSlug: string;
+  title: string;
+  status: string;
+}
+
+model TaskSearchResultList {
+  items: TaskSearchResult[];
+}
+
 @route("/spaces/{spaceSlug}/tasks")
 @tag("Tasks")
 interface SpaceTasks {
@@ -205,6 +216,30 @@ interface SpaceTasks {
     /** Task ID. */
     @path taskId: string,
   ): void | ApiError;
+}
+
+@route("/tasks")
+@tag("Tasks")
+interface Tasks {
+  @mcpTool(
+    "task_search",
+    "Search tasks visible to the current user across all spaces."
+  )
+  @get
+  @route("/search")
+  search(
+    /** Search query. */
+    @query @minLength(1) q: string,
+
+    /** Optional space slug to restrict results to a single space. */
+    @query spaceSlug?: string,
+
+    /** Optional task ID to exclude from results. */
+    @query excludeTaskId?: string,
+
+    /** Maximum number of items to return (1–100). */
+    @query limit?: int32,
+  ): TaskSearchResultList | ApiError;
 }
 
 @route("/spaces/{spaceSlug}/tasks/{taskId}/relations")

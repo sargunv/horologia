@@ -45,6 +45,7 @@ type Handlers interface {
 	SpaceTasksRead(ctx context.Context, params apigen.SpaceTasksReadParams) (*apigen.Task, error)
 	SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, params apigen.SpaceTasksUpdateParams) (*apigen.Task, error)
 	SpaceTasksDelete(ctx context.Context, params apigen.SpaceTasksDeleteParams) error
+	TasksSearch(ctx context.Context, params apigen.TasksSearchParams) (*apigen.TaskSearchResultList, error)
 	SpaceTaskRelationsCreate(ctx context.Context, req *apigen.TaskRelationCreate, params apigen.SpaceTaskRelationsCreateParams) (*apigen.TaskRelation, error)
 	SpaceTaskRelationsDelete(ctx context.Context, params apigen.SpaceTaskRelationsDeleteParams) error
 	SpaceTaskStatusesList(ctx context.Context, params apigen.SpaceTaskStatusesListParams) (*apigen.TaskStatusList, error)
@@ -88,6 +89,7 @@ func RegisterTools(s *mcpserver.MCPServer, h Handlers) {
 	s.AddTool(taskGetTool(), taskGetHandler(h))
 	s.AddTool(taskUpdateTool(), taskUpdateHandler(h))
 	s.AddTool(taskDeleteTool(), taskDeleteHandler(h))
+	s.AddTool(taskSearchTool(), taskSearchHandler(h))
 	s.AddTool(relationCreateTool(), relationCreateHandler(h))
 	s.AddTool(relationDeleteTool(), relationDeleteHandler(h))
 	s.AddTool(statusListTool(), statusListHandler(h))
@@ -1794,6 +1796,46 @@ func taskDeleteHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}
 		return mcp.NewToolResultText("ok"), nil
+	}
+}
+
+// --- task_search ---
+
+func taskSearchTool() mcp.Tool {
+	return mcp.NewTool("task_search",
+		mcp.WithDescription("Search tasks visible to the current user across all spaces."),
+		mcp.WithString("q", mcp.Required(), mcp.Description("Search query.")),
+		mcp.WithString("spaceSlug", mcp.Description("Optional space slug to restrict results to a single space.")),
+		mcp.WithString("excludeTaskId", mcp.Description("Optional task ID to exclude from results.")),
+		mcp.WithNumber("limit", mcp.Description("Maximum number of items to return (1–100).")),
+	)
+}
+
+func taskSearchHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		params := apigen.TasksSearchParams{}
+		if v, ok := args["q"].(string); ok && v != "" {
+			convertedQ := v
+			params.Q = convertedQ
+		}
+		if v, ok := args["spaceSlug"].(string); ok && v != "" {
+			convertedSpaceSlug := v
+			params.SpaceSlug.SetTo(convertedSpaceSlug)
+		}
+		if v, ok := args["excludeTaskId"].(string); ok && v != "" {
+			convertedExcludeTaskId := v
+			params.ExcludeTaskId.SetTo(convertedExcludeTaskId)
+		}
+		if v, ok := args["limit"].(float64); ok {
+			convertedLimit := int32(v)
+			params.Limit.SetTo(convertedLimit)
+		}
+		result, err := h.TasksSearch(ctx, params)
+		if err != nil {
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
+		}
+		return mustToolResultJSON(result), nil
 	}
 }
 

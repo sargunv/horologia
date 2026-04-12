@@ -161,6 +161,41 @@ WHERE overdue_action IS NOT NULL
 ORDER BY space_slug, id ASC
 LIMIT 100;
 
+-- name: SearchVisibleTasks :many
+SELECT
+    vt.id,
+    vt.space_slug,
+    vt.title,
+    vt.status_name,
+    vt.updated_at
+FROM visible_tasks vt
+WHERE
+    vt.viewer_user_id = sqlc.arg(viewer_user_id)
+    AND (sqlc.arg(space_slug) = '' OR vt.space_slug = sqlc.arg(space_slug))
+    AND (sqlc.arg(exclude_task_id) = 0 OR vt.id != sqlc.arg(exclude_task_id))
+    AND (
+        (sqlc.arg(exact_task_id) != 0 AND vt.id = sqlc.arg(exact_task_id))
+        OR (
+            sqlc.arg(query_text) != ''
+            AND (
+                lower(vt.title) LIKE '%' || lower(sqlc.arg(query_text)) || '%'
+                OR lower(vt.title) % lower(sqlc.arg(query_text))
+            )
+        )
+    )
+ORDER BY
+    CASE
+        WHEN sqlc.arg(exact_task_id) != 0 AND vt.id = sqlc.arg(exact_task_id) THEN 0
+        WHEN lower(vt.title) = lower(sqlc.arg(query_text)) THEN 1
+        WHEN lower(vt.title) LIKE lower(sqlc.arg(query_text)) || '%' THEN 2
+        WHEN lower(vt.title) LIKE '%' || lower(sqlc.arg(query_text)) || '%' THEN 3
+        ELSE 4
+    END ASC,
+    similarity(lower(vt.title), lower(sqlc.arg(query_text))) DESC,
+    vt.updated_at DESC,
+    vt.id DESC
+LIMIT sqlc.arg(lim);
+
 -- name: UpdateTaskOverdueActionAdvanceRecurrence :execresult
 UPDATE tasks
 SET due_at     = $1,

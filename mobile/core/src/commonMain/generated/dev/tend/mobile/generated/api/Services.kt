@@ -46,6 +46,7 @@ import dev.tend.mobile.generated.models.TaskPriorityLevelReplace
 import dev.tend.mobile.generated.models.TaskRelation
 import dev.tend.mobile.generated.models.TaskRelationCreate
 import dev.tend.mobile.generated.models.TaskRelationKind
+import dev.tend.mobile.generated.models.TaskSearchResultList
 import dev.tend.mobile.generated.models.TaskStatusList
 import dev.tend.mobile.generated.models.TaskStatusReplace
 import dev.tend.mobile.generated.models.TaskUpdate
@@ -833,6 +834,37 @@ public object TasksApi {
       createSerializedPathSegment(value = kind, explode = false, json = Api.json),
       createSerializedPathSegment(value = relatedTaskId, explode = false, json = Api.json),
     )
+    decorator()
+  }
+
+  /**
+   * `GET /tasks/search`
+   *
+   * @param q Search query.
+   * @param spaceSlug Optional space slug to restrict results to a single space.
+   * @param excludeTaskId Optional task ID to exclude from results.
+   * @param limit Maximum number of items to return (1–100).
+   * @return The request has succeeded.
+   */
+  public suspend fun tasksSearch(
+    q: String,
+    spaceSlug: String? = null,
+    excludeTaskId: String? = null,
+    limit: Int? = null,
+    decorator: HttpRequestBuilder.() -> Unit = {},
+  ): Either<CallException, HttpCallResponse<TaskSearchResultList>> = Api.client.eitherRequest {
+    method = HttpMethod.parse("GET")
+    authKeys(
+      Auth.BearerAuth.ID,
+    )
+    url.appendPathSegments(
+      "tasks",
+      "search",
+    )
+    appendSerializedQueryParameter(name = "q", value = q, explode = false, json = Api.json)
+    appendSerializedQueryParameter(name = "spaceSlug", value = spaceSlug, explode = false, json = Api.json)
+    appendSerializedQueryParameter(name = "excludeTaskId", value = excludeTaskId, explode = false, json = Api.json)
+    appendSerializedQueryParameter(name = "limit", value = limit, explode = false, json = Api.json)
     decorator()
   }
 }
