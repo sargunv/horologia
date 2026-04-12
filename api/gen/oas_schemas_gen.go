@@ -1920,6 +1920,8 @@ func (s *TaskDue) SetTimezone(val string) {
 type TaskEffortLevel struct {
 	Name     string `json:"name"`
 	Position int64  `json:"position"`
+	// Lucide icon name in kebab-case (e.g. "gauge", "flame"). Null if no icon is set.
+	Icon NilString `json:"icon"`
 }
 
 // GetName returns the value of Name.
@@ -1932,6 +1934,11 @@ func (s *TaskEffortLevel) GetPosition() int64 {
 	return s.Position
 }
 
+// GetIcon returns the value of Icon.
+func (s *TaskEffortLevel) GetIcon() NilString {
+	return s.Icon
+}
+
 // SetName sets the value of Name.
 func (s *TaskEffortLevel) SetName(val string) {
 	s.Name = val
@@ -1942,9 +1949,16 @@ func (s *TaskEffortLevel) SetPosition(val int64) {
 	s.Position = val
 }
 
+// SetIcon sets the value of Icon.
+func (s *TaskEffortLevel) SetIcon(val NilString) {
+	s.Icon = val
+}
+
 // Ref: #/components/schemas/TaskEffortLevelInput
 type TaskEffortLevelInput struct {
 	Name string `json:"name"`
+	// Lucide icon name in kebab-case (e.g. "gauge", "flame"). Omit or set to null to clear.
+	Icon OptNilString `json:"icon"`
 }
 
 // GetName returns the value of Name.
@@ -1952,9 +1966,19 @@ func (s *TaskEffortLevelInput) GetName() string {
 	return s.Name
 }
 
+// GetIcon returns the value of Icon.
+func (s *TaskEffortLevelInput) GetIcon() OptNilString {
+	return s.Icon
+}
+
 // SetName sets the value of Name.
 func (s *TaskEffortLevelInput) SetName(val string) {
 	s.Name = val
+}
+
+// SetIcon sets the value of Icon.
+func (s *TaskEffortLevelInput) SetIcon(val OptNilString) {
+	s.Icon = val
 }
 
 // Ref: #/components/schemas/TaskEffortLevelList
@@ -2106,6 +2130,8 @@ func (s *TaskPage) SetNextCursor(val NilString) {
 type TaskPriorityLevel struct {
 	Name     string `json:"name"`
 	Position int64  `json:"position"`
+	// Lucide icon name in kebab-case (e.g. "signal-high", "flag"). Null if no icon is set.
+	Icon NilString `json:"icon"`
 }
 
 // GetName returns the value of Name.
@@ -2118,6 +2144,11 @@ func (s *TaskPriorityLevel) GetPosition() int64 {
 	return s.Position
 }
 
+// GetIcon returns the value of Icon.
+func (s *TaskPriorityLevel) GetIcon() NilString {
+	return s.Icon
+}
+
 // SetName sets the value of Name.
 func (s *TaskPriorityLevel) SetName(val string) {
 	s.Name = val
@@ -2128,9 +2159,16 @@ func (s *TaskPriorityLevel) SetPosition(val int64) {
 	s.Position = val
 }
 
+// SetIcon sets the value of Icon.
+func (s *TaskPriorityLevel) SetIcon(val NilString) {
+	s.Icon = val
+}
+
 // Ref: #/components/schemas/TaskPriorityLevelInput
 type TaskPriorityLevelInput struct {
 	Name string `json:"name"`
+	// Lucide icon name in kebab-case (e.g. "signal-high", "flag"). Omit or set to null to clear.
+	Icon OptNilString `json:"icon"`
 }
 
 // GetName returns the value of Name.
@@ -2138,9 +2176,19 @@ func (s *TaskPriorityLevelInput) GetName() string {
 	return s.Name
 }
 
+// GetIcon returns the value of Icon.
+func (s *TaskPriorityLevelInput) GetIcon() OptNilString {
+	return s.Icon
+}
+
 // SetName sets the value of Name.
 func (s *TaskPriorityLevelInput) SetName(val string) {
 	s.Name = val
+}
+
+// SetIcon sets the value of Icon.
+func (s *TaskPriorityLevelInput) SetIcon(val OptNilString) {
+	s.Icon = val
 }
 
 // Ref: #/components/schemas/TaskPriorityLevelList

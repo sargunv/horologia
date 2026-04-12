@@ -20,27 +20,34 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { GripVertical, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ErrorAlert } from "./ErrorAlert.tsx";
+import { IconPicker } from "./IconPicker.tsx";
 
 interface NamedItem {
   id: string;
   name: string;
+  icon?: string | null;
 }
 
 interface ServerItem {
   name: string;
   position: number;
+  icon?: string | null;
 }
 
 function toItems(serverItems: ServerItem[], existing?: NamedItem[]): NamedItem[] {
-  return serverItems.map((s, i) => ({
-    id: existing?.[i]?.id ?? crypto.randomUUID(),
+  const nameToId = new Map(existing?.map((e) => [e.name, e.id]));
+  return serverItems.map((s) => ({
+    id: nameToId.get(s.name) ?? crypto.randomUUID(),
     name: s.name,
+    icon: s.icon ?? null,
   }));
 }
 
 function arraysEqual(a: NamedItem[], b: ServerItem[]): boolean {
   if (a.length !== b.length) return false;
-  return a.every((item, i) => item.name.trim() === b[i]?.name);
+  return a.every(
+    (item, i) => item.name.trim() === b[i]?.name && (item.icon ?? null) === (b[i]?.icon ?? null),
+  );
 }
 
 export function OrderedNameListForm({
@@ -49,12 +56,15 @@ export function OrderedNameListForm({
   mutationFn,
   itemLabel,
   minItems = 0,
+  showIcons = false,
 }: {
   items: ServerItem[];
   queryKey: readonly unknown[];
-  mutationFn: (names: { name: string }[]) => Promise<{ items: ServerItem[] }>;
+  mutationFn: (items: { name: string; icon?: string | null }[]) => Promise<{ items: ServerItem[] }>;
   itemLabel: string;
   minItems?: number | undefined;
+  /** Show an icon picker for each item. */
+  showIcons?: boolean;
 }) {
   const queryClient = useQueryClient();
   const [items, setItems] = useState(() => toItems(serverItems));
@@ -87,7 +97,12 @@ export function OrderedNameListForm({
     setValidationError(error);
     if (error) return;
     if (arraysEqual(nextItems, serverItems)) return;
-    saveMutation.mutate(nextItems.map((item) => ({ name: item.name.trim() })));
+    saveMutation.mutate(
+      nextItems.map((item) => ({
+        name: item.name.trim(),
+        ...(showIcons ? { icon: item.icon ?? null } : {}),
+      })),
+    );
   }
 
   function clearErrors() {
@@ -109,6 +124,7 @@ export function OrderedNameListForm({
         disabled={pending}
         itemLabel={itemLabel}
         minItems={minItems}
+        showIcons={showIcons}
       />
 
       {validationError && <ErrorAlert key={validationError} message={validationError} />}
@@ -124,6 +140,7 @@ function SortableNameList({
   disabled,
   itemLabel,
   minItems,
+  showIcons,
 }: {
   items: NamedItem[];
   setItems: (value: NamedItem[]) => void;
@@ -131,6 +148,7 @@ function SortableNameList({
   disabled: boolean;
   itemLabel: string;
   minItems: number;
+  showIcons: boolean;
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -201,6 +219,12 @@ function SortableNameList({
     setItems(items.map((i) => (i.id === id ? { ...i, name } : i)));
   }
 
+  function handleIconChange(id: string, icon: string | null) {
+    const next = items.map((i) => (i.id === id ? { ...i, icon } : i));
+    setItems(next);
+    onSave(next);
+  }
+
   function handleEndEdit() {
     setEditingId(null);
     // Remove items with empty names (cancelled adds)
@@ -232,6 +256,7 @@ function SortableNameList({
                 onStartEdit={() => setEditingId(item.id)}
                 onEndEdit={handleEndEdit}
                 onRename={(name) => handleRename(item.id, name)}
+                onIconChange={showIcons ? (icon) => handleIconChange(item.id, icon) : undefined}
                 onRemove={canRemoveItem ? () => handleRemove(item.id) : undefined}
                 disabled={disabled}
                 draggable={items.length > 1}
@@ -264,6 +289,7 @@ function SortableNameRow({
   onStartEdit,
   onEndEdit,
   onRename,
+  onIconChange,
   onRemove,
   disabled,
   draggable,
@@ -275,6 +301,7 @@ function SortableNameRow({
   onStartEdit: () => void;
   onEndEdit: () => void;
   onRename: (name: string) => void;
+  onIconChange?: ((icon: string | null) => void) | undefined;
   onRemove?: (() => void) | undefined;
   disabled: boolean;
   draggable: boolean;
@@ -290,7 +317,7 @@ function SortableNameRow({
     transition,
   };
 
-  const { role: _role, ...handleAttributes } = attributes;
+  const handleAttributes = attributes;
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter" || e.key === "Escape") {
@@ -314,6 +341,15 @@ function SortableNameRow({
       >
         <GripVertical className="size-4" aria-hidden="true" />
       </button>
+
+      {onIconChange && (
+        <IconPicker
+          value={item.icon}
+          onChange={onIconChange}
+          disabled={disabled}
+          label={`Icon for ${item.name || `${itemLabel.toLowerCase()} ${index + 1}`}`}
+        />
+      )}
 
       {isEditing ? (
         <input

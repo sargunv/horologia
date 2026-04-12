@@ -3988,11 +3988,16 @@ func (s *TaskEffortLevel) encodeFields(e *jx.Encoder) {
 		e.FieldStart("position")
 		e.Int64(s.Position)
 	}
+	{
+		e.FieldStart("icon")
+		s.Icon.Encode(e)
+	}
 }
 
-var jsonFieldsNameOfTaskEffortLevel = [2]string{
+var jsonFieldsNameOfTaskEffortLevel = [3]string{
 	0: "name",
 	1: "position",
+	2: "icon",
 }
 
 // Decode decodes TaskEffortLevel from json.
@@ -4028,6 +4033,16 @@ func (s *TaskEffortLevel) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"position\"")
 			}
+		case "icon":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.Icon.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"icon\"")
+			}
 		default:
 			return d.Skip()
 		}
@@ -4038,7 +4053,7 @@ func (s *TaskEffortLevel) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000011,
+		0b00000111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -4097,10 +4112,17 @@ func (s *TaskEffortLevelInput) encodeFields(e *jx.Encoder) {
 		e.FieldStart("name")
 		e.Str(s.Name)
 	}
+	{
+		if s.Icon.Set {
+			e.FieldStart("icon")
+			s.Icon.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfTaskEffortLevelInput = [1]string{
+var jsonFieldsNameOfTaskEffortLevelInput = [2]string{
 	0: "name",
+	1: "icon",
 }
 
 // Decode decodes TaskEffortLevelInput from json.
@@ -4123,6 +4145,16 @@ func (s *TaskEffortLevelInput) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"name\"")
+			}
+		case "icon":
+			if err := func() error {
+				s.Icon.Reset()
+				if err := s.Icon.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"icon\"")
 			}
 		default:
 			return d.Skip()
@@ -4698,11 +4730,16 @@ func (s *TaskPriorityLevel) encodeFields(e *jx.Encoder) {
 		e.FieldStart("position")
 		e.Int64(s.Position)
 	}
+	{
+		e.FieldStart("icon")
+		s.Icon.Encode(e)
+	}
 }
 
-var jsonFieldsNameOfTaskPriorityLevel = [2]string{
+var jsonFieldsNameOfTaskPriorityLevel = [3]string{
 	0: "name",
 	1: "position",
+	2: "icon",
 }
 
 // Decode decodes TaskPriorityLevel from json.
@@ -4738,6 +4775,16 @@ func (s *TaskPriorityLevel) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"position\"")
 			}
+		case "icon":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.Icon.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"icon\"")
+			}
 		default:
 			return d.Skip()
 		}
@@ -4748,7 +4795,7 @@ func (s *TaskPriorityLevel) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000011,
+		0b00000111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -4807,10 +4854,17 @@ func (s *TaskPriorityLevelInput) encodeFields(e *jx.Encoder) {
 		e.FieldStart("name")
 		e.Str(s.Name)
 	}
+	{
+		if s.Icon.Set {
+			e.FieldStart("icon")
+			s.Icon.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfTaskPriorityLevelInput = [1]string{
+var jsonFieldsNameOfTaskPriorityLevelInput = [2]string{
 	0: "name",
+	1: "icon",
 }
 
 // Decode decodes TaskPriorityLevelInput from json.
@@ -4833,6 +4887,16 @@ func (s *TaskPriorityLevelInput) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"name\"")
+			}
+		case "icon":
+			if err := func() error {
+				s.Icon.Reset()
+				if err := s.Icon.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"icon\"")
 			}
 		default:
 			return d.Skip()

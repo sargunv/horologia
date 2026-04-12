@@ -19,6 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { type ReactNode, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getLevelIcon } from "../../lib/level-icons.ts";
 import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
 import { useSpaceMemberMap } from "../../lib/hooks.ts";
@@ -334,15 +335,16 @@ function NullableMenuField({
   value,
   options,
   label,
-  icon,
+  defaultIcon,
 }: {
   spaceSlug: string;
   taskId: string;
   field: "effort" | "priority";
   value: string | null;
-  options: { name: string }[];
+  options: { name: string; icon: string | null }[];
   label: string;
-  icon: ReactNode;
+  /** Fallback icon shown when the selected level has no per-level icon. */
+  defaultIcon: ReactNode;
 }) {
   const mutation = useTaskPatch(spaceSlug, taskId);
   const search = useMenuSearch();
@@ -352,10 +354,21 @@ function NullableMenuField({
     [options, search.query],
   );
 
+  // Resolve the icon for the currently selected value.
+  const selectedOption = useMemo(
+    () => (value ? options.find((o) => o.name === value) : undefined),
+    [options, value],
+  );
+  let pillIcon: ReactNode = defaultIcon;
+  if (selectedOption?.icon) {
+    const Icon = getLevelIcon(selectedOption.icon);
+    pillIcon = <Icon className="size-3.5" aria-hidden="true" />;
+  }
+
   return (
     <>
       <Menu {...search.menuProps} closeOnSelect={false}>
-        <FieldPill icon={icon} label={label} value={value} />
+        <FieldPill icon={pillIcon} label={label} value={value} />
         <Portal>
           <Menu.Positioner>
             <SearchableMenuContent
@@ -377,25 +390,29 @@ function NullableMenuField({
               {filtered.length === 0 ? (
                 <div className="text-surface-500 px-3 py-2 text-sm">No matching options</div>
               ) : (
-                filtered.map((option) => (
-                  <Menu.OptionItem
-                    key={option.name}
-                    type="radio"
-                    checked={value === option.name}
-                    value={option.name}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        mutation.mutate({ [field]: option.name });
-                      }
-                    }}
-                    className={MENU_ITEM_CLASS}
-                  >
-                    <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
-                      <Check className="size-4" />
-                    </Menu.ItemIndicator>
-                    <Menu.ItemText>{option.name}</Menu.ItemText>
-                  </Menu.OptionItem>
-                ))
+                filtered.map((option) => {
+                  const OptionIcon = option.icon ? getLevelIcon(option.icon) : null;
+                  return (
+                    <Menu.OptionItem
+                      key={option.name}
+                      type="radio"
+                      checked={value === option.name}
+                      value={option.name}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          mutation.mutate({ [field]: option.name });
+                        }
+                      }}
+                      className={MENU_ITEM_CLASS}
+                    >
+                      <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
+                        <Check className="size-4" />
+                      </Menu.ItemIndicator>
+                      {OptionIcon && <OptionIcon className="size-4" aria-hidden="true" />}
+                      <Menu.ItemText>{option.name}</Menu.ItemText>
+                    </Menu.OptionItem>
+                  );
+                })
               )}
             </SearchableMenuContent>
           </Menu.Positioner>
@@ -626,7 +643,7 @@ export function TaskDetailView({
           value={task.priority}
           options={priorityLevels}
           label="Priority"
-          icon={<SignalHigh className="size-3.5" aria-hidden="true" />}
+          defaultIcon={<SignalHigh className="size-3.5" aria-hidden="true" />}
         />
         <NullableMenuField
           spaceSlug={spaceSlug}
@@ -635,7 +652,7 @@ export function TaskDetailView({
           value={task.effort}
           options={effortLevels}
           label="Effort"
-          icon={<Gauge className="size-3.5" aria-hidden="true" />}
+          defaultIcon={<Gauge className="size-3.5" aria-hidden="true" />}
         />
         <MemberMenuField
           spaceSlug={spaceSlug}

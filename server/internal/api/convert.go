@@ -366,6 +366,7 @@ func effortLevelFromDB(e dbgen.TaskEffortLevel) *apigen.TaskEffortLevel {
 	return &apigen.TaskEffortLevel{
 		Name:     e.Name,
 		Position: int64(e.Position),
+		Icon:     nilStringFromDB(e.Icon),
 	}
 }
 
@@ -373,7 +374,30 @@ func priorityLevelFromDB(p dbgen.TaskPriorityLevel) *apigen.TaskPriorityLevel {
 	return &apigen.TaskPriorityLevel{
 		Name:     p.Name,
 		Position: int64(p.Position),
+		Icon:     nilStringFromDB(p.Icon),
 	}
+}
+
+// optNilStringToDBZero converts an OptNilString to a pgtype.Text, treating
+// absent and null as SQL NULL. Used for full-replace endpoints where omission
+// means "no value" rather than "keep existing".
+func optNilStringToDBZero(opt apigen.OptNilString) pgtype.Text {
+	if !opt.IsSet() || opt.IsNull() {
+		return pgtype.Text{}
+	}
+	return pgtype.Text{String: opt.Value, Valid: true}
+}
+
+const maxIconLength = 50
+
+// validateIconField checks that a level icon value (if present and non-null)
+// does not exceed the maximum allowed length. This compensates for ogen not
+// enforcing maxLength on nullable anyOf fields.
+func validateIconField(icon apigen.OptNilString) error {
+	if icon.IsSet() && !icon.IsNull() && len(icon.Value) > maxIconLength {
+		return badRequest(fmt.Sprintf("icon name must be at most %d characters", maxIconLength))
+	}
+	return nil
 }
 
 // taskListCursor holds the compound keyset pagination state for task list queries.

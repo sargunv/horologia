@@ -485,12 +485,14 @@ type TaskEffortLevel struct {
 	SpaceSlug string
 	Name      string
 	Position  int32
+	Icon      pgtype.Text
 }
 
 type TaskPriorityLevel struct {
 	SpaceSlug string
 	Name      string
 	Position  int32
+	Icon      pgtype.Text
 }
 
 type TaskRelation struct {

@@ -9,6 +9,9 @@ namespace Tend;
 model TaskEffortLevel {
   name: string;
   position: int64;
+
+  /** Lucide icon name in kebab-case (e.g. "gauge", "flame"). Null if no icon is set. */
+  icon: string | null;
 }
 
 model TaskEffortLevelList {
@@ -17,6 +20,9 @@ model TaskEffortLevelList {
 
 model TaskEffortLevelInput {
   @minLength(1) @maxLength(100) name: string;
+
+  /** Lucide icon name in kebab-case (e.g. "gauge", "flame"). Omit or set to null to clear. */
+  @maxLength(50) icon?: string | null;
 }
 
 model TaskEffortLevelReplace {

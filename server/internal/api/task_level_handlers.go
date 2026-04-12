@@ -332,6 +332,13 @@ func (h *Handler) SpaceTaskEffortLevelsReplace(ctx context.Context, req *apigen.
 
 	q := dbgen.New(tx)
 
+	// Validate icon fields (ogen does not enforce maxLength on nullable anyOf fields).
+	for _, item := range req.Items {
+		if err := validateIconField(item.Icon); err != nil {
+			return nil, err
+		}
+	}
+
 	// Snapshot before for diff.
 	beforeRows, err := q.ListTaskEffortLevelsBySpace(ctx, params.SpaceSlug)
 	if err != nil {
@@ -354,12 +361,14 @@ func (h *Handler) SpaceTaskEffortLevelsReplace(ctx context.Context, req *apigen.
 				SpaceSlug: spaceSlug,
 				Name:      item.Name,
 				Position:  pos,
+				Icon:      optNilStringToDBZero(item.Icon),
 			})
 			return err
 		},
 		update: func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item apigen.TaskEffortLevelInput, pos int32) error {
 			return q.UpdateTaskEffortLevel(ctx, dbgen.UpdateTaskEffortLevelParams{
 				Position:  pos,
+				Icon:      optNilStringToDBZero(item.Icon),
 				SpaceSlug: spaceSlug,
 				Name:      item.Name,
 			})
@@ -448,6 +457,13 @@ func (h *Handler) SpaceTaskPriorityLevelsReplace(ctx context.Context, req *apige
 
 	q := dbgen.New(tx)
 
+	// Validate icon fields (ogen does not enforce maxLength on nullable anyOf fields).
+	for _, item := range req.Items {
+		if err := validateIconField(item.Icon); err != nil {
+			return nil, err
+		}
+	}
+
 	// Snapshot before for diff.
 	beforeRows, err := q.ListTaskPriorityLevelsBySpace(ctx, params.SpaceSlug)
 	if err != nil {
@@ -470,12 +486,14 @@ func (h *Handler) SpaceTaskPriorityLevelsReplace(ctx context.Context, req *apige
 				SpaceSlug: spaceSlug,
 				Name:      item.Name,
 				Position:  pos,
+				Icon:      optNilStringToDBZero(item.Icon),
 			})
 			return err
 		},
 		update: func(ctx context.Context, q *dbgen.Queries, spaceSlug string, item apigen.TaskPriorityLevelInput, pos int32) error {
 			return q.UpdateTaskPriorityLevel(ctx, dbgen.UpdateTaskPriorityLevelParams{
 				Position:  pos,
+				Icon:      optNilStringToDBZero(item.Icon),
 				SpaceSlug: spaceSlug,
 				Name:      item.Name,
 			})

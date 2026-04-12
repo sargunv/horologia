@@ -2095,6 +2095,10 @@ func effortLevelReplaceTool() mcp.Tool {
 					"name": map[string]any{
 						"type": "string",
 					},
+					"icon": map[string]any{
+						"type": []any{"string", "null"},
+						"description": "Lucide icon name in kebab-case (e.g. \"gauge\", \"flame\"). Omit or set to null to clear.",
+					},
 				},
 				"required": []string{"name"},
 			},
@@ -2140,6 +2144,21 @@ func effortLevelReplaceHandler(h Handlers) mcpserver.ToolHandlerFunc {
 						value.Name = convertedvalueName
 				} else if true {
 					return mcp.NewToolResultError(fmt.Sprintf("items[%d].name is required", i)), nil
+				}
+				rawvalueIcon, hasvalueIcon := m["icon"]
+				if hasvalueIcon {
+					if rawvalueIcon == nil {
+						value.Icon.SetToNull()
+					} else {
+						vvalueIcon, ok := rawvalueIcon.(string)
+						if !ok {
+							return mcp.NewToolResultError(fmt.Sprintf("items[%d].icon must be a string", i)), nil
+						}
+						convertedvalueIcon := vvalueIcon
+						value.Icon.SetTo(convertedvalueIcon)
+					}
+				} else if false {
+					return mcp.NewToolResultError(fmt.Sprintf("items[%d].icon is required", i)), nil
 				}
 				itemsItems[i] = value
 			}
@@ -2194,6 +2213,10 @@ func priorityLevelReplaceTool() mcp.Tool {
 					"name": map[string]any{
 						"type": "string",
 					},
+					"icon": map[string]any{
+						"type": []any{"string", "null"},
+						"description": "Lucide icon name in kebab-case (e.g. \"signal-high\", \"flag\"). Omit or set to null to clear.",
+					},
 				},
 				"required": []string{"name"},
 			},
@@ -2239,6 +2262,21 @@ func priorityLevelReplaceHandler(h Handlers) mcpserver.ToolHandlerFunc {
 						value.Name = convertedvalueName
 				} else if true {
 					return mcp.NewToolResultError(fmt.Sprintf("items[%d].name is required", i)), nil
+				}
+				rawvalueIcon, hasvalueIcon := m["icon"]
+				if hasvalueIcon {
+					if rawvalueIcon == nil {
+						value.Icon.SetToNull()
+					} else {
+						vvalueIcon, ok := rawvalueIcon.(string)
+						if !ok {
+							return mcp.NewToolResultError(fmt.Sprintf("items[%d].icon must be a string", i)), nil
+						}
+						convertedvalueIcon := vvalueIcon
+						value.Icon.SetTo(convertedvalueIcon)
+					}
+				} else if false {
+					return mcp.NewToolResultError(fmt.Sprintf("items[%d].icon is required", i)), nil
 				}
 				itemsItems[i] = value
 			}

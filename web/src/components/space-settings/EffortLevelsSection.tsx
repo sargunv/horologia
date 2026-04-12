@@ -21,7 +21,7 @@ export function EffortLevelsSection({
       description="Define effort levels for estimating task complexity."
     >
       <OrderedNameListForm
-        key={effortLevels.map((l) => l.name).join(",")}
+        key={effortLevels.map((l) => `${l.name}:${l.icon ?? ""}`).join(",")}
         items={effortLevels}
         queryKey={spaceEffortLevelsQueryOptions(spaceSlug).queryKey}
         mutationFn={async (items) => {
@@ -34,6 +34,7 @@ export function EffortLevelsSection({
           return data;
         }}
         itemLabel="Effort level"
+        showIcons
       />
     </SettingsSection>
   );

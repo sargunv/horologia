@@ -1,16 +1,22 @@
 import { Link } from "@tanstack/react-router";
 import { Calendar, Gauge, SignalHigh, Tag, Users } from "lucide-react";
+import { useMemo } from "react";
 import type { components } from "../../api/schema.d.ts";
 import { useSpaceMemberMap } from "../../lib/hooks.ts";
+import { getLevelIcon } from "../../lib/level-icons.ts";
 import { StatusBadge } from "./StatusBadge.tsx";
 
 type Task = components["schemas"]["Task"];
 type TaskStatus = components["schemas"]["TaskStatus"];
+type TaskEffortLevel = components["schemas"]["TaskEffortLevel"];
+type TaskPriorityLevel = components["schemas"]["TaskPriorityLevel"];
 
 export function TaskRow({
   task,
   spaceSlug,
   statusMap,
+  effortLevels,
+  priorityLevels,
   spaceLabel,
   compact,
   to = "/spaces/$spaceSlug/tasks/$taskId",
@@ -18,6 +24,10 @@ export function TaskRow({
   task: Task;
   spaceSlug: string;
   statusMap: Map<string, TaskStatus>;
+  /** Effort levels for resolving per-level icons. Falls back to default icon when absent. */
+  effortLevels?: TaskEffortLevel[];
+  /** Priority levels for resolving per-level icons. Falls back to default icon when absent. */
+  priorityLevels?: TaskPriorityLevel[];
   spaceLabel?: string;
   /** Compact mode for narrow list panes — shows only ID, title, and status badge */
   compact?: boolean;
@@ -26,6 +36,18 @@ export function TaskRow({
 }) {
   const memberMap = useSpaceMemberMap(spaceSlug);
   const assigneeNames = task.assigneeIds.map((id) => memberMap.get(id)?.userName ?? id).join(", ");
+
+  const EffortIcon = useMemo(() => {
+    if (!task.effort || !effortLevels) return Gauge;
+    const level = effortLevels.find((l) => l.name === task.effort);
+    return level?.icon ? getLevelIcon(level.icon) : Gauge;
+  }, [task.effort, effortLevels]);
+
+  const PriorityIcon = useMemo(() => {
+    if (!task.priority || !priorityLevels) return SignalHigh;
+    const level = priorityLevels.find((l) => l.name === task.priority);
+    return level?.icon ? getLevelIcon(level.icon) : SignalHigh;
+  }, [task.priority, priorityLevels]);
 
   return (
     <Link
@@ -63,14 +85,14 @@ export function TaskRow({
 
         {!compact && task.effort && (
           <span className="text-surface-600-400 flex items-center gap-1 text-xs whitespace-nowrap">
-            <Gauge className="size-3.5" aria-hidden="true" />
+            <EffortIcon className="size-3.5" aria-hidden="true" />
             {task.effort}
           </span>
         )}
 
         {!compact && task.priority && (
           <span className="text-surface-600-400 flex items-center gap-1 text-xs whitespace-nowrap">
-            <SignalHigh className="size-3.5" aria-hidden="true" />
+            <PriorityIcon className="size-3.5" aria-hidden="true" />
             {task.priority}
           </span>
         )}

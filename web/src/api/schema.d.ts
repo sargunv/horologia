@@ -533,9 +533,13 @@ export interface components {
             name: string;
             /** Format: int64 */
             position: number;
+            /** @description Lucide icon name in kebab-case (e.g. "gauge", "flame"). Null if no icon is set. */
+            icon: string | null;
         };
         TaskEffortLevelInput: {
             name: string;
+            /** @description Lucide icon name in kebab-case (e.g. "gauge", "flame"). Omit or set to null to clear. */
+            icon?: string | null;
         };
         TaskEffortLevelList: {
             items: components["schemas"]["TaskEffortLevel"][];
@@ -563,9 +567,13 @@ export interface components {
             name: string;
             /** Format: int64 */
             position: number;
+            /** @description Lucide icon name in kebab-case (e.g. "signal-high", "flag"). Null if no icon is set. */
+            icon: string | null;
         };
         TaskPriorityLevelInput: {
             name: string;
+            /** @description Lucide icon name in kebab-case (e.g. "signal-high", "flag"). Omit or set to null to clear. */
+            icon?: string | null;
         };
         TaskPriorityLevelList: {
             items: components["schemas"]["TaskPriorityLevel"][];

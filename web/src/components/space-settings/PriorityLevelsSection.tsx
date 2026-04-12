@@ -21,7 +21,7 @@ export function PriorityLevelsSection({
       description="Configure priority levels for organizing tasks."
     >
       <OrderedNameListForm
-        key={priorityLevels.map((l) => l.name).join(",")}
+        key={priorityLevels.map((l) => `${l.name}:${l.icon ?? ""}`).join(",")}
         items={priorityLevels}
         queryKey={spacePriorityLevelsQueryOptions(spaceSlug).queryKey}
         mutationFn={async (items) => {
@@ -34,6 +34,7 @@ export function PriorityLevelsSection({
           return data;
         }}
         itemLabel="Priority level"
+        showIcons
       />
     </SettingsSection>
   );
