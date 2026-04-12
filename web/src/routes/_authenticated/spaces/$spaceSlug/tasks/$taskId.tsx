@@ -28,7 +28,7 @@ import { apiClient } from "../../../../../api/client.ts";
 import type { components } from "../../../../../api/schema.d.ts";
 import { FieldPill } from "../../../../../components/FieldPill.tsx";
 import { SearchableMenuContent } from "../../../../../components/SearchableMenuContent.tsx";
-import { RecurrenceRuleEditor } from "../../../../../components/RecurrenceRuleEditor.tsx";
+import { RecurrenceMenuField } from "../../../../../components/task/RecurrenceMenuField.tsx";
 import { TaskDescriptionEditor } from "../../../../../components/TaskDescriptionEditor.tsx";
 import { ActivityFeed } from "../../../../../components/ActivityFeed.tsx";
 import { ErrorAlert } from "../../../../../components/space-settings/ErrorAlert.tsx";
@@ -48,7 +48,6 @@ import {
 } from "../../../../../lib/queries.ts";
 
 type Task = components["schemas"]["Task"];
-type TaskRecurrenceType = components["schemas"]["TaskRecurrenceType"];
 type TaskOverdueActionRule = components["schemas"]["TaskOverdueActionRule"];
 type TaskStatus = components["schemas"]["TaskStatus"];
 type SpaceMember = components["schemas"]["SpaceMember"];
@@ -675,36 +674,7 @@ function DueDateField({
   );
 }
 
-// ─── Recurrence Field ───────────────────────────────────────────────────────
-
-function RecurrenceField({
-  spaceSlug,
-  taskId,
-  recurrenceType,
-  recurrenceRule,
-}: {
-  spaceSlug: string;
-  taskId: string;
-  recurrenceType: TaskRecurrenceType;
-  recurrenceRule: string | null;
-}) {
-  const mutation = useTaskPatch(spaceSlug, taskId);
-
-  return (
-    <div className="flex flex-col gap-2">
-      <RecurrenceRuleEditor
-        recurrenceType={recurrenceType}
-        recurrenceRule={recurrenceRule}
-        onSave={(update) => {
-          mutation.reset();
-          mutation.mutate(update);
-        }}
-        disabled={mutation.isPending}
-      />
-      {mutation.error && <ErrorAlert message={mutation.error.message} />}
-    </div>
-  );
-}
+// RecurrenceField is now RecurrenceMenuField from components/task/
 
 // ─── Overdue Action Field ───────────────────────────────────────────────────
 
@@ -875,6 +845,12 @@ function TaskDetailPage() {
           icon={<Users className="size-3.5" aria-hidden="true" />}
         />
         <DueDateField spaceSlug={spaceSlug} taskId={taskId} value={task.due} />
+        <RecurrenceMenuField
+          spaceSlug={spaceSlug}
+          taskId={taskId}
+          recurrenceType={task.recurrenceType}
+          recurrenceRule={task.recurrenceRule}
+        />
         <MemberMenuField
           spaceSlug={spaceSlug}
           taskId={taskId}
@@ -892,12 +868,6 @@ function TaskDetailPage() {
       <TaskDescriptionEditor spaceSlug={spaceSlug} taskId={taskId} value={task.description} />
 
       <div className="space-y-4">
-        <RecurrenceField
-          spaceSlug={spaceSlug}
-          taskId={taskId}
-          recurrenceType={task.recurrenceType}
-          recurrenceRule={task.recurrenceRule}
-        />
         {task.recurrenceType !== "one_off" && task.due !== null && (
           <OverdueActionField
             spaceSlug={spaceSlug}
