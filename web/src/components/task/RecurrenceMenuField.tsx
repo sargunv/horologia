@@ -142,6 +142,7 @@ interface ParsedRule {
   nthWeekday: { ordinal: number; weekday: WeekdayCode } | null;
   bymonth: number[];
   until: string | null;
+  parseError: boolean;
 }
 
 function toArray<T>(value: T | T[]): T[] {
@@ -157,6 +158,7 @@ function parseRRule(rruleStr: string | null): ParsedRule {
     nthWeekday: null,
     bymonth: [],
     until: null,
+    parseError: false,
   };
 
   if (!rruleStr) return defaults;
@@ -198,9 +200,9 @@ function parseRRule(rruleStr: string | null): ParsedRule {
       until = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
     }
 
-    return { freq, interval, byweekday, bymonthday, nthWeekday, bymonth, until };
+    return { freq, interval, byweekday, bymonthday, nthWeekday, bymonth, until, parseError: false };
   } catch {
-    return defaults;
+    return { ...defaults, parseError: true };
   }
 }
 
@@ -809,7 +811,6 @@ export function RecurrenceMenuField({
 
   const handleSave = useCallback(
     (update: { recurrenceType: TaskRecurrenceType; recurrenceRule?: string | null }) => {
-      mutation.reset();
       mutation.mutate(update);
     },
     [mutation],
@@ -896,6 +897,9 @@ export function RecurrenceMenuField({
           </Menu.Positioner>
         </Portal>
       </Menu>
+      {currentRule.parseError && (
+        <div className="text-warning-500 text-xs">Could not parse recurrence rule</div>
+      )}
       {mutation.error && <ErrorAlert message={mutation.error.message} />}
     </>
   );

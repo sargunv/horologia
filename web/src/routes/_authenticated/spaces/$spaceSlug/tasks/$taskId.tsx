@@ -241,7 +241,6 @@ function EditableTitle({
     setEditing(false);
     const trimmed = draft.trim();
     if (trimmed && trimmed !== value) {
-      mutation.reset();
       mutation.mutate({ title: trimmed });
     } else {
       setDraft(value);
@@ -343,7 +342,6 @@ function StatusField({
                     value={status.name}
                     onCheckedChange={(checked) => {
                       if (checked) {
-                        mutation.reset();
                         mutation.mutate({ status: status.name });
                       }
                     }}
@@ -408,7 +406,6 @@ function NullableMenuField({
                   value="none"
                   className={`text-error-500 ${MENU_ITEM_CLASS}`}
                   onClick={() => {
-                    mutation.reset();
                     mutation.mutate({ [field]: null });
                   }}
                 >
@@ -427,7 +424,6 @@ function NullableMenuField({
                     value={option.name}
                     onCheckedChange={(checked) => {
                       if (checked) {
-                        mutation.reset();
                         mutation.mutate({ [field]: option.name });
                       }
                     }}
@@ -506,7 +502,6 @@ function MemberMenuField({
           search.handleOpenChange(details);
           const changed = draft.length !== value.length || draft.some((id, i) => id !== value[i]);
           if (!details.open && changed) {
-            mutation.reset();
             mutation.mutate({ [field]: draft });
           }
         }}
@@ -576,7 +571,6 @@ function DueDateField({
   }, [value]);
 
   function selectDate(isoDate: string) {
-    mutation.reset();
     mutation.mutate({ due: { at: isoDate, timezone: BROWSER_TIMEZONE } });
   }
 
@@ -599,7 +593,6 @@ function DueDateField({
                   value="clear"
                   className={`text-error-500 ${MENU_ITEM_CLASS}`}
                   onClick={() => {
-                    mutation.reset();
                     mutation.mutate({ due: null });
                   }}
                 >
@@ -671,7 +664,6 @@ function OverdueActionField({
         overdueActionRule={overdueActionRule}
         statuses={statuses}
         onSave={(val) => {
-          mutation.reset();
           mutation.mutate({ overdueActionRule: val });
         }}
         disabled={mutation.isPending}
@@ -699,7 +691,6 @@ function TagsField({
       <TagsInput
         value={value}
         onValueChange={(e) => {
-          mutation.reset();
           mutation.mutate({ tags: e.value });
         }}
         validate={(details) => {

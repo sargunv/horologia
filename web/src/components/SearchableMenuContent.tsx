@@ -29,13 +29,15 @@ export function SearchableMenuContent({
 }) {
   return (
     <Menu.Content className={className}>
-      <input
-        {...inputProps}
-        type="text"
-        placeholder={placeholder}
-        aria-label={placeholder}
-        className="w-full bg-transparent text-sm outline-none placeholder:text-surface-500"
-      />
+      <div role="none">
+        <input
+          {...inputProps}
+          type="text"
+          placeholder={placeholder}
+          aria-label={placeholder}
+          className="w-full bg-transparent text-sm outline-none placeholder:text-surface-500"
+        />
+      </div>
       <Menu.Separator />
       {children}
     </Menu.Content>
