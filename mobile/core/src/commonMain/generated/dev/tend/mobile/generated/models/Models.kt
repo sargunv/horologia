@@ -544,6 +544,26 @@ public enum class TaskRelationKind {
 
 @Serializable
 @Immutable
+public data class TaskSearchResult(
+  @SerialName("id")
+  public val id: String,
+  @SerialName("spaceSlug")
+  public val spaceSlug: String,
+  @SerialName("title")
+  public val title: String,
+  @SerialName("status")
+  public val status: String,
+)
+
+@Serializable
+@Immutable
+public data class TaskSearchResultList(
+  @SerialName("items")
+  public val items: List<TaskSearchResult> = emptyList(),
+)
+
+@Serializable
+@Immutable
 public data class TaskStatus(
   @SerialName("name")
   public val name: String,

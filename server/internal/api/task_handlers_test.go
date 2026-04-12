@@ -265,6 +265,152 @@ func TestTasksListSortOrder(t *testing.T) {
 	}
 }
 
+func TestTasksSearchOwnerAcrossSpaces(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+	createSpace(t, env, "work", "Work")
+	homeTask := createTask(t, env, "home", `{"title":"Buy oat milk"}`)
+	workTask := createTask(t, env, "work", `{"title":"Buy office snacks"}`)
+
+	resp := doRequest(t, env, "GET", "/tasks/search?q=buy", "")
+	assertStatus(t, resp, http.StatusOK)
+
+	var result map[string]any
+	readJSON(t, resp, &result)
+	items := jsonAs[[]any](t, result["items"])
+	if len(items) != 2 {
+		t.Fatalf("got %d items, want 2", len(items))
+	}
+
+	got := map[string]string{}
+	for _, item := range items {
+		row := jsonAs[map[string]any](t, item)
+		got[jsonAs[string](t, row["id"])] = jsonAs[string](t, row["spaceSlug"])
+	}
+	if got[jsonAs[string](t, homeTask["id"])] != "home" {
+		t.Fatalf("missing home task in results: %v", got)
+	}
+	if got[jsonAs[string](t, workTask["id"])] != "work" {
+		t.Fatalf("missing work task in results: %v", got)
+	}
+}
+
+func TestTasksSearchFiltersToVisibleSpaces(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "alpha", "Alpha")
+	createSpace(t, env, "beta", "Beta")
+	alphaTask := createTask(t, env, "alpha", `{"title":"Shared title"}`)
+	createTask(t, env, "beta", `{"title":"Shared title"}`)
+
+	userToken, _ := createAndAddMember(t, env, "alpha", "viewer@example.com", "Viewer", "pass1234", "viewer")
+
+	resp := doRequestAs(t, env, userToken, "GET", "/tasks/search?q=shared", "")
+	assertStatus(t, resp, http.StatusOK)
+
+	var result map[string]any
+	readJSON(t, resp, &result)
+	items := jsonAs[[]any](t, result["items"])
+	if len(items) != 1 {
+		t.Fatalf("got %d items, want 1", len(items))
+	}
+
+	row := jsonAs[map[string]any](t, items[0])
+	if row["id"] != alphaTask["id"] {
+		t.Fatalf("got id %v, want %v", row["id"], alphaTask["id"])
+	}
+	if row["spaceSlug"] != "alpha" {
+		t.Fatalf("got spaceSlug %v, want alpha", row["spaceSlug"])
+	}
+}
+
+func TestTasksSearchOptionalSpaceFilter(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "alpha", "Alpha")
+	createSpace(t, env, "beta", "Beta")
+	alphaTask := createTask(t, env, "alpha", `{"title":"Release notes"}`)
+	createTask(t, env, "beta", `{"title":"Release notes"}`)
+
+	resp := doRequest(t, env, "GET", "/tasks/search?q=release&spaceSlug=alpha", "")
+	assertStatus(t, resp, http.StatusOK)
+
+	var result map[string]any
+	readJSON(t, resp, &result)
+	items := jsonAs[[]any](t, result["items"])
+	if len(items) != 1 {
+		t.Fatalf("got %d items, want 1", len(items))
+	}
+
+	row := jsonAs[map[string]any](t, items[0])
+	if row["id"] != alphaTask["id"] {
+		t.Fatalf("got id %v, want %v", row["id"], alphaTask["id"])
+	}
+	if row["spaceSlug"] != "alpha" {
+		t.Fatalf("got spaceSlug %v, want alpha", row["spaceSlug"])
+	}
+}
+
+func TestTasksSearchExcludeTaskIDAndExactID(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+	first := createTask(t, env, "home", `{"title":"Plan sprint"}`)
+	second := createTask(t, env, "home", `{"title":"Plan retrospective"}`)
+	firstID := jsonAs[string](t, first["id"])
+
+	resp := doRequest(t, env, "GET", "/tasks/search?q=plan&excludeTaskId="+firstID, "")
+	assertStatus(t, resp, http.StatusOK)
+
+	var result map[string]any
+	readJSON(t, resp, &result)
+	items := jsonAs[[]any](t, result["items"])
+	if len(items) != 1 {
+		t.Fatalf("got %d items, want 1", len(items))
+	}
+
+	row := jsonAs[map[string]any](t, items[0])
+	if row["id"] != second["id"] {
+		t.Fatalf("got id %v, want %v", row["id"], second["id"])
+	}
+
+	resp = doRequest(t, env, "GET", "/tasks/search?q="+firstID, "")
+	assertStatus(t, resp, http.StatusOK)
+
+	readJSON(t, resp, &result)
+	items = jsonAs[[]any](t, result["items"])
+	if len(items) != 1 {
+		t.Fatalf("exact-id search got %d items, want 1", len(items))
+	}
+	row = jsonAs[map[string]any](t, items[0])
+	if row["id"] != firstID {
+		t.Fatalf("got id %v, want %v", row["id"], firstID)
+	}
+}
+
+func TestTasksSearchLeadingTStillDoesTextSearch(t *testing.T) {
+	env := setupTestServer(t)
+
+	createSpace(t, env, "home", "Home")
+	task := createTask(t, env, "home", `{"title":"Task planning"}`)
+
+	resp := doRequest(t, env, "GET", "/tasks/search?q=Task", "")
+	assertStatus(t, resp, http.StatusOK)
+
+	var result map[string]any
+	readJSON(t, resp, &result)
+	items := jsonAs[[]any](t, result["items"])
+	if len(items) != 1 {
+		t.Fatalf("got %d items, want 1", len(items))
+	}
+
+	row := jsonAs[map[string]any](t, items[0])
+	if row["id"] != task["id"] {
+		t.Fatalf("got id %v, want %v", row["id"], task["id"])
+	}
+}
+
 func TestTasksListSortPagination(t *testing.T) {
 	env := setupTestServer(t)
 

@@ -230,6 +230,13 @@ func (UnimplementedHandler) SpacesUpdate(ctx context.Context, req *SpaceUpdate, 
 	return r, ht.ErrNotImplemented
 }
 
+// TasksSearch implements Tasks_search operation.
+//
+// GET /tasks/search
+func (UnimplementedHandler) TasksSearch(ctx context.Context, params TasksSearchParams) (r *TaskSearchResultList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // UserActivityList implements UserActivity_list operation.
 //
 // GET /users/{userId}/activity

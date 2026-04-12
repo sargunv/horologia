@@ -15,6 +15,7 @@ func New(flags *support.RootFlags) *cobra.Command {
 		newReadWriteCmds(flags)...,
 	)
 	cmd.AddCommand(
+		newSearchCmd(flags),
 		newDueCmd(flags),
 		newAssigneeCmd(flags),
 		newTagCmd(flags),

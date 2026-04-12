@@ -276,6 +276,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tasks/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Tasks_search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users": {
         parameters: {
             query?: never;
@@ -573,6 +589,15 @@ export interface components {
         };
         /** @enum {string} */
         TaskRelationKind: "parent_of" | "child_of" | "blocks" | "blocked_by" | "relates_to" | "duplicates" | "triggers" | "triggered_by" | "spawns" | "spawned_by";
+        TaskSearchResult: {
+            id: string;
+            spaceSlug: string;
+            title: string;
+            status: string;
+        };
+        TaskSearchResultList: {
+            items: components["schemas"]["TaskSearchResult"][];
+        };
         TaskStatus: {
             name: string;
             category: components["schemas"]["TaskStatusCategory"];
@@ -1700,6 +1725,44 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description An unexpected error response. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    Tasks_search: {
+        parameters: {
+            query: {
+                /** @description Search query. */
+                q: string;
+                /** @description Optional space slug to restrict results to a single space. */
+                spaceSlug?: string;
+                /** @description Optional task ID to exclude from results. */
+                excludeTaskId?: string;
+                /** @description Maximum number of items to return (1–100). */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskSearchResultList"];
+                };
             };
             /** @description An unexpected error response. */
             default: {

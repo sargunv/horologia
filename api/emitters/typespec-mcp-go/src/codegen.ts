@@ -879,7 +879,11 @@ function emitHandlerBody(
         qp.typeInfo,
         `"${escapeDQ(`${qp.name} must be a valid value`)}"`,
       );
-      lines.push(`\t\t\tparams.${qp.goField}.SetTo(${convertedVar})`);
+      if (qp.required) {
+        lines.push(`\t\t\tparams.${qp.goField} = ${convertedVar}`);
+      } else {
+        lines.push(`\t\t\tparams.${qp.goField}.SetTo(${convertedVar})`);
+      }
       lines.push(`\t\t}`);
     }
   }

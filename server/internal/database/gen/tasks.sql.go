@@ -535,6 +535,92 @@ func (q *Queries) ResetTaskToInitial(ctx context.Context, arg ResetTaskToInitial
 	return err
 }
 
+const searchVisibleTasks = `-- name: SearchVisibleTasks :many
+SELECT
+    vt.id,
+    vt.space_slug,
+    vt.title,
+    vt.status_name,
+    vt.updated_at
+FROM visible_tasks vt
+WHERE
+    vt.viewer_user_id = $1
+    AND ($2 = '' OR vt.space_slug = $2)
+    AND ($3 = 0 OR vt.id != $3)
+    AND (
+        ($4 != 0 AND vt.id = $4)
+        OR (
+            $5 != ''
+            AND (
+                lower(vt.title) LIKE '%' || lower($5) || '%'
+                OR lower(vt.title) % lower($5)
+            )
+        )
+    )
+ORDER BY
+    CASE
+        WHEN $4 != 0 AND vt.id = $4 THEN 0
+        WHEN lower(vt.title) = lower($5) THEN 1
+        WHEN lower(vt.title) LIKE lower($5) || '%' THEN 2
+        WHEN lower(vt.title) LIKE '%' || lower($5) || '%' THEN 3
+        ELSE 4
+    END ASC,
+    similarity(lower(vt.title), lower($5)) DESC,
+    vt.updated_at DESC,
+    vt.id DESC
+LIMIT $6
+`
+
+type SearchVisibleTasksParams struct {
+	ViewerUserID  int64
+	SpaceSlug     interface{}
+	ExcludeTaskID interface{}
+	ExactTaskID   interface{}
+	QueryText     interface{}
+	Lim           int32
+}
+
+type SearchVisibleTasksRow struct {
+	ID         int64
+	SpaceSlug  string
+	Title      string
+	StatusName string
+	UpdatedAt  pgtype.Timestamptz
+}
+
+func (q *Queries) SearchVisibleTasks(ctx context.Context, arg SearchVisibleTasksParams) ([]SearchVisibleTasksRow, error) {
+	rows, err := q.db.Query(ctx, searchVisibleTasks,
+		arg.ViewerUserID,
+		arg.SpaceSlug,
+		arg.ExcludeTaskID,
+		arg.ExactTaskID,
+		arg.QueryText,
+		arg.Lim,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SearchVisibleTasksRow{}
+	for rows.Next() {
+		var i SearchVisibleTasksRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.SpaceSlug,
+			&i.Title,
+			&i.StatusName,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateTask = `-- name: UpdateTask :one
 UPDATE tasks
 SET title = $1, description = $2, status_name = $3, effort_name = $4, priority_name = $5, due_at = $6, due_tz = $7,

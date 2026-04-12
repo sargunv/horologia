@@ -279,3 +279,17 @@ func printTaskListTable(app *runtime.App, tasks []apigen.Task) error {
 	}
 	return w.Flush()
 }
+
+func printTaskSearchResultTable(app *runtime.App, tasks []apigen.TaskSearchResult) error {
+	if len(tasks) == 0 {
+		app.Printf("No tasks.\n")
+		return nil
+	}
+
+	w := tabwriter.NewWriter(app.Stdout, 0, 0, 2, ' ', 0)
+	_, _ = w.Write([]byte("ID\tSTATUS\tTITLE\tSPACE\n"))
+	for _, task := range tasks {
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", task.ID, task.Status, task.Title, task.SpaceSlug)
+	}
+	return w.Flush()
+}

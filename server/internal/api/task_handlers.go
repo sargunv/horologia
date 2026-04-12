@@ -3,16 +3,22 @@ package api
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 
 	apigen "github.com/sargunv/tend/api/gen"
 	"github.com/sargunv/tend/server/internal/activitylog"
+	"github.com/sargunv/tend/server/internal/auth"
 	dbgen "github.com/sargunv/tend/server/internal/database/gen"
 	"github.com/sargunv/tend/server/internal/taskengine"
 	"github.com/sargunv/tend/server/internal/types"
 )
+
+var exactTaskIDPattern = regexp.MustCompile(`^(?:T[1-9]\d*|[1-9]\d*)$`)
 
 // fetchTaskRelations fetches all relations for a task from both directions.
 func (h *Handler) fetchTaskRelations(ctx context.Context, q *dbgen.Queries, id int64, spaceSlug string) ([]taskRelationRow, error) {
@@ -334,6 +340,54 @@ func (h *Handler) SpaceTasksRead(ctx context.Context, params apigen.SpaceTasksRe
 	return h.fetchTask(ctx, q, id, params.SpaceSlug)
 }
 
+func (h *Handler) TasksSearch(ctx context.Context, params apigen.TasksSearchParams) (*apigen.TaskSearchResultList, error) {
+	if err := h.requireScope(ctx, "tasks:read"); err != nil {
+		return nil, err
+	}
+
+	user := auth.UserFromContext(ctx)
+	if user == nil {
+		return nil, forbidden("authentication required")
+	}
+
+	queryText := strings.TrimSpace(params.Q)
+	if queryText == "" {
+		return nil, badRequest("query must not be empty")
+	}
+
+	var excludeTaskID int64
+	if params.ExcludeTaskId.IsSet() {
+		var err error
+		excludeTaskID, err = types.ParseTaskID(params.ExcludeTaskId.Value)
+		if err != nil {
+			return nil, badRequest(err.Error())
+		}
+	}
+
+	exactTaskID, err := parseSearchTaskID(queryText)
+	if err != nil {
+		return nil, badRequest(err.Error())
+	}
+
+	limit := clampLimit(params.Limit)
+	q := dbgen.New(h.Pool)
+	rows, err := q.SearchVisibleTasks(ctx, dbgen.SearchVisibleTasksParams{
+		ViewerUserID:  user.ID,
+		SpaceSlug:     params.SpaceSlug.Or(""),
+		ExcludeTaskID: excludeTaskID,
+		ExactTaskID:   exactTaskID,
+		QueryText:     queryText,
+		Lim:           limit,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &apigen.TaskSearchResultList{
+		Items: convertAll(rows, taskSearchResultFromDB),
+	}, nil
+}
+
 func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, params apigen.SpaceTasksUpdateParams) (*apigen.Task, error) {
 	if err := h.requireScope(ctx, "tasks:write"); err != nil {
 		return nil, err
@@ -554,6 +608,19 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 	}
 
 	return result, nil
+}
+
+func parseSearchTaskID(query string) (int64, error) {
+	if !exactTaskIDPattern.MatchString(query) {
+		return 0, nil
+	}
+	if strings.HasPrefix(query, "T") {
+		return types.ParseTaskID(query)
+	}
+	if _, err := strconv.ParseInt(query, 10, 64); err == nil {
+		return types.ParseTaskID("T" + query)
+	}
+	return 0, nil
 }
 
 func (h *Handler) SpaceTasksDelete(ctx context.Context, params apigen.SpaceTasksDeleteParams) error {
