@@ -27,8 +27,7 @@ run = "go test ./..."
 
 [tasks.run]
 description = "Run the server"
-depends = ["build"]
-run = "exec ./tend-server serve"
+run = "./tend-server serve"
 
 [tasks.seed]
 description = "Create default admin user"
@@ -44,5 +43,4 @@ run = "go build -o dev-oidc ./cmd/dev-oidc"
 
 [tasks.run-dev-oidc]
 description = "Run dev OIDC server"
-depends = ["build-dev-oidc"]
-run = "exec ./dev-oidc"
+run = "./dev-oidc"

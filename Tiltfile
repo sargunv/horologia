@@ -57,7 +57,8 @@ exec postgres -D "$PGDATA" -p $POSTGRES_PORT
 
 local_resource(
     "oidc",
-    serve_cmd="exec mise run //server:run-dev-oidc",
+    cmd="mise run //server:build-dev-oidc",
+    serve_cmd="server/dev-oidc",
     serve_env=dict(common_env, **{
         "DEV_OIDC_PORT": str(OIDC_PORT),
         "DEV_OIDC_CALLBACK_URL": "http://localhost:%d/api/auth/oidc/callback" % WEB_PORT,
@@ -79,7 +80,8 @@ if manage_postgres:
 
 local_resource(
     "server",
-    serve_cmd="exec mise run //server:run",
+    cmd="mise run //server:build",
+    serve_cmd="server/tend-server serve",
     serve_env=common_env,
     deps=["server"],
     resource_deps=server_resource_deps,
@@ -95,7 +97,8 @@ local_resource(
 
 local_resource(
     "web",
-    serve_cmd="exec mise run //web:dev",
+    cmd="mise run //web:generate",
+    serve_cmd="cd web && pnpm exec vp dev",
     serve_env={
         "SERVER_PORT": str(SERVER_PORT),
         "WEB_PORT": str(WEB_PORT),
