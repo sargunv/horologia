@@ -19,6 +19,7 @@
     "@tiptap/pm": "^3.21.0",
     "@tiptap/react": "^3.21.0",
     "@tiptap/starter-kit": "^3.21.0",
+    "chrono-node": "^2.9.0",
     "highlight.js": "^11.11.1",
     "katex": "^0.16.44",
     "lowlight": "^3.3.0",
