@@ -24,6 +24,7 @@ import { Route as AuthenticatedSpacesSpaceSlugRouteRouteImport } from './routes/
 import { Route as AuthenticatedSpacesSpaceSlugIndexRouteImport } from './routes/_authenticated/spaces/$spaceSlug/index.tsx'
 import { Route as AuthenticatedSpacesSpaceSlugSettingsRouteImport } from './routes/_authenticated/spaces/$spaceSlug/settings.tsx'
 import { Route as AuthenticatedSpacesSpaceSlugActivityRouteImport } from './routes/_authenticated/spaces/$spaceSlug/activity.tsx'
+import { Route as AuthenticatedSpacesSpaceSlugTasksNewRouteImport } from './routes/_authenticated/spaces/$spaceSlug/tasks/new.tsx'
 import { Route as AuthenticatedSpacesSpaceSlugTasksTaskIdRouteImport } from './routes/_authenticated/spaces/$spaceSlug/tasks/$taskId.tsx'
 
 const LoginRoute = LoginRouteImport.update({
@@ -115,6 +116,12 @@ const AuthenticatedSpacesSpaceSlugActivityRoute =
     path: '/activity',
     getParentRoute: () => AuthenticatedSpacesSpaceSlugRouteRoute,
   } as any)
+const AuthenticatedSpacesSpaceSlugTasksNewRoute =
+  AuthenticatedSpacesSpaceSlugTasksNewRouteImport.update({
+    id: '/tasks/new',
+    path: '/tasks/new',
+    getParentRoute: () => AuthenticatedSpacesSpaceSlugRouteRoute,
+  } as any)
 const AuthenticatedSpacesSpaceSlugTasksTaskIdRoute =
   AuthenticatedSpacesSpaceSlugTasksTaskIdRouteImport.update({
     id: '/tasks/$taskId',
@@ -140,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/spaces/$spaceSlug/settings': typeof AuthenticatedSpacesSpaceSlugSettingsRoute
   '/spaces/$spaceSlug/': typeof AuthenticatedSpacesSpaceSlugIndexRoute
   '/spaces/$spaceSlug/tasks/$taskId': typeof AuthenticatedSpacesSpaceSlugTasksTaskIdRoute
+  '/spaces/$spaceSlug/tasks/new': typeof AuthenticatedSpacesSpaceSlugTasksNewRoute
 }
 export interface FileRoutesByTo {
   '/link-account': typeof LinkAccountRoute
@@ -157,6 +165,7 @@ export interface FileRoutesByTo {
   '/spaces/$spaceSlug/settings': typeof AuthenticatedSpacesSpaceSlugSettingsRoute
   '/spaces/$spaceSlug': typeof AuthenticatedSpacesSpaceSlugIndexRoute
   '/spaces/$spaceSlug/tasks/$taskId': typeof AuthenticatedSpacesSpaceSlugTasksTaskIdRoute
+  '/spaces/$spaceSlug/tasks/new': typeof AuthenticatedSpacesSpaceSlugTasksNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -178,6 +187,7 @@ export interface FileRoutesById {
   '/_authenticated/spaces/$spaceSlug/settings': typeof AuthenticatedSpacesSpaceSlugSettingsRoute
   '/_authenticated/spaces/$spaceSlug/': typeof AuthenticatedSpacesSpaceSlugIndexRoute
   '/_authenticated/spaces/$spaceSlug/tasks/$taskId': typeof AuthenticatedSpacesSpaceSlugTasksTaskIdRoute
+  '/_authenticated/spaces/$spaceSlug/tasks/new': typeof AuthenticatedSpacesSpaceSlugTasksNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -199,6 +209,7 @@ export interface FileRouteTypes {
     | '/spaces/$spaceSlug/settings'
     | '/spaces/$spaceSlug/'
     | '/spaces/$spaceSlug/tasks/$taskId'
+    | '/spaces/$spaceSlug/tasks/new'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/link-account'
@@ -216,6 +227,7 @@ export interface FileRouteTypes {
     | '/spaces/$spaceSlug/settings'
     | '/spaces/$spaceSlug'
     | '/spaces/$spaceSlug/tasks/$taskId'
+    | '/spaces/$spaceSlug/tasks/new'
   id:
     | '__root__'
     | '/_authenticated'
@@ -236,6 +248,7 @@ export interface FileRouteTypes {
     | '/_authenticated/spaces/$spaceSlug/settings'
     | '/_authenticated/spaces/$spaceSlug/'
     | '/_authenticated/spaces/$spaceSlug/tasks/$taskId'
+    | '/_authenticated/spaces/$spaceSlug/tasks/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -365,6 +378,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSpacesSpaceSlugActivityRouteImport
       parentRoute: typeof AuthenticatedSpacesSpaceSlugRouteRoute
     }
+    '/_authenticated/spaces/$spaceSlug/tasks/new': {
+      id: '/_authenticated/spaces/$spaceSlug/tasks/new'
+      path: '/tasks/new'
+      fullPath: '/spaces/$spaceSlug/tasks/new'
+      preLoaderRoute: typeof AuthenticatedSpacesSpaceSlugTasksNewRouteImport
+      parentRoute: typeof AuthenticatedSpacesSpaceSlugRouteRoute
+    }
     '/_authenticated/spaces/$spaceSlug/tasks/$taskId': {
       id: '/_authenticated/spaces/$spaceSlug/tasks/$taskId'
       path: '/tasks/$taskId'
@@ -398,6 +418,7 @@ interface AuthenticatedSpacesSpaceSlugRouteRouteChildren {
   AuthenticatedSpacesSpaceSlugSettingsRoute: typeof AuthenticatedSpacesSpaceSlugSettingsRoute
   AuthenticatedSpacesSpaceSlugIndexRoute: typeof AuthenticatedSpacesSpaceSlugIndexRoute
   AuthenticatedSpacesSpaceSlugTasksTaskIdRoute: typeof AuthenticatedSpacesSpaceSlugTasksTaskIdRoute
+  AuthenticatedSpacesSpaceSlugTasksNewRoute: typeof AuthenticatedSpacesSpaceSlugTasksNewRoute
 }
 
 const AuthenticatedSpacesSpaceSlugRouteRouteChildren: AuthenticatedSpacesSpaceSlugRouteRouteChildren =
@@ -410,6 +431,8 @@ const AuthenticatedSpacesSpaceSlugRouteRouteChildren: AuthenticatedSpacesSpaceSl
       AuthenticatedSpacesSpaceSlugIndexRoute,
     AuthenticatedSpacesSpaceSlugTasksTaskIdRoute:
       AuthenticatedSpacesSpaceSlugTasksTaskIdRoute,
+    AuthenticatedSpacesSpaceSlugTasksNewRoute:
+      AuthenticatedSpacesSpaceSlugTasksNewRoute,
   }
 
 const AuthenticatedSpacesSpaceSlugRouteRouteWithChildren =
