@@ -67,6 +67,7 @@ export const Route = createFileRoute("/_authenticated/spaces/$spaceSlug/tasks/$t
 });
 
 const BackLink = createLink("a");
+const BreadcrumbLink = createLink("a");
 
 const ITEM_CLASS = "justify-start gap-2 text-sm";
 
@@ -83,7 +84,6 @@ function TaskBreadcrumbBar({
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [copied, setCopied] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const cancelRef = useRef<HTMLButtonElement>(null);
 
@@ -102,53 +102,72 @@ function TaskBreadcrumbBar({
   });
 
   function handleCopyId() {
-    void navigator.clipboard.writeText(taskId).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    });
+    void navigator.clipboard.writeText(taskId);
   }
 
   return (
     <div className="flex items-center gap-2">
       <ol className="flex min-w-0 items-center gap-1 text-sm">
-        <li className="text-surface-600-400 truncate">{spaceName}</li>
+        <li>
+          <BreadcrumbLink
+            to="/spaces/$spaceSlug"
+            params={{ spaceSlug }}
+            className="text-surface-600-400 truncate hover:underline"
+          >
+            {spaceName}
+          </BreadcrumbLink>
+        </li>
         <li className="text-surface-500" aria-hidden="true">
           <ChevronRight className="size-3" />
         </li>
-        <li className="shrink-0 font-mono">{taskId}</li>
+        <li>
+          <BreadcrumbLink
+            to="/spaces/$spaceSlug/tasks/$taskId"
+            params={{ spaceSlug, taskId }}
+            className="shrink-0 font-mono hover:underline"
+          >
+            {taskId}
+          </BreadcrumbLink>
+        </li>
       </ol>
 
-      <div className="ml-auto flex shrink-0 items-center gap-1">
-        <button
-          type="button"
-          onClick={handleCopyId}
-          className="btn-icon btn-sm preset-tonal-surface"
-          aria-label="Copy task ID"
-          title="Copy task ID"
+      <Menu>
+        <Menu.Trigger
+          className="btn-icon btn-sm preset-tonal-surface ml-auto"
+          aria-label="Task actions"
         >
-          {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-        </button>
-
-        <Menu>
-          <Menu.Trigger className="btn-icon btn-sm preset-tonal-surface" aria-label="Task actions">
-            <Ellipsis className="size-3.5" />
-          </Menu.Trigger>
-          <Portal>
-            <Menu.Positioner>
-              <Menu.Content>
-                <Menu.Item
-                  value="delete"
-                  className="text-error-500 justify-start gap-2 text-sm"
-                  onClick={() => setDeleteOpen(true)}
-                >
-                  <Trash2 className="size-4" aria-hidden="true" />
-                  <Menu.ItemText>Delete task</Menu.ItemText>
-                </Menu.Item>
-              </Menu.Content>
-            </Menu.Positioner>
-          </Portal>
-        </Menu>
-      </div>
+          <Ellipsis className="size-3.5" />
+        </Menu.Trigger>
+        <Portal>
+          <Menu.Positioner>
+            <Menu.Content>
+              <Menu.Item value="copy-id" className={ITEM_CLASS} onClick={handleCopyId}>
+                <Copy className="size-4" aria-hidden="true" />
+                <Menu.ItemText>Copy task ID</Menu.ItemText>
+              </Menu.Item>
+              <Menu.Item
+                value="copy-url"
+                className={ITEM_CLASS}
+                onClick={() => {
+                  void navigator.clipboard.writeText(window.location.href);
+                }}
+              >
+                <Copy className="size-4" aria-hidden="true" />
+                <Menu.ItemText>Copy URL</Menu.ItemText>
+              </Menu.Item>
+              <Menu.Separator />
+              <Menu.Item
+                value="delete"
+                className={`text-error-500 ${ITEM_CLASS}`}
+                onClick={() => setDeleteOpen(true)}
+              >
+                <Trash2 className="size-4" aria-hidden="true" />
+                <Menu.ItemText>Delete task</Menu.ItemText>
+              </Menu.Item>
+            </Menu.Content>
+          </Menu.Positioner>
+        </Portal>
+      </Menu>
 
       <Dialog
         open={deleteOpen}
