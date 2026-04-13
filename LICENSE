@@ -1,0 +1,7 @@
+Tend is dual-licensed:
+
+- The client apps (mobile/, cli/) are licensed under the MIT License.
+  See LICENSE-MIT for the full text.
+
+- All other components are licensed under the GNU Affero General Public License
+  v3.0. See LICENSE-AGPL-3.0 for the full text.
