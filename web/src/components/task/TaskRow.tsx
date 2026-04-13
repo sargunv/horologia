@@ -4,6 +4,7 @@ import { type ReactNode, useMemo } from "react";
 import type { components } from "../../api/schema.d.ts";
 import { useSpaceMemberMap } from "../../lib/hooks.ts";
 import { getIcon } from "../../lib/level-icons.ts";
+import { computeStaleness, stalenessColor } from "../../lib/staleness.ts";
 
 type Task = components["schemas"]["Task"];
 type TaskStatus = components["schemas"]["TaskStatus"];
@@ -91,12 +92,26 @@ export function TaskRow({
     [task.assigneeIds, memberMap],
   );
 
+  const staleness = useMemo(
+    () => computeStaleness(task, status?.category),
+    [task, status?.category],
+  );
+
   return (
     <Link
       to={to}
       params={{ spaceSlug, taskId: task.id }}
-      className="group flex items-center gap-2 border-b border-surface-200-800 px-3 py-2 transition-colors last:border-b-0 hover:bg-surface-100-900 data-[status=active]:bg-surface-200-800"
+      className="group relative flex items-center gap-2 border-b border-surface-200-800 px-3 py-2 transition-colors last:border-b-0 hover:bg-surface-100-900 data-[status=active]:bg-surface-200-800"
     >
+      {staleness != null && (
+        <IconTooltip label={`Staleness: ${Math.round(staleness * 100)}%`}>
+          <div
+            className="absolute inset-y-0 left-0 w-[3px]"
+            style={{ backgroundColor: stalenessColor(staleness) }}
+            aria-hidden="true"
+          />
+        </IconTooltip>
+      )}
       <IconTooltip label={task.status}>
         <StatusIcon className={`size-4 ${statusColor}`} aria-hidden="true" />
       </IconTooltip>
