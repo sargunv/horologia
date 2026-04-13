@@ -359,6 +359,7 @@ func statusFromDB(s dbgen.TaskStatus) *apigen.TaskStatus {
 		Name:     s.Name,
 		Category: apigen.TaskStatusCategory(s.Category),
 		Position: int64(s.Position),
+		Icon:     s.Icon,
 	}
 }
 
@@ -366,6 +367,7 @@ func effortLevelFromDB(e dbgen.TaskEffortLevel) *apigen.TaskEffortLevel {
 	return &apigen.TaskEffortLevel{
 		Name:     e.Name,
 		Position: int64(e.Position),
+		Icon:     e.Icon,
 	}
 }
 
@@ -373,7 +375,17 @@ func priorityLevelFromDB(p dbgen.TaskPriorityLevel) *apigen.TaskPriorityLevel {
 	return &apigen.TaskPriorityLevel{
 		Name:     p.Name,
 		Position: int64(p.Position),
+		Icon:     p.Icon,
 	}
+}
+
+// optStringOrEmpty extracts the value from an OptString, defaulting to empty
+// string when absent. Used for icon fields in full-replace endpoints.
+func optStringOrEmpty(opt apigen.OptString) string {
+	if opt.IsSet() {
+		return opt.Value
+	}
+	return ""
 }
 
 // taskListCursor holds the compound keyset pagination state for task list queries.

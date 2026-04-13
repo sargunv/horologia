@@ -920,10 +920,10 @@ func TestSpaceStatusReplaceSendsOrderedCategories(t *testing.T) {
 
 			writeJSON(t, w, http.StatusOK, map[string]any{
 				"items": []map[string]any{
-					{"name": "todo", "category": "initial", "position": 1},
-					{"name": "doing", "category": "intermediate", "position": 2},
-					{"name": "blocked", "category": "intermediate", "position": 3},
-					{"name": "done", "category": "completion", "position": 4},
+					{"name": "todo", "category": "initial", "position": 1, "icon": ""},
+					{"name": "doing", "category": "intermediate", "position": 2, "icon": ""},
+					{"name": "blocked", "category": "intermediate", "position": 3, "icon": ""},
+					{"name": "done", "category": "completion", "position": 4, "icon": ""},
 				},
 			})
 		default:
@@ -983,8 +983,8 @@ func TestSpaceEffortReplaceSendsOrderedLevels(t *testing.T) {
 
 			writeJSON(t, w, http.StatusOK, map[string]any{
 				"items": []map[string]any{
-					{"name": "small", "position": 1},
-					{"name": "medium", "position": 2},
+					{"name": "small", "position": 1, "icon": ""},
+					{"name": "medium", "position": 2, "icon": ""},
 				},
 			})
 		default:
@@ -1062,8 +1062,8 @@ func TestSpacePriorityReplaceSendsOrderedLevels(t *testing.T) {
 
 			writeJSON(t, w, http.StatusOK, map[string]any{
 				"items": []map[string]any{
-					{"name": "low", "position": 1},
-					{"name": "high", "position": 2},
+					{"name": "low", "position": 1, "icon": ""},
+					{"name": "high", "position": 2, "icon": ""},
 				},
 			})
 		default:
@@ -1341,9 +1341,9 @@ func TestTaskCompleteUsesFirstCompletionStatus(t *testing.T) {
 			step++
 			writeJSON(t, w, http.StatusOK, map[string]any{
 				"items": []map[string]any{
-					{"name": "todo", "category": "initial", "position": 1},
-					{"name": "done", "category": "completion", "position": 2},
-					{"name": "archived", "category": "completion", "position": 3},
+					{"name": "todo", "category": "initial", "position": 1, "icon": ""},
+					{"name": "done", "category": "completion", "position": 2, "icon": ""},
+					{"name": "archived", "category": "completion", "position": 3, "icon": ""},
 				},
 			})
 		case "/api/spaces/home/tasks/T1":

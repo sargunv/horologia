@@ -284,8 +284,8 @@ func TestTaskEffortLevelsList(t *testing.T) {
 		}
 		names[i] = name
 	}
-	if names[0] != "small" || names[1] != "medium" || names[2] != "large" {
-		t.Errorf("effort levels = %v, want [small medium large]", names)
+	if names[0] != "small" || names[1] != "moderate" || names[2] != "large" {
+		t.Errorf("effort levels = %v, want [small moderate large]", names)
 	}
 }
 
@@ -330,10 +330,10 @@ func TestTaskEffortLevelsReplaceNullsTasksOnRemoval(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "eff", "Effort Test")
 
-	task := createTask(t, env, "eff", `{"title":"Task","effort":"medium"}`)
+	task := createTask(t, env, "eff", `{"title":"Task","effort":"moderate"}`)
 	taskID := jsonAs[string](t, task["id"])
 
-	// Remove "medium" from the list.
+	// Remove "moderate" from the list.
 	resp := doRequest(t, env, "PUT", "/spaces/eff/task-effort-levels", `{
 		"items": [{"name": "small"}, {"name": "large"}]
 	}`)
@@ -492,9 +492,9 @@ func TestTaskCreateWithEffortAndPriority(t *testing.T) {
 	env := setupTestServer(t)
 	createSpace(t, env, "home", "Home")
 
-	task := createTask(t, env, "home", `{"title":"Task","effort":"medium","priority":"high"}`)
-	if task["effort"] != "medium" {
-		t.Errorf("effort = %v, want medium", task["effort"])
+	task := createTask(t, env, "home", `{"title":"Task","effort":"moderate","priority":"high"}`)
+	if task["effort"] != "moderate" {
+		t.Errorf("effort = %v, want moderate", task["effort"])
 	}
 	if task["priority"] != "high" {
 		t.Errorf("priority = %v, want high", task["priority"])

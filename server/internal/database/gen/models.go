@@ -485,12 +485,14 @@ type TaskEffortLevel struct {
 	SpaceSlug string
 	Name      string
 	Position  int32
+	Icon      string
 }
 
 type TaskPriorityLevel struct {
 	SpaceSlug string
 	Name      string
 	Position  int32
+	Icon      string
 }
 
 type TaskRelation struct {
@@ -513,6 +515,7 @@ type TaskStatus struct {
 	Name      string
 	Category  StatusCategory
 	Position  int32
+	Icon      string
 }
 
 type TaskTag struct {

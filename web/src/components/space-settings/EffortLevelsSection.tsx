@@ -1,6 +1,7 @@
 import { Gauge } from "lucide-react";
 import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
+import { EFFORT_SUGGESTED_ICONS } from "../../lib/level-icons.ts";
 import { spaceEffortLevelsQueryOptions } from "../../lib/queries.ts";
 import { OrderedNameListForm } from "./OrderedNameListForm.tsx";
 import { SettingsSection } from "./SettingsSection.tsx";
@@ -21,7 +22,7 @@ export function EffortLevelsSection({
       description="Define effort levels for estimating task complexity."
     >
       <OrderedNameListForm
-        key={effortLevels.map((l) => l.name).join(",")}
+        key={effortLevels.map((l) => `${l.name}:${l.icon ?? ""}`).join(",")}
         items={effortLevels}
         queryKey={spaceEffortLevelsQueryOptions(spaceSlug).queryKey}
         mutationFn={async (items) => {
@@ -34,6 +35,8 @@ export function EffortLevelsSection({
           return data;
         }}
         itemLabel="Effort level"
+        showIcons
+        suggestedIcons={EFFORT_SUGGESTED_ICONS}
       />
     </SettingsSection>
   );

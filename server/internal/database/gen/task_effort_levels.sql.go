@@ -12,21 +12,32 @@ import (
 )
 
 const createTaskEffortLevel = `-- name: CreateTaskEffortLevel :one
-INSERT INTO task_effort_levels (space_slug, name, position)
-VALUES ($1, $2, $3)
-RETURNING space_slug, name, position
+INSERT INTO task_effort_levels (space_slug, name, position, icon)
+VALUES ($1, $2, $3, $4)
+RETURNING space_slug, name, position, icon
 `
 
 type CreateTaskEffortLevelParams struct {
 	SpaceSlug string
 	Name      string
 	Position  int32
+	Icon      string
 }
 
 func (q *Queries) CreateTaskEffortLevel(ctx context.Context, arg CreateTaskEffortLevelParams) (TaskEffortLevel, error) {
-	row := q.db.QueryRow(ctx, createTaskEffortLevel, arg.SpaceSlug, arg.Name, arg.Position)
+	row := q.db.QueryRow(ctx, createTaskEffortLevel,
+		arg.SpaceSlug,
+		arg.Name,
+		arg.Position,
+		arg.Icon,
+	)
 	var i TaskEffortLevel
-	err := row.Scan(&i.SpaceSlug, &i.Name, &i.Position)
+	err := row.Scan(
+		&i.SpaceSlug,
+		&i.Name,
+		&i.Position,
+		&i.Icon,
+	)
 	return i, err
 }
 
@@ -45,7 +56,7 @@ func (q *Queries) DeleteTaskEffortLevel(ctx context.Context, arg DeleteTaskEffor
 }
 
 const listTaskEffortLevelsBySpace = `-- name: ListTaskEffortLevelsBySpace :many
-SELECT space_slug, name, position FROM task_effort_levels
+SELECT space_slug, name, position, icon FROM task_effort_levels
 WHERE space_slug = $1
 ORDER BY position ASC
 `
@@ -59,7 +70,12 @@ func (q *Queries) ListTaskEffortLevelsBySpace(ctx context.Context, spaceSlug str
 	items := []TaskEffortLevel{}
 	for rows.Next() {
 		var i TaskEffortLevel
-		if err := rows.Scan(&i.SpaceSlug, &i.Name, &i.Position); err != nil {
+		if err := rows.Scan(
+			&i.SpaceSlug,
+			&i.Name,
+			&i.Position,
+			&i.Icon,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -71,17 +87,23 @@ func (q *Queries) ListTaskEffortLevelsBySpace(ctx context.Context, spaceSlug str
 }
 
 const updateTaskEffortLevel = `-- name: UpdateTaskEffortLevel :exec
-UPDATE task_effort_levels SET position = $1
-WHERE space_slug = $2 AND name = $3
+UPDATE task_effort_levels SET position = $1, icon = $2
+WHERE space_slug = $3 AND name = $4
 `
 
 type UpdateTaskEffortLevelParams struct {
 	Position  int32
+	Icon      string
 	SpaceSlug string
 	Name      string
 }
 
 func (q *Queries) UpdateTaskEffortLevel(ctx context.Context, arg UpdateTaskEffortLevelParams) error {
-	_, err := q.db.Exec(ctx, updateTaskEffortLevel, arg.Position, arg.SpaceSlug, arg.Name)
+	_, err := q.db.Exec(ctx, updateTaskEffortLevel,
+		arg.Position,
+		arg.Icon,
+		arg.SpaceSlug,
+		arg.Name,
+	)
 	return err
 }

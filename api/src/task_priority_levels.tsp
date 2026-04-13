@@ -9,6 +9,9 @@ namespace Tend;
 model TaskPriorityLevel {
   name: string;
   position: int64;
+
+  /** Lucide icon name in kebab-case (e.g. "signal-high", "flag"). Empty string if no icon is set. */
+  icon: string;
 }
 
 model TaskPriorityLevelList {
@@ -17,6 +20,9 @@ model TaskPriorityLevelList {
 
 model TaskPriorityLevelInput {
   @minLength(1) @maxLength(100) name: string;
+
+  /** Lucide icon name in kebab-case (e.g. "signal-high", "flag"). Omit or set to empty string to clear. */
+  @maxLength(50) icon?: string;
 }
 
 model TaskPriorityLevelReplace {

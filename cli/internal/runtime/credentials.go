@@ -121,6 +121,15 @@ func isCredentialStoreUnavailable(err error) bool {
 	}
 
 	msg := strings.ToLower(err.Error())
-	return strings.Contains(msg, "org.freedesktop.secrets") &&
-		(strings.Contains(msg, "service files") || strings.Contains(msg, "name has no owner"))
+	if strings.Contains(msg, "org.freedesktop.secrets") &&
+		(strings.Contains(msg, "service files") || strings.Contains(msg, "name has no owner")) {
+		return true
+	}
+
+	// dbus-launch binary missing (e.g. minimal CI/sandbox environments without D-Bus)
+	if strings.Contains(msg, "dbus-launch") && strings.Contains(msg, "executable file not found") {
+		return true
+	}
+
+	return false
 }

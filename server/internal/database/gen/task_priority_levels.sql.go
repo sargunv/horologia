@@ -12,21 +12,32 @@ import (
 )
 
 const createTaskPriorityLevel = `-- name: CreateTaskPriorityLevel :one
-INSERT INTO task_priority_levels (space_slug, name, position)
-VALUES ($1, $2, $3)
-RETURNING space_slug, name, position
+INSERT INTO task_priority_levels (space_slug, name, position, icon)
+VALUES ($1, $2, $3, $4)
+RETURNING space_slug, name, position, icon
 `
 
 type CreateTaskPriorityLevelParams struct {
 	SpaceSlug string
 	Name      string
 	Position  int32
+	Icon      string
 }
 
 func (q *Queries) CreateTaskPriorityLevel(ctx context.Context, arg CreateTaskPriorityLevelParams) (TaskPriorityLevel, error) {
-	row := q.db.QueryRow(ctx, createTaskPriorityLevel, arg.SpaceSlug, arg.Name, arg.Position)
+	row := q.db.QueryRow(ctx, createTaskPriorityLevel,
+		arg.SpaceSlug,
+		arg.Name,
+		arg.Position,
+		arg.Icon,
+	)
 	var i TaskPriorityLevel
-	err := row.Scan(&i.SpaceSlug, &i.Name, &i.Position)
+	err := row.Scan(
+		&i.SpaceSlug,
+		&i.Name,
+		&i.Position,
+		&i.Icon,
+	)
 	return i, err
 }
 
@@ -45,7 +56,7 @@ func (q *Queries) DeleteTaskPriorityLevel(ctx context.Context, arg DeleteTaskPri
 }
 
 const listTaskPriorityLevelsBySpace = `-- name: ListTaskPriorityLevelsBySpace :many
-SELECT space_slug, name, position FROM task_priority_levels
+SELECT space_slug, name, position, icon FROM task_priority_levels
 WHERE space_slug = $1
 ORDER BY position ASC
 `
@@ -59,7 +70,12 @@ func (q *Queries) ListTaskPriorityLevelsBySpace(ctx context.Context, spaceSlug s
 	items := []TaskPriorityLevel{}
 	for rows.Next() {
 		var i TaskPriorityLevel
-		if err := rows.Scan(&i.SpaceSlug, &i.Name, &i.Position); err != nil {
+		if err := rows.Scan(
+			&i.SpaceSlug,
+			&i.Name,
+			&i.Position,
+			&i.Icon,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -71,17 +87,23 @@ func (q *Queries) ListTaskPriorityLevelsBySpace(ctx context.Context, spaceSlug s
 }
 
 const updateTaskPriorityLevel = `-- name: UpdateTaskPriorityLevel :exec
-UPDATE task_priority_levels SET position = $1
-WHERE space_slug = $2 AND name = $3
+UPDATE task_priority_levels SET position = $1, icon = $2
+WHERE space_slug = $3 AND name = $4
 `
 
 type UpdateTaskPriorityLevelParams struct {
 	Position  int32
+	Icon      string
 	SpaceSlug string
 	Name      string
 }
 
 func (q *Queries) UpdateTaskPriorityLevel(ctx context.Context, arg UpdateTaskPriorityLevelParams) error {
-	_, err := q.db.Exec(ctx, updateTaskPriorityLevel, arg.Position, arg.SpaceSlug, arg.Name)
+	_, err := q.db.Exec(ctx, updateTaskPriorityLevel,
+		arg.Position,
+		arg.Icon,
+		arg.SpaceSlug,
+		arg.Name,
+	)
 	return err
 }

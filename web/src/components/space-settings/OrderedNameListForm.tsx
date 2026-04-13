@@ -19,28 +19,36 @@ import { CSS } from "@dnd-kit/utilities";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { GripVertical, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { EFFORT_SUGGESTED_ICONS } from "../../lib/level-icons.ts";
 import { ErrorAlert } from "./ErrorAlert.tsx";
+import { IconPicker } from "./IconPicker.tsx";
 
-interface NamedItem {
+export interface NamedItem {
   id: string;
   name: string;
+  icon: string;
 }
 
 interface ServerItem {
   name: string;
   position: number;
+  icon?: string;
 }
 
 function toItems(serverItems: ServerItem[], existing?: NamedItem[]): NamedItem[] {
-  return serverItems.map((s, i) => ({
-    id: existing?.[i]?.id ?? crypto.randomUUID(),
+  const nameToId = new Map(existing?.map((e) => [e.name, e.id]));
+  return serverItems.map((s) => ({
+    id: nameToId.get(s.name) ?? crypto.randomUUID(),
     name: s.name,
+    icon: s.icon ?? "",
   }));
 }
 
 function arraysEqual(a: NamedItem[], b: ServerItem[]): boolean {
   if (a.length !== b.length) return false;
-  return a.every((item, i) => item.name.trim() === b[i]?.name);
+  return a.every(
+    (item, i) => item.name.trim() === b[i]?.name && (item.icon || "") === (b[i]?.icon || ""),
+  );
 }
 
 export function OrderedNameListForm({
@@ -49,12 +57,18 @@ export function OrderedNameListForm({
   mutationFn,
   itemLabel,
   minItems = 0,
+  showIcons = false,
+  suggestedIcons = EFFORT_SUGGESTED_ICONS,
 }: {
   items: ServerItem[];
   queryKey: readonly unknown[];
-  mutationFn: (names: { name: string }[]) => Promise<{ items: ServerItem[] }>;
+  mutationFn: (items: { name: string; icon?: string }[]) => Promise<{ items: ServerItem[] }>;
   itemLabel: string;
   minItems?: number | undefined;
+  /** Show an icon picker for each item. */
+  showIcons?: boolean;
+  /** Which set of suggested icons to show in the icon picker. */
+  suggestedIcons?: string[];
 }) {
   const queryClient = useQueryClient();
   const [items, setItems] = useState(() => toItems(serverItems));
@@ -87,7 +101,12 @@ export function OrderedNameListForm({
     setValidationError(error);
     if (error) return;
     if (arraysEqual(nextItems, serverItems)) return;
-    saveMutation.mutate(nextItems.map((item) => ({ name: item.name.trim() })));
+    saveMutation.mutate(
+      nextItems.map((item) => ({
+        name: item.name.trim(),
+        ...(showIcons ? { icon: item.icon || "" } : {}),
+      })),
+    );
   }
 
   function clearErrors() {
@@ -109,6 +128,8 @@ export function OrderedNameListForm({
         disabled={pending}
         itemLabel={itemLabel}
         minItems={minItems}
+        showIcons={showIcons}
+        suggestedIcons={suggestedIcons}
       />
 
       {validationError && <ErrorAlert key={validationError} message={validationError} />}
@@ -124,6 +145,8 @@ function SortableNameList({
   disabled,
   itemLabel,
   minItems,
+  showIcons,
+  suggestedIcons,
 }: {
   items: NamedItem[];
   setItems: (value: NamedItem[]) => void;
@@ -131,6 +154,8 @@ function SortableNameList({
   disabled: boolean;
   itemLabel: string;
   minItems: number;
+  showIcons: boolean;
+  suggestedIcons: string[];
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -186,7 +211,7 @@ function SortableNameList({
 
   function handleAdd() {
     const newId = crypto.randomUUID();
-    setItems([...items, { id: newId, name: "" }]);
+    setItems([...items, { id: newId, name: "", icon: "" }]);
     setEditingId(newId);
   }
 
@@ -199,6 +224,12 @@ function SortableNameList({
 
   function handleRename(id: string, name: string) {
     setItems(items.map((i) => (i.id === id ? { ...i, name } : i)));
+  }
+
+  function handleIconChange(id: string, icon: string) {
+    const next = items.map((i) => (i.id === id ? { ...i, icon } : i));
+    setItems(next);
+    onSave(next);
   }
 
   function handleEndEdit() {
@@ -232,6 +263,10 @@ function SortableNameList({
                 onStartEdit={() => setEditingId(item.id)}
                 onEndEdit={handleEndEdit}
                 onRename={(name) => handleRename(item.id, name)}
+                onIconChange={
+                  showIcons ? (icon: string) => handleIconChange(item.id, icon) : undefined
+                }
+                suggestedIcons={suggestedIcons}
                 onRemove={canRemoveItem ? () => handleRemove(item.id) : undefined}
                 disabled={disabled}
                 draggable={items.length > 1}
@@ -242,7 +277,7 @@ function SortableNameList({
         </SortableContext>
       </DndContext>
 
-      {!editingId && (
+      {!(editingId && items.find((i) => i.id === editingId && !i.name.trim())) && (
         <button
           type="button"
           onClick={handleAdd}
@@ -257,13 +292,15 @@ function SortableNameList({
   );
 }
 
-function SortableNameRow({
+export function SortableNameRow({
   item,
   index,
   isEditing,
   onStartEdit,
   onEndEdit,
   onRename,
+  onIconChange,
+  suggestedIcons,
   onRemove,
   disabled,
   draggable,
@@ -275,6 +312,8 @@ function SortableNameRow({
   onStartEdit: () => void;
   onEndEdit: () => void;
   onRename: (name: string) => void;
+  onIconChange?: ((icon: string) => void) | undefined;
+  suggestedIcons: string[];
   onRemove?: (() => void) | undefined;
   disabled: boolean;
   draggable: boolean;
@@ -290,8 +329,6 @@ function SortableNameRow({
     transition,
   };
 
-  const { role: _role, ...handleAttributes } = attributes;
-
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter" || e.key === "Escape") {
       e.preventDefault();
@@ -303,17 +340,27 @@ function SortableNameRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-2 rounded-base ${isDragging ? "opacity-50" : ""}`}
+      className={`flex items-center gap-1 rounded-base ${isDragging ? "opacity-50" : ""}`}
     >
       <button
         type="button"
         className={`btn-icon btn-icon-sm shrink-0 ${draggable ? "preset-tonal-surface cursor-grab" : "cursor-default opacity-50"}`}
         disabled={!draggable || disabled}
         aria-label={`Drag to reorder ${item.name || `${itemLabel.toLowerCase()} ${index + 1}`}`}
-        {...(draggable && !disabled ? { ...handleAttributes, ...listeners } : {})}
+        {...(draggable && !disabled ? { ...attributes, ...listeners } : {})}
       >
         <GripVertical className="size-4" aria-hidden="true" />
       </button>
+
+      {onIconChange && (
+        <IconPicker
+          value={item.icon || undefined}
+          onChange={onIconChange}
+          disabled={disabled}
+          label={`Icon for ${item.name || `${itemLabel.toLowerCase()} ${index + 1}`}`}
+          suggestedIcons={suggestedIcons}
+        />
+      )}
 
       {isEditing ? (
         <input

@@ -1,6 +1,7 @@
 import { SignalHigh } from "lucide-react";
 import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
+import { PRIORITY_SUGGESTED_ICONS } from "../../lib/level-icons.ts";
 import { spacePriorityLevelsQueryOptions } from "../../lib/queries.ts";
 import { OrderedNameListForm } from "./OrderedNameListForm.tsx";
 import { SettingsSection } from "./SettingsSection.tsx";
@@ -21,7 +22,7 @@ export function PriorityLevelsSection({
       description="Configure priority levels for organizing tasks."
     >
       <OrderedNameListForm
-        key={priorityLevels.map((l) => l.name).join(",")}
+        key={priorityLevels.map((l) => `${l.name}:${l.icon ?? ""}`).join(",")}
         items={priorityLevels}
         queryKey={spacePriorityLevelsQueryOptions(spaceSlug).queryKey}
         mutationFn={async (items) => {
@@ -34,6 +35,8 @@ export function PriorityLevelsSection({
           return data;
         }}
         itemLabel="Priority level"
+        showIcons
+        suggestedIcons={PRIORITY_SUGGESTED_ICONS}
       />
     </SettingsSection>
   );
