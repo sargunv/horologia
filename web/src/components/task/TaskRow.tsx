@@ -18,6 +18,35 @@ const STATUS_ICON_COLOR: Record<string, string> = {
   completion: "text-success-500",
 };
 
+const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
+
+/** Format a due date (YYYY-MM-DD) relative to today, e.g. "in 3 months", "yesterday", "in 2 years". */
+function formatRelativeDue(dateStr: string): string {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(dateStr + "T00:00:00");
+  const diffDays = Math.round((due.getTime() - today.getTime()) / 86_400_000);
+
+  const absDays = Math.abs(diffDays);
+  let value: number;
+  let unit: Intl.RelativeTimeFormatUnit;
+  if (absDays < 7) {
+    value = diffDays;
+    unit = "day";
+  } else if (absDays < 30) {
+    value = Math.round(diffDays / 7);
+    unit = "week";
+  } else if (absDays < 365) {
+    value = Math.round(diffDays / 30);
+    unit = "month";
+  } else {
+    value = Math.round(diffDays / 365);
+    unit = "year";
+  }
+
+  return rtf.format(value, unit);
+}
+
 /** Screen-reader label for a staleness ratio. */
 function stalenessLabel(ratio: number): string {
   if (ratio >= 0.95 && ratio <= 1.05) return "Due now";
@@ -152,7 +181,14 @@ export function TaskRow({
         <StatusIcon className={`size-4 ${statusColor}`} aria-hidden="true" />
       </IconTooltip>
 
-      <span className="min-w-0 flex-1 truncate text-sm">{task.title}</span>
+      <div className="min-w-0 flex-1">
+        <span className="block truncate text-sm">{task.title}</span>
+        {task.due && (
+          <span className="text-surface-500 block truncate text-xs">
+            {formatRelativeDue(task.due.at)}
+          </span>
+        )}
+      </div>
 
       {EffortIcon && task.effort && (
         <IconTooltip label={task.effort}>

@@ -10,7 +10,7 @@ export function ListDetailLayout({
   emptyState?: ReactNode;
 }) {
   return (
-    <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+    <div className="grid gap-6 lg:grid-cols-[350px_1fr]">
       <div className={detail ? "hidden lg:block" : ""}>{list}</div>
 
       <div className={!detail ? "hidden lg:block" : ""}>
