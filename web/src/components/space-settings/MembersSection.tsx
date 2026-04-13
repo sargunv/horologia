@@ -280,98 +280,91 @@ function AddMemberForm({ spaceSlug, members }: { spaceSlug: string; members: Spa
   return (
     <div className="border-surface-200-800 flex flex-col gap-3 border-t pt-4">
       <h3 className="text-surface-600-400 text-sm font-medium">Add member</h3>
-      <form onSubmit={handleSubmit} className="flex items-end gap-2">
-        <label className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="text-surface-600-400 text-sm font-medium">User</span>
-          <Combobox
-            collection={collection}
-            value={value}
-            onValueChange={({ value: v }) => setValue(v)}
-            inputValue={inputValue}
-            onInputValueChange={({ inputValue: v }) => setInputValue(v)}
-            disabled={addMutation.isPending}
-            openOnClick
-            closeOnSelect
-            placeholder="Search by name or email..."
-          >
-            <Combobox.Control>
-              <Combobox.Input className="input preset-outlined-surface-200-800 w-full" />
-            </Combobox.Control>
-            <Portal>
-              <Combobox.Positioner>
-                <Combobox.Content className="max-h-60 overflow-y-auto">
-                  {usersLoading ? (
-                    <div
-                      role="presentation"
-                      className="text-surface-500 flex items-center gap-2 px-3 py-2 text-sm"
-                    >
-                      <Loader2 className="size-4 animate-spin" />
-                      Loading users...
-                    </div>
-                  ) : usersError ? (
-                    <div role="presentation" className="text-error-500 px-3 py-2 text-sm">
-                      <span role="alert">Failed to load users</span>
-                    </div>
-                  ) : filteredUsers.length === 0 ? (
-                    <div role="presentation" className="text-surface-500 px-3 py-2 text-sm">
-                      {availableUsers.length === 0
-                        ? "All users are already members"
-                        : "No matching users"}
-                    </div>
-                  ) : (
-                    filteredUsers.map((user) => (
-                      <Combobox.Item key={user.id} item={user}>
-                        <Combobox.ItemText>{user.name}</Combobox.ItemText>
-                        <span className="text-surface-500 ml-auto text-xs">{user.email}</span>
-                        <Combobox.ItemIndicator>✓</Combobox.ItemIndicator>
-                      </Combobox.Item>
-                    ))
-                  )}
-                </Combobox.Content>
-              </Combobox.Positioner>
-            </Portal>
-          </Combobox>
-          <div aria-live="polite" role="status" className="sr-only">
-            {usersLoading
-              ? "Loading users..."
-              : usersError
-                ? "Failed to load users"
-                : filteredUsers.length === 0
-                  ? availableUsers.length === 0
-                    ? "All users are already members"
-                    : "No matching users"
-                  : ""}
-          </div>
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-surface-600-400 text-sm font-medium">Role</span>
-          <select
-            value={role}
-            onChange={(e) => {
-              if (isSpaceRole(e.target.value)) setRole(e.target.value);
-            }}
-            disabled={addMutation.isPending}
-            className="select preset-outlined-surface-200-800 w-28"
-          >
-            <RoleOptions />
-          </select>
-        </label>
-        <button
-          type="submit"
-          disabled={addMutation.isPending || value.length === 0}
-          className="btn preset-filled-primary-500"
+      <form onSubmit={handleSubmit}>
+        <Combobox
+          collection={collection}
+          value={value}
+          onValueChange={({ value: v }) => setValue(v)}
+          inputValue={inputValue}
+          onInputValueChange={({ inputValue: v }) => setInputValue(v)}
+          disabled={addMutation.isPending}
+          openOnClick
+          closeOnSelect
         >
-          {addMutation.isPending ? (
-            "Adding..."
-          ) : (
-            <>
-              <UserPlus className="size-4" aria-hidden="true" />
-              Add
-            </>
-          )}
-        </button>
+          <Combobox.Control className="input-group grid-cols-[1fr_auto_auto]">
+            <Combobox.Input className="ig-input" placeholder="Search by name or email..." />
+            <select
+              aria-label="Role"
+              value={role}
+              onChange={(e) => {
+                if (isSpaceRole(e.target.value)) setRole(e.target.value);
+              }}
+              disabled={addMutation.isPending}
+              className="ig-select"
+            >
+              <RoleOptions />
+            </select>
+            <button
+              type="submit"
+              disabled={addMutation.isPending || value.length === 0}
+              className="ig-btn preset-filled-primary-500"
+            >
+              {addMutation.isPending ? (
+                "Adding..."
+              ) : (
+                <>
+                  <UserPlus className="size-4" aria-hidden="true" />
+                  Add
+                </>
+              )}
+            </button>
+          </Combobox.Control>
+          <Portal>
+            <Combobox.Positioner>
+              <Combobox.Content className="max-h-60 overflow-y-auto">
+                {usersLoading ? (
+                  <div
+                    role="presentation"
+                    className="text-surface-500 flex items-center gap-2 px-3 py-2 text-sm"
+                  >
+                    <Loader2 className="size-4 animate-spin" />
+                    Loading users...
+                  </div>
+                ) : usersError ? (
+                  <div role="presentation" className="text-error-500 px-3 py-2 text-sm">
+                    <span role="alert">Failed to load users</span>
+                  </div>
+                ) : filteredUsers.length === 0 ? (
+                  <div role="presentation" className="text-surface-500 px-3 py-2 text-sm">
+                    {availableUsers.length === 0
+                      ? "All users are already members"
+                      : "No matching users"}
+                  </div>
+                ) : (
+                  filteredUsers.map((user) => (
+                    <Combobox.Item key={user.id} item={user}>
+                      <Combobox.ItemText>{user.name}</Combobox.ItemText>
+                      <span className="text-surface-500 ml-auto text-xs">{user.email}</span>
+                      <Combobox.ItemIndicator>✓</Combobox.ItemIndicator>
+                    </Combobox.Item>
+                  ))
+                )}
+              </Combobox.Content>
+            </Combobox.Positioner>
+          </Portal>
+        </Combobox>
       </form>
-
+      <div aria-live="polite" role="status" className="sr-only">
+        {usersLoading
+          ? "Loading users..."
+          : usersError
+            ? "Failed to load users"
+            : filteredUsers.length === 0
+              ? availableUsers.length === 0
+                ? "All users are already members"
+                : "No matching users"
+              : ""}
+      </div>
       {addMutation.error && <ErrorAlert message={addMutation.error.message} />}
     </div>
   );
