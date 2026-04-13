@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
+import type { components } from "../api/schema.d.ts";
 import { computeNextOccurrence, computeStaleness, stalenessColor } from "./staleness.ts";
+
+type Task = components["schemas"]["Task"];
+type StalenessInput = Pick<
+  Task,
+  "recurrenceType" | "recurrenceRule" | "lastCompletedAt" | "createdAt"
+>;
 
 describe("computeNextOccurrence", () => {
   it("returns the next daily occurrence after a given date", () => {
@@ -62,7 +69,7 @@ describe("computeNextOccurrence", () => {
 });
 
 describe("computeStaleness", () => {
-  const baseTask = {
+  const baseTask: StalenessInput = {
     recurrenceType: "completion_based",
     recurrenceRule: "FREQ=WEEKLY",
     lastCompletedAt: "2026-01-05T00:00:00Z", // Monday
@@ -70,7 +77,7 @@ describe("computeStaleness", () => {
   };
 
   it("returns null for one_off tasks", () => {
-    const task = { ...baseTask, recurrenceType: "one_off" };
+    const task: StalenessInput = { ...baseTask, recurrenceType: "one_off" };
     expect(computeStaleness(task, "initial")).toBeNull();
   });
 
@@ -145,12 +152,16 @@ describe("computeStaleness", () => {
   });
 
   it("returns null for on_dependency type with null rule", () => {
-    const task = { ...baseTask, recurrenceType: "on_dependency", recurrenceRule: null };
+    const task: StalenessInput = {
+      ...baseTask,
+      recurrenceType: "on_dependency",
+      recurrenceRule: null,
+    };
     expect(computeStaleness(task, "initial")).toBeNull();
   });
 
   it("works with fixed_non_accumulating recurrence type", () => {
-    const task = { ...baseTask, recurrenceType: "fixed_non_accumulating" };
+    const task: StalenessInput = { ...baseTask, recurrenceType: "fixed_non_accumulating" };
     const now = new Date("2026-01-08T12:00:00Z");
     const ratio = computeStaleness(task, "initial", now);
     expect(ratio).toBeCloseTo(0.5, 1);
@@ -166,6 +177,12 @@ describe("computeStaleness", () => {
     const now = new Date("2026-01-08T12:00:00Z");
     const ratio = computeStaleness(baseTask, undefined, now);
     expect(ratio).toBeCloseTo(0.5, 1);
+  });
+
+  it("returns a negative ratio when now is before the anchor", () => {
+    const now = new Date("2026-01-04T00:00:00Z"); // 1 day before anchor (Jan 5)
+    const ratio = computeStaleness(baseTask, "initial", now);
+    expect(ratio).toBeCloseTo(-1 / 7, 2);
   });
 });
 

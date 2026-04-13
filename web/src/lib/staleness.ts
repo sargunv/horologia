@@ -1,4 +1,8 @@
 import { RRule } from "rrule";
+import type { components } from "../api/schema.d.ts";
+
+type Task = components["schemas"]["Task"];
+type TaskStatusCategory = components["schemas"]["TaskStatusCategory"];
 
 /**
  * Compute the next occurrence of an RRULE after a given date.
@@ -31,13 +35,8 @@ export function computeNextOccurrence(rruleStr: string, afterDate: Date): Date |
  * - unable to compute interval from the rrule
  */
 export function computeStaleness(
-  task: {
-    recurrenceType: string;
-    recurrenceRule: string | null;
-    lastCompletedAt: string | null;
-    createdAt: string;
-  },
-  statusCategory: string | undefined,
+  task: Pick<Task, "recurrenceType" | "recurrenceRule" | "lastCompletedAt" | "createdAt">,
+  statusCategory: TaskStatusCategory | undefined,
   now: Date = new Date(),
 ): number | null {
   if (task.recurrenceType === "one_off") return null;
@@ -54,6 +53,11 @@ export function computeStaleness(
   return (now.getTime() - anchor.getTime()) / intervalMs;
 }
 
+/** Linearly interpolate between two values. */
+function lerp(a: number, b: number, t: number): number {
+  return Math.round(a + (b - a) * t);
+}
+
 /**
  * Map a staleness ratio to an RGB color string.
  *
@@ -66,23 +70,15 @@ export function computeStaleness(
 export function stalenessColor(ratio: number): string {
   const t = Math.max(0, Math.min(ratio, 1));
 
-  let r: number;
-  let g: number;
-  let b: number;
-
-  if (t <= 0.5) {
-    // Green (76, 175, 80) → Yellow (255, 235, 59)
-    const p = t / 0.5;
-    r = Math.round(76 + (255 - 76) * p);
-    g = Math.round(175 + (235 - 175) * p);
-    b = Math.round(80 + (59 - 80) * p);
-  } else {
-    // Yellow (255, 235, 59) → Red (244, 67, 54)
-    const p = (t - 0.5) / 0.5;
-    r = Math.round(255 + (244 - 255) * p);
-    g = Math.round(235 + (67 - 235) * p);
-    b = Math.round(59 + (54 - 59) * p);
-  }
+  // Green (76, 175, 80) → Yellow (255, 235, 59) → Red (244, 67, 54)
+  const [r, g, b] =
+    t <= 0.5
+      ? [lerp(76, 255, t / 0.5), lerp(175, 235, t / 0.5), lerp(80, 59, t / 0.5)]
+      : [
+          lerp(255, 244, (t - 0.5) / 0.5),
+          lerp(235, 67, (t - 0.5) / 0.5),
+          lerp(59, 54, (t - 0.5) / 0.5),
+        ];
 
   return `rgb(${r}, ${g}, ${b})`;
 }

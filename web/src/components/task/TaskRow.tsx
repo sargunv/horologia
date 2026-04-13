@@ -92,9 +92,14 @@ export function TaskRow({
     [task.assigneeIds, memberMap],
   );
 
+  const { recurrenceType, recurrenceRule, lastCompletedAt, createdAt } = task;
   const staleness = useMemo(
-    () => computeStaleness(task, status?.category),
-    [task, status?.category],
+    () =>
+      computeStaleness(
+        { recurrenceType, recurrenceRule, lastCompletedAt, createdAt },
+        status?.category,
+      ),
+    [recurrenceType, recurrenceRule, lastCompletedAt, createdAt, status?.category],
   );
 
   return (
