@@ -1,11 +1,11 @@
 package spacecmd
 
 import (
-	apigen "github.com/sargunv/tend/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen"
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 func newStatusCmd(flags *support.RootFlags) *cobra.Command {
@@ -24,7 +24,7 @@ func newStatusListCmd(flags *support.RootFlags) *cobra.Command {
 		Long: `List all task statuses configured for a space. Each status shows
 its position, name, and category (initial, intermediate, or completion).`,
 		Example: `  # List statuses in a space
-  tend space status list my-project`,
+  horo space status list my-project`,
 		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
@@ -59,13 +59,13 @@ every existing status and writes the provided set. Requires exactly one
 --initial status and at least one --completion status. Tasks that reference
 a removed status will lose that value.`,
 		Example: `  # Set a simple three-status workflow
-  tend space status replace my-project \
+  horo space status replace my-project \
     --initial "To Do" \
     --intermediate "In Progress" \
     --completion "Done"
 
   # Set multiple intermediate and completion statuses
-  tend space status replace my-project \
+  horo space status replace my-project \
     --initial "Backlog" \
     --intermediate "In Progress" --intermediate "In Review" \
     --completion "Done" --completion "Won't Fix"`,

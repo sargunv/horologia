@@ -11,12 +11,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/sargunv/tend/server/internal/types"
+	"github.com/sargunv/horologia/server/internal/types"
 )
 
 const (
 	defaultBaseURL = "https://api.pwnedpasswords.com"
-	userAgent      = "tend/1.0"
+	userAgent      = "horologia/1.0"
 	// Guard against pathological responses; a normal range response is ~20KB.
 	maxResponseBytes = 64 * 1024
 )

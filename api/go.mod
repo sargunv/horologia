@@ -1,4 +1,4 @@
-module github.com/sargunv/tend/api
+module github.com/sargunv/horologia/api
 
 go 1.26.1
 

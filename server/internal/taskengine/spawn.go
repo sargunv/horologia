@@ -7,10 +7,10 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/teambition/rrule-go"
 
-	"github.com/sargunv/tend/server/internal/activitylog"
-	"github.com/sargunv/tend/server/internal/database"
-	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/types"
+	"github.com/sargunv/horologia/server/internal/activitylog"
+	"github.com/sargunv/horologia/server/internal/database"
+	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
+	"github.com/sargunv/horologia/server/internal/types"
 )
 
 // copyOnSpawn returns true for relation kinds that should be copied when spawning

@@ -6,9 +6,9 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"github.com/sargunv/tend/server/internal/auth"
-	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/types"
+	"github.com/sargunv/horologia/server/internal/auth"
+	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
+	"github.com/sargunv/horologia/server/internal/types"
 )
 
 // EntityType identifies what kind of entity an activity log entry is about.

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sargunv/tend/server/internal/activitylog"
-	"github.com/sargunv/tend/server/internal/database"
-	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/types"
+	"github.com/sargunv/horologia/server/internal/activitylog"
+	"github.com/sargunv/horologia/server/internal/database"
+	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
+	"github.com/sargunv/horologia/server/internal/types"
 )
 
 var defaultStatuses = []dbgen.CreateTaskStatusParams{

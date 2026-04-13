@@ -4,10 +4,10 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	apigen "github.com/sargunv/tend/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen"
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 const timeFormat = "2006-01-02 15:04:05Z07:00"

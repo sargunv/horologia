@@ -3,7 +3,7 @@ package pwdcheck
 import (
 	"context"
 
-	"github.com/sargunv/tend/server/internal/types"
+	"github.com/sargunv/horologia/server/internal/types"
 )
 
 const (

@@ -18,11 +18,11 @@ import (
 	zhttp "github.com/zitadel/oidc/v3/pkg/http"
 	"github.com/zitadel/oidc/v3/pkg/oidc"
 
-	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/types"
+	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
+	"github.com/sargunv/horologia/server/internal/types"
 )
 
-const oidcRedirectCookieName = "tend_oidc_redirect" //nolint:gosec // cookie name, not a credential
+const oidcRedirectCookieName = "horologia_oidc_redirect" //nolint:gosec // cookie name, not a credential
 
 // isValidRedirect checks that a redirect path is safe (relative, no open redirect).
 func isValidRedirect(path string) bool {

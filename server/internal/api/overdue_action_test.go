@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sargunv/tend/server/internal/taskengine"
+	"github.com/sargunv/horologia/server/internal/taskengine"
 )
 
 // ─── Handler tests ────────────────────────────────────────────────────────────

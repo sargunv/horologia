@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/taskengine"
-	"github.com/sargunv/tend/server/internal/types"
+	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
+	"github.com/sargunv/horologia/server/internal/taskengine"
+	"github.com/sargunv/horologia/server/internal/types"
 )
 
 // activityItems returns the items array from a GET activity log response.

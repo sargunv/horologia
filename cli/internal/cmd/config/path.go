@@ -5,8 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 func newPathCmd(flags *support.RootFlags) *cobra.Command {
@@ -21,7 +21,7 @@ func newPathCmd(flags *support.RootFlags) *cobra.Command {
 		Long: `Print the absolute path to the persisted config file. The file may not
 exist yet. Use this to locate the config file for manual editing or backup.`,
 		Example: `  # Find the config file for manual editing
-  tend config path`,
+  horo config path`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			path, err := runtime.ConfigPath()

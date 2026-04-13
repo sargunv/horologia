@@ -10,8 +10,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 
-	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/types"
+	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
+	"github.com/sargunv/horologia/server/internal/types"
 )
 
 func TestUnauthenticatedRequest(t *testing.T) {
@@ -176,7 +176,7 @@ func TestOAuthAccessTokenAccepted(t *testing.T) {
 		Kind:          dbgen.AuthTokenKindOauthAccess,
 		ExpiresAt:     pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
 		CreatedAt:     pgtype.Timestamptz{Time: time.Now(), Valid: true},
-		OauthClientID: pgtype.Text{String: "tend-cli", Valid: true},
+		OauthClientID: pgtype.Text{String: "horologia-cli", Valid: true},
 		OauthScopes:   []string{"profile:read"},
 		OauthResource: pgtype.Text{String: env.Server.URL + "/api", Valid: true},
 	})
@@ -205,7 +205,7 @@ func TestAuthTokenListExcludesOAuthTokens(t *testing.T) {
 		Kind:          dbgen.AuthTokenKindOauthAccess,
 		ExpiresAt:     pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
 		CreatedAt:     pgtype.Timestamptz{Time: time.Now(), Valid: true},
-		OauthClientID: pgtype.Text{String: "tend-cli", Valid: true},
+		OauthClientID: pgtype.Text{String: "horologia-cli", Valid: true},
 		OauthScopes:   []string{"profile:read"},
 		OauthResource: pgtype.Text{String: env.Server.URL + "/api", Valid: true},
 	})
@@ -248,7 +248,7 @@ func TestOAuthAccessTokenMissingScopeForbidden(t *testing.T) {
 		Kind:          dbgen.AuthTokenKindOauthAccess,
 		ExpiresAt:     pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
 		CreatedAt:     pgtype.Timestamptz{Time: time.Now(), Valid: true},
-		OauthClientID: pgtype.Text{String: "tend-cli", Valid: true},
+		OauthClientID: pgtype.Text{String: "horologia-cli", Valid: true},
 		OauthScopes:   []string{"profile:read"},
 		OauthResource: pgtype.Text{String: env.Server.URL + "/api", Valid: true},
 	})
@@ -301,7 +301,7 @@ func createOAuthAccessTokenForBearerUser(t *testing.T, env *testEnv, bearerToken
 		Kind:          dbgen.AuthTokenKindOauthAccess,
 		ExpiresAt:     pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
 		CreatedAt:     pgtype.Timestamptz{Time: time.Now(), Valid: true},
-		OauthClientID: pgtype.Text{String: "tend-cli", Valid: true},
+		OauthClientID: pgtype.Text{String: "horologia-cli", Valid: true},
 		OauthScopes:   scopes,
 		OauthResource: pgtype.Text{String: env.Server.URL + "/api", Valid: true},
 	})

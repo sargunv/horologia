@@ -1,7 +1,7 @@
 [tasks.generate]
 description = "Compile TypeSpec and generate the shared Go API package"
 run = [
-  "pnpm --filter @tend/typespec-mcp-go run build",
+  "pnpm --filter @horologia/typespec-mcp-go run build",
   "pnpm exec tsp compile .",
   "go run github.com/ogen-go/ogen/cmd/ogen --target gen --package gen --clean tsp-output/schema/openapi.yaml",
 ]

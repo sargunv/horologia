@@ -16,8 +16,8 @@ run = [
 description = "Build server binary"
 depends = ["generate"]
 sources = ["**/*.go", "go.mod", "go.sum"]
-outputs = ["tend-server"]
-run = "go build -o tend-server ./cmd/server"
+outputs = ["horologia-server"]
+run = "go build -o horologia-server ./cmd/server"
 
 [tasks.test]
 description = "Run tests"
@@ -27,12 +27,12 @@ run = "go test ./..."
 
 [tasks.run]
 description = "Run the server"
-run = "./tend-server serve"
+run = "./horologia-server serve"
 
 [tasks.seed]
 description = "Create default admin user"
 depends = ["build"]
-run = "./tend-server create-admin --email admin@localhost --name Admin --password password"
+run = "./horologia-server create-admin --email admin@localhost --name Admin --password password"
 
 [tasks.build-dev-oidc]
 description = "Build dev OIDC server"

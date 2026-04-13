@@ -4,11 +4,11 @@ import (
 	"errors"
 	"strings"
 
-	apigen "github.com/sargunv/tend/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen"
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 func newUpdateCmd(flags *support.RootFlags) *cobra.Command {
@@ -27,13 +27,13 @@ grant or revoke owner privileges. Use --set-password to assign a new
 password or --clear-password to remove the existing one; the two
 flags are mutually exclusive.`,
 		Example: `  # Rename a user
-  tend user update alice --name "Alice Ng"
+  horo user update alice --name "Alice Ng"
 
   # Grant owner privileges
-  tend user update alice --owner
+  horo user update alice --owner
 
   # Set a new password
-  tend user update alice --set-password "hunter2"`,
+  horo user update alice --set-password "hunter2"`,
 		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)

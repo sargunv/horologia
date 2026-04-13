@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"slices"
 
-	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
 )
 
 // HashToken returns the hex-encoded SHA-256 of the given token string.

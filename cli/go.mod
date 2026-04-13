@@ -1,4 +1,4 @@
-module github.com/sargunv/tend/cli
+module github.com/sargunv/horologia/cli
 
 go 1.26.1
 
@@ -7,7 +7,7 @@ require (
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/knadh/koanf/providers/env/v2 v2.0.0
 	github.com/knadh/koanf/v2 v2.3.4
-	github.com/sargunv/tend/api v0.0.0
+	github.com/sargunv/horologia/api v0.0.0
 	github.com/spf13/cobra v1.9.1
 	github.com/zalando/go-keyring v0.2.6
 )
@@ -69,4 +69,4 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-replace github.com/sargunv/tend/api => ../api
+replace github.com/sargunv/horologia/api => ../api

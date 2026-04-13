@@ -6,8 +6,8 @@ import (
 
 	"github.com/ogen-go/ogen/ogenerrors"
 
-	"github.com/sargunv/tend/server/internal/auth"
-	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/horologia/server/internal/auth"
+	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
 )
 
 // requireSpaceRole checks that the authenticated user has one of the given roles

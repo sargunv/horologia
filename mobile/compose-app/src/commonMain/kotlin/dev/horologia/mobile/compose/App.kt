@@ -1,4 +1,4 @@
-package dev.tend.mobile.compose
+package dev.horologia.mobile.compose
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,7 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun TendApp() {
+fun HorologiaApp() {
   MaterialTheme {
     Surface {
       Column(
@@ -22,7 +22,7 @@ fun TendApp() {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.Start,
       ) {
-        Text("Tend", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
+        Text("Horologia", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
         Text(
           text = "Compose bootstrap running on ${platformName()}",
           style = MaterialTheme.typography.titleMedium,

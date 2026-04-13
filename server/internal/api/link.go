@@ -13,12 +13,12 @@ import (
 
 	zhttp "github.com/zitadel/oidc/v3/pkg/http"
 
-	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/types"
+	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
+	"github.com/sargunv/horologia/server/internal/types"
 )
 
 const (
-	pendingLinkCookieName = "tend_oidc_link" //nolint:gosec // cookie name, not a credential
+	pendingLinkCookieName = "horologia_oidc_link" //nolint:gosec // cookie name, not a credential
 	pendingLinkCookiePath = "/"
 	pendingLinkMaxAge     = 300 // 5 minutes
 )

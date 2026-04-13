@@ -1,4 +1,4 @@
-rootProject.name = "tend-mobile"
+rootProject.name = "horologia-mobile"
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 

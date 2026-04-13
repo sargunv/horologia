@@ -3,8 +3,8 @@ package authcmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 func newLogoutCmd(flags *support.RootFlags) *cobra.Command {

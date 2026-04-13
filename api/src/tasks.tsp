@@ -1,5 +1,5 @@
 import "@typespec/http";
-import "@tend/typespec-mcp-go";
+import "@horologia/typespec-mcp-go";
 
 using Http;
 using MCP;

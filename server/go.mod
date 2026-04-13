@@ -1,4 +1,4 @@
-module github.com/sargunv/tend/server
+module github.com/sargunv/horologia/server
 
 go 1.26.1
 
@@ -10,7 +10,7 @@ require (
 	github.com/mark3labs/mcp-go v0.47.0
 	github.com/ogen-go/ogen v1.20.3
 	github.com/pressly/goose/v3 v3.27.0
-	github.com/sargunv/tend/api v0.0.0
+	github.com/sargunv/horologia/api v0.0.0
 	github.com/spf13/cobra v1.9.1
 	github.com/sqlc-dev/sqlc v1.30.0
 	github.com/teambition/rrule-go v1.8.2
@@ -107,4 +107,4 @@ require (
 	modernc.org/sqlite v1.46.1 // indirect
 )
 
-replace github.com/sargunv/tend/api => ../api
+replace github.com/sargunv/horologia/api => ../api

@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/sargunv/tend/server/internal/api"
+	"github.com/sargunv/horologia/server/internal/api"
 )
 
 func doHealthz(t *testing.T, srv *httptest.Server) *http.Response {
@@ -93,7 +93,7 @@ func TestMountRootExposesOAuthAuthorizeRoute(t *testing.T) {
 	}
 	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, srv.URL+"/oauth/authorize?"+url.Values{
 		"response_type":         {"code"},
-		"client_id":             {"tend-cli"},
+		"client_id":             {"horologia-cli"},
 		"redirect_uri":          {"http://127.0.0.1:8484/callback"},
 		"scope":                 {"profile:read"},
 		"state":                 {"test-state"},

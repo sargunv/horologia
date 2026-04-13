@@ -3,11 +3,11 @@ package taskcmd
 import (
 	"strings"
 
-	apigen "github.com/sargunv/tend/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen"
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 func newSearchCmd(flags *support.RootFlags) *cobra.Command {
@@ -23,13 +23,13 @@ func newSearchCmd(flags *support.RootFlags) *cobra.Command {
 Use --space to restrict results to a single space, and --exclude-task to omit
 one task from the results when using the command as a picker helper.`,
 		Example: `  # Search all visible tasks
-  tend task search "login"
+  horo task search "login"
 
   # Search within a single space
-  tend task search "login" --space app
+  horo task search "login" --space app
 
   # Exclude the current task from results
-  tend task search "plan" --exclude-task T42`,
+  horo task search "plan" --exclude-task T42`,
 		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)

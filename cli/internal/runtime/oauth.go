@@ -65,7 +65,7 @@ func CodeChallengeS256(verifier string) string {
 func ExchangeAuthorizationCode(ctx context.Context, server *url.URL, redirectURI string, code string, verifier string) (OAuthCredentials, error) {
 	form := url.Values{
 		"grant_type":    {"authorization_code"},
-		"client_id":     {"tend-cli"},
+		"client_id":     {"horologia-cli"},
 		"code":          {code},
 		"redirect_uri":  {redirectURI},
 		"code_verifier": {verifier},
@@ -175,7 +175,7 @@ func oauthCredentialsFromResponse(resp oauthTokenResponse) OAuthCredentials {
 		expiresAt = expiresAt.Add(time.Duration(resp.ExpiresIn) * time.Second)
 	}
 	return OAuthCredentials{
-		ClientID:     "tend-cli",
+		ClientID:     "horologia-cli",
 		AccessToken:  resp.AccessToken,
 		RefreshToken: resp.RefreshToken,
 		TokenType:    resp.TokenType,

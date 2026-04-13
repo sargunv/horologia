@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sargunv/tend/server/internal/auth"
+	"github.com/sargunv/horologia/server/internal/auth"
 )
 
 func TestOAuthAuthorizationServerMetadata(t *testing.T) {
@@ -54,7 +54,7 @@ func TestOAuthAuthorizeRequiresLogin(t *testing.T) {
 	client := noRedirectClient(t)
 	resp, err := doOAuthRequest(t, client, http.MethodGet, env.Server.URL+"/oauth/authorize?"+url.Values{
 		"response_type":         {"code"},
-		"client_id":             {"tend-cli"},
+		"client_id":             {"horologia-cli"},
 		"redirect_uri":          {"http://127.0.0.1:8484/callback"},
 		"scope":                 {"profile:read"},
 		"state":                 {"test-state"},
@@ -81,7 +81,7 @@ func TestOAuthAuthorizationCodeFlow(t *testing.T) {
 	challenge := oauthCodeChallengeS256(verifier)
 	code := authorizeOAuthCode(t, env, client, url.Values{
 		"response_type":         {"code"},
-		"client_id":             {"tend-cli"},
+		"client_id":             {"horologia-cli"},
 		"redirect_uri":          {"http://127.0.0.1:8484/callback"},
 		"scope":                 {"profile:read spaces:read"},
 		"state":                 {"opaque-state"},
@@ -92,7 +92,7 @@ func TestOAuthAuthorizationCodeFlow(t *testing.T) {
 
 	tokenResp, err := doOAuthRequest(t, client, http.MethodPost, env.Server.URL+"/oauth/token", strings.NewReader(url.Values{
 		"grant_type":    {"authorization_code"},
-		"client_id":     {"tend-cli"},
+		"client_id":     {"horologia-cli"},
 		"code":          {code},
 		"redirect_uri":  {"http://127.0.0.1:8484/callback"},
 		"code_verifier": {verifier},
@@ -118,7 +118,7 @@ func TestOAuthAuthorizationCodeFlow(t *testing.T) {
 
 	refreshResp, err := doOAuthRequest(t, client, http.MethodPost, env.Server.URL+"/oauth/token", strings.NewReader(url.Values{
 		"grant_type":    {"refresh_token"},
-		"client_id":     {"tend-cli"},
+		"client_id":     {"horologia-cli"},
 		"refresh_token": {refreshToken},
 	}.Encode()), "application/x-www-form-urlencoded")
 	if err != nil {
@@ -134,7 +134,7 @@ func TestOAuthAuthorizationCodeFlow(t *testing.T) {
 
 	reuseResp, err := doOAuthRequest(t, client, http.MethodPost, env.Server.URL+"/oauth/token", strings.NewReader(url.Values{
 		"grant_type":    {"refresh_token"},
-		"client_id":     {"tend-cli"},
+		"client_id":     {"horologia-cli"},
 		"refresh_token": {refreshToken},
 	}.Encode()), "application/x-www-form-urlencoded")
 	if err != nil {
@@ -183,7 +183,7 @@ func TestOAuthAuthorizeAcceptsConfiguredPublicResourceWhenProxied(t *testing.T) 
 
 	form := url.Values{
 		"response_type":         {"code"},
-		"client_id":             {"tend-cli"},
+		"client_id":             {"horologia-cli"},
 		"redirect_uri":          {"http://127.0.0.1:8484/callback"},
 		"scope":                 {"profile:read"},
 		"state":                 {"proxy-state"},
@@ -248,7 +248,7 @@ func TestOAuthAuthorizeRejectsInvalidRequests(t *testing.T) {
 			name: "invalid redirect uri",
 			params: url.Values{
 				"response_type":         {"code"},
-				"client_id":             {"tend-cli"},
+				"client_id":             {"horologia-cli"},
 				"redirect_uri":          {"https://example.com/callback"},
 				"scope":                 {"profile:read"},
 				"state":                 {"test-state"},
@@ -262,7 +262,7 @@ func TestOAuthAuthorizeRejectsInvalidRequests(t *testing.T) {
 			name: "unsupported scope",
 			params: url.Values{
 				"response_type":         {"code"},
-				"client_id":             {"tend-cli"},
+				"client_id":             {"horologia-cli"},
 				"redirect_uri":          {"http://127.0.0.1:8484/callback"},
 				"scope":                 {"profile:read nope:read"},
 				"state":                 {"test-state"},
@@ -276,7 +276,7 @@ func TestOAuthAuthorizeRejectsInvalidRequests(t *testing.T) {
 			name: "missing pkce challenge",
 			params: url.Values{
 				"response_type":         {"code"},
-				"client_id":             {"tend-cli"},
+				"client_id":             {"horologia-cli"},
 				"redirect_uri":          {"http://127.0.0.1:8484/callback"},
 				"scope":                 {"profile:read"},
 				"state":                 {"test-state"},
@@ -318,7 +318,7 @@ func TestOAuthTokenRejectsInvalidAuthorizationCodeExchanges(t *testing.T) {
 		verifier := "oauth-verifier-value-1234567890"
 		code := authorizeOAuthCode(t, env, client, url.Values{
 			"response_type":         {"code"},
-			"client_id":             {"tend-cli"},
+			"client_id":             {"horologia-cli"},
 			"redirect_uri":          {"http://127.0.0.1:8484/callback"},
 			"scope":                 {"profile:read"},
 			"state":                 {"opaque-state"},
@@ -329,7 +329,7 @@ func TestOAuthTokenRejectsInvalidAuthorizationCodeExchanges(t *testing.T) {
 
 		resp, err := doOAuthRequest(t, client, http.MethodPost, env.Server.URL+"/oauth/token", strings.NewReader(url.Values{
 			"grant_type":    {"authorization_code"},
-			"client_id":     {"tend-cli"},
+			"client_id":     {"horologia-cli"},
 			"code":          {code},
 			"redirect_uri":  {"http://127.0.0.1:8484/callback"},
 			"code_verifier": {"wrong-verifier"},
@@ -356,7 +356,7 @@ func TestOAuthTokenRejectsInvalidAuthorizationCodeExchanges(t *testing.T) {
 		verifier := "oauth-verifier-value-redirect"
 		code := authorizeOAuthCode(t, env, client, url.Values{
 			"response_type":         {"code"},
-			"client_id":             {"tend-cli"},
+			"client_id":             {"horologia-cli"},
 			"redirect_uri":          {"http://127.0.0.1:8484/callback"},
 			"scope":                 {"profile:read"},
 			"state":                 {"opaque-state"},
@@ -367,7 +367,7 @@ func TestOAuthTokenRejectsInvalidAuthorizationCodeExchanges(t *testing.T) {
 
 		resp, err := doOAuthRequest(t, client, http.MethodPost, env.Server.URL+"/oauth/token", strings.NewReader(url.Values{
 			"grant_type":    {"authorization_code"},
-			"client_id":     {"tend-cli"},
+			"client_id":     {"horologia-cli"},
 			"code":          {code},
 			"redirect_uri":  {"http://127.0.0.1:9999/callback"},
 			"code_verifier": {verifier},
@@ -394,7 +394,7 @@ func TestOAuthTokenRejectsInvalidAuthorizationCodeExchanges(t *testing.T) {
 		verifier := "oauth-verifier-value-expired"
 		code := authorizeOAuthCode(t, env, client, url.Values{
 			"response_type":         {"code"},
-			"client_id":             {"tend-cli"},
+			"client_id":             {"horologia-cli"},
 			"redirect_uri":          {"http://127.0.0.1:8484/callback"},
 			"scope":                 {"profile:read"},
 			"state":                 {"opaque-state"},
@@ -409,7 +409,7 @@ func TestOAuthTokenRejectsInvalidAuthorizationCodeExchanges(t *testing.T) {
 
 		resp, err := doOAuthRequest(t, client, http.MethodPost, env.Server.URL+"/oauth/token", strings.NewReader(url.Values{
 			"grant_type":    {"authorization_code"},
-			"client_id":     {"tend-cli"},
+			"client_id":     {"horologia-cli"},
 			"code":          {code},
 			"redirect_uri":  {"http://127.0.0.1:8484/callback"},
 			"code_verifier": {verifier},
@@ -436,7 +436,7 @@ func TestOAuthTokenRejectsInvalidAuthorizationCodeExchanges(t *testing.T) {
 		verifier := "oauth-verifier-value-reused"
 		code := authorizeOAuthCode(t, env, client, url.Values{
 			"response_type":         {"code"},
-			"client_id":             {"tend-cli"},
+			"client_id":             {"horologia-cli"},
 			"redirect_uri":          {"http://127.0.0.1:8484/callback"},
 			"scope":                 {"profile:read"},
 			"state":                 {"opaque-state"},
@@ -447,7 +447,7 @@ func TestOAuthTokenRejectsInvalidAuthorizationCodeExchanges(t *testing.T) {
 
 		firstResp, err := doOAuthRequest(t, client, http.MethodPost, env.Server.URL+"/oauth/token", strings.NewReader(url.Values{
 			"grant_type":    {"authorization_code"},
-			"client_id":     {"tend-cli"},
+			"client_id":     {"horologia-cli"},
 			"code":          {code},
 			"redirect_uri":  {"http://127.0.0.1:8484/callback"},
 			"code_verifier": {verifier},
@@ -459,7 +459,7 @@ func TestOAuthTokenRejectsInvalidAuthorizationCodeExchanges(t *testing.T) {
 
 		reuseResp, err := doOAuthRequest(t, client, http.MethodPost, env.Server.URL+"/oauth/token", strings.NewReader(url.Values{
 			"grant_type":    {"authorization_code"},
-			"client_id":     {"tend-cli"},
+			"client_id":     {"horologia-cli"},
 			"code":          {code},
 			"redirect_uri":  {"http://127.0.0.1:8484/callback"},
 			"code_verifier": {verifier},

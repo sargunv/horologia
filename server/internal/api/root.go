@@ -9,7 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/sargunv/tend/server/internal/webui"
+	"github.com/sargunv/horologia/server/internal/webui"
 )
 
 // MountRoot composes the top-level HTTP handler:

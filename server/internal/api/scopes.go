@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 
-	"github.com/sargunv/tend/server/internal/auth"
+	"github.com/sargunv/horologia/server/internal/auth"
 )
 
 func (h *Handler) requireScope(ctx context.Context, scope string) error {

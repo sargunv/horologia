@@ -3,10 +3,10 @@ package taskcmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
 )
 
-// New builds the `tend task` command tree.
+// New builds the `horo task` command tree.
 func New(flags *support.RootFlags) *cobra.Command {
 	cmd := support.GroupCommand("task", "Inspect and manage tasks")
 	cmd.GroupID = "workspace"

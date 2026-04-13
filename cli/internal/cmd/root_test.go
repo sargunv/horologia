@@ -9,14 +9,14 @@ import (
 	"strings"
 	"testing"
 
-	configcmd "github.com/sargunv/tend/cli/internal/cmd/config"
-	foundationcmd "github.com/sargunv/tend/cli/internal/cmd/foundation"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	configcmd "github.com/sargunv/horologia/cli/internal/cmd/config"
+	foundationcmd "github.com/sargunv/horologia/cli/internal/cmd/foundation"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 func TestConfigCommandUsesEnv(t *testing.T) {
-	setEnvValue(t, "TEND_SERVER", stringPtr("http://example.com/api/"))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("tokentest1234"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr("http://example.com/api/"))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("tokentest1234"))
 
 	stdout, _, err := executeRoot(t, "--json", "config", "show")
 	if err != nil {
@@ -49,8 +49,8 @@ func TestConfigCommandUsesEnv(t *testing.T) {
 }
 
 func TestConfigFlagOverridesEnv(t *testing.T) {
-	setEnvValue(t, "TEND_SERVER", stringPtr("http://env.example.com"))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("envtoken1234"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr("http://env.example.com"))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("envtoken1234"))
 
 	stdout, _, err := executeRoot(t, "--json", "config", "show")
 	if err != nil {
@@ -78,8 +78,8 @@ func TestConfigFlagOverridesEnv(t *testing.T) {
 
 func TestConfigCommandUsesPersistedServer(t *testing.T) {
 	setConfigHome(t)
-	setEnvValue(t, "TEND_SERVER", nil)
-	setEnvValue(t, "TEND_TOKEN", stringPtr("tokentest1234"))
+	setEnvValue(t, "HOROLOGIA_SERVER", nil)
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("tokentest1234"))
 
 	stdout, _, err := executeRoot(t, "--json", "config", "set", "server", "http://file.example.com/api/")
 	if err != nil {
@@ -105,7 +105,7 @@ func TestConfigCommandUsesPersistedServer(t *testing.T) {
 		t.Fatalf("config file should not contain the token")
 	}
 
-	setEnvValue(t, "TEND_TOKEN", nil)
+	setEnvValue(t, "HOROLOGIA_TOKEN", nil)
 	stdout, _, err = executeRoot(t, "--json", "config", "show")
 	if err != nil {
 		t.Fatalf("execute config show: %v", err)
@@ -129,14 +129,14 @@ func TestConfigCommandUsesPersistedServer(t *testing.T) {
 
 func TestConfigEnvOverridesPersistedServer(t *testing.T) {
 	setConfigHome(t)
-	setEnvValue(t, "TEND_SERVER", nil)
-	setEnvValue(t, "TEND_TOKEN", nil)
+	setEnvValue(t, "HOROLOGIA_SERVER", nil)
+	setEnvValue(t, "HOROLOGIA_TOKEN", nil)
 
 	if _, _, err := executeRoot(t, "config", "set", "server", "http://file.example.com"); err != nil {
 		t.Fatalf("execute config set server: %v", err)
 	}
 
-	setEnvValue(t, "TEND_SERVER", stringPtr("http://env.example.com"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr("http://env.example.com"))
 
 	stdout, _, err := executeRoot(t, "--json", "config", "show")
 	if err != nil {
@@ -158,8 +158,8 @@ func TestConfigEnvOverridesPersistedServer(t *testing.T) {
 
 func TestConfigPathAndUnsetServer(t *testing.T) {
 	setConfigHome(t)
-	setEnvValue(t, "TEND_SERVER", nil)
-	setEnvValue(t, "TEND_TOKEN", nil)
+	setEnvValue(t, "HOROLOGIA_SERVER", nil)
+	setEnvValue(t, "HOROLOGIA_TOKEN", nil)
 
 	expectedPath, err := runtime.ConfigPath()
 	if err != nil {
@@ -243,8 +243,8 @@ func TestStatusWithoutTokenSkipsAuth(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", nil)
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", nil)
 
 	stdout, _, err := executeRoot(t, "--json", "status")
 	if err != nil {
@@ -290,8 +290,8 @@ func TestUserMeUsesTokenAndNormalizesAPIBase(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL+"/api"))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL+"/api"))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	stdout, _, err := executeRoot(t, "--json", "user", "me")
 	if err != nil {
@@ -315,8 +315,8 @@ func TestUserMeUsesTokenAndNormalizesAPIBase(t *testing.T) {
 }
 
 func TestUserMeRequiresToken(t *testing.T) {
-	setEnvValue(t, "TEND_SERVER", stringPtr("http://example.com"))
-	setEnvValue(t, "TEND_TOKEN", nil)
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr("http://example.com"))
+	setEnvValue(t, "HOROLOGIA_TOKEN", nil)
 
 	_, _, err := executeRoot(t, "user", "me")
 	if err == nil {
@@ -328,8 +328,8 @@ func TestUserMeRequiresToken(t *testing.T) {
 }
 
 func TestAuthStatusWithoutServerSkipsIdentity(t *testing.T) {
-	setEnvValue(t, "TEND_SERVER", nil)
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123456789"))
+	setEnvValue(t, "HOROLOGIA_SERVER", nil)
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123456789"))
 
 	stdout, _, err := executeRoot(t, "--json", "auth", "status")
 	if err != nil {
@@ -389,8 +389,8 @@ func TestAuthStatusWithServerChecksIdentity(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	stdout, _, err := executeRoot(t, "--json", "auth", "status")
 	if err != nil {
@@ -442,8 +442,8 @@ func TestSpaceListUsesAPI(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	stdout, _, err := executeRoot(t, "--json", "space", "list")
 	if err != nil {
@@ -497,8 +497,8 @@ func TestSpaceCreateSendsBody(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(t, "space", "create", "--slug", "home", "--name", "Home", "--description", "Household tasks")
 	if err != nil {
@@ -540,8 +540,8 @@ func TestSpaceUpdateSendsOptionalFields(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(t, "space", "update", "home", "--slug", "household", "--name", "Household", "--description", "Updated")
 	if err != nil {
@@ -569,8 +569,8 @@ func TestSpaceActivityPassesPagination(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	stdout, _, err := executeRoot(t, "--json", "space", "activity", "home", "--cursor", "next-1", "--limit", "10")
 	if err != nil {
@@ -609,8 +609,8 @@ func TestSpaceMemberListUsesAPI(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	stdout, _, err := executeRoot(t, "--json", "space", "member", "list", "home")
 	if err != nil {
@@ -666,8 +666,8 @@ func TestSpaceMemberAddSendsBody(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(t, "space", "member", "add", "home", "U2", "--role", "viewer")
 	if err != nil {
@@ -704,8 +704,8 @@ func TestSpaceMemberSetRoleUsesPatch(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(t, "space", "member", "set-role", "home", "U2", "member")
 	if err != nil {
@@ -729,8 +729,8 @@ func TestSpaceMemberRemoveUsesDelete(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(t, "space", "member", "remove", "home", "U2")
 	if err != nil {
@@ -759,8 +759,8 @@ func TestSpaceTagListUsesAPI(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	stdout, _, err := executeRoot(t, "--json", "space", "tag", "list", "home")
 	if err != nil {
@@ -806,8 +806,8 @@ func TestSpaceTagCreateSendsBody(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(t, "space", "tag", "create", "home", "--name", "bug")
 	if err != nil {
@@ -841,8 +841,8 @@ func TestSpaceTagRenameUsesPatch(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(t, "space", "tag", "rename", "home", "bug", "urgent")
 	if err != nil {
@@ -866,8 +866,8 @@ func TestSpaceTagDeleteUsesDelete(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(t, "space", "tag", "delete", "home", "bug")
 	if err != nil {
@@ -932,8 +932,8 @@ func TestSpaceStatusReplaceSendsOrderedCategories(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(
 		t,
@@ -949,8 +949,8 @@ func TestSpaceStatusReplaceSendsOrderedCategories(t *testing.T) {
 }
 
 func TestSpaceStatusReplaceValidatesCompletionLocally(t *testing.T) {
-	setEnvValue(t, "TEND_SERVER", nil)
-	setEnvValue(t, "TEND_TOKEN", nil)
+	setEnvValue(t, "HOROLOGIA_SERVER", nil)
+	setEnvValue(t, "HOROLOGIA_TOKEN", nil)
 
 	_, _, err := executeRoot(t, "space", "status", "replace", "home", "--initial", "todo")
 	if err == nil {
@@ -993,8 +993,8 @@ func TestSpaceEffortReplaceSendsOrderedLevels(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(t, "space", "effort", "replace", "home", "--name", "small", "--name", "medium")
 	if err != nil {
@@ -1031,8 +1031,8 @@ func TestSpaceEffortReplaceAllowsEmpty(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(t, "space", "effort", "replace", "home")
 	if err != nil {
@@ -1072,8 +1072,8 @@ func TestSpacePriorityReplaceSendsOrderedLevels(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(t, "space", "priority", "replace", "home", "--name", "low", "--name", "high")
 	if err != nil {
@@ -1110,8 +1110,8 @@ func TestSpacePriorityReplaceAllowsEmpty(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(t, "space", "priority", "replace", "home")
 	if err != nil {
@@ -1160,8 +1160,8 @@ func TestTaskListPassesPagination(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	stdout, _, err := executeRoot(t, "--json", "task", "list", "home", "--cursor", "next-1", "--limit", "10")
 	if err != nil {
@@ -1207,8 +1207,8 @@ func TestTaskMineUsesCurrentUser(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(t, "task", "mine")
 	if err != nil {
@@ -1267,8 +1267,8 @@ func TestTaskCreateSendsBody(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(t, "task", "create", "home", "--title", "Task title", "--status", "todo", "--priority", "high")
 	if err != nil {
@@ -1324,8 +1324,8 @@ func TestTaskUpdateSendsScalarPatch(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(t, "task", "update", "home", "T1", "--title", "Updated", "--clear-effort", "--priority", "low")
 	if err != nil {
@@ -1381,8 +1381,8 @@ func TestTaskCompleteUsesFirstCompletionStatus(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(t, "task", "complete", "home", "T1")
 	if err != nil {
@@ -1413,8 +1413,8 @@ func TestTaskActivityPassesPagination(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	stdout, _, err := executeRoot(t, "--json", "task", "activity", "home", "T1", "--cursor", "next-1", "--limit", "5")
 	if err != nil {
@@ -1476,8 +1476,8 @@ func TestTaskDueSetSendsPatch(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(t, "task", "due", "set", "home", "T1", "--date", "2026-05-01", "--timezone", "UTC")
 	if err != nil {
@@ -1549,8 +1549,8 @@ func TestTaskAssigneeAddReadsThenPatches(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(t, "task", "assignee", "add", "home", "T1", "U2")
 	if err != nil {
@@ -1598,8 +1598,8 @@ func TestTaskRotationClearSendsEmptyList(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(t, "task", "rotation", "clear", "home", "T1")
 	if err != nil {
@@ -1635,8 +1635,8 @@ func TestTaskRelationAddUsesCreateEndpoint(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(t, "task", "relation", "add", "home", "T1", "blocks", "T2")
 	if err != nil {
@@ -1687,8 +1687,8 @@ func TestTaskRecurrenceSetSendsPatch(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(t, "task", "recurrence", "set", "home", "T1", "--type", "completion_based", "--rule", "FREQ=WEEKLY")
 	if err != nil {
@@ -1736,8 +1736,8 @@ func TestTaskRecurrenceClearSetsOneOff(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(t, "task", "recurrence", "clear", "home", "T1")
 	if err != nil {
@@ -1792,8 +1792,8 @@ func TestTaskOverdueActionSetSendsPatch(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(t, "task", "overdue-action", "set", "home", "T1", "--action", "set_status", "--after-days", "3", "--status", "done")
 	if err != nil {
@@ -1838,8 +1838,8 @@ func TestTaskOverdueActionClearSendsNullPatch(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(t, "task", "overdue-action", "clear", "home", "T1")
 	if err != nil {
@@ -1848,8 +1848,8 @@ func TestTaskOverdueActionClearSendsNullPatch(t *testing.T) {
 }
 
 func TestTaskOverdueActionSetValidatesStatusLocally(t *testing.T) {
-	setEnvValue(t, "TEND_SERVER", nil)
-	setEnvValue(t, "TEND_TOKEN", nil)
+	setEnvValue(t, "HOROLOGIA_SERVER", nil)
+	setEnvValue(t, "HOROLOGIA_TOKEN", nil)
 
 	_, _, err := executeRoot(t, "task", "overdue-action", "set", "home", "T1", "--action", "set_status")
 	if err == nil {
@@ -1894,8 +1894,8 @@ func TestAuthTokenCreateSendsName(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	stdout, _, err := executeRoot(t, "--json", "auth", "token", "create", "--name", "CLI token")
 	if err != nil {
@@ -1927,8 +1927,8 @@ func TestAuthTokenRevokeUsesDelete(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(t, "auth", "token", "revoke", "tok_1")
 	if err != nil {
@@ -1979,8 +1979,8 @@ func TestUserUpdateSendsOptionalFields(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	_, _, err := executeRoot(
 		t,
@@ -2015,8 +2015,8 @@ func TestUserTasksPassesPagination(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	setEnvValue(t, "TEND_SERVER", stringPtr(srv.URL))
-	setEnvValue(t, "TEND_TOKEN", stringPtr("abc123"))
+	setEnvValue(t, "HOROLOGIA_SERVER", stringPtr(srv.URL))
+	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123"))
 
 	stdout, _, err := executeRoot(t, "--json", "user", "tasks", "U1", "--cursor", "next-1", "--limit", "25")
 	if err != nil {

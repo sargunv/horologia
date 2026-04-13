@@ -51,7 +51,7 @@ func main() {
 	}))
 
 	storage.RegisterClients(
-		storage.WebClient("tend", "tend-dev-secret", callbackURL),
+		storage.WebClient("horologia", "horologia-dev-secret", callbackURL),
 	)
 
 	admin := &storage.User{
@@ -81,7 +81,7 @@ func main() {
 			admin.ID: admin,
 			test.ID:  test,
 		},
-		clientID: "tend",
+		clientID: "horologia",
 	}
 
 	stor := storage.NewStorage(userStore)

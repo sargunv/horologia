@@ -19,20 +19,20 @@ import (
 	"github.com/pressly/goose/v3"
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/server/internal/api"
-	"github.com/sargunv/tend/server/internal/config"
-	"github.com/sargunv/tend/server/internal/cron"
-	"github.com/sargunv/tend/server/internal/database"
-	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/mcp"
-	"github.com/sargunv/tend/server/internal/pwdcheck"
-	"github.com/sargunv/tend/server/internal/taskengine"
+	"github.com/sargunv/horologia/server/internal/api"
+	"github.com/sargunv/horologia/server/internal/config"
+	"github.com/sargunv/horologia/server/internal/cron"
+	"github.com/sargunv/horologia/server/internal/database"
+	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
+	"github.com/sargunv/horologia/server/internal/mcp"
+	"github.com/sargunv/horologia/server/internal/pwdcheck"
+	"github.com/sargunv/horologia/server/internal/taskengine"
 )
 
 func newLogger(cfg config.Config) (*slog.Logger, error) {
 	var level slog.Level
 	if err := level.UnmarshalText([]byte(cfg.LogLevel)); err != nil {
-		return nil, fmt.Errorf("invalid TEND_LOG_LEVEL %q: %w", cfg.LogLevel, err)
+		return nil, fmt.Errorf("invalid HOROLOGIA_LOG_LEVEL %q: %w", cfg.LogLevel, err)
 	}
 
 	opts := &slog.HandlerOptions{Level: level}
@@ -44,7 +44,7 @@ func newLogger(cfg config.Config) (*slog.Logger, error) {
 	case "json":
 		handler = slog.NewJSONHandler(os.Stderr, opts)
 	default:
-		return nil, fmt.Errorf("invalid TEND_LOG_FORMAT %q: expected text or json", cfg.LogFormat)
+		return nil, fmt.Errorf("invalid HOROLOGIA_LOG_FORMAT %q: expected text or json", cfg.LogFormat)
 	}
 
 	return slog.New(handler), nil
@@ -85,8 +85,8 @@ func migrateAndOpenPool(ctx context.Context, cfg config.Config) (*pgxpool.Pool, 
 }
 
 var rootCmd = &cobra.Command{
-	Use:           "tend-server",
-	Short:         "Tend backend server",
+	Use:           "horologia-server",
+	Short:         "Horologia backend server",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 }
@@ -262,7 +262,7 @@ var healthcheckCmd = &cobra.Command{
 		// Default host to localhost if addr is just a port (e.g. ":8080").
 		host, port, err := net.SplitHostPort(addr)
 		if err != nil {
-			return fmt.Errorf("parse TEND_ADDR %q: %w", addr, err)
+			return fmt.Errorf("parse HOROLOGIA_ADDR %q: %w", addr, err)
 		}
 		if host == "" {
 			host = "localhost"

@@ -18,7 +18,7 @@ func SetOAuthChallengeHeader(w http.ResponseWriter, r *http.Request) {
 
 // RequestPublicBaseURL derives the public origin for the current request.
 // It only falls back to request-derived origins for localhost/loopback hosts.
-// Production deployments should set TEND_PUBLIC_URL explicitly.
+// Production deployments should set HOROLOGIA_PUBLIC_URL explicitly.
 func RequestPublicBaseURL(r *http.Request) string {
 	scheme := "http"
 	if r.TLS != nil {

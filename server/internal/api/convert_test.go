@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	apigen "github.com/sargunv/tend/api/gen"
-	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/types"
+	apigen "github.com/sargunv/horologia/api/gen"
+	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
+	"github.com/sargunv/horologia/server/internal/types"
 )
 
 func TestConvert_clampLimit(t *testing.T) {

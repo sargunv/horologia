@@ -18,7 +18,7 @@ RUN pnpm install --frozen-lockfile
 # --- Stage 2: Build TypeSpec API ---
 FROM node-deps AS api-build
 COPY api/ ./api/
-RUN pnpm --filter @tend/typespec-mcp-go run build
+RUN pnpm --filter @horologia/typespec-mcp-go run build
 RUN cd api && pnpm exec tsp compile .
 
 # --- Stage 3: Build React SPA ---
@@ -71,13 +71,13 @@ COPY --from=web-build /src/web/dist/ ./internal/webui/dist/
 RUN CGO_ENABLED=0 go build \
       -trimpath \
       -ldflags="-s -w" \
-      -o /tend-server \
+      -o /horologia-server \
       ./cmd/server
 
 # --- Stage 6: Minimal runtime image ---
 FROM gcr.io/distroless/static-debian12:nonroot
-COPY --from=server-build /tend-server /tend-server
+COPY --from=server-build /horologia-server /horologia-server
 HEALTHCHECK --start-period=15s --interval=10s --timeout=5s --retries=3 \
-    CMD ["/tend-server", "healthcheck"]
-ENTRYPOINT ["/tend-server"]
+    CMD ["/horologia-server", "healthcheck"]
+ENTRYPOINT ["/horologia-server"]
 CMD ["serve"]

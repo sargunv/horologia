@@ -5,11 +5,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
-// Output is the JSON response for `tend status`.
+// Output is the JSON response for `horo status`.
 type Output struct {
 	Server string `json:"server"`
 	Health struct {
@@ -38,10 +38,10 @@ authentication token is valid. Reports server health-check status and latency,
 and the authenticated user when a token is configured. Useful for debugging
 connection or credential problems after initial setup.`,
 		Example: `  # Check connectivity and auth against the configured server
-  tend status
+  horo status
 
   # Check connectivity and output results as JSON
-  tend status --json`,
+  horo status --json`,
 		GroupID: "foundation",
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			out := Output{Server: app.Config.ServerString()}

@@ -22,16 +22,16 @@ import (
 	"github.com/zitadel/oidc/v3/example/server/storage"
 	"golang.org/x/text/language"
 
-	"github.com/sargunv/tend/server/internal/api"
-	"github.com/sargunv/tend/server/internal/database"
-	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/taskengine"
+	"github.com/sargunv/horologia/server/internal/api"
+	"github.com/sargunv/horologia/server/internal/database"
+	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
+	"github.com/sargunv/horologia/server/internal/taskengine"
 )
 
 const (
-	testOIDCClientID     = "tend-test"
-	testOIDCClientSecret = "tend-test-secret" //nolint:gosec // test credentials
-	testOIDCUserPassword = "password"         //nolint:gosec // test credentials
+	testOIDCClientID     = "horologia-test"
+	testOIDCClientSecret = "horologia-test-secret" //nolint:gosec // test credentials
+	testOIDCUserPassword = "password"              //nolint:gosec // test credentials
 )
 
 // testOIDCUserStore implements storage.UserStore with dynamic user addition.
@@ -306,11 +306,11 @@ func createTestUser(t *testing.T, env *testEnv, email, name, password string) st
 
 	// Extract the session token from the Set-Cookie header.
 	for _, c := range resp.Cookies() {
-		if c.Name == "tend_session" {
+		if c.Name == "horologia_session" {
 			return c.Value
 		}
 	}
-	t.Fatal("login response missing tend_session cookie")
+	t.Fatal("login response missing horologia_session cookie")
 	return ""
 }
 

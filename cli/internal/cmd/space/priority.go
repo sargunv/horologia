@@ -1,11 +1,11 @@
 package spacecmd
 
 import (
-	apigen "github.com/sargunv/tend/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen"
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 func newPriorityCmd(flags *support.RootFlags) *cobra.Command {
@@ -23,7 +23,7 @@ func newPriorityListCmd(flags *support.RootFlags) *cobra.Command {
 		Short: "List task priority levels in a space",
 		Long:  `List all task priority levels configured for a space. Results appear in the configured display order.`,
 		Example: `  # List priority levels
-  tend space priority list my-project`,
+  horo space priority list my-project`,
 		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
@@ -56,11 +56,11 @@ removes every existing level and writes the provided set. Tasks that
 reference a removed level will lose that value. Pass each level with
 a separate --name flag; flag order sets display order.`,
 		Example: `  # Set four priority levels
-  tend space priority replace my-project \
+  horo space priority replace my-project \
     --name Low --name Medium --name High --name Critical
 
   # Clear all priority levels
-  tend space priority replace my-project`,
+  horo space priority replace my-project`,
 		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)

@@ -8,13 +8,13 @@ import (
 	"charm.land/fang/v2"
 	"github.com/spf13/cobra"
 
-	authcmd "github.com/sargunv/tend/cli/internal/cmd/auth"
-	configcmd "github.com/sargunv/tend/cli/internal/cmd/config"
-	foundationcmd "github.com/sargunv/tend/cli/internal/cmd/foundation"
-	spacecmd "github.com/sargunv/tend/cli/internal/cmd/space"
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	taskcmd "github.com/sargunv/tend/cli/internal/cmd/task"
-	usercmd "github.com/sargunv/tend/cli/internal/cmd/user"
+	authcmd "github.com/sargunv/horologia/cli/internal/cmd/auth"
+	configcmd "github.com/sargunv/horologia/cli/internal/cmd/config"
+	foundationcmd "github.com/sargunv/horologia/cli/internal/cmd/foundation"
+	spacecmd "github.com/sargunv/horologia/cli/internal/cmd/space"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	taskcmd "github.com/sargunv/horologia/cli/internal/cmd/task"
+	usercmd "github.com/sargunv/horologia/cli/internal/cmd/user"
 )
 
 type commandOptions struct {
@@ -39,9 +39,9 @@ func newRootCmd(opts commandOptions) *cobra.Command {
 	flags := &support.RootFlags{}
 
 	rootCmd := &cobra.Command{
-		Use:   "tend",
+		Use:   "horo",
 		Short: "Manage tasks and spaces from the command line",
-		Long: `Command-line client for the Tend server.
+		Long: `Command-line client for the Horologia server.
 
 Run a subcommand to manage spaces, tasks, users, and authentication.
 With no subcommand, prints this help text. Pass --json to any subcommand

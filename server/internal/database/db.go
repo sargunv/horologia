@@ -12,7 +12,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 
-	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
 )
 
 // DB is the database interface accepted by service-layer functions.

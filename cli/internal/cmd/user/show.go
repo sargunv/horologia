@@ -1,11 +1,11 @@
 package usercmd
 
 import (
-	apigen "github.com/sargunv/tend/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen"
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 func newShowCmd(flags *support.RootFlags) *cobra.Command {
@@ -14,7 +14,7 @@ func newShowCmd(flags *support.RootFlags) *cobra.Command {
 		Short: "Show a user",
 		Long:  `Display a user's name, email, owner status, and password configuration.`,
 		Example: `  # Inspect a user's profile
-  tend user show alice`,
+  horo user show alice`,
 		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)

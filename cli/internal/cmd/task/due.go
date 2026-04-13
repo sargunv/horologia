@@ -1,11 +1,11 @@
 package taskcmd
 
 import (
-	apigen "github.com/sargunv/tend/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen"
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 func newDueCmd(flags *support.RootFlags) *cobra.Command {
@@ -28,11 +28,11 @@ func newDueSetCmd(flags *support.RootFlags) *cobra.Command {
 are required. The date must use YYYY-MM-DD format, and the timezone
 must be a valid IANA identifier such as America/New_York.`,
 		Example: `  # Set a due date in US Eastern time
-  tend task due set my-project SV-42 \
+  horo task due set my-project SV-42 \
     --date 2026-05-01 --timezone America/New_York
 
   # Set a due date in UTC
-  tend task due set my-project SV-42 \
+  horo task due set my-project SV-42 \
     --date 2026-06-15 --timezone UTC`,
 		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
@@ -82,7 +82,7 @@ func newDueClearCmd(flags *support.RootFlags) *cobra.Command {
 		Long: `Remove the due date from a task. The task will no longer appear in
 overdue filters or trigger overdue actions.`,
 		Example: `  # Clear the due date
-  tend task due clear my-project SV-42`,
+  horo task due clear my-project SV-42`,
 		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)

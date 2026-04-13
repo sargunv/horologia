@@ -9,12 +9,12 @@ plugins {
 }
 
 android {
-  namespace = "dev.tend.mobile.compose"
+  namespace = "dev.horologia.mobile.compose"
   compileSdk = libs.versions.android.compileSdk.get().toInt()
   buildToolsVersion = "36.0.0"
 
   defaultConfig {
-    applicationId = "dev.tend.mobile.compose"
+    applicationId = "dev.horologia.mobile.compose"
     minSdk = libs.versions.android.minSdk.get().toInt()
     targetSdk = libs.versions.android.targetSdk.get().toInt()
     versionCode = 1
@@ -60,11 +60,11 @@ kotlin {
 
 compose.desktop {
   application {
-    mainClass = "dev.tend.mobile.compose.MainKt"
+    mainClass = "dev.horologia.mobile.compose.MainKt"
 
     nativeDistributions {
       targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-      packageName = "Tend"
+      packageName = "Horologia"
       packageVersion = "1.0.0"
     }
   }

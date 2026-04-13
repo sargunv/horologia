@@ -1,11 +1,11 @@
 package usercmd
 
 import (
-	apigen "github.com/sargunv/tend/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen"
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 func newTasksCmd(flags *support.RootFlags) *cobra.Command {
@@ -18,10 +18,10 @@ func newTasksCmd(flags *support.RootFlags) *cobra.Command {
 paginated; use --cursor with the value from a previous response to fetch
 the next page.`,
 		Example: `  # List tasks for a user
-  tend user tasks alice
+  horo user tasks alice
 
   # Limit to 10 results
-  tend user tasks alice --limit 10`,
+  horo user tasks alice --limit 10`,
 		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)

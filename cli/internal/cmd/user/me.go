@@ -3,8 +3,8 @@ package usercmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 func newMeCmd(flags *support.RootFlags) *cobra.Command {
@@ -14,10 +14,10 @@ func newMeCmd(flags *support.RootFlags) *cobra.Command {
 		Long: `Show the user account associated with the current authentication token.
 Useful for verifying which identity the CLI is acting as.`,
 		Example: `  # Show the current user
-  tend user me
+  horo user me
 
   # Show the current user as JSON
-  tend user me --json`,
+  horo user me --json`,
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			if app.API == nil {
 				return runtime.MissingServerError()

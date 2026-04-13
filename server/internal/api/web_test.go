@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sargunv/tend/server/internal/api"
+	"github.com/sargunv/horologia/server/internal/api"
 )
 
 func postLogin(t *testing.T, env *testEnv, body string) *http.Response {
@@ -31,12 +31,12 @@ func TestLoginSuccess(t *testing.T) {
 	// Should set a session cookie.
 	var foundCookie bool
 	for _, c := range resp.Cookies() {
-		if c.Name == "tend_session" && c.Value != "" {
+		if c.Name == "horologia_session" && c.Value != "" {
 			foundCookie = true
 		}
 	}
 	if !foundCookie {
-		t.Error("expected tend_session cookie in response")
+		t.Error("expected horologia_session cookie in response")
 	}
 
 	// Should return the user in the body.
@@ -92,7 +92,7 @@ func postLogout(t *testing.T, env *testEnv, sessionToken string) *http.Response 
 	t.Helper()
 	req, _ := http.NewRequestWithContext(t.Context(), http.MethodPost, env.Server.URL+"/auth/logout", nil)
 	if sessionToken != "" {
-		req.AddCookie(&http.Cookie{Name: "tend_session", Value: sessionToken})
+		req.AddCookie(&http.Cookie{Name: "horologia_session", Value: sessionToken})
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -109,7 +109,7 @@ func TestLogoutWithSession(t *testing.T) {
 	assertStatus(t, loginResp, http.StatusOK)
 	var sessionToken string
 	for _, c := range loginResp.Cookies() {
-		if c.Name == "tend_session" {
+		if c.Name == "horologia_session" {
 			sessionToken = c.Value
 		}
 	}
@@ -127,8 +127,8 @@ func TestLogoutWithSession(t *testing.T) {
 
 	// Cookie should be cleared (MaxAge < 0).
 	for _, c := range logoutResp.Cookies() {
-		if c.Name == "tend_session" && c.MaxAge >= 0 {
-			t.Error("expected tend_session cookie to be cleared (MaxAge < 0)")
+		if c.Name == "horologia_session" && c.MaxAge >= 0 {
+			t.Error("expected horologia_session cookie to be cleared (MaxAge < 0)")
 		}
 	}
 

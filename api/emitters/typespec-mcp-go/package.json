@@ -1,5 +1,5 @@
 {
-  "name": "@tend/typespec-mcp-go",
+  "name": "@horologia/typespec-mcp-go",
   "version": "0.0.0",
   "private": true,
   "type": "module",

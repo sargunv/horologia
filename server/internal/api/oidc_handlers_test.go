@@ -13,9 +13,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/taskengine"
-	"github.com/sargunv/tend/server/internal/types"
+	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
+	"github.com/sargunv/horologia/server/internal/taskengine"
+	"github.com/sargunv/horologia/server/internal/types"
 )
 
 // newOIDCClient returns an http.Client with a cookie jar for OIDC tests.
@@ -109,7 +109,7 @@ func stopAfterCallback(client *http.Client, serverURL string) {
 	}
 }
 
-// extractSessionCookie returns the tend_session cookie value from the
+// extractSessionCookie returns the horologia_session cookie value from the
 // client's cookie jar for the given server URL. Returns "" if not present.
 func extractSessionCookie(t *testing.T, client *http.Client, serverURL string) string {
 	t.Helper()
@@ -118,7 +118,7 @@ func extractSessionCookie(t *testing.T, client *http.Client, serverURL string) s
 		t.Fatalf("parse server url: %v", err)
 	}
 	for _, c := range client.Jar.Cookies(u) {
-		if c.Name == "tend_session" {
+		if c.Name == "horologia_session" {
 			return c.Value
 		}
 	}
@@ -136,7 +136,7 @@ func TestOIDCLoginNewUser(t *testing.T) {
 
 	sessionToken := extractSessionCookie(t, client, env.Server.URL)
 	if sessionToken == "" {
-		t.Fatal("expected tend_session cookie after OIDC login")
+		t.Fatal("expected horologia_session cookie after OIDC login")
 	}
 
 	// Verify the session works.
@@ -185,7 +185,7 @@ func TestOIDCLoginReturningUser(t *testing.T) {
 
 	sessionToken := extractSessionCookie(t, client, env.Server.URL)
 	if sessionToken == "" {
-		t.Fatal("expected tend_session cookie after OIDC login")
+		t.Fatal("expected horologia_session cookie after OIDC login")
 	}
 
 	// Verify it's the same user.
@@ -222,7 +222,7 @@ func TestOIDCLoginEmailAutoLink(t *testing.T) {
 
 	sessionToken := extractSessionCookie(t, client, env.Server.URL)
 	if sessionToken == "" {
-		t.Fatal("expected tend_session cookie after OIDC login")
+		t.Fatal("expected horologia_session cookie after OIDC login")
 	}
 
 	// Verify the session works, returns the same email, and reuses the existing user.
@@ -280,7 +280,7 @@ func TestOIDCLoginEmailAutoLinkUpdatesSubject(t *testing.T) {
 
 	sessionToken := extractSessionCookie(t, client, env.Server.URL)
 	if sessionToken == "" {
-		t.Fatal("expected tend_session cookie after OIDC login")
+		t.Fatal("expected horologia_session cookie after OIDC login")
 	}
 
 	// Verify the OIDC subject was overwritten in the DB.
@@ -460,7 +460,7 @@ func TestOIDCLinkConsent(t *testing.T) {
 	// Session cookie should now be set.
 	sessionToken := extractSessionCookie(t, client, env.Server.URL)
 	if sessionToken == "" {
-		t.Fatal("expected tend_session cookie after link")
+		t.Fatal("expected horologia_session cookie after link")
 	}
 
 	// Verify the session works and the user is the existing one.
@@ -503,7 +503,7 @@ func TestOIDCLinkConsentPreservesOAuthRedirect(t *testing.T) {
 	client := newOIDCClient(t)
 	stopAfterCallback(client, env.Server.URL)
 
-	const redirectPath = "/oauth/authorize?client_id=tend-cli&redirect_uri=http%3A%2F%2F127.0.0.1%3A49439%2Foauth%2Fcallback&response_type=code&scope=profile%3Aread&state=test-state"
+	const redirectPath = "/oauth/authorize?client_id=horologia-cli&redirect_uri=http%3A%2F%2F127.0.0.1%3A49439%2Foauth%2Fcallback&response_type=code&scope=profile%3Aread&state=test-state"
 	resp := driveOIDCFlow(t, env, client, "oauth-consent-subject", redirectPath)
 	_ = resp.Body.Close()
 

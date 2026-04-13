@@ -13,9 +13,9 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 
-	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/mcp"
-	"github.com/sargunv/tend/server/internal/types"
+	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
+	"github.com/sargunv/horologia/server/internal/mcp"
+	"github.com/sargunv/horologia/server/internal/types"
 )
 
 // mcpSession represents an initialized MCP session for testing.

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 func TestPrintAuthorizationURL(t *testing.T) {

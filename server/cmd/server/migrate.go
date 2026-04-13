@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/server/internal/config"
-	"github.com/sargunv/tend/server/internal/database"
+	"github.com/sargunv/horologia/server/internal/config"
+	"github.com/sargunv/horologia/server/internal/database"
 )
 
 var migrateCmd = &cobra.Command{

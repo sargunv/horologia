@@ -1,11 +1,11 @@
 package taskcmd
 
 import (
-	apigen "github.com/sargunv/tend/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen"
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 func newRelationCmd(flags *support.RootFlags) *cobra.Command {
@@ -26,10 +26,10 @@ The <kind> argument describes how the two tasks relate. Valid values:
 parent_of, child_of, blocks, blocked_by, relates_to, duplicates,
 triggers, triggered_by, spawns, spawned_by.`,
 		Example: `  # Mark SV-42 as blocking SV-43
-  tend task relation add my-project SV-42 blocks SV-43
+  horo task relation add my-project SV-42 blocks SV-43
 
   # Record that SV-10 relates to SV-11
-  tend task relation add my-project SV-10 relates_to SV-11`,
+  horo task relation add my-project SV-10 relates_to SV-11`,
 		Args: cobra.ExactArgs(4),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
@@ -70,7 +70,7 @@ argument must match the relation to delete. Valid values: parent_of,
 child_of, blocks, blocked_by, relates_to, duplicates, triggers,
 triggered_by, spawns, spawned_by.`,
 		Example: `  # Remove the blocks relation from SV-42 to SV-43
-  tend task relation remove my-project SV-42 blocks SV-43`,
+  horo task relation remove my-project SV-42 blocks SV-43`,
 		Args: cobra.ExactArgs(4),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)

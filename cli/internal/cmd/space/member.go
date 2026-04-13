@@ -3,11 +3,11 @@ package spacecmd
 import (
 	"strings"
 
-	apigen "github.com/sargunv/tend/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen"
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 func newMemberCmd(flags *support.RootFlags) *cobra.Command {
@@ -27,7 +27,7 @@ func newMemberListCmd(flags *support.RootFlags) *cobra.Command {
 		Short: "List members of a space",
 		Long:  `List all members of the given space, including each member's role (admin, member, or viewer).`,
 		Example: `  # List members of the "eng" space
-  tend space member list eng`,
+  horo space member list eng`,
 		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
@@ -59,10 +59,10 @@ func newMemberAddCmd(flags *support.RootFlags) *cobra.Command {
 already belongs to the space, the command fails; use set-role to change
 an existing member's role.`,
 		Example: `  # Add alice as a member
-  tend space member add eng alice --role member
+  horo space member add eng alice --role member
 
   # Add bob as an admin
-  tend space member add eng bob --role admin`,
+  horo space member add eng bob --role admin`,
 		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
@@ -105,10 +105,10 @@ func newMemberSetRoleCmd(flags *support.RootFlags) *cobra.Command {
 one of admin, member, or viewer. The user must already belong to the space;
 use add to grant initial access.`,
 		Example: `  # Promote alice to admin
-  tend space member set-role eng alice admin
+  horo space member set-role eng alice admin
 
   # Downgrade bob to viewer
-  tend space member set-role eng bob viewer`,
+  horo space member set-role eng bob viewer`,
 		Args: cobra.ExactArgs(3),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
@@ -148,7 +148,7 @@ func newMemberRemoveCmd(flags *support.RootFlags) *cobra.Command {
 		Long: `Remove a user from the given space, revoking all access immediately.
 To restore access later, use add.`,
 		Example: `  # Remove alice from the "eng" space
-  tend space member remove eng alice`,
+  horo space member remove eng alice`,
 		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)

@@ -1,11 +1,11 @@
 package spacecmd
 
 import (
-	apigen "github.com/sargunv/tend/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen"
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 func newEffortCmd(flags *support.RootFlags) *cobra.Command {
@@ -23,7 +23,7 @@ func newEffortListCmd(flags *support.RootFlags) *cobra.Command {
 		Short: "List task effort levels in a space",
 		Long:  `List all task effort levels configured for a space. Results appear in the configured display order.`,
 		Example: `  # List effort levels
-  tend space effort list my-project`,
+  horo space effort list my-project`,
 		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
@@ -56,11 +56,11 @@ removes every existing level and writes the provided set. Tasks that
 reference a removed level will lose that value. Pass each level with
 a separate --name flag; flag order sets display order.`,
 		Example: `  # Set three effort levels
-  tend space effort replace my-project \
+  horo space effort replace my-project \
     --name Small --name Medium --name Large
 
   # Clear all effort levels
-  tend space effort replace my-project`,
+  horo space effort replace my-project`,
 		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)

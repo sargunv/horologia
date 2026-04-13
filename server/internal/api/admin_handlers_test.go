@@ -10,8 +10,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 
-	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/types"
+	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
+	"github.com/sargunv/horologia/server/internal/types"
 )
 
 func TestUsersGet(t *testing.T) {
@@ -370,13 +370,13 @@ func TestUsersUpdate(t *testing.T) {
 		assertStatus(t, resp, http.StatusOK)
 		var token2 string
 		for _, c := range resp.Cookies() {
-			if c.Name == "tend_session" {
+			if c.Name == "horologia_session" {
 				token2 = c.Value
 			}
 		}
 		_ = resp.Body.Close()
 		if token2 == "" {
-			t.Fatal("second login missing tend_session cookie")
+			t.Fatal("second login missing horologia_session cookie")
 		}
 
 		// Create API and OAuth credentials for the same user.
@@ -453,7 +453,7 @@ func createOAuthRefreshTokenForBearerUser(t *testing.T, env *testEnv, bearerToke
 		Kind:          dbgen.AuthTokenKindOauthRefresh,
 		ExpiresAt:     pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
 		CreatedAt:     pgtype.Timestamptz{Time: time.Now(), Valid: true},
-		OauthClientID: pgtype.Text{String: "tend-cli", Valid: true},
+		OauthClientID: pgtype.Text{String: "horologia-cli", Valid: true},
 		OauthScopes:   []string{"profile:read"},
 		OauthResource: pgtype.Text{String: env.Server.URL + "/api", Valid: true},
 	})

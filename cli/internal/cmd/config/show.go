@@ -3,11 +3,11 @@ package configcmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
-// Output is the JSON response for `tend config show`.
+// Output is the JSON response for `horo config show`.
 type Output struct {
 	Server struct {
 		Value  string              `json:"value"`
@@ -33,14 +33,14 @@ func newShowCmd(flags *support.RootFlags) *cobra.Command {
 		Long: `Show the effective CLI configuration after merging all sources.
 
 The server URL is resolved from the persisted config file, overridden by
-the TEND_SERVER environment variable if set. The token is read from the
-TEND_TOKEN environment variable only. The output labels every value with
+the HOROLOGIA_SERVER environment variable if set. The token is read from the
+HOROLOGIA_TOKEN environment variable only. The output labels every value with
 its source.`,
 		Example: `  # Show current configuration
-  tend config show
+  horo config show
 
   # Show current configuration as JSON
-  tend config show --json`,
+  horo config show --json`,
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			out := BuildOutput(app.Config)
 			if app.Config.JSON {

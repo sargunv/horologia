@@ -14,10 +14,10 @@ import (
 )
 
 const (
-	envServer = "TEND_SERVER"
-	envToken  = "TEND_TOKEN"
+	envServer = "HOROLOGIA_SERVER"
+	envToken  = "HOROLOGIA_TOKEN"
 
-	configDirName  = "tend"
+	configDirName  = "horologia"
 	configFileName = "config.json"
 )
 
@@ -196,7 +196,7 @@ func UnsetServer() (string, error) {
 func loadEnv() (envConfig, error) {
 	k := koanf.New(".")
 	err := k.Load(envprovider.Provider(".", envprovider.Opt{
-		Prefix: "TEND_",
+		Prefix: "HOROLOGIA_",
 		TransformFunc: func(key string, value string) (string, any) {
 			switch key {
 			case envServer:

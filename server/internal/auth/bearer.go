@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
 )
 
 var ErrUnauthorized = errors.New("unauthorized")

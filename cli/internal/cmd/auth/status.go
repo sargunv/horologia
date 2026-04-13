@@ -1,11 +1,11 @@
 package authcmd
 
 import (
-	apigen "github.com/sargunv/tend/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen"
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 type statusOutput struct {
@@ -36,10 +36,10 @@ func newStatusCmd(flags *support.RootFlags) *cobra.Command {
 preview, and the authenticated user. If the server or token is missing,
 the identity check is skipped with a reason.`,
 		Example: `  # Check authentication status
-  tend auth status
+  horo auth status
 
   # Check authentication status as JSON
-  tend auth status --json`,
+  horo auth status --json`,
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			out := buildStatusOutput(app)
 

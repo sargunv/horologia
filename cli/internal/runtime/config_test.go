@@ -38,7 +38,7 @@ func TestResolveConfigUsesKeychainWhenEnvTokenMissing(t *testing.T) {
 	setEnvValue(t, envToken, nil)
 
 	if err := SaveOAuthCredentials("http://example.com", OAuthCredentials{
-		ClientID:     "tend-cli",
+		ClientID:     "horologia-cli",
 		AccessToken:  "keychain-access-token",
 		RefreshToken: "keychain-refresh-token",
 		TokenType:    "Bearer",
@@ -71,7 +71,7 @@ func TestResolveConfigEnvTokenOverridesKeychain(t *testing.T) {
 	setEnvValue(t, envToken, stringPtr("env-access-token"))
 
 	if err := SaveOAuthCredentials("http://example.com", OAuthCredentials{
-		ClientID:     "tend-cli",
+		ClientID:     "horologia-cli",
 		AccessToken:  "keychain-access-token",
 		RefreshToken: "keychain-refresh-token",
 		TokenType:    "Bearer",

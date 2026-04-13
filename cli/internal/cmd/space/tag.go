@@ -3,11 +3,11 @@ package spacecmd
 import (
 	"strings"
 
-	apigen "github.com/sargunv/tend/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen"
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 func newTagCmd(flags *support.RootFlags) *cobra.Command {
@@ -27,7 +27,7 @@ func newTagListCmd(flags *support.RootFlags) *cobra.Command {
 		Short: "List tags in a space",
 		Long:  `List all tags defined in the given space. Tags can be applied to tasks for filtering and organization.`,
 		Example: `  # List tags in the "eng" space
-  tend space tag list eng`,
+  horo space tag list eng`,
 		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
@@ -57,7 +57,7 @@ func newTagCreateCmd(flags *support.RootFlags) *cobra.Command {
 		Short: "Create a tag in a space",
 		Long:  `Create a new tag in the given space. Tag names must be unique within the space.`,
 		Example: `  # Create a "blocked" tag
-  tend space tag create eng --name blocked`,
+  horo space tag create eng --name blocked`,
 		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
@@ -93,7 +93,7 @@ func newTagRenameCmd(flags *support.RootFlags) *cobra.Command {
 		Long: `Rename an existing tag. The <tag> argument is the current name;
 <new-name> is the replacement. All tasks carrying this tag update automatically.`,
 		Example: `  # Rename "blocked" to "on-hold"
-  tend space tag rename eng blocked on-hold`,
+  horo space tag rename eng blocked on-hold`,
 		Args: cobra.ExactArgs(3),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
@@ -128,7 +128,7 @@ func newTagDeleteCmd(flags *support.RootFlags) *cobra.Command {
 		Long: `Permanently delete a tag from the given space. This removes the tag
 from every task that carries it. This cannot be undone.`,
 		Example: `  # Delete the "blocked" tag
-  tend space tag delete eng blocked`,
+  horo space tag delete eng blocked`,
 		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)

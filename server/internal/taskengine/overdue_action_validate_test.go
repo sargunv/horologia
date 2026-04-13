@@ -6,7 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 
-	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
 )
 
 func nullOverdueAction(a dbgen.OverdueAction) dbgen.NullOverdueAction {

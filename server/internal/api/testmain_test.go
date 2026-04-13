@@ -10,7 +10,7 @@ import (
 	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/sargunv/tend/server/internal/database"
+	"github.com/sargunv/horologia/server/internal/database"
 )
 
 // testDSN is the connection string for the shared embedded PG instance.
@@ -22,7 +22,7 @@ var testPort uint32
 
 // testTemplateName is the template database with migrations already applied.
 // Tests use CREATE DATABASE ... TEMPLATE to get a fresh copy instantly.
-const testTemplateName = "tend_template"
+const testTemplateName = "horologia_template"
 
 func freePort(ctx context.Context) (uint32, error) {
 	var lc net.ListenConfig
@@ -50,7 +50,7 @@ func TestMain(m *testing.M) {
 
 	pg := embeddedpostgres.NewDatabase(embeddedpostgres.DefaultConfig().
 		Port(port).
-		Database("tend_test"))
+		Database("horologia_test"))
 
 	if err := pg.Start(); err != nil {
 		fmt.Fprintf(os.Stderr, "start embedded postgres: %v\n", err)
@@ -58,7 +58,7 @@ func TestMain(m *testing.M) {
 	}
 
 	testPort = port
-	testDSN = fmt.Sprintf("postgres://postgres:postgres@localhost:%d/tend_test?sslmode=disable", testPort) //nolint:gosec // test credentials for embedded postgres
+	testDSN = fmt.Sprintf("postgres://postgres:postgres@localhost:%d/horologia_test?sslmode=disable", testPort) //nolint:gosec // test credentials for embedded postgres
 
 	// Create and migrate the template database once.
 	if err := setupTemplate(); err != nil {

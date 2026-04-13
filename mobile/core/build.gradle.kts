@@ -18,7 +18,7 @@ plugins {
 }
 
 @CacheableTask
-abstract class PrepareTendOpenApiTask : DefaultTask() {
+abstract class PrepareHorologiaOpenApiTask : DefaultTask() {
   @get:InputFile
   @get:PathSensitive(PathSensitivity.RELATIVE)
   abstract val inputSpec: RegularFileProperty
@@ -198,7 +198,8 @@ abstract class NormalizeGeneratedKotlinSourcesTask : DefaultTask() {
 }
 
 val openApiSpec = rootProject.layout.projectDirectory.file("../api/tsp-output/schema/openapi.yaml")
-val resolvedOpenApiSpec = layout.buildDirectory.file("generated/openapi/tend-openapi-resolved.yaml")
+val resolvedOpenApiSpec =
+  layout.buildDirectory.file("generated/openapi/horologia-openapi-resolved.yaml")
 val generatedSourceDir = layout.projectDirectory.dir("src/commonMain/generated")
 
 val openapiKmpGenCli by configurations.creating
@@ -207,7 +208,7 @@ dependencies { openapiKmpGenCli(libs.openapi.kmpgen.cli) }
 
 kotlin {
   androidLibrary {
-    namespace = "dev.tend.mobile.core"
+    namespace = "dev.horologia.mobile.core"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
     minSdk = libs.versions.android.minSdk.get().toInt()
   }
@@ -230,21 +231,22 @@ kotlin {
   }
 }
 
-val prepareTendOpenApi by
-  tasks.registering(PrepareTendOpenApiTask::class) {
+val prepareHorologiaOpenApi by
+  tasks.registering(PrepareHorologiaOpenApiTask::class) {
     group = "code generation"
-    description = "Rewrite Tend's emitted OpenAPI into the subset openapi-kmp-gen handles today"
+    description =
+      "Rewrite Horologia's emitted OpenAPI into the subset openapi-kmp-gen handles today"
 
     inputSpec.set(openApiSpec)
     outputSpec.set(resolvedOpenApiSpec)
   }
 
-val generateRawTendApi by
+val generateRawHorologiaApi by
   tasks.registering(JavaExec::class) {
     group = "code generation"
-    description = "Generate the committed Tend KMP client from the emitted OpenAPI spec"
+    description = "Generate the committed Horologia KMP client from the emitted OpenAPI spec"
 
-    dependsOn(prepareTendOpenApi)
+    dependsOn(prepareHorologiaOpenApi)
     inputs.file(resolvedOpenApiSpec)
     outputs.dir(generatedSourceDir)
 
@@ -254,7 +256,7 @@ val generateRawTendApi by
     args(
       "generate",
       "-p",
-      "dev.tend.mobile.generated",
+      "dev.horologia.mobile.generated",
       "-o",
       generatedSourceDir.asFile.path,
       "-s",
@@ -263,21 +265,21 @@ val generateRawTendApi by
     )
   }
 
-val normalizeGeneratedTendApi by
+val normalizeGeneratedHorologiaApi by
   tasks.registering(NormalizeGeneratedKotlinSourcesTask::class) {
     group = "code generation"
-    description = "Normalize generated Tend KMP sources for reproducible commits"
+    description = "Normalize generated Horologia KMP sources for reproducible commits"
 
-    dependsOn(generateRawTendApi)
+    dependsOn(generateRawHorologiaApi)
     sourceDir.set(generatedSourceDir)
     normalizedSourceDir.set(generatedSourceDir)
   }
 
-tasks.register("generateTendApi") {
+tasks.register("generateHorologiaApi") {
   group = "code generation"
-  description = "Generate the committed Tend KMP client from the emitted OpenAPI spec"
+  description = "Generate the committed Horologia KMP client from the emitted OpenAPI spec"
 
-  dependsOn(normalizeGeneratedTendApi)
+  dependsOn(normalizeGeneratedHorologiaApi)
 }
 
 tasks
@@ -287,4 +289,4 @@ tasks
       task.name == "assemble" ||
       task.name == "build"
   }
-  .configureEach { dependsOn("generateTendApi") }
+  .configureEach { dependsOn("generateHorologiaApi") }

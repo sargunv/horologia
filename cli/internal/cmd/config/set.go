@@ -3,8 +3,8 @@ package configcmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 func newSetCmd(flags *support.RootFlags) *cobra.Command {
@@ -20,12 +20,12 @@ func newSetCmd(flags *support.RootFlags) *cobra.Command {
 			Short: "Set the default Tend server URL",
 			Long: `Write the given URL to the persisted config file as the default Tend
 server. The URL is normalized before saving. This value can still be
-overridden by the TEND_SERVER environment variable.`,
+overridden by the HOROLOGIA_SERVER environment variable.`,
 			Example: `  # Point the CLI at a local dev server
-  tend config set server http://localhost:8080
+  horo config set server http://localhost:8080
 
   # Point the CLI at a hosted instance
-  tend config set server https://tend.example.com`,
+  horo config set server https://tend.example.com`,
 			Args: cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				path, server, err := runtime.SaveServer(args[0])

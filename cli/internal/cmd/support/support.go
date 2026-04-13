@@ -3,10 +3,10 @@ package support
 import (
 	"fmt"
 
-	apigen "github.com/sargunv/tend/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen"
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 // RootFlags holds persistent flags shared across the CLI.

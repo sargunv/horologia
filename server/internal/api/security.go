@@ -9,10 +9,10 @@ import (
 
 	"github.com/ogen-go/ogen/ogenerrors"
 
-	apigen "github.com/sargunv/tend/api/gen"
-	"github.com/sargunv/tend/server/internal/auth"
-	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/types"
+	apigen "github.com/sargunv/horologia/api/gen"
+	"github.com/sargunv/horologia/server/internal/auth"
+	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
+	"github.com/sargunv/horologia/server/internal/types"
 )
 
 // HandleBearerAuth validates the bearer token and enriches the context with the user.

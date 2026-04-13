@@ -1,11 +1,11 @@
 package usercmd
 
 import (
-	apigen "github.com/sargunv/tend/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen"
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 func newDeleteCmd(flags *support.RootFlags) *cobra.Command {
@@ -16,7 +16,7 @@ func newDeleteCmd(flags *support.RootFlags) *cobra.Command {
 space memberships are removed and any tasks assigned to them become
 unassigned.`,
 		Example: `  # Permanently remove a user and revoke their access
-  tend user delete alice`,
+  horo user delete alice`,
 		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)

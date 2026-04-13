@@ -11,8 +11,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/sargunv/tend/server/internal/auth"
-	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	"github.com/sargunv/horologia/server/internal/auth"
+	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
 )
 
 // sentinelHash is a pre-computed bcrypt hash used to prevent timing-based
@@ -29,12 +29,12 @@ var sentinelHash = func() []byte {
 var errInvalidCredentials = errors.New("invalid credentials")
 
 const (
-	sessionCookieName = "tend_session"
+	sessionCookieName = "horologia_session"
 	sessionCookiePath = "/"
 	sessionMaxAge     = 60 * 60 * 24 * 30 // 30 days
 )
 
-// CookieAuthMiddleware reads the tend_session cookie and injects it as a
+// CookieAuthMiddleware reads the horologia_session cookie and injects it as a
 // Bearer token header if no Authorization header is already present. This
 // bridges cookie-based auth (web SPA) with ogen's bearer token validation.
 func CookieAuthMiddleware(next http.Handler) http.Handler {

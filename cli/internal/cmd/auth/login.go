@@ -12,11 +12,11 @@ import (
 	"strings"
 	"time"
 
-	apigen "github.com/sargunv/tend/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen"
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 type loginResult struct {
@@ -24,7 +24,7 @@ type loginResult struct {
 	User   *apigen.User `json:"user"`
 }
 
-const envNoBrowser = "TEND_NO_BROWSER"
+const envNoBrowser = "HOROLOGIA_NO_BROWSER"
 
 var openBrowser = runtime.OpenBrowser
 
@@ -159,7 +159,7 @@ func resolveAuthorizeURL(server *url.URL, redirectURI, state, verifier string) s
 	authURL := resolveServerURL(server, "/oauth/authorize")
 	q := authURL.Query()
 	q.Set("response_type", "code")
-	q.Set("client_id", "tend-cli")
+	q.Set("client_id", "horologia-cli")
 	q.Set("redirect_uri", redirectURI)
 	q.Set("scope", runtime.OAuthScopeString())
 	q.Set("state", state)

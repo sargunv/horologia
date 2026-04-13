@@ -2,8 +2,8 @@ package taskengine
 
 import (
 	"github.com/jackc/pgx/v5/pgtype"
-	dbgen "github.com/sargunv/tend/server/internal/database/gen"
-	"github.com/sargunv/tend/server/internal/types"
+	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
+	"github.com/sargunv/horologia/server/internal/types"
 )
 
 // ValidateOverdueActionRule checks that an overdue action rule is compatible

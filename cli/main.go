@@ -6,7 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/sargunv/tend/cli/internal/cmd"
+	"github.com/sargunv/horologia/cli/internal/cmd"
 )
 
 func main() {

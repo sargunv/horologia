@@ -1,3 +1,3 @@
-package dev.tend.mobile.compose
+package dev.horologia.mobile.compose
 
 actual fun platformName(): String = "Android"

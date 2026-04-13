@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 
-	apigen "github.com/sargunv/tend/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen"
 )
 
 type apiErrorResponse struct {
@@ -286,7 +286,7 @@ func (a *App) refreshAccessToken(ctx context.Context) error {
 			if deleteErr := DeleteOAuthCredentials(a.Config.ServerString()); deleteErr != nil {
 				return deleteErr
 			}
-			return &ConfigError{Message: "stored login has expired; run `tend auth login` again"}
+			return &ConfigError{Message: "stored login has expired; run `horo auth login` again"}
 		}
 		return err
 	}

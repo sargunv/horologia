@@ -1,11 +1,11 @@
 package taskcmd
 
 import (
-	apigen "github.com/sargunv/tend/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen"
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 func newAssigneeCmd(flags *support.RootFlags) *cobra.Command {
@@ -29,10 +29,10 @@ func newAssigneeSetCmd(flags *support.RootFlags) *cobra.Command {
 becomes the new list; any user not included is removed. To add or
 remove a single assignee without affecting others, use add or remove.`,
 		Example: `  # Assign a single user
-  tend task assignee set my-project SV-42 --user alice
+  horo task assignee set my-project SV-42 --user alice
 
   # Assign multiple users
-  tend task assignee set my-project SV-42 --user alice --user bob`,
+  horo task assignee set my-project SV-42 --user alice --user bob`,
 		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
@@ -74,7 +74,7 @@ func newAssigneeAddCmd(flags *support.RootFlags) *cobra.Command {
 		Long: `Add a user to the task's assignee list. If the user is already
 assigned, the command succeeds with no change.`,
 		Example: `  # Add alice as an assignee
-  tend task assignee add my-project SV-42 alice`,
+  horo task assignee add my-project SV-42 alice`,
 		Args: cobra.ExactArgs(3),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
@@ -111,7 +111,7 @@ func newAssigneeRemoveCmd(flags *support.RootFlags) *cobra.Command {
 		Long: `Remove a user from the task's assignee list. If the user is not
 currently assigned, the command succeeds with no change.`,
 		Example: `  # Remove alice from the assignees
-  tend task assignee remove my-project SV-42 alice`,
+  horo task assignee remove my-project SV-42 alice`,
 		Args: cobra.ExactArgs(3),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
@@ -147,7 +147,7 @@ func newAssigneeClearCmd(flags *support.RootFlags) *cobra.Command {
 		Short: "Clear task assignees",
 		Long:  `Remove all assignees from a task, leaving the assignee list empty.`,
 		Example: `  # Remove all assignees
-  tend task assignee clear my-project SV-42`,
+  horo task assignee clear my-project SV-42`,
 		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)

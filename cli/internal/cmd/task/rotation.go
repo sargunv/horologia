@@ -1,11 +1,11 @@
 package taskcmd
 
 import (
-	apigen "github.com/sargunv/tend/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen"
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 func newRotationCmd(flags *support.RootFlags) *cobra.Command {
@@ -26,10 +26,10 @@ func newRotationSetCmd(flags *support.RootFlags) *cobra.Command {
 		Long: `Replace the entire rotation pool for a task. Every --user flag you pass
 becomes the new pool; any user not listed is removed.`,
 		Example: `  # Set a two-person rotation pool
-  tend task rotation set my-project SV-42 --user alice --user bob
+  horo task rotation set my-project SV-42 --user alice --user bob
 
   # Replace the pool with a single user
-  tend task rotation set my-project SV-42 --user alice`,
+  horo task rotation set my-project SV-42 --user alice`,
 		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
@@ -68,7 +68,7 @@ func newRotationClearCmd(flags *support.RootFlags) *cobra.Command {
 		Short: "Clear a task rotation pool",
 		Long:  `Remove all users from the rotation pool, disabling rotation for the task.`,
 		Example: `  # Remove the rotation pool
-  tend task rotation clear my-project SV-42`,
+  horo task rotation clear my-project SV-42`,
 		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)

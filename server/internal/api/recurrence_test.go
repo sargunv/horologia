@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sargunv/tend/server/internal/taskengine"
+	"github.com/sargunv/horologia/server/internal/taskengine"
 )
 
 // dueAtFromResponse extracts the "at" string from a task's nested "due" field.

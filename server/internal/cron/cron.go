@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/sargunv/tend/server/internal/taskengine"
+	"github.com/sargunv/horologia/server/internal/taskengine"
 )
 
 // RunAccumulatingCron ticks every interval and processes overdue

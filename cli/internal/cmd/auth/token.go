@@ -4,11 +4,11 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	apigen "github.com/sargunv/tend/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen"
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 const timeFormat = "2006-01-02 15:04:05Z07:00"
@@ -31,10 +31,10 @@ func newTokenListCmd(flags *support.RootFlags) *cobra.Command {
 
 Displays each token's ID, name, kind, and creation timestamp.`,
 		Example: `  # List all API tokens
-  tend auth token list
+  horo auth token list
 
   # List all API tokens as JSON
-  tend auth token list --json`,
+  horo auth token list --json`,
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {
@@ -76,10 +76,10 @@ func newTokenCreateCmd(flags *support.RootFlags) *cobra.Command {
 The token secret is displayed exactly once. Copy it immediately;
 it cannot be retrieved later.`,
 		Example: `  # Create a token for CI
-  tend auth token create --name "CI deploy"
+  horo auth token create --name "CI deploy"
 
   # Create a token and capture the secret as JSON
-  tend auth token create --name "scripting" --json`,
+  horo auth token create --name "scripting" --json`,
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {
@@ -117,9 +117,9 @@ func newTokenRevokeCmd(flags *support.RootFlags) *cobra.Command {
 		Short: "Revoke a personal API token",
 		Long: `Permanently delete the token identified by <token-id>. This action is
 irreversible; any client using the token loses access immediately.
-Find token IDs with "tend auth token list".`,
+Find token IDs with "horo auth token list".`,
 		Example: `  # Revoke a token by ID
-  tend auth token revoke abc123`,
+  horo auth token revoke abc123`,
 		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)

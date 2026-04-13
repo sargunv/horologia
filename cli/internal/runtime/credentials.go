@@ -51,7 +51,7 @@ func credentialServiceName() (string, error) {
 		return "", err
 	}
 	sum := sha256.Sum256([]byte(filepath.Dir(path)))
-	return "tend-" + hex.EncodeToString(sum[:8]), nil
+	return "horologia-" + hex.EncodeToString(sum[:8]), nil
 }
 
 func LoadOAuthCredentials(server string) (*OAuthCredentials, error) {

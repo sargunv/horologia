@@ -36,8 +36,8 @@ type Config struct {
 func Load() (Config, error) {
 	k := koanf.New(".")
 
-	if err := k.Load(env.Provider("TEND_", ".", func(s string) string {
-		return strings.ToLower(strings.TrimPrefix(s, "TEND_"))
+	if err := k.Load(env.Provider("HOROLOGIA_", ".", func(s string) string {
+		return strings.ToLower(strings.TrimPrefix(s, "HOROLOGIA_"))
 	}), nil); err != nil {
 		return Config{}, fmt.Errorf("load env: %w", err)
 	}
@@ -58,29 +58,29 @@ func Load() (Config, error) {
 	}
 
 	if cfg.DB == "" {
-		return Config{}, errors.New("TEND_DB is required")
+		return Config{}, errors.New("HOROLOGIA_DB is required")
 	}
 	if cfg.PublicURL != "" {
 		if !strings.HasPrefix(cfg.PublicURL, "http://") && !strings.HasPrefix(cfg.PublicURL, "https://") {
-			return Config{}, errors.New("TEND_PUBLIC_URL must start with http:// or https://")
+			return Config{}, errors.New("HOROLOGIA_PUBLIC_URL must start with http:// or https://")
 		}
 		cfg.PublicURL = strings.TrimRight(cfg.PublicURL, "/")
 	}
 
 	// Disabling password auth without OIDC would lock out all users.
 	if !cfg.PasswordAuthEnabled && cfg.OIDCIssuer == "" {
-		return Config{}, errors.New("TEND_PASSWORD_AUTH_ENABLED=false requires TEND_OIDC_ISSUER to be set")
+		return Config{}, errors.New("HOROLOGIA_PASSWORD_AUTH_ENABLED=false requires HOROLOGIA_OIDC_ISSUER to be set")
 	}
 
 	// Auto-redirect requires OIDC to be configured and password auth to be disabled.
 	if cfg.OIDCAutoRedirect && cfg.OIDCIssuer == "" {
-		return Config{}, errors.New("TEND_OIDC_AUTO_REDIRECT=true requires TEND_OIDC_ISSUER to be set")
+		return Config{}, errors.New("HOROLOGIA_OIDC_AUTO_REDIRECT=true requires HOROLOGIA_OIDC_ISSUER to be set")
 	}
 	if cfg.OIDCAutoRedirect && cfg.PasswordAuthEnabled {
-		return Config{}, errors.New("TEND_OIDC_AUTO_REDIRECT=true requires TEND_PASSWORD_AUTH_ENABLED=false")
+		return Config{}, errors.New("HOROLOGIA_OIDC_AUTO_REDIRECT=true requires HOROLOGIA_PASSWORD_AUTH_ENABLED=false")
 	}
 
-	// TEND_INIT_OWNER_* validation depends on whether password auth is enabled.
+	// HOROLOGIA_INIT_OWNER_* validation depends on whether password auth is enabled.
 	if cfg.PasswordAuthEnabled {
 		initOwnerSet := 0
 		for _, f := range []string{cfg.InitOwnerEmail, cfg.InitOwnerName, cfg.InitOwnerPassword} {
@@ -89,14 +89,14 @@ func Load() (Config, error) {
 			}
 		}
 		if initOwnerSet != 0 && initOwnerSet != 3 {
-			return Config{}, errors.New("TEND_INIT_OWNER_EMAIL, TEND_INIT_OWNER_NAME, and TEND_INIT_OWNER_PASSWORD must all be set together")
+			return Config{}, errors.New("HOROLOGIA_INIT_OWNER_EMAIL, HOROLOGIA_INIT_OWNER_NAME, and HOROLOGIA_INIT_OWNER_PASSWORD must all be set together")
 		}
 	} else {
 		if cfg.InitOwnerPassword != "" {
-			return Config{}, errors.New("TEND_INIT_OWNER_PASSWORD must not be set when TEND_PASSWORD_AUTH_ENABLED=false")
+			return Config{}, errors.New("HOROLOGIA_INIT_OWNER_PASSWORD must not be set when HOROLOGIA_PASSWORD_AUTH_ENABLED=false")
 		}
 		if (cfg.InitOwnerEmail != "") != (cfg.InitOwnerName != "") {
-			return Config{}, errors.New("TEND_INIT_OWNER_EMAIL and TEND_INIT_OWNER_NAME must both be set together")
+			return Config{}, errors.New("HOROLOGIA_INIT_OWNER_EMAIL and HOROLOGIA_INIT_OWNER_NAME must both be set together")
 		}
 	}
 

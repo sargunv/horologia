@@ -4,11 +4,11 @@ import (
 	"errors"
 	"strings"
 
-	apigen "github.com/sargunv/tend/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen"
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 func newOverdueActionCmd(flags *support.RootFlags) *cobra.Command {
@@ -36,11 +36,11 @@ recurrence), set_status (change to the status given by --status),
 clear_due_date (remove the due date). The action fires immediately
 unless --after-days sets a grace period.`,
 		Example: `  # Advance recurrence immediately when overdue
-  tend task overdue-action set my-project SV-42 \
+  horo task overdue-action set my-project SV-42 \
     --action advance_recurrence
 
   # Mark a task done three days after it becomes overdue
-  tend task overdue-action set my-project SV-42 \
+  horo task overdue-action set my-project SV-42 \
     --action set_status --status Done --after-days 3`,
 		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
@@ -112,7 +112,7 @@ func newOverdueActionClearCmd(flags *support.RootFlags) *cobra.Command {
 		Long: `Remove the overdue action from a task. The task will take no automatic
 action when it becomes overdue.`,
 		Example: `  # Remove the overdue action
-  tend task overdue-action clear my-project SV-42`,
+  horo task overdue-action clear my-project SV-42`,
 		Args: cobra.ExactArgs(2),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)

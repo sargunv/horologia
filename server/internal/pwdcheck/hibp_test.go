@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sargunv/tend/server/internal/pwdcheck"
-	"github.com/sargunv/tend/server/internal/types"
+	"github.com/sargunv/horologia/server/internal/pwdcheck"
+	"github.com/sargunv/horologia/server/internal/types"
 )
 
 func sha1Hex(s string) string {

@@ -46,7 +46,7 @@ func TestAppRefreshesExpiredAccessTokenAndRetriesOnce(t *testing.T) {
 			if got, want := r.PostForm.Get("grant_type"), "refresh_token"; got != want {
 				t.Fatalf("grant_type = %q, want %q", got, want)
 			}
-			if got, want := r.PostForm.Get("client_id"), "tend-cli"; got != want {
+			if got, want := r.PostForm.Get("client_id"), "horologia-cli"; got != want {
 				t.Fatalf("client_id = %q, want %q", got, want)
 			}
 			if got, want := r.PostForm.Get("refresh_token"), "stale-refresh-token"; got != want {
@@ -76,7 +76,7 @@ func TestAppRefreshesExpiredAccessTokenAndRetriesOnce(t *testing.T) {
 		Token:        "stale-access-token",
 		TokenSource:  ValueSourceKeychain,
 		OAuth: &OAuthCredentials{
-			ClientID:     "tend-cli",
+			ClientID:     "horologia-cli",
 			AccessToken:  "stale-access-token",
 			RefreshToken: "stale-refresh-token",
 			TokenType:    "Bearer",
@@ -153,7 +153,7 @@ func TestAppRefreshFailureRequiresRelogin(t *testing.T) {
 		Token:        "stale-access-token",
 		TokenSource:  ValueSourceKeychain,
 		OAuth: &OAuthCredentials{
-			ClientID:     "tend-cli",
+			ClientID:     "horologia-cli",
 			AccessToken:  "stale-access-token",
 			RefreshToken: "stale-refresh-token",
 			TokenType:    "Bearer",
@@ -174,7 +174,7 @@ func TestAppRefreshFailureRequiresRelogin(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected refresh failure")
 	}
-	if !strings.Contains(err.Error(), "stored login has expired; run `tend auth login` again") {
+	if !strings.Contains(err.Error(), "stored login has expired; run `horo auth login` again") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if got := app.BearerToken(); got != "" {

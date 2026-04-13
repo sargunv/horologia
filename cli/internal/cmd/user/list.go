@@ -3,8 +3,8 @@ package usercmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 func newListCmd(flags *support.RootFlags) *cobra.Command {
@@ -12,10 +12,10 @@ func newListCmd(flags *support.RootFlags) *cobra.Command {
 		Use:   "list",
 		Short: "List all users",
 		Example: `  # See all users on the server
-  tend user list
+  horo user list
 
   # Get machine-readable output
-  tend user list --json`,
+  horo user list --json`,
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {

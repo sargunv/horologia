@@ -12,11 +12,11 @@ func (e *ConfigError) Error() string {
 }
 
 func MissingServerError() error {
-	return &ConfigError{Message: "server is not configured; set TEND_SERVER or run `tend config set server <url>`"}
+	return &ConfigError{Message: "server is not configured; set HOROLOGIA_SERVER or run `horo config set server <url>`"}
 }
 
 func MissingTokenError() error {
-	return &ConfigError{Message: "token is not configured; set TEND_TOKEN or run `tend auth login`"}
+	return &ConfigError{Message: "token is not configured; set HOROLOGIA_TOKEN or run `horo auth login`"}
 }
 
 // APIError is a structured API error response.

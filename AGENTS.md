@@ -2,11 +2,11 @@
 
 ## Project
 
-Tend is a self-hosted task manager. See `docs/BRIEF.md` for the full product brief.
+Horologia is a self-hosted task manager. See `docs/BRIEF.md` for the full product brief.
 
 ## Roadmap
 
-Progress is tracked in Linear (project: Tend).
+Progress is tracked in Linear (project: Horologia).
 
 ## Development
 
@@ -40,7 +40,7 @@ PostgreSQL is managed by mise and started automatically by Tilt. Data is stored 
 - **Reset the dev database**: `mise run db:reset`, then re-trigger the `postgres` resource in the
   Tilt UI (or restart Tilt).
 - **Clean up old branch databases**: `mise run db:clean`
-- **External postgres**: Set `TEND_DB=postgres://user:pass@host/tend?sslmode=disable` in
+- **External postgres**: Set `HOROLOGIA_DB=postgres://user:pass@host/horologia?sslmode=disable` in
   `.env.local` to skip mise-managed postgres entirely (e.g. a shared team DB).
 
 ## Packages
@@ -135,7 +135,7 @@ Use `vhs` for recording CLI demos. Run `vhs --help` for details.
 ### Dev environment
 
 `mise run dev` starts all services (postgres, server, web). The server bootstraps the default admin
-user (`admin@localhost` / `password`) on first run via `TEND_INIT_OWNER_*`.
+user (`admin@localhost` / `password`) on first run via `HOROLOGIA_INIT_OWNER_*`.
 
 ### Capturing UI evidence
 

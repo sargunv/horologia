@@ -12,10 +12,10 @@ import (
 	"github.com/ogen-go/ogen/ogenerrors"
 	zhttp "github.com/zitadel/oidc/v3/pkg/http"
 
-	apigen "github.com/sargunv/tend/api/gen"
-	"github.com/sargunv/tend/server/internal/auth"
-	"github.com/sargunv/tend/server/internal/pwdcheck"
-	"github.com/sargunv/tend/server/internal/types"
+	apigen "github.com/sargunv/horologia/api/gen"
+	"github.com/sargunv/horologia/server/internal/auth"
+	"github.com/sargunv/horologia/server/internal/pwdcheck"
+	"github.com/sargunv/horologia/server/internal/types"
 )
 
 // Handler implements the generated API interface.

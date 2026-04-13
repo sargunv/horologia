@@ -4,11 +4,11 @@ import (
 	"errors"
 	"strings"
 
-	apigen "github.com/sargunv/tend/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen"
 	"github.com/spf13/cobra"
 
-	"github.com/sargunv/tend/cli/internal/cmd/support"
-	"github.com/sargunv/tend/cli/internal/runtime"
+	"github.com/sargunv/horologia/cli/internal/cmd/support"
+	"github.com/sargunv/horologia/cli/internal/runtime"
 )
 
 func newUpdateCmd(flags *support.RootFlags) *cobra.Command {
@@ -22,10 +22,10 @@ func newUpdateCmd(flags *support.RootFlags) *cobra.Command {
 		Long: `Update one or more fields on an existing space. Only the fields you
 specify with flags will change; omitted fields remain untouched.`,
 		Example: `  # Rename a space
-  tend space update my-project --name "My Renamed Project"
+  horo space update my-project --name "My Renamed Project"
 
   # Change a space's slug and description
-  tend space update my-project --slug new-slug \
+  horo space update my-project --slug new-slug \
     --description "Updated description"`,
 		Args: cobra.ExactArgs(1),
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {

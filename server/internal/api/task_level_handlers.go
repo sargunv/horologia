@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	apigen "github.com/sargunv/tend/api/gen"
-	"github.com/sargunv/tend/server/internal/activitylog"
-	dbgen "github.com/sargunv/tend/server/internal/database/gen"
+	apigen "github.com/sargunv/horologia/api/gen"
+	"github.com/sargunv/horologia/server/internal/activitylog"
+	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
 )
 
 // extractNames maps a slice of rows to a slice of name strings.
