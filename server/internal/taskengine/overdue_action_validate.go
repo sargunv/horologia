@@ -18,11 +18,12 @@ func ValidateOverdueActionRule(
 	if !action.Valid {
 		return nil // no rule, nothing to validate
 	}
-	if recurrenceType == dbgen.RecurrenceTypeOneOff || recurrenceType == dbgen.RecurrenceTypeOnDependency {
-		return types.ValidationError("overdue_action_rule is only valid on recurring tasks")
-	}
 	if !hasDue {
 		return types.ValidationError("overdue_action_rule requires a due date")
+	}
+	if action.OverdueAction == dbgen.OverdueActionAdvanceRecurrence &&
+		(recurrenceType == dbgen.RecurrenceTypeOneOff || recurrenceType == dbgen.RecurrenceTypeOnDependency) {
+		return types.ValidationError("advance_recurrence overdue action is only valid on recurring tasks")
 	}
 	if action.OverdueAction == dbgen.OverdueActionAdvanceRecurrence &&
 		recurrenceType == dbgen.RecurrenceTypeFixedAccumulating {
