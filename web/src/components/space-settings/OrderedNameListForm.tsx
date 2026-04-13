@@ -329,8 +329,6 @@ function SortableNameRow({
     transition,
   };
 
-  const handleAttributes = attributes;
-
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter" || e.key === "Escape") {
       e.preventDefault();
@@ -349,7 +347,7 @@ function SortableNameRow({
         className={`btn-icon btn-icon-sm shrink-0 ${draggable ? "preset-tonal-surface cursor-grab" : "cursor-default opacity-50"}`}
         disabled={!draggable || disabled}
         aria-label={`Drag to reorder ${item.name || `${itemLabel.toLowerCase()} ${index + 1}`}`}
-        {...(draggable && !disabled ? { ...handleAttributes, ...listeners } : {})}
+        {...(draggable && !disabled ? { ...attributes, ...listeners } : {})}
       >
         <GripVertical className="size-4" aria-hidden="true" />
       </button>

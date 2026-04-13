@@ -14,6 +14,17 @@ import {
 } from "../../lib/queries.ts";
 import { TaskRow } from "./TaskRow.tsx";
 
+/** Pick tooltip-relevant attrs (id, data-*, aria-*) from a button-typed attrs bag for use on anchor elements. */
+function tooltipAttrs(attrs: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "id" || k.startsWith("data-") || k.startsWith("aria-")) {
+      result[k] = v;
+    }
+  }
+  return result;
+}
+
 const ActivityLink = createLink("a");
 
 type TaskStatus = components["schemas"]["TaskStatus"];
@@ -22,7 +33,7 @@ type TaskPriorityLevel = components["schemas"]["TaskPriorityLevel"];
 type Space = components["schemas"]["Space"];
 
 const EMPTY_STATUS_MAP = new Map<string, TaskStatus>();
-const EMPTY_LEVELS: TaskEffortLevel[] = [];
+const EMPTY_EFFORT_LEVELS: TaskEffortLevel[] = [];
 const EMPTY_PRIORITY_LEVELS: TaskPriorityLevel[] = [];
 
 function useAllSpaceStatusMaps(spaces: Space[]): Map<string, Map<string, TaskStatus>> {
@@ -44,9 +55,7 @@ function useAllSpaceEffortLevels(spaces: Space[]): Map<string, TaskEffortLevel[]
     queries: spaces.map((s) => spaceEffortLevelsQueryOptions(s.slug)),
     combine(results) {
       const map = new Map<string, TaskEffortLevel[]>();
-      spaces.forEach((space, i) => {
-        map.set(space.slug, results[i]?.data ?? []);
-      });
+      spaces.forEach((space, i) => map.set(space.slug, results[i]?.data ?? []));
       return map;
     },
   });
@@ -57,9 +66,7 @@ function useAllSpacePriorityLevels(spaces: Space[]): Map<string, TaskPriorityLev
     queries: spaces.map((s) => spacePriorityLevelsQueryOptions(s.slug)),
     combine(results) {
       const map = new Map<string, TaskPriorityLevel[]>();
-      spaces.forEach((space, i) => {
-        map.set(space.slug, results[i]?.data ?? []);
-      });
+      spaces.forEach((space, i) => map.set(space.slug, results[i]?.data ?? []));
       return map;
     },
   });
@@ -87,11 +94,18 @@ export function MyTaskListPane() {
       <div className="flex items-center justify-between">
         <h2 className="h5 truncate">My Tasks</h2>
         <Tooltip>
-          <Tooltip.Trigger className="btn-icon btn-sm preset-tonal-surface" aria-label="Activity">
-            <ActivityLink to="/activity">
-              <Activity className="size-4" aria-hidden="true" />
-            </ActivityLink>
-          </Tooltip.Trigger>
+          <Tooltip.Trigger
+            element={(attrs) => (
+              <ActivityLink
+                {...tooltipAttrs(attrs)}
+                to="/activity"
+                className="btn-icon btn-sm preset-tonal-surface"
+                aria-label="Activity"
+              >
+                <Activity className="size-4" aria-hidden="true" />
+              </ActivityLink>
+            )}
+          />
           <Portal>
             <Tooltip.Positioner>
               <Tooltip.Content className="preset-filled-surface-800-200 rounded px-2 py-1 text-xs shadow">
@@ -110,7 +124,7 @@ export function MyTaskListPane() {
               task={task}
               spaceSlug={task.spaceSlug}
               statusMap={allStatusMaps.get(task.spaceSlug) ?? EMPTY_STATUS_MAP}
-              effortLevels={allEffortLevels.get(task.spaceSlug) ?? EMPTY_LEVELS}
+              effortLevels={allEffortLevels.get(task.spaceSlug) ?? EMPTY_EFFORT_LEVELS}
               priorityLevels={allPriorityLevels.get(task.spaceSlug) ?? EMPTY_PRIORITY_LEVELS}
               to="/tasks/$spaceSlug/$taskId"
             />

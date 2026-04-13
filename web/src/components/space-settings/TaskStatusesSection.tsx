@@ -121,7 +121,7 @@ function TaskStatusesForm({
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const saveMutation = useMutation({
-    mutationFn: async (items: { name: string; category: TaskStatusCategory }[]) => {
+    mutationFn: async (items: { name: string; category: TaskStatusCategory; icon?: string }[]) => {
       const { data, error } = await apiClient.PUT("/spaces/{spaceSlug}/task-statuses", {
         params: { path: { spaceSlug } },
         body: { items },
@@ -413,8 +413,6 @@ function SortableStatusRow({
     transition,
   };
 
-  const handleAttributes = attributes;
-
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter" || e.key === "Escape") {
       e.preventDefault();
@@ -433,7 +431,7 @@ function SortableStatusRow({
         className={`btn-icon btn-icon-sm shrink-0 ${draggable ? "preset-tonal-surface cursor-grab" : "cursor-default opacity-50"}`}
         disabled={!draggable || disabled}
         aria-label={`Drag to reorder ${item.name || `status ${index + 1}`}`}
-        {...(draggable && !disabled ? { ...handleAttributes, ...listeners } : {})}
+        {...(draggable && !disabled ? { ...attributes, ...listeners } : {})}
       >
         <GripVertical className="size-4" aria-hidden="true" />
       </button>

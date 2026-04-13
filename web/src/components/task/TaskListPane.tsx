@@ -12,6 +12,17 @@ import {
 } from "../../lib/queries.ts";
 import { TaskRow } from "./TaskRow.tsx";
 
+/** Pick tooltip-relevant attrs (id, data-*, aria-*) from a button-typed attrs bag for use on anchor elements. */
+function tooltipAttrs(attrs: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "id" || k.startsWith("data-") || k.startsWith("aria-")) {
+      result[k] = v;
+    }
+  }
+  return result;
+}
+
 const SettingsLink = createLink("a");
 const ActivityLink = createLink("a");
 const CreateTaskLink = createLink("a");
@@ -40,11 +51,19 @@ export function TaskListPane({ spaceSlug }: { spaceSlug: string }) {
         <h2 className="h5 truncate">{space.name}</h2>
         <div className="flex shrink-0 items-center gap-1">
           <Tooltip>
-            <Tooltip.Trigger className="btn-icon btn-sm preset-tonal-surface" aria-label="Activity">
-              <ActivityLink to="/spaces/$spaceSlug/activity" params={{ spaceSlug }}>
-                <Activity className="size-4" />
-              </ActivityLink>
-            </Tooltip.Trigger>
+            <Tooltip.Trigger
+              element={(attrs) => (
+                <ActivityLink
+                  {...tooltipAttrs(attrs)}
+                  to="/spaces/$spaceSlug/activity"
+                  params={{ spaceSlug }}
+                  className="btn-icon btn-sm preset-tonal-surface"
+                  aria-label="Activity"
+                >
+                  <Activity className="size-4" aria-hidden="true" />
+                </ActivityLink>
+              )}
+            />
             <Portal>
               <Tooltip.Positioner>
                 <Tooltip.Content className="preset-filled-surface-800-200 rounded px-2 py-1 text-xs shadow">
@@ -54,11 +73,19 @@ export function TaskListPane({ spaceSlug }: { spaceSlug: string }) {
             </Portal>
           </Tooltip>
           <Tooltip>
-            <Tooltip.Trigger className="btn-icon btn-sm preset-tonal-surface" aria-label="Settings">
-              <SettingsLink to="/spaces/$spaceSlug/settings" params={{ spaceSlug }}>
-                <Settings className="size-4" />
-              </SettingsLink>
-            </Tooltip.Trigger>
+            <Tooltip.Trigger
+              element={(attrs) => (
+                <SettingsLink
+                  {...tooltipAttrs(attrs)}
+                  to="/spaces/$spaceSlug/settings"
+                  params={{ spaceSlug }}
+                  className="btn-icon btn-sm preset-tonal-surface"
+                  aria-label="Settings"
+                >
+                  <Settings className="size-4" aria-hidden="true" />
+                </SettingsLink>
+              )}
+            />
             <Portal>
               <Tooltip.Positioner>
                 <Tooltip.Content className="preset-filled-surface-800-200 rounded px-2 py-1 text-xs shadow">
@@ -94,7 +121,7 @@ export function TaskListPane({ spaceSlug }: { spaceSlug: string }) {
         </div>
       ) : (
         <div className="card preset-outlined-surface-200-800 flex flex-col items-center gap-3 p-12 text-center">
-          <ListChecks className="text-surface-400 size-12" />
+          <ListChecks className="text-surface-400 size-12" aria-hidden="true" />
           <div>
             <p className="font-medium">No tasks yet</p>
             <p className="text-surface-600-400 mt-1 text-sm">

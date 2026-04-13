@@ -44,21 +44,7 @@ export const FALLBACK_ICON: LucideIcon = CircleHelp;
  */
 export function getIcon(name: string | null | undefined): LucideIcon {
   if (!name) return FALLBACK_ICON;
-  // Try kebab-case lookup first (canonical format)
-  const fromKebab = ALL_ICONS.get(name);
-  if (fromKebab) return fromKebab;
-  // Try PascalCase lookup as fallback (icons object uses PascalCase keys)
-  const iconsRecord: Record<string, LucideIcon | undefined> = icons;
-  const fromPascal = iconsRecord[name];
-  if (fromPascal) return fromPascal;
-  return FALLBACK_ICON;
-}
-
-/**
- * Check whether an icon name resolves to a real Lucide icon.
- */
-export function isValidIcon(name: string): boolean {
-  return ALL_ICONS.has(name) || name in icons;
+  return ALL_ICONS.get(name) ?? FALLBACK_ICON;
 }
 
 // ─── Suggested Icon Sets ────────────────────────────────────────────────────

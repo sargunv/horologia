@@ -31,7 +31,13 @@ function initials(name: string): string {
 function IconTooltip({ label, children }: { label: string; children: ReactNode }) {
   return (
     <Tooltip openDelay={200} closeDelay={0}>
-      <Tooltip.Trigger element={(attrs) => <span {...attrs}>{children}</span>} />
+      <Tooltip.Trigger
+        element={(attrs) => (
+          <span {...attrs} aria-label={label}>
+            {children}
+          </span>
+        )}
+      />
       <Portal>
         <Tooltip.Positioner>
           <Tooltip.Content className="preset-filled-surface-800-200 rounded px-2 py-1 text-xs shadow">
@@ -64,24 +70,18 @@ export function TaskRow({
   const memberMap = useSpaceMemberMap(spaceSlug);
 
   const status = statusMap.get(task.status);
-  const StatusIcon = useMemo(() => {
-    return status?.icon ? getIcon(status.icon) : getIcon("circle");
-  }, [status]);
+  const StatusIcon = status?.icon ? getIcon(status.icon) : getIcon("circle");
   const statusColor = status
     ? (STATUS_ICON_COLOR[status.category] ?? "text-surface-500")
     : "text-surface-500";
 
-  const EffortIcon = useMemo(() => {
-    if (!task.effort) return null;
-    const level = effortLevels.find((l) => l.name === task.effort);
-    return level?.icon ? getIcon(level.icon) : null;
-  }, [task.effort, effortLevels]);
+  const effortLevel = task.effort ? effortLevels.find((l) => l.name === task.effort) : undefined;
+  const EffortIcon = effortLevel?.icon ? getIcon(effortLevel.icon) : null;
 
-  const PriorityIcon = useMemo(() => {
-    if (!task.priority) return null;
-    const level = priorityLevels.find((l) => l.name === task.priority);
-    return level?.icon ? getIcon(level.icon) : null;
-  }, [task.priority, priorityLevels]);
+  const priorityLevel = task.priority
+    ? priorityLevels.find((l) => l.name === task.priority)
+    : undefined;
+  const PriorityIcon = priorityLevel?.icon ? getIcon(priorityLevel.icon) : null;
 
   const assignees = useMemo(
     () =>
