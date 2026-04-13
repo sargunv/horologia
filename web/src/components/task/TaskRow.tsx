@@ -137,7 +137,7 @@ export function TaskRow({
     >
       {staleness != null && (
         <div
-          className="absolute inset-y-0 left-0 w-[3px]"
+          className="absolute inset-y-0 left-0 w-1"
           style={{ backgroundColor: stalenessColor(staleness) }}
           aria-hidden="true"
         />
