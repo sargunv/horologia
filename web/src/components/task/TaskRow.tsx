@@ -26,18 +26,18 @@ function stalenessLabel(ratio: number): string {
 }
 
 /**
- * Map a staleness ratio to an HSL color string via hue sweep.
+ * Map a staleness ratio to an HSL color string via piecewise hue sweep.
  *
- * 0   (fresh):   hue 130 (green)
- * 1   (due):     hue 90  (yellow-green)
- * 2   (overdue): hue 30  (orange)
- * 3+  (very):    hue 0   (red), clamped
- *
- * Saturation and lightness stay constant for clean, vibrant colors.
+ * 0  (fresh): hue 130 (green)
+ * 1  (due):   hue 90  (pale green)
+ * 2+ (very):  hue 0   (red), clamped
  */
 function stalenessColor(ratio: number): string {
-  const t = Math.max(0, Math.min(ratio, 3));
-  const hue = 130 - (t / 3) * 130; // 130° (green) → 0° (red)
+  const t = Math.max(0, Math.min(ratio, 2));
+  const hue =
+    t <= 1
+      ? 130 - t * 40 // 0→1: 130°→90° (green → pale green)
+      : 90 - (t - 1) * 90; // 1→2: 90°→0° (pale green → red)
   return `hsl(${Math.round(hue)}, 65%, 45%)`;
 }
 
