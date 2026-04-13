@@ -1,12 +1,15 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { UserPlus, Users, X } from "lucide-react";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { Combobox, Portal, useListCollection } from "@skeletonlabs/skeleton-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2, UserPlus, Users, X } from "lucide-react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
+import { usersQueryOptions } from "../../lib/queries.ts";
 import { notifyStaleData } from "../../lib/toaster.ts";
 import { ErrorAlert } from "./ErrorAlert.tsx";
 import { SettingsSection } from "./SettingsSection.tsx";
 
+type User = components["schemas"]["User"];
 type SpaceMember = components["schemas"]["SpaceMember"];
 type SpaceRole = components["schemas"]["SpaceRole"];
 
@@ -66,7 +69,7 @@ export function MembersSection({
           />
         ))}
       </div>
-      {isAdmin && <AddMemberForm spaceSlug={spaceSlug} />}
+      {isAdmin && <AddMemberForm spaceSlug={spaceSlug} members={members} />}
     </SettingsSection>
   );
 }
@@ -215,10 +218,36 @@ function MemberRow({
   );
 }
 
-function AddMemberForm({ spaceSlug }: { spaceSlug: string }) {
+function AddMemberForm({ spaceSlug, members }: { spaceSlug: string; members: SpaceMember[] }) {
   const queryClient = useQueryClient();
-  const [userId, setUserId] = useState("");
+  const [value, setValue] = useState<string[]>([]);
+  const [inputValue, setInputValue] = useState("");
   const [role, setRole] = useState<SpaceRole>("member");
+
+  const {
+    data: allUsers,
+    isLoading: usersLoading,
+    error: usersError,
+  } = useQuery(usersQueryOptions);
+
+  const availableUsers = useMemo(() => {
+    const existingMemberIds = new Set(members.map((m) => m.userId));
+    return (allUsers ?? []).filter((u) => !existingMemberIds.has(u.id));
+  }, [allUsers, members]);
+
+  const filteredUsers = useMemo(() => {
+    const query = inputValue.toLowerCase();
+    if (!query) return availableUsers;
+    return availableUsers.filter(
+      (u) => u.name.toLowerCase().includes(query) || u.email.toLowerCase().includes(query),
+    );
+  }, [availableUsers, inputValue]);
+
+  const collection = useListCollection({
+    items: filteredUsers,
+    itemToValue: (user: User) => user.id,
+    itemToString: (user: User) => user.name,
+  });
 
   const addMutation = useMutation({
     mutationFn: async (body: { userId: string; role: SpaceRole }) => {
@@ -229,7 +258,8 @@ function AddMemberForm({ spaceSlug }: { spaceSlug: string }) {
       if (error) throw new Error(error.message ?? "Failed to add member");
     },
     onSuccess: async () => {
-      setUserId("");
+      setValue([]);
+      setInputValue("");
       setRole("member");
       try {
         await queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "members"] });
@@ -242,54 +272,103 @@ function AddMemberForm({ spaceSlug }: { spaceSlug: string }) {
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    addMutation.mutate({ userId: userId.trim(), role });
+    const userId = value[0];
+    if (!userId) return;
+    addMutation.mutate({ userId, role });
   }
 
   return (
     <div className="border-surface-200-800 flex flex-col gap-3 border-t pt-4">
       <h3 className="text-surface-600-400 text-sm font-medium">Add member</h3>
-      <form onSubmit={handleSubmit} className="flex items-end gap-2">
-        <label className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="text-surface-600-400 text-sm font-medium">User ID</span>
-          <input
-            type="text"
-            required
-            value={userId}
-            onChange={(e) => setUserId(e.target.value)}
-            className="input preset-outlined-surface-200-800 w-full"
-            placeholder="U123"
-            disabled={addMutation.isPending}
-          />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-surface-600-400 text-sm font-medium">Role</span>
-          <select
-            value={role}
-            onChange={(e) => {
-              if (isSpaceRole(e.target.value)) setRole(e.target.value);
-            }}
-            disabled={addMutation.isPending}
-            className="select preset-outlined-surface-200-800 w-28"
-          >
-            <RoleOptions />
-          </select>
-        </label>
-        <button
-          type="submit"
-          disabled={addMutation.isPending || !userId.trim()}
-          className="btn preset-filled-primary-500"
+      <form onSubmit={handleSubmit}>
+        <Combobox
+          collection={collection}
+          value={value}
+          onValueChange={({ value: v }) => setValue(v)}
+          inputValue={inputValue}
+          onInputValueChange={({ inputValue: v }) => setInputValue(v)}
+          disabled={addMutation.isPending}
+          openOnClick
+          closeOnSelect
         >
-          {addMutation.isPending ? (
-            "Adding..."
-          ) : (
-            <>
-              <UserPlus className="size-4" aria-hidden="true" />
-              Add
-            </>
-          )}
-        </button>
+          <Combobox.Control className="input-group grid-cols-[1fr_auto_auto]">
+            <Combobox.Input
+              className="ig-input"
+              style={{ boxShadow: "none" }}
+              placeholder="Search by name or email..."
+            />
+            <select
+              aria-label="Role"
+              value={role}
+              onChange={(e) => {
+                if (isSpaceRole(e.target.value)) setRole(e.target.value);
+              }}
+              disabled={addMutation.isPending}
+              className="ig-select"
+            >
+              <RoleOptions />
+            </select>
+            <button
+              type="submit"
+              disabled={addMutation.isPending || value.length === 0}
+              className="ig-btn preset-filled-primary-500"
+            >
+              {addMutation.isPending ? (
+                "Adding..."
+              ) : (
+                <>
+                  <UserPlus className="size-4" aria-hidden="true" />
+                  Add
+                </>
+              )}
+            </button>
+          </Combobox.Control>
+          <Portal>
+            <Combobox.Positioner>
+              <Combobox.Content className="max-h-60 overflow-y-auto">
+                {usersLoading ? (
+                  <div
+                    role="presentation"
+                    className="text-surface-500 flex items-center gap-2 px-3 py-2 text-sm"
+                  >
+                    <Loader2 className="size-4 animate-spin" />
+                    Loading users...
+                  </div>
+                ) : usersError ? (
+                  <div role="presentation" className="text-error-500 px-3 py-2 text-sm">
+                    <span role="alert">Failed to load users</span>
+                  </div>
+                ) : filteredUsers.length === 0 ? (
+                  <div role="presentation" className="text-surface-500 px-3 py-2 text-sm">
+                    {availableUsers.length === 0
+                      ? "All users are already members"
+                      : "No matching users"}
+                  </div>
+                ) : (
+                  filteredUsers.map((user) => (
+                    <Combobox.Item key={user.id} item={user}>
+                      <Combobox.ItemText>{user.name}</Combobox.ItemText>
+                      <span className="text-surface-500 ml-auto text-xs">{user.email}</span>
+                      <Combobox.ItemIndicator>✓</Combobox.ItemIndicator>
+                    </Combobox.Item>
+                  ))
+                )}
+              </Combobox.Content>
+            </Combobox.Positioner>
+          </Portal>
+        </Combobox>
       </form>
-
+      <div aria-live="polite" role="status" className="sr-only">
+        {usersLoading
+          ? "Loading users..."
+          : usersError
+            ? "Failed to load users"
+            : filteredUsers.length === 0
+              ? availableUsers.length === 0
+                ? "All users are already members"
+                : "No matching users"
+              : ""}
+      </div>
       {addMutation.error && <ErrorAlert message={addMutation.error.message} />}
     </div>
   );
