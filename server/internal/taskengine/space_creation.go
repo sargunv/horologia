@@ -18,7 +18,7 @@ var defaultStatuses = []dbgen.CreateTaskStatusParams{
 
 var defaultEffortLevels = []dbgen.CreateTaskEffortLevelParams{
 	{Name: "small", Position: 0, Icon: "feather"},
-	{Name: "medium", Position: 1, Icon: "gauge"},
+	{Name: "moderate", Position: 1, Icon: "gauge"},
 	{Name: "large", Position: 2, Icon: "mountain"},
 }
 
