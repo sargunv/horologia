@@ -281,7 +281,8 @@ function AddMemberForm({ spaceSlug, members }: { spaceSlug: string; members: Spa
     <div className="border-surface-200-800 flex flex-col gap-3 border-t pt-4">
       <h3 className="text-surface-600-400 text-sm font-medium">Add member</h3>
       <form onSubmit={handleSubmit} className="flex items-end gap-2">
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <label className="flex min-w-0 flex-1 flex-col gap-1">
+          <span className="text-surface-600-400 text-sm font-medium">User</span>
           <Combobox
             collection={collection}
             value={value}
@@ -293,11 +294,8 @@ function AddMemberForm({ spaceSlug, members }: { spaceSlug: string; members: Spa
             closeOnSelect
             placeholder="Search by name or email..."
           >
-            <Combobox.Label className="text-surface-600-400 text-sm font-medium">
-              User
-            </Combobox.Label>
-            <Combobox.Control className="input preset-outlined-surface-200-800 w-full">
-              <Combobox.Input />
+            <Combobox.Control>
+              <Combobox.Input className="input preset-outlined-surface-200-800 w-full" />
             </Combobox.Control>
             <Portal>
               <Combobox.Positioner>
@@ -344,7 +342,7 @@ function AddMemberForm({ spaceSlug, members }: { spaceSlug: string; members: Spa
                     : "No matching users"
                   : ""}
           </div>
-        </div>
+        </label>
         <label className="flex flex-col gap-1">
           <span className="text-surface-600-400 text-sm font-medium">Role</span>
           <select
