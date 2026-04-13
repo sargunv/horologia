@@ -12,19 +12,17 @@ import {
   SortableContext,
   arrayMove,
   sortableKeyboardCoordinates,
-  useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { GripVertical, ListChecks, Pencil, Plus, Trash2 } from "lucide-react";
+import { ListChecks, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
 import { STATUS_SUGGESTED_ICONS } from "../../lib/level-icons.ts";
 import { spaceTaskStatusesQueryOptions } from "../../lib/queries.ts";
+import { SortableNameRow } from "./OrderedNameListForm.tsx";
 import { ErrorAlert } from "./ErrorAlert.tsx";
-import { IconPicker } from "./IconPicker.tsx";
 import { SettingsSection } from "./SettingsSection.tsx";
 
 type TaskStatus = components["schemas"]["TaskStatus"];
@@ -347,7 +345,7 @@ function CategoryGroup({
         <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
           <div className="flex flex-col gap-1">
             {items.map((item, index) => (
-              <SortableStatusRow
+              <SortableNameRow
                 key={item.id}
                 item={item}
                 index={index}
@@ -356,9 +354,11 @@ function CategoryGroup({
                 onEndEdit={handleEndEdit}
                 onRename={(name) => handleRename(item.id, name)}
                 onIconChange={(icon: string) => handleIconChange(item.id, icon)}
+                suggestedIcons={STATUS_SUGGESTED_ICONS}
                 onRemove={canRemoveItem ? () => handleRemove(item.id) : undefined}
                 disabled={disabled}
                 draggable={items.length > 1}
+                itemLabel="Status"
               />
             ))}
           </div>
@@ -374,113 +374,6 @@ function CategoryGroup({
         >
           <Plus className="size-3.5" aria-hidden="true" />
           Add status
-        </button>
-      )}
-    </div>
-  );
-}
-
-function SortableStatusRow({
-  item,
-  index,
-  isEditing,
-  onStartEdit,
-  onEndEdit,
-  onRename,
-  onIconChange,
-  onRemove,
-  disabled,
-  draggable,
-}: {
-  item: StatusItem;
-  index: number;
-  isEditing: boolean;
-  onStartEdit: () => void;
-  onEndEdit: () => void;
-  onRename: (name: string) => void;
-  onIconChange: (icon: string) => void;
-  onRemove?: (() => void) | undefined;
-  disabled: boolean;
-  draggable: boolean;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: item.id,
-    disabled: !draggable || disabled,
-  });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter" || e.key === "Escape") {
-      e.preventDefault();
-      e.currentTarget.blur();
-    }
-  }
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`flex items-center gap-1 rounded-base ${isDragging ? "opacity-50" : ""}`}
-    >
-      <button
-        type="button"
-        className={`btn-icon btn-icon-sm shrink-0 ${draggable ? "preset-tonal-surface cursor-grab" : "cursor-default opacity-50"}`}
-        disabled={!draggable || disabled}
-        aria-label={`Drag to reorder ${item.name || `status ${index + 1}`}`}
-        {...(draggable && !disabled ? { ...attributes, ...listeners } : {})}
-      >
-        <GripVertical className="size-4" aria-hidden="true" />
-      </button>
-
-      <IconPicker
-        value={item.icon || undefined}
-        onChange={onIconChange}
-        disabled={disabled}
-        label={`Icon for ${item.name || `status ${index + 1}`}`}
-        suggestedIcons={STATUS_SUGGESTED_ICONS}
-      />
-
-      {isEditing ? (
-        <input
-          type="text"
-          value={item.name}
-          onChange={(e) => onRename(e.target.value)}
-          onBlur={onEndEdit}
-          onKeyDown={handleKeyDown}
-          className="input preset-outlined-surface-200-800 flex-1"
-          placeholder="Status name"
-          maxLength={100}
-          required
-          disabled={disabled}
-          aria-label={`${CATEGORY_LABELS[item.category]} status name ${index + 1}`}
-          autoFocus
-        />
-      ) : (
-        <button
-          type="button"
-          onClick={onStartEdit}
-          disabled={disabled}
-          className="flex flex-1 items-center gap-2 truncate rounded-base px-3 py-2 text-left text-sm hover:bg-surface-200-800"
-          aria-label={`Edit ${item.name || "status"}`}
-        >
-          <span className="flex-1 truncate">{item.name || "Status name"}</span>
-          <Pencil className="text-surface-600-400 size-3.5 shrink-0" aria-hidden="true" />
-        </button>
-      )}
-
-      {onRemove && (
-        <button
-          type="button"
-          onClick={onRemove}
-          disabled={disabled}
-          className="btn-icon btn-icon-sm preset-outlined-surface-200-800 shrink-0"
-          aria-label={`Remove ${item.name || "status"}`}
-        >
-          <Trash2 className="size-3.5" aria-hidden="true" />
         </button>
       )}
     </div>

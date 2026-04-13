@@ -23,7 +23,7 @@ import { EFFORT_SUGGESTED_ICONS } from "../../lib/level-icons.ts";
 import { ErrorAlert } from "./ErrorAlert.tsx";
 import { IconPicker } from "./IconPicker.tsx";
 
-interface NamedItem {
+export interface NamedItem {
   id: string;
   name: string;
   icon: string;
@@ -292,7 +292,7 @@ function SortableNameList({
   );
 }
 
-function SortableNameRow({
+export function SortableNameRow({
   item,
   index,
   isEditing,
