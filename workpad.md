@@ -372,4 +372,5 @@ _Accumulated across all phases._
 - implement: done — 2026-04-12 — All 3 files created/modified. 30 tests pass. Linter clean.
 - prose: skipped — no prose deliverables
 - review: done — 2026-04-12 — Score 89/100. 7 findings (0 P0, 0 P1, 2 P2, 5 P3). All ACs pass.
-- refine:
+- refine: done — 2026-04-12 — 4 auto-fixes applied, tooltip removed per user, stalenessColor moved
+  to component per user. PR ready.

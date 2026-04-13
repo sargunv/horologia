@@ -23,6 +23,13 @@ function lerp(a: number, b: number, t: number): number {
   return Math.round(a + (b - a) * t);
 }
 
+/** Screen-reader label for a staleness ratio. */
+function stalenessLabel(ratio: number): string {
+  if (ratio >= 0.95 && ratio <= 1.05) return "Due now";
+  if (ratio > 1) return `${ratio.toFixed(1)} cycles overdue`;
+  return `${Math.round(ratio * 100)}% through cycle`;
+}
+
 /** Map a staleness ratio (0=fresh, 0.5=halfway, 1+=due/overdue) to an RGB color string. */
 function stalenessColor(ratio: number): string {
   const t = Math.max(0, Math.min(ratio, 1));
@@ -171,6 +178,7 @@ export function TaskRow({
           )}
         </div>
       )}
+      {staleness != null && <span className="sr-only">{stalenessLabel(staleness)}</span>}
     </Link>
   );
 }
