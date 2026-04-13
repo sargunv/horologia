@@ -4,7 +4,7 @@ import { type ReactNode, useMemo } from "react";
 import type { components } from "../../api/schema.d.ts";
 import { useSpaceMemberMap } from "../../lib/hooks.ts";
 import { getIcon } from "../../lib/level-icons.ts";
-import { computeStaleness, stalenessColor } from "../../lib/staleness.ts";
+import { computeStaleness } from "../../lib/staleness.ts";
 
 type Task = components["schemas"]["Task"];
 type TaskStatus = components["schemas"]["TaskStatus"];
@@ -17,6 +17,26 @@ const STATUS_ICON_COLOR: Record<string, string> = {
   intermediate: "text-warning-500",
   completion: "text-success-500",
 };
+
+/** Linearly interpolate between two values. */
+function lerp(a: number, b: number, t: number): number {
+  return Math.round(a + (b - a) * t);
+}
+
+/** Map a staleness ratio (0=fresh, 0.5=halfway, 1+=due/overdue) to an RGB color string. */
+function stalenessColor(ratio: number): string {
+  const t = Math.max(0, Math.min(ratio, 1));
+  // Green (76, 175, 80) → Yellow (255, 235, 59) → Red (244, 67, 54)
+  const [r, g, b] =
+    t <= 0.5
+      ? [lerp(76, 255, t / 0.5), lerp(175, 235, t / 0.5), lerp(80, 59, t / 0.5)]
+      : [
+          lerp(255, 244, (t - 0.5) / 0.5),
+          lerp(235, 67, (t - 0.5) / 0.5),
+          lerp(59, 54, (t - 0.5) / 0.5),
+        ];
+  return `rgb(${r}, ${g}, ${b})`;
+}
 
 /** Extract up to two initials from a name. */
 function initials(name: string): string {
@@ -109,13 +129,11 @@ export function TaskRow({
       className="group relative flex items-center gap-2 border-b border-surface-200-800 px-3 py-2 transition-colors last:border-b-0 hover:bg-surface-100-900 data-[status=active]:bg-surface-200-800"
     >
       {staleness != null && (
-        <IconTooltip label={`Staleness: ${Math.round(staleness * 100)}%`}>
-          <div
-            className="absolute inset-y-0 left-0 w-[3px]"
-            style={{ backgroundColor: stalenessColor(staleness) }}
-            aria-hidden="true"
-          />
-        </IconTooltip>
+        <div
+          className="absolute inset-y-0 left-0 w-[3px]"
+          style={{ backgroundColor: stalenessColor(staleness) }}
+          aria-hidden="true"
+        />
       )}
       <IconTooltip label={task.status}>
         <StatusIcon className={`size-4 ${statusColor}`} aria-hidden="true" />

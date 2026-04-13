@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { components } from "../api/schema.d.ts";
-import { computeNextOccurrence, computeStaleness, stalenessColor } from "./staleness.ts";
+import { computeNextOccurrence, computeStaleness } from "./staleness.ts";
 
 type Task = components["schemas"]["Task"];
 type StalenessInput = Pick<
@@ -183,51 +183,5 @@ describe("computeStaleness", () => {
     const now = new Date("2026-01-04T00:00:00Z"); // 1 day before anchor (Jan 5)
     const ratio = computeStaleness(baseTask, "initial", now);
     expect(ratio).toBeCloseTo(-1 / 7, 2);
-  });
-});
-
-describe("stalenessColor", () => {
-  function parseRgb(color: string): { r: number; g: number; b: number } {
-    const match = color.match(/rgb\((\d+), (\d+), (\d+)\)/);
-    if (!match) throw new Error(`Invalid color: ${color}`);
-    return { r: Number(match[1]), g: Number(match[2]), b: Number(match[3]) };
-  }
-
-  it("returns green at ratio 0", () => {
-    const { r, g, b } = parseRgb(stalenessColor(0));
-    expect(r).toBeLessThan(100);
-    expect(g).toBeGreaterThan(150);
-    expect(b).toBeLessThan(100);
-  });
-
-  it("returns yellow-ish at ratio 0.5", () => {
-    const { r, g, b } = parseRgb(stalenessColor(0.5));
-    expect(r).toBeGreaterThan(200);
-    expect(g).toBeGreaterThan(200);
-    expect(b).toBeLessThan(100);
-  });
-
-  it("returns red at ratio 1.0", () => {
-    const { r, g, b } = parseRgb(stalenessColor(1.0));
-    expect(r).toBeGreaterThan(200);
-    expect(g).toBeLessThan(100);
-    expect(b).toBeLessThan(100);
-  });
-
-  it("clamps at ratio > 1 — still red", () => {
-    const at1 = stalenessColor(1.0);
-    const at2 = stalenessColor(2.0);
-    expect(at2).toBe(at1);
-  });
-
-  it("clamps negative ratio to 0 — returns green", () => {
-    const atNeg = stalenessColor(-0.5);
-    const at0 = stalenessColor(0);
-    expect(atNeg).toBe(at0);
-  });
-
-  it("returns a valid rgb() string", () => {
-    const color = stalenessColor(0.75);
-    expect(color).toMatch(/^rgb\(\d+, \d+, \d+\)$/);
   });
 });

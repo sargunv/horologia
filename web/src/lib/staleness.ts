@@ -52,33 +52,3 @@ export function computeStaleness(
 
   return (now.getTime() - anchor.getTime()) / intervalMs;
 }
-
-/** Linearly interpolate between two values. */
-function lerp(a: number, b: number, t: number): number {
-  return Math.round(a + (b - a) * t);
-}
-
-/**
- * Map a staleness ratio to an RGB color string.
- *
- * 0.0 = green (task is fresh)
- * 0.5 = yellow (halfway through cycle)
- * 1.0+ = red (task is due or overdue)
- *
- * Ratio is clamped to [0, 1] for color purposes.
- */
-export function stalenessColor(ratio: number): string {
-  const t = Math.max(0, Math.min(ratio, 1));
-
-  // Green (76, 175, 80) → Yellow (255, 235, 59) → Red (244, 67, 54)
-  const [r, g, b] =
-    t <= 0.5
-      ? [lerp(76, 255, t / 0.5), lerp(175, 235, t / 0.5), lerp(80, 59, t / 0.5)]
-      : [
-          lerp(255, 244, (t - 0.5) / 0.5),
-          lerp(235, 67, (t - 0.5) / 0.5),
-          lerp(59, 54, (t - 0.5) / 0.5),
-        ];
-
-  return `rgb(${r}, ${g}, ${b})`;
-}
