@@ -118,21 +118,18 @@ export function TaskRow({
       {assignees.length > 0 && (
         <div className="flex shrink-0 -space-x-1.5">
           {assignees.slice(0, 3).map((member) => (
-            <Avatar
-              key={member.userId}
-              className="size-5 border border-surface-100-900 text-[0.5rem]"
-              title={member.userName}
-            >
-              <Avatar.Fallback>{initials(member.userName)}</Avatar.Fallback>
-            </Avatar>
+            <IconTooltip key={member.userId} label={member.userName}>
+              <Avatar className="size-5 border border-surface-100-900 text-[0.5rem]">
+                <Avatar.Fallback>{initials(member.userName)}</Avatar.Fallback>
+              </Avatar>
+            </IconTooltip>
           ))}
           {assignees.length > 3 && (
-            <Avatar
-              className="size-5 border border-surface-100-900 text-[0.5rem]"
-              title={`+${String(assignees.length - 3)} more`}
-            >
-              <Avatar.Fallback>+{assignees.length - 3}</Avatar.Fallback>
-            </Avatar>
+            <IconTooltip label={`+${String(assignees.length - 3)} more`}>
+              <Avatar className="size-5 border border-surface-100-900 text-[0.5rem]">
+                <Avatar.Fallback>+{assignees.length - 3}</Avatar.Fallback>
+              </Avatar>
+            </IconTooltip>
           )}
         </div>
       )}
