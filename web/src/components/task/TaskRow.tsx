@@ -30,18 +30,36 @@ function stalenessLabel(ratio: number): string {
   return `${Math.round(ratio * 100)}% through cycle`;
 }
 
-/** Map a staleness ratio (0=fresh, 0.5=halfway, 1+=due/overdue) to an RGB color string. */
+/**
+ * Map a staleness ratio to an RGB color string.
+ *
+ * 0–1 (on schedule):       deep green (56,142,60) → pale green (165,214,167)
+ * 1–2 (moderately overdue): pale green → orange (245,124,0)
+ * 2–3 (very overdue):       orange → red (211,47,47), clamped at 3
+ */
 function stalenessColor(ratio: number): string {
-  const t = Math.max(0, Math.min(ratio, 1));
-  // Green (76, 175, 80) → Yellow (255, 235, 59) → Red (244, 67, 54)
-  const [r, g, b] =
-    t <= 0.5
-      ? [lerp(76, 255, t / 0.5), lerp(175, 235, t / 0.5), lerp(80, 59, t / 0.5)]
-      : [
-          lerp(255, 244, (t - 0.5) / 0.5),
-          lerp(235, 67, (t - 0.5) / 0.5),
-          lerp(59, 54, (t - 0.5) / 0.5),
-        ];
+  const t = Math.max(0, Math.min(ratio, 3));
+  let r: number;
+  let g: number;
+  let b: number;
+  if (t <= 1) {
+    // Deep green → Pale green
+    r = lerp(56, 165, t);
+    g = lerp(142, 214, t);
+    b = lerp(60, 167, t);
+  } else if (t <= 2) {
+    // Pale green → Orange
+    const p = t - 1;
+    r = lerp(165, 245, p);
+    g = lerp(214, 124, p);
+    b = lerp(167, 0, p);
+  } else {
+    // Orange → Red
+    const p = t - 2;
+    r = lerp(245, 211, p);
+    g = lerp(124, 47, p);
+    b = lerp(0, 47, p);
+  }
   return `rgb(${r}, ${g}, ${b})`;
 }
 
