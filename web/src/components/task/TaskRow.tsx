@@ -29,15 +29,15 @@ function stalenessLabel(ratio: number): string {
  * Map a staleness ratio to an HSL color string via piecewise hue sweep.
  *
  * 0  (fresh): hue 130 (green)
- * 1  (due):   hue 90  (pale green)
+ * 1  (due):   hue 120 (pale green)
  * 2+ (very):  hue 0   (red), clamped
  */
 function stalenessColor(ratio: number): string {
   const t = Math.max(0, Math.min(ratio, 2));
   const hue =
     t <= 1
-      ? 130 - t * 40 // 0→1: 130°→90° (green → pale green)
-      : 90 - (t - 1) * 90; // 1→2: 90°→0° (pale green → red)
+      ? 130 - t * 10 // 0→1: 130°→120° (green → pale green)
+      : 120 - (t - 1) * 120; // 1→2: 120°→0° (pale green → red)
   return `hsl(${Math.round(hue)}, 65%, 45%)`;
 }
 
