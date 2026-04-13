@@ -4,6 +4,7 @@ import { type ReactNode, useMemo } from "react";
 import type { components } from "../../api/schema.d.ts";
 import { useSpaceMemberMap } from "../../lib/hooks.ts";
 import { getIcon } from "../../lib/level-icons.ts";
+import { computeStaleness } from "../../lib/staleness.ts";
 
 type Task = components["schemas"]["Task"];
 type TaskStatus = components["schemas"]["TaskStatus"];
@@ -16,6 +17,68 @@ const STATUS_ICON_COLOR: Record<string, string> = {
   intermediate: "text-warning-500",
   completion: "text-success-500",
 };
+
+const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
+
+/** Format a due date (YYYY-MM-DD) relative to today, e.g. "in 3 months", "yesterday", "in 2 years". */
+function formatRelativeDue(dateStr: string): string {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(dateStr + "T00:00:00");
+  const diffDays = Math.round((due.getTime() - today.getTime()) / 86_400_000);
+
+  const absDays = Math.abs(diffDays);
+  let value: number;
+  let unit: Intl.RelativeTimeFormatUnit;
+  if (absDays < 7) {
+    value = diffDays;
+    unit = "day";
+  } else if (absDays < 30) {
+    value = Math.round(diffDays / 7);
+    unit = "week";
+  } else if (absDays < 365) {
+    value = Math.round(diffDays / 30);
+    unit = "month";
+  } else {
+    value = Math.round(diffDays / 365);
+    unit = "year";
+  }
+
+  return rtf.format(value, unit);
+}
+
+/** Screen-reader label for a staleness ratio. */
+function stalenessLabel(ratio: number): string {
+  if (ratio >= 0.95 && ratio <= 1.05) return "Due now";
+  if (ratio > 1) return `${(ratio - 1).toFixed(1)} cycles overdue`;
+  return `${Math.round(ratio * 100)}% through cycle`;
+}
+
+/**
+ * Map a staleness ratio to an HSL color string.
+ *
+ * 0  (fresh): deep green — hsl(130, 65%, 35%)
+ * 1  (due):   pale green — hsl(120, 40%, 60%)
+ * 2+ (very):  red        — hsl(0, 65%, 45%), clamped
+ *
+ * Hue, saturation, and lightness all shift to make the gradient perceptible.
+ */
+function stalenessColor(ratio: number): string {
+  const t = Math.max(0, Math.min(ratio, 2));
+  if (t <= 1) {
+    // 0→1: deep green → pale green (desaturate + lighten)
+    const hue = 130 - t * 50;
+    const sat = 65 - t * 25;
+    const lgt = 35 + t * 25;
+    return `hsl(${Math.round(hue)}, ${Math.round(sat)}%, ${Math.round(lgt)}%)`;
+  }
+  // 1→2: pale green → red (re-saturate + darken)
+  const p = t - 1;
+  const hue = 80 - p * 80;
+  const sat = 40 + p * 25;
+  const lgt = 60 - p * 15;
+  return `hsl(${Math.round(hue)}, ${Math.round(sat)}%, ${Math.round(lgt)}%)`;
+}
 
 /** Extract up to two initials from a name. */
 function initials(name: string): string {
@@ -91,17 +154,41 @@ export function TaskRow({
     [task.assigneeIds, memberMap],
   );
 
+  const { recurrenceType, recurrenceRule, lastCompletedAt, createdAt } = task;
+  const staleness = useMemo(
+    () =>
+      computeStaleness(
+        { recurrenceType, recurrenceRule, lastCompletedAt, createdAt },
+        status?.category,
+      ),
+    [recurrenceType, recurrenceRule, lastCompletedAt, createdAt, status?.category],
+  );
+
   return (
     <Link
       to={to}
       params={{ spaceSlug, taskId: task.id }}
-      className="group flex items-center gap-2 border-b border-surface-200-800 px-3 py-2 transition-colors last:border-b-0 hover:bg-surface-100-900 data-[status=active]:bg-surface-200-800"
+      className="group relative flex items-center gap-2 border-b border-surface-200-800 px-3 py-2 transition-colors last:border-b-0 hover:bg-surface-100-900 data-[status=active]:bg-surface-200-800"
     >
+      {staleness != null && (
+        <div
+          className="absolute inset-y-0 left-0 w-1"
+          style={{ backgroundColor: stalenessColor(staleness) }}
+          aria-hidden="true"
+        />
+      )}
       <IconTooltip label={task.status}>
         <StatusIcon className={`size-4 ${statusColor}`} aria-hidden="true" />
       </IconTooltip>
 
-      <span className="min-w-0 flex-1 truncate text-sm">{task.title}</span>
+      <div className="min-w-0 flex-1">
+        <span className="block truncate text-sm">{task.title}</span>
+        {task.due && (
+          <span className="text-surface-500 block truncate text-xs">
+            {formatRelativeDue(task.due.at)}
+          </span>
+        )}
+      </div>
 
       {EffortIcon && task.effort && (
         <IconTooltip label={task.effort}>
@@ -133,6 +220,7 @@ export function TaskRow({
           )}
         </div>
       )}
+      {staleness != null && <span className="sr-only">{stalenessLabel(staleness)}</span>}
     </Link>
   );
 }
