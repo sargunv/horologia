@@ -26,7 +26,7 @@ function lerp(a: number, b: number, t: number): number {
 /** Screen-reader label for a staleness ratio. */
 function stalenessLabel(ratio: number): string {
   if (ratio >= 0.95 && ratio <= 1.05) return "Due now";
-  if (ratio > 1) return `${ratio.toFixed(1)} cycles overdue`;
+  if (ratio > 1) return `${(ratio - 1).toFixed(1)} cycles overdue`;
   return `${Math.round(ratio * 100)}% through cycle`;
 }
 
