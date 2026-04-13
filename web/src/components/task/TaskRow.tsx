@@ -39,9 +39,9 @@ export function TaskRow({
   spaceSlug: string;
   statusMap: Map<string, TaskStatus>;
   /** Effort levels for resolving per-level icons. */
-  effortLevels?: TaskEffortLevel[];
+  effortLevels: TaskEffortLevel[];
   /** Priority levels for resolving per-level icons. */
-  priorityLevels?: TaskPriorityLevel[];
+  priorityLevels: TaskPriorityLevel[];
   /** Override the link target route (default: space task detail) */
   to?: "/spaces/$spaceSlug/tasks/$taskId" | "/tasks/$spaceSlug/$taskId";
 }) {
@@ -56,13 +56,13 @@ export function TaskRow({
     : "text-surface-500";
 
   const EffortIcon = useMemo(() => {
-    if (!task.effort || !effortLevels) return null;
+    if (!task.effort) return null;
     const level = effortLevels.find((l) => l.name === task.effort);
     return level?.icon ? getIcon(level.icon) : null;
   }, [task.effort, effortLevels]);
 
   const PriorityIcon = useMemo(() => {
-    if (!task.priority || !priorityLevels) return null;
+    if (!task.priority) return null;
     const level = priorityLevels.find((l) => l.name === task.priority);
     return level?.icon ? getIcon(level.icon) : null;
   }, [task.priority, priorityLevels]);
@@ -85,6 +85,20 @@ export function TaskRow({
 
       <span className="min-w-0 flex-1 truncate text-sm">{task.title}</span>
 
+      {EffortIcon && (
+        <EffortIcon
+          className="text-surface-500 size-3.5 shrink-0"
+          aria-label={task.effort ?? undefined}
+        />
+      )}
+
+      {PriorityIcon && (
+        <PriorityIcon
+          className="text-surface-500 size-3.5 shrink-0"
+          aria-label={task.priority ?? undefined}
+        />
+      )}
+
       {assignees.length > 0 && (
         <div className="flex shrink-0 -space-x-1.5">
           {assignees.slice(0, 3).map((member) => (
@@ -105,20 +119,6 @@ export function TaskRow({
             </Avatar>
           )}
         </div>
-      )}
-
-      {EffortIcon && (
-        <EffortIcon
-          className="text-surface-500 size-3.5 shrink-0"
-          aria-label={task.effort ?? undefined}
-        />
-      )}
-
-      {PriorityIcon && (
-        <PriorityIcon
-          className="text-surface-500 size-3.5 shrink-0"
-          aria-label={task.priority ?? undefined}
-        />
       )}
     </Link>
   );

@@ -5,6 +5,8 @@ import { useMemo } from "react";
 import type { components } from "../../api/schema.d.ts";
 import {
   currentUserQueryOptions,
+  spaceEffortLevelsQueryOptions,
+  spacePriorityLevelsQueryOptions,
   spacesQueryOptions,
   spaceTaskStatusesQueryOptions,
   userTasksInfiniteQueryOptions,
@@ -14,9 +16,13 @@ import { TaskRow } from "./TaskRow.tsx";
 const ActivityLink = createLink("a");
 
 type TaskStatus = components["schemas"]["TaskStatus"];
+type TaskEffortLevel = components["schemas"]["TaskEffortLevel"];
+type TaskPriorityLevel = components["schemas"]["TaskPriorityLevel"];
 type Space = components["schemas"]["Space"];
 
 const EMPTY_STATUS_MAP = new Map<string, TaskStatus>();
+const EMPTY_LEVELS: TaskEffortLevel[] = [];
+const EMPTY_PRIORITY_LEVELS: TaskPriorityLevel[] = [];
 
 function useAllSpaceStatusMaps(spaces: Space[]): Map<string, Map<string, TaskStatus>> {
   return useQueries({
@@ -26,6 +32,32 @@ function useAllSpaceStatusMaps(spaces: Space[]): Map<string, Map<string, TaskSta
       spaces.forEach((space, i) => {
         const statuses = results[i]?.data ?? [];
         map.set(space.slug, new Map(statuses.map((s) => [s.name, s])));
+      });
+      return map;
+    },
+  });
+}
+
+function useAllSpaceEffortLevels(spaces: Space[]): Map<string, TaskEffortLevel[]> {
+  return useQueries({
+    queries: spaces.map((s) => spaceEffortLevelsQueryOptions(s.slug)),
+    combine(results) {
+      const map = new Map<string, TaskEffortLevel[]>();
+      spaces.forEach((space, i) => {
+        map.set(space.slug, results[i]?.data ?? []);
+      });
+      return map;
+    },
+  });
+}
+
+function useAllSpacePriorityLevels(spaces: Space[]): Map<string, TaskPriorityLevel[]> {
+  return useQueries({
+    queries: spaces.map((s) => spacePriorityLevelsQueryOptions(s.slug)),
+    combine(results) {
+      const map = new Map<string, TaskPriorityLevel[]>();
+      spaces.forEach((space, i) => {
+        map.set(space.slug, results[i]?.data ?? []);
       });
       return map;
     },
@@ -46,6 +78,8 @@ export function MyTaskListPane() {
   const tasks = useMemo(() => taskPages.pages.flatMap((p) => p.items), [taskPages]);
 
   const allStatusMaps = useAllSpaceStatusMaps(spaces);
+  const allEffortLevels = useAllSpaceEffortLevels(spaces);
+  const allPriorityLevels = useAllSpacePriorityLevels(spaces);
 
   return (
     <div className="flex flex-col gap-3">
@@ -68,6 +102,8 @@ export function MyTaskListPane() {
               task={task}
               spaceSlug={task.spaceSlug}
               statusMap={allStatusMaps.get(task.spaceSlug) ?? EMPTY_STATUS_MAP}
+              effortLevels={allEffortLevels.get(task.spaceSlug) ?? EMPTY_LEVELS}
+              priorityLevels={allPriorityLevels.get(task.spaceSlug) ?? EMPTY_PRIORITY_LEVELS}
               to="/tasks/$spaceSlug/$taskId"
             />
           ))}

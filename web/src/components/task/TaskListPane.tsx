@@ -3,6 +3,8 @@ import { createLink } from "@tanstack/react-router";
 import { Activity, ChevronDown, ListChecks, Plus, Settings } from "lucide-react";
 import { useMemo } from "react";
 import {
+  spaceEffortLevelsQueryOptions,
+  spacePriorityLevelsQueryOptions,
   spaceQueryOptions,
   spaceTaskStatusesQueryOptions,
   spaceTasksInfiniteQueryOptions,
@@ -16,6 +18,8 @@ const CreateTaskLink = createLink("a");
 export function TaskListPane({ spaceSlug }: { spaceSlug: string }) {
   const { data: space } = useSuspenseQuery(spaceQueryOptions(spaceSlug));
   const { data: statuses } = useSuspenseQuery(spaceTaskStatusesQueryOptions(spaceSlug));
+  const { data: effortLevels } = useSuspenseQuery(spaceEffortLevelsQueryOptions(spaceSlug));
+  const { data: priorityLevels } = useSuspenseQuery(spacePriorityLevelsQueryOptions(spaceSlug));
   const statusMap = useMemo(() => new Map(statuses.map((s) => [s.name, s])), [statuses]);
 
   const {
@@ -65,7 +69,14 @@ export function TaskListPane({ spaceSlug }: { spaceSlug: string }) {
       {tasks.length > 0 ? (
         <div className="card preset-outlined-surface-200-800 divide-surface-200-800 overflow-hidden">
           {tasks.map((task) => (
-            <TaskRow key={task.id} task={task} spaceSlug={spaceSlug} statusMap={statusMap} />
+            <TaskRow
+              key={task.id}
+              task={task}
+              spaceSlug={spaceSlug}
+              statusMap={statusMap}
+              effortLevels={effortLevels}
+              priorityLevels={priorityLevels}
+            />
           ))}
         </div>
       ) : (

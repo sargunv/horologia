@@ -90,7 +90,7 @@ export const STATUS_SUGGESTED_ICONS = [
  * Search icons by name substring match. Returns up to `limit` results.
  * When query is empty, returns the suggested icons for the given field type.
  */
-export function searchIcons(query: string, suggested: string[], limit = 20): string[] {
+export function searchIcons(query: string, suggested: string[], limit = 8): string[] {
   if (!query) return suggested;
   const q = query.toLowerCase();
   const results: string[] = [];
