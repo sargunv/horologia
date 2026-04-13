@@ -385,6 +385,11 @@ public data class TaskEffortLevel(
   public val name: String,
   @SerialName("position")
   public val position: Long,
+  /**
+   * Lucide icon name in kebab-case (e.g. "gauge", "flame"). Empty string if no icon is set.
+   */
+  @SerialName("icon")
+  public val icon: String,
 )
 
 @Serializable
@@ -392,6 +397,11 @@ public data class TaskEffortLevel(
 public data class TaskEffortLevelInput(
   @SerialName("name")
   public val name: String,
+  /**
+   * Lucide icon name in kebab-case (e.g. "gauge", "flame"). Omit or set to empty string to clear.
+   */
+  @SerialName("icon")
+  public val icon: String? = null,
 )
 
 @Serializable
@@ -453,6 +463,11 @@ public data class TaskPriorityLevel(
   public val name: String,
   @SerialName("position")
   public val position: Long,
+  /**
+   * Lucide icon name in kebab-case (e.g. "signal-high", "flag"). Empty string if no icon is set.
+   */
+  @SerialName("icon")
+  public val icon: String,
 )
 
 @Serializable
@@ -460,6 +475,11 @@ public data class TaskPriorityLevel(
 public data class TaskPriorityLevelInput(
   @SerialName("name")
   public val name: String,
+  /**
+   * Lucide icon name in kebab-case (e.g. "signal-high", "flag"). Omit or set to empty string to clear.
+   */
+  @SerialName("icon")
+  public val icon: String? = null,
 )
 
 @Serializable
@@ -571,6 +591,11 @@ public data class TaskStatus(
   public val category: TaskStatusCategory,
   @SerialName("position")
   public val position: Long,
+  /**
+   * Lucide icon name in kebab-case (e.g. "circle-check", "loader"). Empty string if no icon is set.
+   */
+  @SerialName("icon")
+  public val icon: String,
 )
 
 @Serializable
@@ -591,6 +616,11 @@ public data class TaskStatusInput(
   public val name: String,
   @SerialName("category")
   public val category: TaskStatusCategory,
+  /**
+   * Lucide icon name in kebab-case (e.g. "circle-check", "loader"). Omit or set to empty string to clear.
+   */
+  @SerialName("icon")
+  public val icon: String? = null,
 )
 
 @Serializable
