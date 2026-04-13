@@ -365,7 +365,7 @@ function CategoryGroup({
         </SortableContext>
       </DndContext>
 
-      {canAdd && !editingId && (
+      {canAdd && !(editingId && items.find((i) => i.id === editingId && !i.name.trim())) && (
         <button
           type="button"
           onClick={handleAdd}
@@ -426,7 +426,7 @@ function SortableStatusRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-2 rounded-base ${isDragging ? "opacity-50" : ""}`}
+      className={`flex items-center gap-1 rounded-base ${isDragging ? "opacity-50" : ""}`}
     >
       <button
         type="button"
