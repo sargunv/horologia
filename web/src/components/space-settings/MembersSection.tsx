@@ -293,7 +293,8 @@ function AddMemberForm({ spaceSlug, members }: { spaceSlug: string; members: Spa
         >
           <Combobox.Control className="input-group grid-cols-[1fr_auto_auto]">
             <Combobox.Input
-              className="ig-input !shadow-none"
+              className="ig-input"
+              style={{ boxShadow: "none" }}
               placeholder="Search by name or email..."
             />
             <select
