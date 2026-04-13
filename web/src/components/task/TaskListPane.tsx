@@ -1,3 +1,4 @@
+import { Portal, Tooltip } from "@skeletonlabs/skeleton-react";
 import { useSuspenseInfiniteQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createLink } from "@tanstack/react-router";
 import { Activity, ChevronDown, ListChecks, Plus, Settings } from "lucide-react";
@@ -38,22 +39,34 @@ export function TaskListPane({ spaceSlug }: { spaceSlug: string }) {
       <div className="flex items-center justify-between">
         <h2 className="h5 truncate">{space.name}</h2>
         <div className="flex shrink-0 items-center gap-1">
-          <ActivityLink
-            to="/spaces/$spaceSlug/activity"
-            params={{ spaceSlug }}
-            className="btn-icon btn-sm preset-tonal-surface"
-            aria-label="Activity"
-          >
-            <Activity className="size-4" />
-          </ActivityLink>
-          <SettingsLink
-            to="/spaces/$spaceSlug/settings"
-            params={{ spaceSlug }}
-            className="btn-icon btn-sm preset-tonal-surface"
-            aria-label="Settings"
-          >
-            <Settings className="size-4" />
-          </SettingsLink>
+          <Tooltip>
+            <Tooltip.Trigger className="btn-icon btn-sm preset-tonal-surface" aria-label="Activity">
+              <ActivityLink to="/spaces/$spaceSlug/activity" params={{ spaceSlug }}>
+                <Activity className="size-4" />
+              </ActivityLink>
+            </Tooltip.Trigger>
+            <Portal>
+              <Tooltip.Positioner>
+                <Tooltip.Content className="preset-filled-surface-800-200 rounded px-2 py-1 text-xs shadow">
+                  Activity
+                </Tooltip.Content>
+              </Tooltip.Positioner>
+            </Portal>
+          </Tooltip>
+          <Tooltip>
+            <Tooltip.Trigger className="btn-icon btn-sm preset-tonal-surface" aria-label="Settings">
+              <SettingsLink to="/spaces/$spaceSlug/settings" params={{ spaceSlug }}>
+                <Settings className="size-4" />
+              </SettingsLink>
+            </Tooltip.Trigger>
+            <Portal>
+              <Tooltip.Positioner>
+                <Tooltip.Content className="preset-filled-surface-800-200 rounded px-2 py-1 text-xs shadow">
+                  Settings
+                </Tooltip.Content>
+              </Tooltip.Positioner>
+            </Portal>
+          </Tooltip>
         </div>
       </div>
 

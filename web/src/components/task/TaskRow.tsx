@@ -1,6 +1,6 @@
-import { Avatar } from "@skeletonlabs/skeleton-react";
+import { Avatar, Portal, Tooltip } from "@skeletonlabs/skeleton-react";
 import { Link } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 import type { components } from "../../api/schema.d.ts";
 import { useSpaceMemberMap } from "../../lib/hooks.ts";
 import { getIcon } from "../../lib/level-icons.ts";
@@ -25,6 +25,22 @@ function initials(name: string): string {
     .map((w) => w[0])
     .join("")
     .toUpperCase();
+}
+
+/** Inline tooltip wrapper for icon-only elements in the task row. */
+function IconTooltip({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <Tooltip openDelay={200} closeDelay={0}>
+      <Tooltip.Trigger element={(attrs) => <span {...attrs}>{children}</span>} />
+      <Portal>
+        <Tooltip.Positioner>
+          <Tooltip.Content className="preset-filled-surface-800-200 rounded px-2 py-1 text-xs shadow">
+            {label}
+          </Tooltip.Content>
+        </Tooltip.Positioner>
+      </Portal>
+    </Tooltip>
+  );
 }
 
 export function TaskRow({
@@ -81,22 +97,22 @@ export function TaskRow({
       params={{ spaceSlug, taskId: task.id }}
       className="group flex items-center gap-2 border-b border-surface-200-800 px-3 py-2 transition-colors last:border-b-0 hover:bg-surface-100-900 data-[status=active]:bg-surface-200-800"
     >
-      <StatusIcon className={`size-4 shrink-0 ${statusColor}`} aria-label={task.status} />
+      <IconTooltip label={task.status}>
+        <StatusIcon className={`size-4 ${statusColor}`} aria-hidden="true" />
+      </IconTooltip>
 
       <span className="min-w-0 flex-1 truncate text-sm">{task.title}</span>
 
-      {EffortIcon && (
-        <EffortIcon
-          className="text-surface-500 size-3.5 shrink-0"
-          aria-label={task.effort ?? undefined}
-        />
+      {EffortIcon && task.effort && (
+        <IconTooltip label={task.effort}>
+          <EffortIcon className="text-surface-500 size-3.5" aria-hidden="true" />
+        </IconTooltip>
       )}
 
-      {PriorityIcon && (
-        <PriorityIcon
-          className="text-surface-500 size-3.5 shrink-0"
-          aria-label={task.priority ?? undefined}
-        />
+      {PriorityIcon && task.priority && (
+        <IconTooltip label={task.priority}>
+          <PriorityIcon className="text-surface-500 size-3.5" aria-hidden="true" />
+        </IconTooltip>
       )}
 
       {assignees.length > 0 && (

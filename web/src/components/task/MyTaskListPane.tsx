@@ -1,3 +1,4 @@
+import { Portal, Tooltip } from "@skeletonlabs/skeleton-react";
 import { useQueries, useSuspenseInfiniteQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createLink } from "@tanstack/react-router";
 import { Activity, ChevronDown, ListChecks } from "lucide-react";
@@ -85,13 +86,20 @@ export function MyTaskListPane() {
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h2 className="h5 truncate">My Tasks</h2>
-        <ActivityLink
-          to="/activity"
-          className="btn-icon btn-sm preset-tonal-surface"
-          aria-label="Activity"
-        >
-          <Activity className="size-4" aria-hidden="true" />
-        </ActivityLink>
+        <Tooltip>
+          <Tooltip.Trigger className="btn-icon btn-sm preset-tonal-surface" aria-label="Activity">
+            <ActivityLink to="/activity">
+              <Activity className="size-4" aria-hidden="true" />
+            </ActivityLink>
+          </Tooltip.Trigger>
+          <Portal>
+            <Tooltip.Positioner>
+              <Tooltip.Content className="preset-filled-surface-800-200 rounded px-2 py-1 text-xs shadow">
+                Activity
+              </Tooltip.Content>
+            </Tooltip.Positioner>
+          </Portal>
+        </Tooltip>
       </div>
 
       {tasks.length > 0 ? (
