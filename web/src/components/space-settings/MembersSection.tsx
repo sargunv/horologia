@@ -292,7 +292,10 @@ function AddMemberForm({ spaceSlug, members }: { spaceSlug: string; members: Spa
           closeOnSelect
         >
           <Combobox.Control className="input-group grid-cols-[1fr_auto_auto]">
-            <Combobox.Input className="ig-input" placeholder="Search by name or email..." />
+            <Combobox.Input
+              className="ig-input !shadow-none"
+              placeholder="Search by name or email..."
+            />
             <select
               aria-label="Role"
               value={role}
