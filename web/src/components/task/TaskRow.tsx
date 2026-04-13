@@ -18,11 +18,6 @@ const STATUS_ICON_COLOR: Record<string, string> = {
   completion: "text-success-500",
 };
 
-/** Linearly interpolate between two values. */
-function lerp(a: number, b: number, t: number): number {
-  return Math.round(a + (b - a) * t);
-}
-
 /** Screen-reader label for a staleness ratio. */
 function stalenessLabel(ratio: number): string {
   if (ratio >= 0.95 && ratio <= 1.05) return "Due now";
@@ -31,36 +26,19 @@ function stalenessLabel(ratio: number): string {
 }
 
 /**
- * Map a staleness ratio to an RGB color string.
+ * Map a staleness ratio to an HSL color string via hue sweep.
  *
- * 0–1 (on schedule):       deep green (56,142,60) → pale green (165,214,167)
- * 1–2 (moderately overdue): pale green → orange (245,124,0)
- * 2–3 (very overdue):       orange → red (211,47,47), clamped at 3
+ * 0   (fresh):   hue 130 (green)
+ * 1   (due):     hue 90  (yellow-green)
+ * 2   (overdue): hue 30  (orange)
+ * 3+  (very):    hue 0   (red), clamped
+ *
+ * Saturation and lightness stay constant for clean, vibrant colors.
  */
 function stalenessColor(ratio: number): string {
   const t = Math.max(0, Math.min(ratio, 3));
-  let r: number;
-  let g: number;
-  let b: number;
-  if (t <= 1) {
-    // Deep green → Pale green
-    r = lerp(56, 165, t);
-    g = lerp(142, 214, t);
-    b = lerp(60, 167, t);
-  } else if (t <= 2) {
-    // Pale green → Orange
-    const p = t - 1;
-    r = lerp(165, 245, p);
-    g = lerp(214, 124, p);
-    b = lerp(167, 0, p);
-  } else {
-    // Orange → Red
-    const p = t - 2;
-    r = lerp(245, 211, p);
-    g = lerp(124, 47, p);
-    b = lerp(0, 47, p);
-  }
-  return `rgb(${r}, ${g}, ${b})`;
+  const hue = 130 - (t / 3) * 130; // 130° (green) → 0° (red)
+  return `hsl(${Math.round(hue)}, 65%, 45%)`;
 }
 
 /** Extract up to two initials from a name. */
