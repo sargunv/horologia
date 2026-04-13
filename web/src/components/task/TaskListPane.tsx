@@ -65,13 +65,7 @@ export function TaskListPane({ spaceSlug }: { spaceSlug: string }) {
       {tasks.length > 0 ? (
         <div className="card preset-outlined-surface-200-800 divide-surface-200-800 overflow-hidden">
           {tasks.map((task) => (
-            <TaskRow
-              key={task.id}
-              task={task}
-              spaceSlug={spaceSlug}
-              statusMap={statusMap}
-              compact
-            />
+            <TaskRow key={task.id} task={task} spaceSlug={spaceSlug} statusMap={statusMap} />
           ))}
         </div>
       ) : (

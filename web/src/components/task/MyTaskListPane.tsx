@@ -69,7 +69,6 @@ export function MyTaskListPane() {
               spaceSlug={task.spaceSlug}
               statusMap={allStatusMaps.get(task.spaceSlug) ?? EMPTY_STATUS_MAP}
               to="/tasks/$spaceSlug/$taskId"
-              compact
             />
           ))}
         </div>
