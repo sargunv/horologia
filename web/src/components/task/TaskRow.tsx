@@ -26,19 +26,29 @@ function stalenessLabel(ratio: number): string {
 }
 
 /**
- * Map a staleness ratio to an HSL color string via piecewise hue sweep.
+ * Map a staleness ratio to an HSL color string.
  *
- * 0  (fresh): hue 130 (green)
- * 1  (due):   hue 120 (pale green)
- * 2+ (very):  hue 0   (red), clamped
+ * 0  (fresh): deep green — hsl(130, 65%, 35%)
+ * 1  (due):   pale green — hsl(120, 40%, 60%)
+ * 2+ (very):  red        — hsl(0, 65%, 45%), clamped
+ *
+ * Hue, saturation, and lightness all shift to make the gradient perceptible.
  */
 function stalenessColor(ratio: number): string {
   const t = Math.max(0, Math.min(ratio, 2));
-  const hue =
-    t <= 1
-      ? 130 - t * 10 // 0→1: 130°→120° (green → pale green)
-      : 120 - (t - 1) * 120; // 1→2: 120°→0° (pale green → red)
-  return `hsl(${Math.round(hue)}, 65%, 45%)`;
+  if (t <= 1) {
+    // 0→1: deep green → pale green (desaturate + lighten)
+    const hue = 130 - t * 50;
+    const sat = 65 - t * 25;
+    const lgt = 35 + t * 25;
+    return `hsl(${Math.round(hue)}, ${Math.round(sat)}%, ${Math.round(lgt)}%)`;
+  }
+  // 1→2: pale green → red (re-saturate + darken)
+  const p = t - 1;
+  const hue = 80 - p * 80;
+  const sat = 40 + p * 25;
+  const lgt = 60 - p * 15;
+  return `hsl(${Math.round(hue)}, ${Math.round(sat)}%, ${Math.round(lgt)}%)`;
 }
 
 /** Extract up to two initials from a name. */
