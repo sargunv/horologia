@@ -1,6 +1,6 @@
 Tend is dual-licensed:
 
-- The client apps (mobile/, cli/) are licensed under the MIT License.
+- The client apps and specification (mobile/, cli/, api/) are licensed under the MIT License.
   See LICENSE-MIT for the full text.
 
 - All other components are licensed under the GNU Affero General Public License
