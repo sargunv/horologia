@@ -17,4 +17,4 @@ run = "./horo"
 [tasks.release-snapshot]
 description = "Build cross-platform CLI release archives with GoReleaser"
 sources = ["**/*.go", "go.mod", "go.sum", "../.goreleaser.yaml"]
-run = "cd .. && goreleaser release --clean --snapshot"
+run = "cd .. && goreleaser release --snapshot"

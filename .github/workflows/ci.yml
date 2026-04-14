@@ -16,6 +16,20 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - uses: jdx/mise-action@v4
+        with:
+          cache: true
+          install: false
+
+      - name: Compute Android SDK cache key inputs
+        id: android-sdk
+        run: |
+          {
+            echo "sdk_version=$(mise config get tools.android-sdk)"
+            echo "build_tools=$(mise config get env.ANDROID_BUILD_TOOLS)"
+            echo "compile_sdk=$(mise config get env.ANDROID_COMPILE_SDK)"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Cache Go modules
         uses: actions/cache@v5
         with:
@@ -31,6 +45,29 @@ jobs:
           key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-
+
+      - name: Cache Gradle
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('mobile/**/*.gradle.kts', 'mobile/gradle.properties', 'mobile/gradle/libs.versions.toml', 'mobile/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Cache Android SDK components
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.local/share/mise/installs/android-sdk/${{ steps.android-sdk.outputs.sdk_version }}/build-tools
+            ~/.local/share/mise/installs/android-sdk/${{ steps.android-sdk.outputs.sdk_version }}/licenses
+            ~/.local/share/mise/installs/android-sdk/${{ steps.android-sdk.outputs.sdk_version }}/platform-tools
+            ~/.local/share/mise/installs/android-sdk/${{ steps.android-sdk.outputs.sdk_version }}/platforms
+          key: ${{ runner.os }}-android-sdk-${{ steps.android-sdk.outputs.sdk_version }}-build-tools-${{ steps.android-sdk.outputs.build_tools }}-platform-${{ steps.android-sdk.outputs.compile_sdk }}
+          restore-keys: |
+            ${{ runner.os }}-android-sdk-${{ steps.android-sdk.outputs.sdk_version }}-
+            ${{ runner.os }}-android-sdk-
 
       - uses: jdx/mise-action@v4
         with:
@@ -52,4 +89,29 @@ jobs:
           cache: true
           install: false
 
-      - run: mise run docker-build
+      - name: Compute Docker build args
+        id: docker-args
+        run: |
+          {
+            echo "go_version=$(mise config get tools.go)"
+            echo "node_version=$(mise config get tools.node)"
+            echo "git_commit=$(git rev-parse HEAD)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: false
+          cache-from: type=gha,scope=horologia-docker
+          cache-to: type=gha,mode=max,scope=horologia-docker
+          build-args: |
+            GO_VERSION=${{ steps.docker-args.outputs.go_version }}
+            NODE_VERSION=${{ steps.docker-args.outputs.node_version }}
+            RELEASE_VERSION=dev
+            GIT_COMMIT=${{ steps.docker-args.outputs.git_commit }}

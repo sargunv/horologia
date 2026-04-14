@@ -2,6 +2,8 @@
 
 ARG NODE_VERSION
 ARG GO_VERSION
+ARG RELEASE_VERSION=dev
+ARG GIT_COMMIT=
 
 # --- Stage 1: Install Node dependencies ---
 # Uses the workspace root lockfile so both api/ and web/ packages are covered.
@@ -23,6 +25,10 @@ RUN cd api && pnpm exec tsp compile .
 
 # --- Stage 3: Build React SPA ---
 FROM api-build AS web-build
+ARG RELEASE_VERSION
+ARG GIT_COMMIT
+ENV VITE_APP_VERSION=${RELEASE_VERSION}
+ENV VITE_APP_COMMIT=${GIT_COMMIT}
 COPY web/ ./web/
 RUN cd web \
     && pnpm exec openapi-typescript ../api/tsp-output/schema/openapi.yaml \
@@ -43,6 +49,8 @@ RUN go mod download
 
 # --- Stage 5: Build Go server binary ---
 FROM go-deps AS server-build
+ARG RELEASE_VERSION
+ARG GIT_COMMIT
 
 # Copy api source needed by the shared generated module.
 COPY api/ /src/api/
@@ -70,7 +78,7 @@ COPY --from=web-build /src/web/dist/ ./internal/webui/dist/
 # Build a fully static binary.
 RUN CGO_ENABLED=0 go build \
       -trimpath \
-      -ldflags="-s -w" \
+      -ldflags="-s -w -X main.version=${RELEASE_VERSION} -X main.commit=${GIT_COMMIT}" \
       -o /horologia-server \
       ./cmd/server
 

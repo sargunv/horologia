@@ -1,0 +1,130 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Fetch tags
+        run: git fetch --force --tags origin
+
+      - name: Cache Go modules
+        uses: actions/cache@v5
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Cache pnpm store
+        uses: actions/cache@v5
+        with:
+          path: ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - uses: jdx/mise-action@v4
+        with:
+          cache: true
+          install: true
+
+      - name: Verify release candidate
+        run: mise run ci
+
+      - name: Compute release metadata
+        id: metadata
+        run: |
+          version="$(mise run -q release:version)"
+          image="ghcr.io/${GITHUB_REPOSITORY,,}"
+          go_version="$(mise config get tools.go)"
+          node_version="$(mise config get tools.node)"
+
+          {
+            echo "version=${version}"
+            echo "image=${image}"
+            echo "go_version=${go_version}"
+            echo "node_version=${node_version}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create local release tag
+        env:
+          VERSION: ${{ steps.metadata.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$VERSION" -m "Release $VERSION"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha,scope=horologia-docker
+          cache-to: type=gha,mode=max,scope=horologia-docker
+          build-args: |
+            GO_VERSION=${{ steps.metadata.outputs.go_version }}
+            NODE_VERSION=${{ steps.metadata.outputs.node_version }}
+            RELEASE_VERSION=${{ steps.metadata.outputs.version }}
+            GIT_COMMIT=${{ github.sha }}
+          tags: |
+            ${{ steps.metadata.outputs.image }}:${{ steps.metadata.outputs.version }}
+            ${{ steps.metadata.outputs.image }}:latest
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.metadata.outputs.version }}
+
+      - name: Push release tag
+        env:
+          VERSION: ${{ steps.metadata.outputs.version }}
+        run: git push origin "$VERSION"
+
+      - name: Publish CLI release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: goreleaser release --clean
+
+      - name: Summarize release
+        env:
+          VERSION: ${{ steps.metadata.outputs.version }}
+          IMAGE: ${{ steps.metadata.outputs.image }}
+        run: |
+          {
+            echo "## Release published"
+            echo
+            echo "- Version: \`$VERSION\`"
+            echo "- Docker image: \`$IMAGE:$VERSION\`"
+            echo "- Docker image alias: \`$IMAGE:latest\`"
+            echo "- CLI release: ${{ github.server_url }}/${{ github.repository }}/releases/tag/$VERSION"
+          } >> "$GITHUB_STEP_SUMMARY"

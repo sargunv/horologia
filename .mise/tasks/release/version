@@ -1,0 +1,35 @@
+#!/usr/bin/env -S node
+
+import { execFileSync } from "node:child_process";
+
+function main() {
+  const datePart =
+    process.env.HOROLOGIA_RELEASE_DATE ?? new Date().toISOString().slice(0, 10).replaceAll("-", "");
+  const pattern = `v0.${datePart}.*`;
+  const output = execFileSync("git", ["tag", "-l", pattern], {
+    encoding: "utf8",
+  });
+
+  let maxIndex = -1;
+
+  for (const rawTag of output.split("\n")) {
+    const tag = rawTag.trim();
+    if (tag === "") {
+      continue;
+    }
+
+    const suffix = tag.split(".").at(-1);
+    if (suffix === undefined || !/^\d+$/.test(suffix)) {
+      continue;
+    }
+
+    const index = Number.parseInt(suffix, 10);
+    if (index > maxIndex) {
+      maxIndex = index;
+    }
+  }
+
+  process.stdout.write(`v0.${datePart}.${maxIndex + 1}\n`);
+}
+
+main();

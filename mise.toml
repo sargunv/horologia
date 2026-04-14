@@ -138,6 +138,8 @@ run = """
 docker build \
   --build-arg GO_VERSION=$(mise config get tools.go) \
   --build-arg NODE_VERSION=$(mise config get tools.node) \
+  --build-arg RELEASE_VERSION=${RELEASE_VERSION:-dev} \
+  --build-arg GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short=12 HEAD)} \
   -t horologia \
   .
 """

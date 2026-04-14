@@ -45,8 +45,8 @@ INSERT INTO oauth_clients (
     created_at
 )
 VALUES (
-    'tend-cli',
-    'Tend CLI',
+    'horologia-cli',
+    'Horologia CLI',
     '{}',
     TRUE,
     NULL,
