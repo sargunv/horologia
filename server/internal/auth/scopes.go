@@ -22,7 +22,7 @@ var supportedScopes = []string{
 	"users:write",
 }
 
-// SupportedScopes returns the OAuth scopes Tend currently recognizes.
+// SupportedScopes returns the OAuth scopes Horologia currently recognizes.
 func SupportedScopes() []string {
 	return append([]string(nil), supportedScopes...)
 }

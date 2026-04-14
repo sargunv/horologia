@@ -33,7 +33,7 @@ func NewStatus(flags *support.RootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "status",
 		Short: "Verify server connectivity and authentication",
-		Long: `Verify that the CLI can reach the configured Tend server and that the
+		Long: `Verify that the CLI can reach the configured Horologia server and that the
 authentication token is valid. Reports server health-check status and latency,
 and the authenticated user when a token is configured. Useful for debugging
 connection or credential problems after initial setup.`,

@@ -172,7 +172,7 @@ func TestOAuthAccessTokenAccepted(t *testing.T) {
 	_, err = q.CreateAuthToken(t.Context(), dbgen.CreateAuthTokenParams{ //nolint:gosec // test token fixture
 		UserID:        ownerNumericID,
 		TokenHash:     tokenHash,
-		Name:          "Tend CLI",
+		Name:          "Horologia CLI",
 		Kind:          dbgen.AuthTokenKindOauthAccess,
 		ExpiresAt:     pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
 		CreatedAt:     pgtype.Timestamptz{Time: time.Now(), Valid: true},
@@ -244,7 +244,7 @@ func TestOAuthAccessTokenMissingScopeForbidden(t *testing.T) {
 	_, err = q.CreateAuthToken(t.Context(), dbgen.CreateAuthTokenParams{
 		UserID:        ownerNumericID,
 		TokenHash:     tokenHash,
-		Name:          "Tend CLI",
+		Name:          "Horologia CLI",
 		Kind:          dbgen.AuthTokenKindOauthAccess,
 		ExpiresAt:     pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
 		CreatedAt:     pgtype.Timestamptz{Time: time.Now(), Valid: true},
@@ -297,7 +297,7 @@ func createOAuthAccessTokenForBearerUser(t *testing.T, env *testEnv, bearerToken
 	_, err = q.CreateAuthToken(t.Context(), dbgen.CreateAuthTokenParams{
 		UserID:        userNumericID,
 		TokenHash:     tokenHash,
-		Name:          "Tend CLI",
+		Name:          "Horologia CLI",
 		Kind:          dbgen.AuthTokenKindOauthAccess,
 		ExpiresAt:     pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
 		CreatedAt:     pgtype.Timestamptz{Time: time.Now(), Valid: true},

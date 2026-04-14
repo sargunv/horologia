@@ -21,7 +21,7 @@ function DesktopSidebar({ user, spaces }: { user: User; spaces: Space[] }) {
     >
       <Navigation.Header>
         <NavLink to="/" className="flex items-center gap-2">
-          <span className="text-lg font-bold">Tend</span>
+          <span className="text-lg font-bold">Horologia</span>
         </NavLink>
       </Navigation.Header>
 

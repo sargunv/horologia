@@ -239,7 +239,7 @@ func (t *oauthTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if err != nil || resp.StatusCode != http.StatusUnauthorized {
 		return resp, err
 	}
-	if req.Header.Get("X-Tend-Retry") == "1" {
+	if req.Header.Get("X-Horologia-Retry") == "1" {
 		return resp, nil
 	}
 	if t.app.Config.Server == nil || t.app.OAuthCredentials() == nil {
@@ -265,7 +265,7 @@ func (t *oauthTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 	retry.Header = req.Header.Clone()
 	retry.Header.Set("Authorization", "Bearer "+t.app.BearerToken())
-	retry.Header.Set("X-Tend-Retry", "1")
+	retry.Header.Set("X-Horologia-Retry", "1")
 	return t.base.RoundTrip(retry)
 }
 

@@ -14,6 +14,6 @@ import "./src/activity_log.tsp";
 
 using Http;
 
-@service(#{ title: "Tend API" })
+@service(#{ title: "Horologia API" })
 @useAuth(BearerAuth)
-namespace Tend;
+namespace Horologia;

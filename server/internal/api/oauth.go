@@ -54,7 +54,7 @@ var oauthAuthorizeTemplate = template.Must(template.New("oauth-authorize").Parse
   <div class="shell">
     <div class="card">
       <h1>Authorize {{ .ClientDisplayName }}</h1>
-      <p><strong>{{ .ClientDisplayName }}</strong> wants access to your Tend account for <strong>{{ .UserEmail }}</strong>.</p>
+      <p><strong>{{ .ClientDisplayName }}</strong> wants access to your Horologia account for <strong>{{ .UserEmail }}</strong>.</p>
       <p>The client requested these permissions:</p>
       <ul>
       {{ range .Scopes }}
@@ -109,7 +109,7 @@ func MountOAuth(base http.Handler, handler *Handler) http.Handler {
 	return mux
 }
 
-// NewOAuthHandler creates handlers for Tend's OAuth metadata and protocol endpoints.
+// NewOAuthHandler creates handlers for Horologia's OAuth metadata and protocol endpoints.
 func NewOAuthHandler(handler *Handler) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /.well-known/oauth-authorization-server", handler.oauthAuthorizationServerMetadata)

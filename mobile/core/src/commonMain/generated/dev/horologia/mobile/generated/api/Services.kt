@@ -1,7 +1,7 @@
 /* 
  * NOTE: This file is auto generated. Do not edit the file manually!
  * 
- * Tend API
+ * Horologia API
  * Version 0.0.0
  * 
  * Generated reproducibly; timestamp omitted.
@@ -9,7 +9,7 @@
  */
 @file:Suppress("ArrayInDataClass", "RedundantVisibilityModifier", "unused", "ConstPropertyName")
 
-package dev.tend.mobile.generated.api
+package dev.horologia.mobile.generated.api
 
 import arrow.core.Either
 import com.kroegerama.openapi.kmp.gen.`companion`.AuthPlugin.Plugin.authKeys
@@ -18,42 +18,42 @@ import com.kroegerama.openapi.kmp.gen.`companion`.HttpCallResponse
 import com.kroegerama.openapi.kmp.gen.`companion`.appendSerializedQueryParameter
 import com.kroegerama.openapi.kmp.gen.`companion`.createSerializedPathSegment
 import com.kroegerama.openapi.kmp.gen.`companion`.eitherRequest
-import dev.tend.mobile.generated.Api
-import dev.tend.mobile.generated.Auth
-import dev.tend.mobile.generated.models.ActivityLogPage
-import dev.tend.mobile.generated.models.AuthTokenCreate
-import dev.tend.mobile.generated.models.AuthTokenCreateResponse
-import dev.tend.mobile.generated.models.AuthTokenList
-import dev.tend.mobile.generated.models.Space
-import dev.tend.mobile.generated.models.SpaceCreate
-import dev.tend.mobile.generated.models.SpaceList
-import dev.tend.mobile.generated.models.SpaceMember
-import dev.tend.mobile.generated.models.SpaceMemberCreate
-import dev.tend.mobile.generated.models.SpaceMemberList
-import dev.tend.mobile.generated.models.SpaceMemberUpdate
-import dev.tend.mobile.generated.models.SpaceUpdate
-import dev.tend.mobile.generated.models.Tag
-import dev.tend.mobile.generated.models.TagCreate
-import dev.tend.mobile.generated.models.TagList
-import dev.tend.mobile.generated.models.TagUpdate
-import dev.tend.mobile.generated.models.Task
-import dev.tend.mobile.generated.models.TaskCreate
-import dev.tend.mobile.generated.models.TaskEffortLevelList
-import dev.tend.mobile.generated.models.TaskEffortLevelReplace
-import dev.tend.mobile.generated.models.TaskPage
-import dev.tend.mobile.generated.models.TaskPriorityLevelList
-import dev.tend.mobile.generated.models.TaskPriorityLevelReplace
-import dev.tend.mobile.generated.models.TaskRelation
-import dev.tend.mobile.generated.models.TaskRelationCreate
-import dev.tend.mobile.generated.models.TaskRelationKind
-import dev.tend.mobile.generated.models.TaskSearchResultList
-import dev.tend.mobile.generated.models.TaskStatusList
-import dev.tend.mobile.generated.models.TaskStatusReplace
-import dev.tend.mobile.generated.models.TaskUpdate
-import dev.tend.mobile.generated.models.User
-import dev.tend.mobile.generated.models.UserCreate
-import dev.tend.mobile.generated.models.UserList
-import dev.tend.mobile.generated.models.UserUpdate
+import dev.horologia.mobile.generated.Api
+import dev.horologia.mobile.generated.Auth
+import dev.horologia.mobile.generated.models.ActivityLogPage
+import dev.horologia.mobile.generated.models.AuthTokenCreate
+import dev.horologia.mobile.generated.models.AuthTokenCreateResponse
+import dev.horologia.mobile.generated.models.AuthTokenList
+import dev.horologia.mobile.generated.models.Space
+import dev.horologia.mobile.generated.models.SpaceCreate
+import dev.horologia.mobile.generated.models.SpaceList
+import dev.horologia.mobile.generated.models.SpaceMember
+import dev.horologia.mobile.generated.models.SpaceMemberCreate
+import dev.horologia.mobile.generated.models.SpaceMemberList
+import dev.horologia.mobile.generated.models.SpaceMemberUpdate
+import dev.horologia.mobile.generated.models.SpaceUpdate
+import dev.horologia.mobile.generated.models.Tag
+import dev.horologia.mobile.generated.models.TagCreate
+import dev.horologia.mobile.generated.models.TagList
+import dev.horologia.mobile.generated.models.TagUpdate
+import dev.horologia.mobile.generated.models.Task
+import dev.horologia.mobile.generated.models.TaskCreate
+import dev.horologia.mobile.generated.models.TaskEffortLevelList
+import dev.horologia.mobile.generated.models.TaskEffortLevelReplace
+import dev.horologia.mobile.generated.models.TaskPage
+import dev.horologia.mobile.generated.models.TaskPriorityLevelList
+import dev.horologia.mobile.generated.models.TaskPriorityLevelReplace
+import dev.horologia.mobile.generated.models.TaskRelation
+import dev.horologia.mobile.generated.models.TaskRelationCreate
+import dev.horologia.mobile.generated.models.TaskRelationKind
+import dev.horologia.mobile.generated.models.TaskSearchResultList
+import dev.horologia.mobile.generated.models.TaskStatusList
+import dev.horologia.mobile.generated.models.TaskStatusReplace
+import dev.horologia.mobile.generated.models.TaskUpdate
+import dev.horologia.mobile.generated.models.User
+import dev.horologia.mobile.generated.models.UserCreate
+import dev.horologia.mobile.generated.models.UserList
+import dev.horologia.mobile.generated.models.UserUpdate
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType

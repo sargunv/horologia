@@ -31,7 +31,7 @@ func TestAppRefreshesExpiredAccessTokenAndRetriesOnce(t *testing.T) {
 				if got, want := r.Header.Get("Authorization"), "Bearer fresh-access-token"; got != want {
 					t.Fatalf("retry authorization = %q, want %q", got, want)
 				}
-				if got, want := r.Header.Get("X-Tend-Retry"), "1"; got != want {
+				if got, want := r.Header.Get("X-Horologia-Retry"), "1"; got != want {
 					t.Fatalf("retry header = %q, want %q", got, want)
 				}
 				writeJSONResponse(t, w, http.StatusOK, map[string]string{"status": "ok"})

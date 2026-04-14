@@ -10,10 +10,10 @@ import (
 func SetOAuthChallengeHeader(w http.ResponseWriter, r *http.Request) {
 	resourceMetadata := oauthChallengeResourceMetadataURL(r)
 	if resourceMetadata == "" {
-		w.Header().Set("WWW-Authenticate", `Bearer realm="Tend"`)
+		w.Header().Set("WWW-Authenticate", `Bearer realm="Horologia"`)
 		return
 	}
-	w.Header().Set("WWW-Authenticate", fmt.Sprintf(`Bearer realm="Tend", resource_metadata="%s"`, resourceMetadata))
+	w.Header().Set("WWW-Authenticate", fmt.Sprintf(`Bearer realm="Horologia", resource_metadata="%s"`, resourceMetadata))
 }
 
 // RequestPublicBaseURL derives the public origin for the current request.

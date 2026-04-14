@@ -2,16 +2,16 @@
 
 version: 2
 
-project_name: tend
+project_name: horologia
 
 snapshot:
   version_template: 0.0.0-snapshot.{{ .ShortCommit }}
 
 builds:
-  - id: tend
+  - id: horologia
     dir: cli
     main: .
-    binary: tend
+    binary: horo
     env:
       - CGO_ENABLED=0
     goos:
@@ -24,12 +24,12 @@ builds:
     ldflags:
       - >-
         -s -w
-        -X github.com/sargunv/tend/cli/internal/cmd.version={{ .Version }}
-        -X github.com/sargunv/tend/cli/internal/cmd.commit={{ .Commit }}
+        -X github.com/sargunv/horologia/cli/internal/cmd.version={{ .Version }}
+        -X github.com/sargunv/horologia/cli/internal/cmd.commit={{ .Commit }}
 
 archives:
-  - id: tend
-    ids: [tend]
+  - id: horologia
+    ids: [horologia]
     formats: [tar.gz]
     name_template: >-
       {{ .ProjectName }}_

@@ -27,8 +27,8 @@ function RootLayout() {
         search: { redirect: pathname },
       });
     }
-    window.addEventListener("tend:unauthorized", onUnauthorized);
-    return () => window.removeEventListener("tend:unauthorized", onUnauthorized);
+    window.addEventListener("horologia:unauthorized", onUnauthorized);
+    return () => window.removeEventListener("horologia:unauthorized", onUnauthorized);
   }, [router, pathname]);
 
   return <Outlet />;

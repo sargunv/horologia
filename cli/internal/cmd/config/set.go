@@ -17,15 +17,15 @@ func newSetCmd(flags *support.RootFlags) *cobra.Command {
 	cmd.AddCommand(
 		&cobra.Command{
 			Use:   "server <url>",
-			Short: "Set the default Tend server URL",
-			Long: `Write the given URL to the persisted config file as the default Tend
+			Short: "Set the default Horologia server URL",
+			Long: `Write the given URL to the persisted config file as the default Horologia
 server. The URL is normalized before saving. This value can still be
 overridden by the HOROLOGIA_SERVER environment variable.`,
 			Example: `  # Point the CLI at a local dev server
   horo config set server http://localhost:8080
 
   # Point the CLI at a hosted instance
-  horo config set server https://tend.example.com`,
+  horo config set server https://horologia.example.com`,
 			Args: cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				path, server, err := runtime.SaveServer(args[0])

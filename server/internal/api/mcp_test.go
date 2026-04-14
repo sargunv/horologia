@@ -96,8 +96,8 @@ func TestMCPUnauthenticatedDoesNotReflectUntrustedHostInChallenge(t *testing.T) 
 	defer func() { _ = resp.Body.Close() }()
 
 	assertStatus(t, resp, http.StatusUnauthorized)
-	if got := resp.Header.Get("WWW-Authenticate"); got != `Bearer realm="Tend"` {
-		t.Fatalf("WWW-Authenticate = %q, want %q", got, `Bearer realm="Tend"`)
+	if got := resp.Header.Get("WWW-Authenticate"); got != `Bearer realm="Horologia"` {
+		t.Fatalf("WWW-Authenticate = %q, want %q", got, `Bearer realm="Horologia"`)
 	}
 }
 
@@ -166,8 +166,8 @@ func TestMCPInitializeHandshake(t *testing.T) {
 	if !ok {
 		t.Fatal("expected serverInfo in initialize result")
 	}
-	if serverInfo["name"] != "Tend" {
-		t.Errorf("serverInfo.name = %v, want Tend", serverInfo["name"])
+	if serverInfo["name"] != "Horologia" {
+		t.Errorf("serverInfo.name = %v, want Horologia", serverInfo["name"])
 	}
 }
 
@@ -189,7 +189,7 @@ func TestMCPOAuthAccessTokenInitializeHandshake(t *testing.T) {
 	_, err = q.CreateAuthToken(t.Context(), dbgen.CreateAuthTokenParams{
 		UserID:        ownerNumericID,
 		TokenHash:     tokenHash,
-		Name:          "Tend MCP",
+		Name:          "Horologia MCP",
 		Kind:          dbgen.AuthTokenKindOauthAccess,
 		ExpiresAt:     pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
 		CreatedAt:     pgtype.Timestamptz{Time: time.Now(), Valid: true},
@@ -225,7 +225,7 @@ func TestMCPOAuthRefreshTokenRejected(t *testing.T) {
 	_, err = q.CreateAuthToken(t.Context(), dbgen.CreateAuthTokenParams{
 		UserID:        ownerNumericID,
 		TokenHash:     tokenHash,
-		Name:          "Tend MCP",
+		Name:          "Horologia MCP",
 		Kind:          dbgen.AuthTokenKindOauthRefresh,
 		ExpiresAt:     pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
 		CreatedAt:     pgtype.Timestamptz{Time: time.Now(), Valid: true},

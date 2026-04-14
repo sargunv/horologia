@@ -448,7 +448,7 @@ func TestMCPSpaceListRequiresSpacesReadScope(t *testing.T) {
 	_, err = q.CreateAuthToken(t.Context(), dbgen.CreateAuthTokenParams{
 		UserID:        ownerNumericID,
 		TokenHash:     tokenHash,
-		Name:          "Tend MCP",
+		Name:          "Horologia MCP",
 		Kind:          dbgen.AuthTokenKindOauthAccess,
 		ExpiresAt:     pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
 		CreatedAt:     pgtype.Timestamptz{Time: time.Now(), Valid: true},

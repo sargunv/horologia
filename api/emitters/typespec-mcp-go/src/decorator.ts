@@ -7,7 +7,7 @@ import {
 import * as v from "valibot";
 
 // State key for storing @mcpTool metadata
-const mcpToolKey = Symbol.for("@tend/typespec-mcp-go::mcpTool");
+const mcpToolKey = Symbol.for("@horologia/typespec-mcp-go::mcpTool");
 
 export interface McpToolOptions {
   name: string;

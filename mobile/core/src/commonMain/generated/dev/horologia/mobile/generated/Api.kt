@@ -1,7 +1,7 @@
 /* 
  * NOTE: This file is auto generated. Do not edit the file manually!
  * 
- * Tend API
+ * Horologia API
  * Version 0.0.0
  * 
  * Generated reproducibly; timestamp omitted.
@@ -9,7 +9,7 @@
  */
 @file:Suppress("ArrayInDataClass", "RedundantVisibilityModifier", "unused", "ConstPropertyName")
 
-package dev.tend.mobile.generated
+package dev.horologia.mobile.generated
 
 import com.kroegerama.openapi.kmp.gen.`companion`.ApiHolder
 import io.ktor.http.Url
@@ -19,7 +19,7 @@ import kotlin.collections.List
 import kotlin.collections.listOf
 
 public object Api : ApiHolder() {
-  public const val title: String = "Tend API"
+  public const val title: String = "Horologia API"
 
   public const val description: String = ""
 

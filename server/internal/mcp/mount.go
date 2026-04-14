@@ -27,7 +27,7 @@ import (
 //
 //	mux.Handle("/mcp", mcp.NewTransport(pool, handler))
 func NewTransport(pool *pgxpool.Pool, h mcpgen.Handlers) http.Handler {
-	s := mcpserver.NewMCPServer("Tend", "0.1.0")
+	s := mcpserver.NewMCPServer("Horologia", "0.1.0")
 	mcpgen.RegisterTools(s, h)
 	transport := mcpserver.NewStreamableHTTPServer(s)
 	return bearerAuthMiddleware(pool, transport)

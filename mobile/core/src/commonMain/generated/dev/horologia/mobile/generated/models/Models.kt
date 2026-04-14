@@ -1,7 +1,7 @@
 /* 
  * NOTE: This file is auto generated. Do not edit the file manually!
  * 
- * Tend API
+ * Horologia API
  * Version 0.0.0
  * 
  * Generated reproducibly; timestamp omitted.
@@ -9,7 +9,7 @@
  */
 @file:Suppress("ArrayInDataClass", "RedundantVisibilityModifier", "unused", "ConstPropertyName")
 
-package dev.tend.mobile.generated.models
+package dev.horologia.mobile.generated.models
 
 import androidx.compose.runtime.Immutable
 import kotlin.Boolean

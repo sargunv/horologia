@@ -216,7 +216,7 @@ func TestOAuthAuthorizeAcceptsConfiguredPublicResourceWhenProxied(t *testing.T) 
 		t.Fatalf("read consent page: %v", err)
 	}
 	_ = resp.Body.Close()
-	if !strings.Contains(string(bodyBytes), "Authorize Tend CLI") {
+	if !strings.Contains(string(bodyBytes), "Authorize Horologia CLI") {
 		t.Fatalf("consent page did not mention Tend CLI: %s", string(bodyBytes))
 	}
 }
@@ -546,7 +546,7 @@ func authorizeOAuthCode(t *testing.T, env *testEnv, client *http.Client, form ur
 		t.Fatalf("read consent page: %v", err)
 	}
 	_ = authResp.Body.Close()
-	if !strings.Contains(string(bodyBytes), "Authorize Tend CLI") {
+	if !strings.Contains(string(bodyBytes), "Authorize Horologia CLI") {
 		t.Fatalf("consent page did not mention Tend CLI: %s", string(bodyBytes))
 	}
 

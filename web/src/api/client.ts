@@ -9,7 +9,7 @@ export const apiClient = createClient<paths>({
 apiClient.use({
   onResponse({ response }) {
     if (response.status === 401) {
-      window.dispatchEvent(new CustomEvent("tend:unauthorized"));
+      window.dispatchEvent(new CustomEvent("horologia:unauthorized"));
     }
     return response;
   },

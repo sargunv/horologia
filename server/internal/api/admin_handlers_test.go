@@ -449,7 +449,7 @@ func createOAuthRefreshTokenForBearerUser(t *testing.T, env *testEnv, bearerToke
 	_, err = q.CreateAuthToken(t.Context(), dbgen.CreateAuthTokenParams{
 		UserID:        userNumericID,
 		TokenHash:     tokenHash,
-		Name:          "Tend CLI",
+		Name:          "Horologia CLI",
 		Kind:          dbgen.AuthTokenKindOauthRefresh,
 		ExpiresAt:     pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
 		CreatedAt:     pgtype.Timestamptz{Time: time.Now(), Valid: true},

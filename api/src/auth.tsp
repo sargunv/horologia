@@ -4,7 +4,7 @@ import "@horologia/typespec-mcp-go";
 using Http;
 using MCP;
 
-namespace Tend;
+namespace Horologia;
 
 enum AuthTokenKind {
   session,

@@ -2,7 +2,7 @@ import "@typespec/http";
 
 using Http;
 
-namespace Tend;
+namespace Horologia;
 
 @error
 model ApiError {

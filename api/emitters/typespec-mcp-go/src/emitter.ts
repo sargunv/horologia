@@ -17,7 +17,7 @@ export async function $onEmit(context: EmitContext<RawEmitterOpts>): Promise<voi
     program.reportDiagnostic({
       code: "typespec-mcp-go/missing-option",
       severity: "error",
-      message: `@tend/typespec-mcp-go requires the "ogenImportPath" option (Go import path for ogen-generated package).`,
+      message: `@horologia/typespec-mcp-go requires the "ogenImportPath" option (Go import path for ogen-generated package).`,
       target: NoTarget,
     });
     return;

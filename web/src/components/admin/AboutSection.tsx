@@ -95,12 +95,12 @@ export function AboutSection() {
 
       <div className="text-surface-500 flex items-center justify-center gap-1.5 py-4 text-xs">
         <a
-          href="https://github.com/sargunv/tend"
+          href="https://github.com/sargunv/horologia"
           target="_blank"
           rel="noopener noreferrer"
           className="hover:text-surface-700-300 inline-flex items-center gap-1 transition-colors"
         >
-          Tend
+          Horologia
           <ExternalLink className="size-3" aria-hidden="true" />
         </a>
         <span>·</span>

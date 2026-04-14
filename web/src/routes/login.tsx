@@ -92,7 +92,7 @@ function LoginPage() {
     <div className="flex min-h-svh items-center justify-center p-4">
       <div className="flex w-full max-w-sm flex-col gap-4">
         <div className="flex flex-col items-center gap-1">
-          <h1 className="h1">Tend</h1>
+          <h1 className="h1">Horologia</h1>
           <p className="text-surface-600-400 text-sm">Sign in to your account</p>
         </div>
 
