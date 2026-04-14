@@ -49,16 +49,23 @@ def next-tag [] {
 }
 
 def main [--dry-run] {
-  let status = (run-checked git "status" "--porcelain" | str trim)
-  if $status != "" {
-    error make {msg: "git worktree is dirty; commit or stash changes before releasing"}
-  }
-
   let dry_run = $dry_run
+
+  let branch = (run-checked git "branch" "--show-current" | str trim)
+
+  if not $dry_run {
+    let status = (run-checked git "status" "--porcelain" | str trim)
+    if $status != "" {
+      error make {msg: "git worktree is dirty; commit or stash changes before releasing"}
+    }
+
+    if $branch != "main" {
+      error make {msg: $"releases must be created from main; current branch is ($branch)"}
+    }
+  }
 
   run-checked git "fetch" "--force" "--tags" "origin" | ignore
 
-  let branch = (run-checked git "branch" "--show-current" | str trim)
   let commit = (run-checked git "rev-parse" "--short=12" "HEAD" | str trim)
   let tag = (next-tag)
 
