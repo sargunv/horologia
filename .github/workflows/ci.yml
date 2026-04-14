@@ -45,3 +45,10 @@ jobs:
         env:
           IMAGE: ${{ steps.release-image.outputs.image }}
         run: mise run release:snapshot
+
+      - name: Upload release snapshot artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-snapshot-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
