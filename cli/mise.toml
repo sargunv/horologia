@@ -15,6 +15,5 @@ depends = ["build"]
 run = "./horo"
 
 [tasks.release-snapshot]
-description = "Build cross-platform CLI release archives with GoReleaser"
-sources = ["**/*.go", "go.mod", "go.sum", "../.goreleaser.yaml"]
-run = "cd .. && goreleaser release --snapshot --clean"
+description = "Build cross-platform release snapshots with GoReleaser"
+run = "cd .. && mise run release:snapshot"

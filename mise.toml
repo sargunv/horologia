@@ -93,6 +93,14 @@ git diff --cached --exit-code
 description = "Run the full suite: generate → fix → build → test"
 run = "mise run generate && mise run fix && mise run build && mise run test && mise run _verify-clean-worktree"
 
+[tasks."release:prepare"]
+description = "Prepare generated assets required for release builds"
+run = "./scripts/prepare-release-artifacts.sh"
+
+[tasks."release:snapshot"]
+description = "Build release snapshots with GoReleaser"
+run = "goreleaser release --snapshot --clean"
+
 [tasks.dev]
 description = "Start local dev environment"
 raw = true
@@ -130,18 +138,6 @@ for dir in .postgres/*/; do
     rm -rf ".postgres/$branch"
   fi
 done
-"""
-
-[tasks.docker-build]
-description = "Build Docker image with versions from mise.toml"
-run = """
-docker build \
-  --build-arg GO_VERSION=$(mise config get tools.go) \
-  --build-arg NODE_VERSION=$(mise config get tools.node) \
-  --build-arg RELEASE_VERSION=${RELEASE_VERSION:-dev} \
-  --build-arg GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short=12 HEAD)} \
-  -t horologia \
-  .
 """
 
 [tasks.actions-up]

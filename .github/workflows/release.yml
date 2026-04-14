@@ -52,14 +52,10 @@ jobs:
         run: |
           version="$(mise run -q release:version)"
           image="ghcr.io/${GITHUB_REPOSITORY,,}"
-          go_version="$(mise config get tools.go)"
-          node_version="$(mise config get tools.node)"
 
           {
             echo "version=${version}"
             echo "image=${image}"
-            echo "go_version=${go_version}"
-            echo "node_version=${node_version}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Create local release tag
@@ -83,36 +79,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish Docker image
-        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          cache-from: type=gha,scope=horologia-docker
-          cache-to: type=gha,mode=max,scope=horologia-docker
-          build-args: |
-            GO_VERSION=${{ steps.metadata.outputs.go_version }}
-            NODE_VERSION=${{ steps.metadata.outputs.node_version }}
-            RELEASE_VERSION=${{ steps.metadata.outputs.version }}
-            GIT_COMMIT=${{ github.sha }}
-          tags: |
-            ${{ steps.metadata.outputs.image }}:${{ steps.metadata.outputs.version }}
-            ${{ steps.metadata.outputs.image }}:latest
-          labels: |
-            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.version=${{ steps.metadata.outputs.version }}
-
       - name: Push release tag
         env:
           VERSION: ${{ steps.metadata.outputs.version }}
         run: git push origin "$VERSION"
 
-      - name: Publish CLI release
+      - name: Publish release artifacts
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE: ${{ steps.metadata.outputs.image }}
         run: goreleaser release --clean
 
       - name: Summarize release
@@ -126,5 +101,5 @@ jobs:
             echo "- Version: \`$VERSION\`"
             echo "- Docker image: \`$IMAGE:$VERSION\`"
             echo "- Docker image alias: \`$IMAGE:latest\`"
-            echo "- CLI release: ${{ github.server_url }}/${{ github.repository }}/releases/tag/$VERSION"
+            echo "- GitHub Release: ${{ github.server_url }}/${{ github.repository }}/releases/tag/$VERSION"
           } >> "$GITHUB_STEP_SUMMARY"

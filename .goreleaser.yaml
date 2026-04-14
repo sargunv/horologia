@@ -7,8 +7,12 @@ project_name: horologia
 snapshot:
   version_template: 0.0.0-snapshot.{{ .ShortCommit }}
 
+before:
+  hooks:
+    - sh -c 'RELEASE_VERSION="{{ .Version }}" GIT_COMMIT="{{ .Commit }}" ./scripts/prepare-release-artifacts.sh'
+
 builds:
-  - id: horologia
+  - id: horologia-cli
     dir: cli
     main: .
     binary: horo
@@ -27,12 +31,33 @@ builds:
         -X github.com/sargunv/horologia/cli/internal/cmd.version={{ .Version }}
         -X github.com/sargunv/horologia/cli/internal/cmd.commit={{ .Commit }}
 
+  - id: horologia-server
+    dir: server
+    main: ./cmd/server
+    binary: horologia-server
+    env:
+      - CGO_ENABLED=0
+    tags:
+      - embedweb
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - >-
+        -s -w
+        -X main.version={{ .Version }}
+        -X main.commit={{ .Commit }}
+
 archives:
-  - id: horologia
-    ids: [horologia]
+  - id: horologia-cli
+    ids: [horologia-cli]
     formats: [tar.gz]
     name_template: >-
-      {{ .ProjectName }}_
+      horologia-cli_
       {{- .Version }}_
       {{- title .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
@@ -41,6 +66,33 @@ archives:
     format_overrides:
       - goos: windows
         formats: [zip]
+
+  - id: horologia-server
+    ids: [horologia-server]
+    formats: [tar.gz]
+    name_template: >-
+      horologia-server_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+dockers_v2:
+  - ids: [horologia-server]
+    images:
+      - "{{ if .Env.IMAGE }}{{ .Env.IMAGE }}{{ else }}horologia{{ end }}"
+    tags:
+      - "{{ .Version }}"
+      - latest
+    dockerfile: Dockerfile
+    labels:
+      org.opencontainers.image.source: "{{ .GitURL }}"
+      org.opencontainers.image.revision: "{{ .FullCommit }}"
+      org.opencontainers.image.version: "{{ .Version }}"
 
 checksum:
   name_template: checksums.txt

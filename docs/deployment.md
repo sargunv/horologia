@@ -10,6 +10,7 @@ The release workflow publishes:
 
 - A container image to `ghcr.io/<owner>/<repo>`
 - CLI archives to GitHub Releases
+- Server archives to GitHub Releases
 
 The container image is tagged with both the release version and `latest`.
 

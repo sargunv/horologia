@@ -5,8 +5,8 @@ Horologia releases are published manually from GitHub Actions.
 ## What the workflow publishes
 
 - A Git tag using CalVer in the form `v0.YYYYMMDD.x`
-- A GitHub Release containing `horo` CLI archives from GoReleaser
-- A multi-platform container image in GitHub Container Registry
+- A GitHub Release containing CLI and server archives from GoReleaser
+- A multi-platform container image in GitHub Container Registry, also published by GoReleaser
 
 Mobile artifacts are intentionally excluded for now.
 
@@ -34,9 +34,12 @@ The workflow:
 1. Checks out the selected ref with full history and tags.
 2. Runs `mise run ci`.
 3. Computes the next CalVer tag.
-4. Builds and publishes the Docker image to `ghcr.io/<owner>/<repo>`.
-5. Pushes the release tag.
-6. Runs GoReleaser to create the GitHub Release and upload CLI archives.
+4. Pushes the release tag.
+5. Runs GoReleaser to:
+   - prepare the generated API and embedded web assets needed by the server build
+   - build cross-platform CLI and server binaries
+   - upload CLI and server archives to the GitHub Release
+   - publish the multi-platform server image to `ghcr.io/<owner>/<repo>`
 
 ## Release outputs
 
@@ -47,9 +50,18 @@ Docker image tags:
 
 CLI release assets:
 
-- `horologia_<version>_Darwin_x86_64.tar.gz`
-- `horologia_<version>_Darwin_arm64.tar.gz`
-- `horologia_<version>_Linux_x86_64.tar.gz`
-- `horologia_<version>_Linux_arm64.tar.gz`
-- `horologia_<version>_Windows_x86_64.zip`
-- `horologia_<version>_Windows_arm64.zip`
+- `horologia-cli_<version>_Darwin_x86_64.tar.gz`
+- `horologia-cli_<version>_Darwin_arm64.tar.gz`
+- `horologia-cli_<version>_Linux_x86_64.tar.gz`
+- `horologia-cli_<version>_Linux_arm64.tar.gz`
+- `horologia-cli_<version>_Windows_x86_64.zip`
+- `horologia-cli_<version>_Windows_arm64.zip`
+
+Server release assets:
+
+- `horologia-server_<version>_Darwin_x86_64.tar.gz`
+- `horologia-server_<version>_Darwin_arm64.tar.gz`
+- `horologia-server_<version>_Linux_x86_64.tar.gz`
+- `horologia-server_<version>_Linux_arm64.tar.gz`
+- `horologia-server_<version>_Windows_x86_64.zip`
+- `horologia-server_<version>_Windows_arm64.zip`
