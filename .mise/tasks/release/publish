@@ -1,5 +1,6 @@
 #!/usr/bin/env nu
 #MISE description="Compute, confirm, create, and push the next release tag"
+#MISE raw=true
 #MISE tools={"aqua:nushell/nushell"="latest"}
 #USAGE flag "--dry-run" help="Compute and confirm the next release tag without creating or pushing it"
 
