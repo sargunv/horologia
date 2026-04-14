@@ -1,6 +1,7 @@
 # Releasing
 
-Horologia releases are published manually from GitHub Actions.
+Horologia releases are initiated locally and published automatically from GitHub Actions when a
+release tag is pushed.
 
 ## What the workflow publishes
 
@@ -12,7 +13,7 @@ Mobile artifacts are intentionally excluded for now.
 
 ## Versioning
 
-The release workflow computes the version automatically in UTC:
+Release tags use CalVer in UTC:
 
 - `YYYYMMDD` is the current UTC date on the GitHub Actions runner
 - `x` starts at `0`
@@ -25,17 +26,16 @@ Examples:
 
 ## Running a release
 
-1. Open the `Release` workflow in GitHub Actions.
-2. Use `Run workflow` on the branch or commit you want to publish.
-3. Wait for the workflow to finish.
+1. Ensure your local branch is pushed and your worktree is clean.
+2. Run `mise run release:publish`.
+3. Review the proposed tag and confirm.
+4. Wait for the `Release` workflow on the pushed tag to finish.
 
 The workflow:
 
 1. Checks out the selected ref with full history and tags.
 2. Runs `mise run ci`.
-3. Computes the next CalVer tag.
-4. Pushes the release tag.
-5. Runs GoReleaser to:
+3. Runs GoReleaser to:
    - prepare the generated API and embedded web assets needed by the server build
    - build cross-platform CLI and server binaries
    - upload CLI and server archives to the GitHub Release

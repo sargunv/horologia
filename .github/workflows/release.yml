@@ -1,14 +1,16 @@
 name: Release
 
 on:
-  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
 
 permissions:
   contents: write
   packages: write
 
 concurrency:
-  group: release
+  group: release-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -19,9 +21,6 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
-
-      - name: Fetch tags
-        run: git fetch --force --tags origin
 
       - name: Cache Go modules
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
@@ -47,24 +46,8 @@ jobs:
       - name: Verify release candidate
         run: mise run ci
 
-      - name: Compute release metadata
-        id: metadata
-        run: |
-          version="$(mise run -q release:version)"
-          image="ghcr.io/${GITHUB_REPOSITORY,,}"
-
-          {
-            echo "version=${version}"
-            echo "image=${image}"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Create local release tag
-        env:
-          VERSION: ${{ steps.metadata.outputs.version }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "$VERSION" -m "Release $VERSION"
+      - name: Set release image
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
@@ -79,21 +62,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push release tag
-        env:
-          VERSION: ${{ steps.metadata.outputs.version }}
-        run: git push origin "$VERSION"
-
       - name: Publish release artifacts
+        uses: goreleaser/goreleaser-action@4a89d9f5a4cd4d513071d7e3ac4aef31d737f813 # v6.3.0
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          IMAGE: ${{ steps.metadata.outputs.image }}
-        run: goreleaser release --clean
+          IMAGE: ${{ env.IMAGE }}
 
       - name: Summarize release
         env:
-          VERSION: ${{ steps.metadata.outputs.version }}
-          IMAGE: ${{ steps.metadata.outputs.image }}
+          VERSION: ${{ github.ref_name }}
+          IMAGE: ${{ env.IMAGE }}
         run: |
           {
             echo "## Release published"
