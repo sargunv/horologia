@@ -143,3 +143,7 @@ docker build \
   -t horologia \
   .
 """
+
+[tasks.actions-up]
+description = "Update and pin GitHub Actions steps."
+run = "pnpm dlx actions-up"
