@@ -50,5 +50,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-snapshot-${{ github.sha }}
-          path: dist/
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/*.txt
           if-no-files-found: error
