@@ -31,6 +31,10 @@ local allSteps = new Mapping<String, Step> {
     check = "cd api && pnpm exec tsp format . --check"
     fix = "cd api && pnpm exec tsp format ."
   }
+  ["goreleaser-check"] {
+    glob = List(".goreleaser.yaml")
+    check = "goreleaser check"
+  }
 }
 
 hooks {
