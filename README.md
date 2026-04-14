@@ -20,9 +20,7 @@ also runs an MCP server for AI assistant integration.
 
 ## License
 
-| Package   | License                                                         |
-| --------- | --------------------------------------------------------------- |
-| `api/`    | MIT (see `LICENSE-MIT`)                                         |
-| `cli/`    | MIT (see `LICENSE-MIT`)                                         |
-| `mobile/` | MIT (see `LICENSE-MIT`)                                         |
-| `server/` | GNU Affero General Public License v3.0 (see `LICENSE-AGPL-3.0`) |
+Horologia is dual-licensed:
+
+- `mobile/`, `cli/`, `api/` — MIT License. See [LICENSE-MIT](LICENSE-MIT).
+- `server/` — GNU Affero General Public License v3.0. See [LICENSE-AGPL-3.0](LICENSE-AGPL-3.0).

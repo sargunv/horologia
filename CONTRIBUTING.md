@@ -2,13 +2,11 @@
 
 ## Repository Layout
 
-| Package   | Language             | Description                                            |
-| --------- | -------------------- | ------------------------------------------------------ |
-| `api/`    | TypeSpec             | API definition and generated OpenAPI schema            |
-| `server/` | Go                   | HTTP API, MCP server, task engine, database migrations |
-| `web/`    | TypeScript / React   | Single-page application served by the backend          |
-| `cli/`    | Go                   | `horo` command-line client                             |
-| `mobile/` | Kotlin Multiplatform | Android, iOS, and desktop app                          |
+- `api/` — TypeSpec API definition and generated OpenAPI schema
+- `server/` — Go backend: HTTP API, MCP server, task engine, database migrations
+- `web/` — React SPA served by the backend
+- `cli/` — Go CLI client (`horo`)
+- `mobile/` — Kotlin Multiplatform app (Android, iOS, desktop)
 
 ## Development Setup
 
@@ -16,11 +14,9 @@ Horologia uses [mise](https://mise.jdx.dev/) for tooling. Install it, then run `
 
 ## Key Commands
 
-| Command             | What it does                                                               |
-| ------------------- | -------------------------------------------------------------------------- |
-| `mise run dev`      | Starts the local dev environment via Tilt: PostgreSQL, server, and web app |
-| `mise run generate` | Runs all code generation — run after changing TypeSpec or SQL              |
-| `mise run ci`       | Full suite: generate → fix → build → test                                  |
+- `mise run dev` — start the local dev environment (Tilt: PostgreSQL, server, web app)
+- `mise run generate` — run all code generation; run after changing TypeSpec or SQL
+- `mise run ci` — full suite: generate → fix → build → test
 
 Package-scoped tasks use a `//` prefix, e.g. `mise run //server:test`.
 
