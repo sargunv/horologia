@@ -18,6 +18,9 @@ const healthQueryOptions = queryOptions({
   refetchInterval: 30_000,
 });
 
+const appVersion = import.meta.env.VITE_APP_VERSION ?? "dev";
+const appCommit = import.meta.env.VITE_APP_COMMIT ?? "";
+
 function StatusBadge({ ok }: { ok: boolean }) {
   return (
     <span
@@ -90,6 +93,14 @@ export function AboutSection() {
           ) : (
             <EnabledBadge enabled={false} label="OIDC authentication" />
           )}
+        </InfoRow>
+        <InfoRow label="Version">
+          <div className="flex flex-col gap-1 text-sm">
+            <span className="font-medium">{appVersion}</span>
+            {appCommit !== "" ? (
+              <span className="text-surface-500 font-mono text-xs">{appCommit.slice(0, 12)}</span>
+            ) : null}
+          </div>
         </InfoRow>
       </SettingsSection>
 

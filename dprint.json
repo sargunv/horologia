@@ -12,7 +12,6 @@
     "**/.dprint",
     "**/*-lock.yaml",
     "api/gen/**",
-    "mobile/core/src/commonMain/generated/**",
     "server/internal/database/gen/**",
     "server/internal/mcp/gen/**",
     "web/src/api/schema.d.ts",

@@ -1,9 +1,9 @@
 .env.local
 
 # Go
-/server/tend-server
+/server/horologia-server
 /server/dev-oidc
-/cli/tend
+/cli/horo
 
 # Web
 node_modules/

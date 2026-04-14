@@ -1,0 +1,59 @@
+name: Setup CI deps
+description: Install CI tools and restore dependency caches
+
+runs:
+  using: composite
+  steps:
+    - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+      with:
+        cache: true
+        install: true
+
+    - name: Compute Android SDK cache key inputs
+      id: android-sdk
+      shell: bash
+      run: |
+        {
+          echo "sdk_version=$(mise config get tools.android-sdk)"
+          echo "build_tools=$(mise config get env.ANDROID_BUILD_TOOLS)"
+          echo "compile_sdk=$(mise config get env.ANDROID_COMPILE_SDK)"
+        } >> "$GITHUB_OUTPUT"
+
+    - name: Cache Go modules
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Cache pnpm store
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: ~/.local/share/pnpm/store
+        key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-
+
+    - name: Cache Gradle
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('mobile/**/*.gradle.kts', 'mobile/gradle.properties', 'mobile/gradle/libs.versions.toml', 'mobile/gradle/wrapper/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+
+    - name: Cache Android SDK components
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: |
+          ~/.local/share/mise/installs/android-sdk/${{ steps.android-sdk.outputs.sdk_version }}/build-tools
+          ~/.local/share/mise/installs/android-sdk/${{ steps.android-sdk.outputs.sdk_version }}/licenses
+          ~/.local/share/mise/installs/android-sdk/${{ steps.android-sdk.outputs.sdk_version }}/platform-tools
+          ~/.local/share/mise/installs/android-sdk/${{ steps.android-sdk.outputs.sdk_version }}/platforms
+        key: ${{ runner.os }}-android-sdk-${{ steps.android-sdk.outputs.sdk_version }}-build-tools-${{ steps.android-sdk.outputs.build_tools }}-platform-${{ steps.android-sdk.outputs.compile_sdk }}
+        restore-keys: |
+          ${{ runner.os }}-android-sdk-${{ steps.android-sdk.outputs.sdk_version }}-
+          ${{ runner.os }}-android-sdk-

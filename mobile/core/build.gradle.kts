@@ -1,10 +1,8 @@
+import java.io.ByteArrayOutputStream
 import org.gradle.api.DefaultTask
-import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.CacheableTask
-import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
-import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
@@ -165,42 +163,10 @@ abstract class PrepareHorologiaOpenApiTask : DefaultTask() {
   }
 }
 
-@CacheableTask
-abstract class NormalizeGeneratedKotlinSourcesTask : DefaultTask() {
-  @get:InputDirectory
-  @get:PathSensitive(PathSensitivity.RELATIVE)
-  abstract val sourceDir: DirectoryProperty
-
-  @get:OutputDirectory abstract val normalizedSourceDir: DirectoryProperty
-
-  @TaskAction
-  fun normalize() {
-    val generatedCommentPattern = Regex("""(?m)^ \* Generated .*$""")
-    val createdAtConstantPattern =
-      Regex("""(?m)^(\s*public const val createdAt: String = )"[^"]*"$""")
-
-    sourceDir.asFile
-      .get()
-      .walkTopDown()
-      .filter { it.isFile && it.extension == "kt" }
-      .forEach { file ->
-        val originalText = file.readText()
-        val normalizedText =
-          originalText
-            .replace(generatedCommentPattern, " * Generated reproducibly; timestamp omitted.")
-            .replace(createdAtConstantPattern, """$1"1970-01-01T00:00:00Z"""")
-
-        if (normalizedText != originalText) {
-          file.writeText(normalizedText)
-        }
-      }
-  }
-}
-
 val openApiSpec = rootProject.layout.projectDirectory.file("../api/tsp-output/schema/openapi.yaml")
 val resolvedOpenApiSpec =
   layout.buildDirectory.file("generated/openapi/horologia-openapi-resolved.yaml")
-val generatedSourceDir = layout.projectDirectory.dir("src/commonMain/generated")
+val generatedSourceDir = layout.buildDirectory.dir("generated/openapi-kmp/src/commonMain/kotlin")
 
 val openapiKmpGenCli by configurations.creating
 
@@ -243,6 +209,9 @@ val prepareHorologiaOpenApi by
 
 val generateRawHorologiaApi by
   tasks.registering(JavaExec::class) {
+    var capturedStdout: ByteArrayOutputStream? = null
+    var capturedStderr: ByteArrayOutputStream? = null
+
     group = "code generation"
     description = "Generate the committed Horologia KMP client from the emitted OpenAPI spec"
 
@@ -252,34 +221,47 @@ val generateRawHorologiaApi by
 
     classpath = openapiKmpGenCli
     mainClass.set("com.kroegerama.openapi.kmp.gen.cli.CommandLineKt")
+    isIgnoreExitValue = true
+
+    doFirst {
+      capturedStdout = ByteArrayOutputStream()
+      capturedStderr = ByteArrayOutputStream()
+      standardOutput = capturedStdout!!
+      errorOutput = capturedStderr!!
+    }
 
     args(
       "generate",
       "-p",
       "dev.horologia.mobile.generated",
       "-o",
-      generatedSourceDir.asFile.path,
+      generatedSourceDir.get().asFile.path,
       "-s",
       "-a",
       resolvedOpenApiSpec.get().asFile.path,
     )
-  }
 
-val normalizeGeneratedHorologiaApi by
-  tasks.registering(NormalizeGeneratedKotlinSourcesTask::class) {
-    group = "code generation"
-    description = "Normalize generated Horologia KMP sources for reproducible commits"
+    doLast {
+      val stdoutText = capturedStdout?.toString(Charsets.UTF_8) ?: ""
+      stdoutText
+        .lineSequence()
+        .filter { line -> line.startsWith("selected options:") || line.startsWith("writing ") }
+        .forEach(::println)
 
-    dependsOn(generateRawHorologiaApi)
-    sourceDir.set(generatedSourceDir)
-    normalizedSourceDir.set(generatedSourceDir)
+      val stderrText = capturedStderr?.toString(Charsets.UTF_8) ?: ""
+      if (stderrText.isNotBlank()) {
+        System.err.print(stderrText)
+      }
+
+      executionResult.get().assertNormalExitValue()
+    }
   }
 
 tasks.register("generateHorologiaApi") {
   group = "code generation"
-  description = "Generate the committed Horologia KMP client from the emitted OpenAPI spec"
+  description = "Generate the Horologia KMP client from the emitted OpenAPI spec"
 
-  dependsOn(normalizeGeneratedHorologiaApi)
+  dependsOn(generateRawHorologiaApi)
 }
 
 tasks

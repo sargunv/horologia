@@ -187,7 +187,7 @@ var serveCmd = &cobra.Command{
 		errCh := make(chan error, 1)
 		go func() { errCh <- srv.Serve(ln) }()
 
-		log.Info("server listening", "addr", ln.Addr().String())
+		log.Info("server listening", "addr", ln.Addr().String(), "version", version, "commit", commit)
 
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)

@@ -11,7 +11,7 @@ Tiltfile
 node_modules/
 web/dist/
 api/tsp-output/
-server/tend-server
+server/horologia-server
 server/dev-oidc
 server/internal/api/gen/
 server/internal/database/gen/

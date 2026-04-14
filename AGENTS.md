@@ -2,7 +2,7 @@
 
 ## Project
 
-Horologia is a self-hosted task manager. See `docs/BRIEF.md` for the full product brief.
+Horologia is a self-hosted task manager.
 
 ## Roadmap
 
@@ -26,7 +26,6 @@ Package-scoped tasks use a `//` prefix, e.g. `mise run //server:generate`,
 Mobile bootstrap/setup uses package-scoped tasks as well:
 
 - `mise run //mobile:setup` — install Android SDK components into the mise-managed SDK root
-- `mise run //mobile:generate` — regenerate the committed KMP client
 - `mise run //mobile:android:assembleDebug` — build the Android target in `:compose-app`
 - `mise run //mobile:desktop:run` — run the desktop target in `:compose-app`
 

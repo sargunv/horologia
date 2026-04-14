@@ -18,6 +18,12 @@ also runs an MCP server for AI assistant integration.
 - **API tokens** — Generate tokens for custom clients and automations.
 - **OIDC** — Authenticate through an existing identity provider.
 
+## Operations
+
+- Deployment guide: [docs/deployment.md](docs/deployment.md)
+- Admin guide: [docs/admin.md](docs/admin.md)
+- Release process: [docs/releasing.md](docs/releasing.md)
+
 ## License
 
 Horologia is dual-licensed:

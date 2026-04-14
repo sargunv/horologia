@@ -13,11 +13,6 @@ sdkmanager \
 description = "Install mobile prerequisites, including Android SDK components"
 depends = ["_android-sdk-components"]
 
-[tasks.generate]
-description = "Generate the committed KMP client sources"
-depends = ["//api:generate"]
-run = "./gradlew :core:generateTendApi"
-
 [tasks."build:core"]
 description = "Build the shared mobile core for host-safe targets"
 run = "./gradlew :core:desktopJar"

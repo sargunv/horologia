@@ -1,0 +1,90 @@
+#!/usr/bin/env nu
+#MISE description="Compute, confirm, create, and push the next release tag"
+#MISE raw=true
+#MISE tools={"aqua:nushell/nushell"="latest"}
+#USAGE flag "--dry-run" help="Compute and confirm the next release tag without creating or pushing it"
+
+def run [cmd: string, ...args: string] {
+  ^$cmd ...$args | complete
+}
+
+def run-checked [cmd: string, ...args: string] {
+  let result = (run $cmd ...$args)
+  if $result.exit_code != 0 {
+    error make {msg: $"command failed: ($cmd) ($args | str join ' ')"}
+  }
+  $result.stdout
+}
+
+def next-tag [] {
+  let date_part = (
+    $env.HOROLOGIA_RELEASE_DATE?
+    | default (date now | date to-timezone UTC | format date "%Y%m%d")
+    | str replace -a "-" ""
+  )
+
+  let pattern = $"v0.($date_part).*"
+  let tags = (run-checked git "tag" "-l" $pattern | lines | where {|tag| $tag != ""})
+
+  let indices = (
+    $tags
+    | each {|tag|
+        let suffix = ($tag | split row "." | last)
+        if ($suffix =~ '^\d+$') {
+          $suffix | into int
+        } else {
+          null
+        }
+      }
+    | compact
+  )
+
+  let max_index = if ($indices | is-empty) {
+    -1
+  } else {
+    $indices | math max
+  }
+
+  $"v0.($date_part).(($max_index + 1))"
+}
+
+def main [--dry-run] {
+  let dry_run = $dry_run
+
+  let branch = (run-checked git "branch" "--show-current" | str trim)
+
+  if not $dry_run {
+    let status = (run-checked git "status" "--porcelain" | str trim)
+    if $status != "" {
+      error make {msg: "git worktree is dirty; commit or stash changes before releasing"}
+    }
+
+    if $branch != "main" {
+      error make {msg: $"releases must be created from main; current branch is ($branch)"}
+    }
+  }
+
+  run-checked git "fetch" "--force" "--tags" "origin" | ignore
+
+  let commit = (run-checked git "rev-parse" "--short=12" "HEAD" | str trim)
+  let tag = (next-tag)
+
+  print $"Branch: ($branch)"
+  print $"Commit: ($commit)"
+  print $"Tag:    ($tag)"
+
+  let answer = (input $"Create and push release tag ($tag)? [y/N] " | str trim | str downcase)
+  if $answer not-in ["y" "yes"] {
+    error make {msg: "release cancelled"}
+  }
+
+  if $dry_run {
+    print $"Dry run: would create annotated tag ($tag) at ($commit) and push it to origin."
+    return
+  }
+
+  ^git tag -a $tag -m $"Release ($tag)"
+  ^git push origin $tag
+
+  print $"Pushed ($tag). GitHub Actions will publish the release."
+}
