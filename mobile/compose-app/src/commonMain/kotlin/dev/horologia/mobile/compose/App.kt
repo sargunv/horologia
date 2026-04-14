@@ -22,7 +22,11 @@ fun HorologiaApp() {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.Start,
       ) {
-        Text("Horologia", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
+        Text(
+          "Horologia",
+          style = MaterialTheme.typography.displaySmall,
+          fontWeight = FontWeight.Bold,
+        )
         Text(
           text = "Compose bootstrap running on ${platformName()}",
           style = MaterialTheme.typography.titleMedium,
