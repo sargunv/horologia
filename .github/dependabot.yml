@@ -4,53 +4,65 @@
 # - Go workspaces (go.work): https://github.com/dependabot/dependabot-core/issues/6012
 # - mise tool versions: https://github.com/dependabot/dependabot-core/issues/12320
 version: 2
-cooldown:
-  default-days: 3
 updates:
   - package-ecosystem: gomod
     directory: /api
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 3
     groups:
-      all:
+      go-api-deps:
         patterns: ["*"]
 
   - package-ecosystem: gomod
     directory: /cli
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 3
     groups:
-      all:
+      go-cli-deps:
         patterns: ["*"]
 
   - package-ecosystem: gomod
     directory: /server
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 3
     groups:
-      all:
+      go-server-deps:
         patterns: ["*"]
 
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 3
     groups:
-      all:
+      npm-deps:
         patterns: ["*"]
 
   - package-ecosystem: gradle
     directory: /mobile
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 3
+    ignore:
+      - dependency-name: gradle-wrapper
     groups:
-      all:
+      gradle-deps:
         patterns: ["*"]
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 3
     groups:
-      all:
+      github-actions:
         patterns: ["*"]
