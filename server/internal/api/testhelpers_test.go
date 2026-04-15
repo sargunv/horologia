@@ -233,7 +233,7 @@ func setupTestServer(t *testing.T, opts ...testServerOption) *testEnv {
 			Issuer:       opIssuer,
 			ClientID:     testOIDCClientID,
 			ClientSecret: testOIDCClientSecret,
-			RedirectURL:  callbackURL,
+			PublicURL:    "http://" + srvLn.Addr().String(),
 		}
 		oidcHandler, err := api.NewOIDCHandler(ctx, oidcCfg, handler)
 		if err != nil {

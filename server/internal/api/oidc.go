@@ -53,7 +53,7 @@ type OIDCConfig struct {
 	Issuer       string
 	ClientID     string
 	ClientSecret string
-	RedirectURL  string
+	PublicURL    string
 }
 
 // NewOIDCHandler creates an http.Handler that handles the OIDC authorization
@@ -85,7 +85,7 @@ func NewOIDCHandler(ctx context.Context, cfg OIDCConfig, handler *Handler) (http
 		cfg.Issuer,
 		cfg.ClientID,
 		cfg.ClientSecret,
-		cfg.RedirectURL,
+		cfg.PublicURL+"/auth/oidc/callback",
 		[]string{"openid", "email", "profile"},
 		options...,
 	)

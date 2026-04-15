@@ -18,7 +18,6 @@ common_env = {
     "HOROLOGIA_OIDC_ISSUER": "http://localhost:%d/" % OIDC_PORT,
     "HOROLOGIA_OIDC_CLIENT_ID": "horologia",
     "HOROLOGIA_OIDC_CLIENT_SECRET": "horologia-dev-secret",
-    "HOROLOGIA_OIDC_REDIRECT_URL": "http://localhost:%d/api/auth/oidc/callback" % WEB_PORT,
     "HOROLOGIA_SECURE_COOKIES": "false",
     "HOROLOGIA_HIBP_ENABLED": "false",
     "HOROLOGIA_INIT_OWNER_EMAIL": "admin@localhost",
@@ -61,7 +60,7 @@ local_resource(
     serve_cmd="server/dev-oidc",
     serve_env=dict(common_env, **{
         "DEV_OIDC_PORT": str(OIDC_PORT),
-        "DEV_OIDC_CALLBACK_URL": "http://localhost:%d/api/auth/oidc/callback" % WEB_PORT,
+        "DEV_OIDC_CALLBACK_URL": "http://localhost:%d/auth/oidc/callback" % SERVER_PORT,
     }),
     deps=["server"],
     readiness_probe=probe(

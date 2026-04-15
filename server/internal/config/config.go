@@ -20,7 +20,6 @@ type Config struct {
 	OIDCIssuer       string `koanf:"oidc_issuer"`
 	OIDCClientID     string `koanf:"oidc_client_id"`
 	OIDCClientSecret string `koanf:"oidc_client_secret"`
-	OIDCRedirectURL  string `koanf:"oidc_redirect_url"`
 	OIDCLabel        string `koanf:"oidc_label"`
 	OIDCAutoRedirect bool   `koanf:"oidc_auto_redirect"`
 	OIDCLinkConsent  bool   `koanf:"oidc_link_consent"`
@@ -65,6 +64,11 @@ func Load() (Config, error) {
 			return Config{}, errors.New("HOROLOGIA_PUBLIC_URL must start with http:// or https://")
 		}
 		cfg.PublicURL = strings.TrimRight(cfg.PublicURL, "/")
+	}
+
+	// OIDC requires a public URL to derive the redirect callback.
+	if cfg.OIDCIssuer != "" && cfg.PublicURL == "" {
+		return Config{}, errors.New("HOROLOGIA_PUBLIC_URL is required when HOROLOGIA_OIDC_ISSUER is set")
 	}
 
 	// Disabling password auth without OIDC would lock out all users.

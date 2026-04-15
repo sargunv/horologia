@@ -152,7 +152,7 @@ var serveCmd = &cobra.Command{
 				Issuer:       cfg.OIDCIssuer,
 				ClientID:     cfg.OIDCClientID,
 				ClientSecret: cfg.OIDCClientSecret,
-				RedirectURL:  cfg.OIDCRedirectURL,
+				PublicURL:    cfg.PublicURL,
 			}, handler)
 			if err != nil {
 				return fmt.Errorf("setup oidc: %w", err)
