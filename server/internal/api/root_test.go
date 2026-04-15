@@ -40,7 +40,7 @@ func TestHealthzOK(t *testing.T) {
 	env := setupTestServer(t)
 
 	log := slog.New(slog.DiscardHandler)
-	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, true)
 	srv := httptest.NewServer(root)
 	t.Cleanup(srv.Close)
 
@@ -67,7 +67,7 @@ func TestHealthzDBDown(t *testing.T) {
 	env.pool.Close()
 
 	log := slog.New(slog.DiscardHandler)
-	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, true)
 	srv := httptest.NewServer(root)
 	t.Cleanup(srv.Close)
 
@@ -94,7 +94,7 @@ func TestMountRootExposesOAuthAuthorizeRoute(t *testing.T) {
 	env := setupTestServer(t)
 
 	log := slog.New(slog.DiscardHandler)
-	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, true)
 	srv := httptest.NewServer(root)
 	t.Cleanup(srv.Close)
 
@@ -135,14 +135,15 @@ func TestMountRootExposesOpenAPISchema(t *testing.T) {
 	env := setupTestServer(t)
 
 	log := slog.New(slog.DiscardHandler)
-	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, true)
 	srv := httptest.NewServer(root)
 	t.Cleanup(srv.Close)
 
-	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, srv.URL+"/openapi.yaml", nil)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, srv.URL+"/api/openapi.yaml", nil)
 	if err != nil {
 		t.Fatalf("new request: %v", err)
 	}
+	req.Header.Set("Authorization", "Bearer "+env.Token)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("openapi: %v", err)
@@ -158,18 +159,38 @@ func TestMountRootExposesOpenAPISchema(t *testing.T) {
 	}
 }
 
+func TestMountRootRequiresAuthForOpenAPISchema(t *testing.T) {
+	env := setupTestServer(t)
+
+	log := slog.New(slog.DiscardHandler)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, true)
+	srv := httptest.NewServer(root)
+	t.Cleanup(srv.Close)
+
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, srv.URL+"/api/openapi.yaml", nil)
+	if err != nil {
+		t.Fatalf("new request: %v", err)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("openapi: %v", err)
+	}
+	assertStatusClose(t, resp, http.StatusUnauthorized)
+}
+
 func TestMountRootExposesDocs(t *testing.T) {
 	env := setupTestServer(t)
 
 	log := slog.New(slog.DiscardHandler)
-	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, true)
 	srv := httptest.NewServer(root)
 	t.Cleanup(srv.Close)
 
-	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, srv.URL+"/docs", nil)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, srv.URL+"/api/docs", nil)
 	if err != nil {
 		t.Fatalf("new request: %v", err)
 	}
+	req.Header.Set("Authorization", "Bearer "+env.Token)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("docs: %v", err)
@@ -180,16 +201,67 @@ func TestMountRootExposesDocs(t *testing.T) {
 	if !strings.Contains(body, "@scalar/api-reference") {
 		t.Fatalf("expected Scalar docs page, got %q", body)
 	}
-	if !strings.Contains(body, "/openapi.yaml") {
+	if !strings.Contains(body, "/api/openapi.yaml") {
 		t.Fatalf("expected docs page to point at schema, got %q", body)
 	}
+	if !strings.Contains(body, `showDeveloperTools: "never"`) {
+		t.Fatalf("expected docs page to disable Scalar developer tools, got %q", body)
+	}
+}
+
+func TestMountRootRequiresAuthForDocs(t *testing.T) {
+	env := setupTestServer(t)
+
+	log := slog.New(slog.DiscardHandler)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, true)
+	srv := httptest.NewServer(root)
+	t.Cleanup(srv.Close)
+
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, srv.URL+"/api/docs", nil)
+	if err != nil {
+		t.Fatalf("new request: %v", err)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("docs: %v", err)
+	}
+	assertStatusClose(t, resp, http.StatusUnauthorized)
+}
+
+func TestMountRootCanDisableDocs(t *testing.T) {
+	env := setupTestServer(t)
+
+	log := slog.New(slog.DiscardHandler)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, false)
+	srv := httptest.NewServer(root)
+	t.Cleanup(srv.Close)
+
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, srv.URL+"/api/docs", nil)
+	if err != nil {
+		t.Fatalf("new request: %v", err)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("docs: %v", err)
+	}
+	assertStatusClose(t, resp, http.StatusNotFound)
+
+	req, err = http.NewRequestWithContext(t.Context(), http.MethodGet, srv.URL+"/api/openapi.yaml", nil)
+	if err != nil {
+		t.Fatalf("new request: %v", err)
+	}
+	resp, err = http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("openapi: %v", err)
+	}
+	assertStatusClose(t, resp, http.StatusNotFound)
 }
 
 func TestInternalAPIsRejectCrossOriginRequests(t *testing.T) {
 	env := setupTestServer(t)
 
 	log := slog.New(slog.DiscardHandler)
-	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, true)
 	srv := httptest.NewServer(root)
 	t.Cleanup(srv.Close)
 
@@ -209,7 +281,7 @@ func TestPublicAPIsAllowCrossOriginRequests(t *testing.T) {
 	env := setupTestServer(t)
 
 	log := slog.New(slog.DiscardHandler)
-	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, true)
 	srv := httptest.NewServer(root)
 	t.Cleanup(srv.Close)
 

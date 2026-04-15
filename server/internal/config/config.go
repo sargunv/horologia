@@ -10,12 +10,13 @@ import (
 )
 
 type Config struct {
-	DB            string `koanf:"db"`
-	Addr          string `koanf:"addr"`
-	PublicURL     string `koanf:"public_url"`
-	LogFormat     string `koanf:"log_format"`
-	LogLevel      string `koanf:"log_level"`
-	SecureCookies bool   `koanf:"secure_cookies"`
+	DB             string `koanf:"db"`
+	Addr           string `koanf:"addr"`
+	PublicURL      string `koanf:"public_url"`
+	LogFormat      string `koanf:"log_format"`
+	LogLevel       string `koanf:"log_level"`
+	SecureCookies  bool   `koanf:"secure_cookies"`
+	APIDocsEnabled bool   `koanf:"api_docs_enabled"`
 
 	OIDCIssuer       string `koanf:"oidc_issuer"`
 	OIDCClientID     string `koanf:"oidc_client_id"`
@@ -46,6 +47,7 @@ func Load() (Config, error) {
 		LogFormat:           "text",
 		LogLevel:            "info",
 		SecureCookies:       true,
+		APIDocsEnabled:      true,
 		OIDCLabel:           "OIDC",
 		OIDCLinkConsent:     true,
 		PasswordAuthEnabled: true,

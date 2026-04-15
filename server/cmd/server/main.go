@@ -168,7 +168,7 @@ var serveCmd = &cobra.Command{
 		mcpHandler := mcp.NewTransport(pool, handler)
 
 		// Mount health check at /healthz, API under /api prefix, MCP at /mcp, and SPA at root.
-		finalHandler = api.MountRoot(finalHandler, mcpHandler, pool, log)
+		finalHandler = api.MountRoot(finalHandler, mcpHandler, pool, log, cfg.APIDocsEnabled)
 
 		// Bootstrap initial owner if configured and no users exist yet.
 		if cfg.InitOwnerEmail != "" {
