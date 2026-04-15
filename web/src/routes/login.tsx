@@ -4,7 +4,7 @@ import { CircleAlert } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 import { apiClient, getApiErrorMessage } from "../api/client.ts";
 import { authConfigQueryOptions } from "../lib/queries.ts";
-import { shouldUseDocumentNavigation } from "../lib/redirects.ts";
+import { buildOIDCLoginURL, navigateToTarget } from "../lib/redirects.ts";
 
 interface LoginSearch {
   redirect?: string;
@@ -43,12 +43,7 @@ function LoginPage() {
       if (error) throw new Error(getApiErrorMessage(error, "Invalid email or password"));
     },
     onSuccess: () => {
-      const target = redirect ?? "/";
-      if (shouldUseDocumentNavigation(target)) {
-        window.location.assign(target);
-        return;
-      }
-      void navigate({ to: target });
+      navigateToTarget(redirect ?? "/", navigate);
     },
   });
 
@@ -58,10 +53,7 @@ function LoginPage() {
   }
 
   function handleOIDCLogin() {
-    const params = new URLSearchParams();
-    if (redirect) params.set("redirect", redirect);
-    const query = params.toString();
-    window.location.href = `/api/auth/oidc${query ? `?${query}` : ""}`;
+    window.location.href = buildOIDCLoginURL(redirect);
   }
 
   useEffect(() => {
@@ -72,10 +64,7 @@ function LoginPage() {
       authConfig.oidc.autoRedirect &&
       !authConfig.password.enabled
     ) {
-      const params = new URLSearchParams();
-      if (redirect) params.set("redirect", redirect);
-      const query = params.toString();
-      window.location.href = `/api/auth/oidc${query ? `?${query}` : ""}`;
+      window.location.href = buildOIDCLoginURL(redirect);
     }
   }, [authConfig, noredirect, redirect]);
 

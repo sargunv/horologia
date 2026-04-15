@@ -1,9 +1,9 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { CircleAlert } from "lucide-react";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { apiClient, getApiErrorMessage } from "../api/client.ts";
-import { shouldUseDocumentNavigation } from "../lib/redirects.ts";
+import { navigateToTarget } from "../lib/redirects.ts";
 import { linkPendingQueryOptions } from "../lib/queries.ts";
 
 export const Route = createFileRoute("/link-account")({
@@ -29,23 +29,22 @@ function LinkAccountPage() {
       return data;
     },
     onSuccess: (data) => {
-      const target = data.redirectTo || "/";
-      if (shouldUseDocumentNavigation(target)) {
-        window.location.assign(target);
-        return;
-      }
-      void navigate({ to: target });
+      navigateToTarget(data.redirectTo || "/", navigate);
     },
   });
+
+  useEffect(() => {
+    if (!isLoading && (pending === null || isError)) {
+      void navigate({ to: "/login" });
+    }
+  }, [isError, isLoading, navigate, pending]);
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     linkMutation.mutate({ password });
   }
 
-  // No pending link or fetch error — redirect to login.
   if (!isLoading && (pending === null || isError)) {
-    void navigate({ to: "/login" });
     return null;
   }
 

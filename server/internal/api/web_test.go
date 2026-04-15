@@ -231,3 +231,28 @@ func TestWebErrorCodeIsSnakeCase(t *testing.T) {
 		t.Errorf("code = %q, want %q (must be snake_case, not Title Case)", code, "bad_request")
 	}
 }
+
+func TestBearerAuthTakesPrecedenceOverSessionCookie(t *testing.T) {
+	env := setupTestServer(t)
+
+	sessionToken := createTestUser(t, env, "cookie-user@example.com", "Cookie User", "password")
+
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, env.Server.URL+"/users/me", nil)
+	if err != nil {
+		t.Fatalf("new request: %v", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+env.Token)
+	req.AddCookie(&http.Cookie{Name: "horologia_session", Value: sessionToken})
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("do request: %v", err)
+	}
+	assertStatus(t, resp, http.StatusOK)
+
+	var me map[string]any
+	readJSON(t, resp, &me)
+	if got := me["email"]; got != "test@example.com" {
+		t.Fatalf("email = %v, want test@example.com", got)
+	}
+}
