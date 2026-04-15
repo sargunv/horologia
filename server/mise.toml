@@ -2,7 +2,7 @@
 description = "Run all code generation"
 depends = ["//api:generate"]
 sources = [
-  "../api/tsp-output/schema/openapi.yaml",
+  "../api/spec/openapi.yaml",
   "internal/database/migrations/*.sql",
   "internal/database/queries/*.sql",
   "sqlc.yaml",

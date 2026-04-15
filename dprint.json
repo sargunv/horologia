@@ -16,7 +16,8 @@
     "server/internal/mcp/gen/**",
     "web/src/api/schema.d.ts",
     "web/src/routeTree.gen.ts",
-    "api/tsp-output/**"
+    "api/tsp-output/**",
+    "api/spec/**"
   ],
   "markdown": {
     "textWrap": "always"

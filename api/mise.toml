@@ -3,14 +3,14 @@ description = "Compile TypeSpec and generate the shared Go API package"
 run = [
   "pnpm --filter @horologia/typespec-mcp-go run build",
   "pnpm exec tsp compile .",
-  "go run github.com/ogen-go/ogen/cmd/ogen --target gen --package gen --clean tsp-output/schema/openapi.yaml",
+  "go run github.com/ogen-go/ogen/cmd/ogen --target gen --package gen --clean spec/openapi.yaml",
 ]
 sources = ["main.tsp", "src/**/*.tsp", "tspconfig.yaml", "emitters/**/*.ts"]
-outputs = ["tsp-output/schema/openapi.yaml", "gen/*.go"]
+outputs = ["spec/openapi.yaml", "gen/*.go"]
 
 [tasks.build]
 description = "Compile TypeSpec and generate the shared Go API package"
 depends = ["generate"]
 run = "true"
 sources = ["main.tsp", "src/**/*.tsp", "tspconfig.yaml", "emitters/**/*.ts", "gen/*.go"]
-outputs = ["tsp-output/schema/openapi.yaml", "gen/*.go"]
+outputs = ["spec/openapi.yaml", "gen/*.go"]

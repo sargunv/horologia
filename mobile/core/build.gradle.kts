@@ -163,7 +163,7 @@ abstract class PrepareHorologiaOpenApiTask : DefaultTask() {
   }
 }
 
-val openApiSpec = rootProject.layout.projectDirectory.file("../api/tsp-output/schema/openapi.yaml")
+val openApiSpec = rootProject.layout.projectDirectory.file("../api/spec/openapi.yaml")
 val resolvedOpenApiSpec =
   layout.buildDirectory.file("generated/openapi/horologia-openapi-resolved.yaml")
 val generatedSourceDir = layout.buildDirectory.dir("generated/openapi-kmp/src/commonMain/kotlin")
