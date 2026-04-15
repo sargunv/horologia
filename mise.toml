@@ -1,13 +1,7 @@
 experimental_monorepo_root = true
 
 [monorepo]
-config_roots = [
-  "api",
-  "cli",
-  "mobile",
-  "server",
-  "web",
-]
+config_roots = ["api", "cli", "mobile", "server", "web"]
 
 [env]
 _.file = ".env.local"

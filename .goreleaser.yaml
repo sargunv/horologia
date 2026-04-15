@@ -16,15 +16,9 @@ builds:
     dir: cli
     main: .
     binary: horo
-    env:
-      - CGO_ENABLED=0
-    goos:
-      - darwin
-      - linux
-      - windows
-    goarch:
-      - amd64
-      - arm64
+    env: [CGO_ENABLED=0]
+    goos: [darwin, linux, windows]
+    goarch: [amd64, arm64]
     ldflags:
       - >-
         -s -w
@@ -35,17 +29,10 @@ builds:
     dir: server
     main: ./cmd/server
     binary: horologia-server
-    env:
-      - CGO_ENABLED=0
-    tags:
-      - embedweb
-    goos:
-      - darwin
-      - linux
-      - windows
-    goarch:
-      - amd64
-      - arm64
+    env: [CGO_ENABLED=0]
+    tags: [embedweb]
+    goos: [darwin, linux, windows]
+    goarch: [amd64, arm64]
     ldflags:
       - >-
         -s -w
@@ -56,6 +43,7 @@ archives:
   - id: horologia-cli
     ids: [horologia-cli]
     formats: [tar.gz]
+    files: [LICENSE-MIT]
     name_template: >-
       horologia-cli_
       {{- .Version }}_
@@ -70,6 +58,7 @@ archives:
   - id: horologia-server
     ids: [horologia-server]
     formats: [tar.gz]
+    files: [LICENSE-AGPL-3.0]
     name_template: >-
       horologia-server_
       {{- .Version }}_
@@ -83,11 +72,8 @@ archives:
 
 dockers_v2:
   - ids: [horologia-server]
-    images:
-      - "{{ if .Env.IMAGE }}{{ .Env.IMAGE }}{{ else }}horologia{{ end }}"
-    tags:
-      - "{{ .Version }}"
-      - latest
+    images: ['{{ with index .Env "IMAGE" }}{{ . }}{{ else }}horologia{{ end }}']
+    tags: ["{{ .Version }}", latest]
     dockerfile: Dockerfile
     labels:
       org.opencontainers.image.source: "{{ .GitURL }}"
@@ -96,17 +82,12 @@ dockers_v2:
 
 docker_signs:
   - artifacts: all
-    args:
-      - sign
-      - "${artifact}@${digest}"
-      - --yes
+    args: [sign, "${artifact}@${digest}", --yes]
 
 notarize:
   macos:
     - enabled: '{{ isEnvSet "MACOS_SIGN_P12" }}'
-      ids:
-        - horologia-cli
-        - horologia-server
+      ids: [horologia-cli, horologia-server]
       sign:
         certificate: "{{ .Env.MACOS_SIGN_P12 }}"
         password: "{{ .Env.MACOS_SIGN_PASSWORD }}"
@@ -119,11 +100,7 @@ notarize:
 signs:
   - cmd: cosign
     signature: "${artifact}.sigstore.json"
-    args:
-      - sign-blob
-      - "--bundle=${signature}"
-      - "${artifact}"
-      - --yes
+    args: [sign-blob, "--bundle=${signature}", "${artifact}", --yes]
     artifacts: checksum
 
 docker_digest:
