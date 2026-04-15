@@ -2,10 +2,12 @@ package api_test
 
 import (
 	"encoding/json"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/sargunv/horologia/server/internal/api"
@@ -22,6 +24,16 @@ func doHealthz(t *testing.T, srv *httptest.Server) *http.Response {
 		t.Fatalf("GET /healthz: %v", err)
 	}
 	return resp
+}
+
+func readBody(t *testing.T, resp *http.Response) string {
+	t.Helper()
+	defer func() { _ = resp.Body.Close() }()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("read body: %v", err)
+	}
+	return string(body)
 }
 
 func TestHealthzOK(t *testing.T) {
@@ -117,4 +129,98 @@ func TestMountRootExposesOAuthAuthorizeRoute(t *testing.T) {
 		t.Fatalf("location = %q, want login redirect", location)
 	}
 	_ = resp.Body.Close()
+}
+
+func TestMountRootExposesOpenAPISchema(t *testing.T) {
+	env := setupTestServer(t)
+
+	log := slog.New(slog.DiscardHandler)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log)
+	srv := httptest.NewServer(root)
+	t.Cleanup(srv.Close)
+
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, srv.URL+"/openapi.yaml", nil)
+	if err != nil {
+		t.Fatalf("new request: %v", err)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("openapi: %v", err)
+	}
+	assertStatus(t, resp, http.StatusOK)
+
+	body := readBody(t, resp)
+	if !strings.Contains(body, "openapi: 3.1.0") {
+		t.Fatalf("expected OpenAPI document, got %q", body)
+	}
+	if !strings.Contains(body, "Horologia API") {
+		t.Fatalf("expected API title in schema, got %q", body)
+	}
+}
+
+func TestMountRootExposesDocs(t *testing.T) {
+	env := setupTestServer(t)
+
+	log := slog.New(slog.DiscardHandler)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log)
+	srv := httptest.NewServer(root)
+	t.Cleanup(srv.Close)
+
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, srv.URL+"/docs", nil)
+	if err != nil {
+		t.Fatalf("new request: %v", err)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("docs: %v", err)
+	}
+	assertStatus(t, resp, http.StatusOK)
+
+	body := readBody(t, resp)
+	if !strings.Contains(body, "@scalar/api-reference") {
+		t.Fatalf("expected Scalar docs page, got %q", body)
+	}
+	if !strings.Contains(body, "/openapi.yaml") {
+		t.Fatalf("expected docs page to point at schema, got %q", body)
+	}
+}
+
+func TestInternalAPIsRejectCrossOriginRequests(t *testing.T) {
+	env := setupTestServer(t)
+
+	log := slog.New(slog.DiscardHandler)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log)
+	srv := httptest.NewServer(root)
+	t.Cleanup(srv.Close)
+
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, srv.URL+"/api/auth/config", nil)
+	if err != nil {
+		t.Fatalf("new request: %v", err)
+	}
+	req.Header.Set("Origin", "https://evil.example")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("auth config: %v", err)
+	}
+	assertStatus(t, resp, http.StatusForbidden)
+}
+
+func TestPublicAPIsAllowCrossOriginRequests(t *testing.T) {
+	env := setupTestServer(t)
+
+	log := slog.New(slog.DiscardHandler)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log)
+	srv := httptest.NewServer(root)
+	t.Cleanup(srv.Close)
+
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, srv.URL+"/healthz", nil)
+	if err != nil {
+		t.Fatalf("new request: %v", err)
+	}
+	req.Header.Set("Origin", "https://evil.example")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("healthz: %v", err)
+	}
+	assertStatus(t, resp, http.StatusOK)
 }

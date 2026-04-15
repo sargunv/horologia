@@ -20,18 +20,18 @@ paths:
       description: Read public authentication configuration used by the web UI before login.
       parameters: []
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthConfig'
+                $ref: "#/components/schemas/AuthConfig"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Auth
       security:
@@ -49,7 +49,7 @@ paths:
         endpoint is only available when OIDC link consent is enabled.
       parameters: []
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           headers:
             Set-Cookie:
@@ -61,13 +61,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthLinkResponse'
+                $ref: "#/components/schemas/AuthLinkResponse"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Auth
       requestBody:
@@ -75,7 +75,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AuthLinkRequest'
+              $ref: "#/components/schemas/AuthLinkRequest"
       security:
         - {}
       x-internal: true
@@ -89,18 +89,18 @@ paths:
         only available when OIDC link consent is enabled.
       parameters: []
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthLinkPendingResponse'
+                $ref: "#/components/schemas/AuthLinkPendingResponse"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Auth
       security:
@@ -116,7 +116,7 @@ paths:
         success. This endpoint is only available when password auth is enabled.
       parameters: []
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           headers:
             Set-Cookie:
@@ -126,13 +126,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthLoginResponse'
+                $ref: "#/components/schemas/AuthLoginResponse"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Auth
       requestBody:
@@ -140,7 +140,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AuthLoginRequest'
+              $ref: "#/components/schemas/AuthLoginRequest"
       security:
         - {}
       x-internal: true
@@ -150,8 +150,8 @@ paths:
       description: Clear the current browser session.
       parameters: []
       responses:
-        '204':
-          description: 'There is no content to send for this request, but the headers may be useful. '
+        "204":
+          description: "There is no content to send for this request, but the headers may be useful. "
           headers:
             Set-Cookie:
               required: true
@@ -162,7 +162,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Auth
       security:
@@ -173,36 +173,36 @@ paths:
       operationId: Auth_listTokens
       parameters: []
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthTokenList'
+                $ref: "#/components/schemas/AuthTokenList"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Auth
     post:
       operationId: Auth_createToken
       parameters: []
       responses:
-        '201':
+        "201":
           description: The request has succeeded and a new resource has been created as a result.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthTokenCreateResponse'
+                $ref: "#/components/schemas/AuthTokenCreateResponse"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Auth
       requestBody:
@@ -210,7 +210,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AuthTokenCreate'
+              $ref: "#/components/schemas/AuthTokenCreate"
   /auth/tokens/{tokenId}:
     delete:
       operationId: Auth_deleteToken
@@ -222,14 +222,14 @@ paths:
           schema:
             type: string
       responses:
-        '204':
-          description: 'There is no content to send for this request, but the headers may be useful. '
+        "204":
+          description: "There is no content to send for this request, but the headers may be useful. "
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Auth
   /spaces:
@@ -237,36 +237,36 @@ paths:
       operationId: Spaces_list
       parameters: []
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SpaceList'
+                $ref: "#/components/schemas/SpaceList"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Spaces
     post:
       operationId: Spaces_create
       parameters: []
       responses:
-        '201':
+        "201":
           description: The request has succeeded and a new resource has been created as a result.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Space'
+                $ref: "#/components/schemas/Space"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Spaces
       requestBody:
@@ -274,7 +274,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SpaceCreate'
+              $ref: "#/components/schemas/SpaceCreate"
   /spaces/{spaceSlug}:
     get:
       operationId: Spaces_read
@@ -286,18 +286,18 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Space'
+                $ref: "#/components/schemas/Space"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Spaces
     patch:
@@ -310,18 +310,18 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Space'
+                $ref: "#/components/schemas/Space"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Spaces
       requestBody:
@@ -329,7 +329,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SpaceUpdate'
+              $ref: "#/components/schemas/SpaceUpdate"
     delete:
       operationId: Spaces_delete
       parameters:
@@ -340,14 +340,14 @@ paths:
           schema:
             type: string
       responses:
-        '204':
-          description: 'There is no content to send for this request, but the headers may be useful. '
+        "204":
+          description: "There is no content to send for this request, but the headers may be useful. "
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Spaces
   /spaces/{spaceSlug}/activity:
@@ -360,21 +360,21 @@ paths:
           description: Slug of the space.
           schema:
             type: string
-        - $ref: '#/components/parameters/PageParams.cursor'
-        - $ref: '#/components/parameters/PageParams.limit'
+        - $ref: "#/components/parameters/PageParams.cursor"
+        - $ref: "#/components/parameters/PageParams.limit"
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActivityLogPage'
+                $ref: "#/components/schemas/ActivityLogPage"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Activity
   /spaces/{spaceSlug}/members:
@@ -388,18 +388,18 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SpaceMemberList'
+                $ref: "#/components/schemas/SpaceMemberList"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - SpaceMembers
     post:
@@ -412,18 +412,18 @@ paths:
           schema:
             type: string
       responses:
-        '201':
+        "201":
           description: The request has succeeded and a new resource has been created as a result.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SpaceMember'
+                $ref: "#/components/schemas/SpaceMember"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - SpaceMembers
       requestBody:
@@ -431,7 +431,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SpaceMemberCreate'
+              $ref: "#/components/schemas/SpaceMemberCreate"
   /spaces/{spaceSlug}/members/{userId}:
     patch:
       operationId: SpaceMembers_update
@@ -449,18 +449,18 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SpaceMember'
+                $ref: "#/components/schemas/SpaceMember"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - SpaceMembers
       requestBody:
@@ -468,7 +468,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SpaceMemberUpdate'
+              $ref: "#/components/schemas/SpaceMemberUpdate"
     delete:
       operationId: SpaceMembers_delete
       parameters:
@@ -485,14 +485,14 @@ paths:
           schema:
             type: string
       responses:
-        '204':
-          description: 'There is no content to send for this request, but the headers may be useful. '
+        "204":
+          description: "There is no content to send for this request, but the headers may be useful. "
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - SpaceMembers
   /spaces/{spaceSlug}/tags:
@@ -506,18 +506,18 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TagList'
+                $ref: "#/components/schemas/TagList"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Tags
     post:
@@ -530,18 +530,18 @@ paths:
           schema:
             type: string
       responses:
-        '201':
+        "201":
           description: The request has succeeded and a new resource has been created as a result.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Tag'
+                $ref: "#/components/schemas/Tag"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Tags
       requestBody:
@@ -549,7 +549,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TagCreate'
+              $ref: "#/components/schemas/TagCreate"
   /spaces/{spaceSlug}/tags/{tagName}:
     patch:
       operationId: SpaceTags_update
@@ -567,18 +567,18 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Tag'
+                $ref: "#/components/schemas/Tag"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Tags
       requestBody:
@@ -586,7 +586,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TagUpdate'
+              $ref: "#/components/schemas/TagUpdate"
     delete:
       operationId: SpaceTags_delete
       parameters:
@@ -603,14 +603,14 @@ paths:
           schema:
             type: string
       responses:
-        '204':
-          description: 'There is no content to send for this request, but the headers may be useful. '
+        "204":
+          description: "There is no content to send for this request, but the headers may be useful. "
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Tags
   /spaces/{spaceSlug}/task-effort-levels:
@@ -624,18 +624,18 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TaskEffortLevelList'
+                $ref: "#/components/schemas/TaskEffortLevelList"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Task Effort Levels
     put:
@@ -648,18 +648,18 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TaskEffortLevelList'
+                $ref: "#/components/schemas/TaskEffortLevelList"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Task Effort Levels
       requestBody:
@@ -667,7 +667,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TaskEffortLevelReplace'
+              $ref: "#/components/schemas/TaskEffortLevelReplace"
   /spaces/{spaceSlug}/task-priority-levels:
     get:
       operationId: SpaceTaskPriorityLevels_list
@@ -679,18 +679,18 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TaskPriorityLevelList'
+                $ref: "#/components/schemas/TaskPriorityLevelList"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Task Priority Levels
     put:
@@ -703,18 +703,18 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TaskPriorityLevelList'
+                $ref: "#/components/schemas/TaskPriorityLevelList"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Task Priority Levels
       requestBody:
@@ -722,7 +722,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TaskPriorityLevelReplace'
+              $ref: "#/components/schemas/TaskPriorityLevelReplace"
   /spaces/{spaceSlug}/task-statuses:
     get:
       operationId: SpaceTaskStatuses_list
@@ -734,18 +734,18 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TaskStatusList'
+                $ref: "#/components/schemas/TaskStatusList"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Task Statuses
     put:
@@ -758,18 +758,18 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TaskStatusList'
+                $ref: "#/components/schemas/TaskStatusList"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Task Statuses
       requestBody:
@@ -777,7 +777,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TaskStatusReplace'
+              $ref: "#/components/schemas/TaskStatusReplace"
   /spaces/{spaceSlug}/tasks:
     get:
       operationId: SpaceTasks_list
@@ -788,21 +788,21 @@ paths:
           description: Slug of the space.
           schema:
             type: string
-        - $ref: '#/components/parameters/PageParams.cursor'
-        - $ref: '#/components/parameters/PageParams.limit'
+        - $ref: "#/components/parameters/PageParams.cursor"
+        - $ref: "#/components/parameters/PageParams.limit"
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TaskPage'
+                $ref: "#/components/schemas/TaskPage"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Tasks
     post:
@@ -815,18 +815,18 @@ paths:
           schema:
             type: string
       responses:
-        '201':
+        "201":
           description: The request has succeeded and a new resource has been created as a result.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Task'
+                $ref: "#/components/schemas/Task"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Tasks
       requestBody:
@@ -834,7 +834,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TaskCreate'
+              $ref: "#/components/schemas/TaskCreate"
   /spaces/{spaceSlug}/tasks/{taskId}:
     get:
       operationId: SpaceTasks_read
@@ -852,18 +852,18 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Task'
+                $ref: "#/components/schemas/Task"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Tasks
     patch:
@@ -882,18 +882,18 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Task'
+                $ref: "#/components/schemas/Task"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Tasks
       requestBody:
@@ -901,7 +901,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TaskUpdate'
+              $ref: "#/components/schemas/TaskUpdate"
     delete:
       operationId: SpaceTasks_delete
       parameters:
@@ -918,14 +918,14 @@ paths:
           schema:
             type: string
       responses:
-        '204':
-          description: 'There is no content to send for this request, but the headers may be useful. '
+        "204":
+          description: "There is no content to send for this request, but the headers may be useful. "
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Tasks
   /spaces/{spaceSlug}/tasks/{taskId}/activity:
@@ -944,21 +944,21 @@ paths:
           description: Task ID.
           schema:
             type: string
-        - $ref: '#/components/parameters/PageParams.cursor'
-        - $ref: '#/components/parameters/PageParams.limit'
+        - $ref: "#/components/parameters/PageParams.cursor"
+        - $ref: "#/components/parameters/PageParams.limit"
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActivityLogPage'
+                $ref: "#/components/schemas/ActivityLogPage"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Activity
   /spaces/{spaceSlug}/tasks/{taskId}/relations:
@@ -978,18 +978,18 @@ paths:
           schema:
             type: string
       responses:
-        '201':
+        "201":
           description: The request has succeeded and a new resource has been created as a result.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TaskRelation'
+                $ref: "#/components/schemas/TaskRelation"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Tasks
       requestBody:
@@ -997,7 +997,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TaskRelationCreate'
+              $ref: "#/components/schemas/TaskRelationCreate"
   /spaces/{spaceSlug}/tasks/{taskId}/relations/{kind}/{relatedTaskId}:
     delete:
       operationId: SpaceTaskRelations_delete
@@ -1019,7 +1019,7 @@ paths:
           required: true
           description: Relation kind.
           schema:
-            $ref: '#/components/schemas/TaskRelationKind'
+            $ref: "#/components/schemas/TaskRelationKind"
         - name: relatedTaskId
           in: path
           required: true
@@ -1027,14 +1027,14 @@ paths:
           schema:
             type: string
       responses:
-        '204':
-          description: 'There is no content to send for this request, but the headers may be useful. '
+        "204":
+          description: "There is no content to send for this request, but the headers may be useful. "
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Tasks
   /tasks/search:
@@ -1072,18 +1072,18 @@ paths:
             format: int32
           explode: false
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TaskSearchResultList'
+                $ref: "#/components/schemas/TaskSearchResultList"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Tasks
   /users:
@@ -1091,36 +1091,36 @@ paths:
       operationId: Users_list
       parameters: []
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserList'
+                $ref: "#/components/schemas/UserList"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Users
     post:
       operationId: Users_create
       parameters: []
       responses:
-        '201':
+        "201":
           description: The request has succeeded and a new resource has been created as a result.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: "#/components/schemas/User"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Users
       requestBody:
@@ -1128,24 +1128,24 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserCreate'
+              $ref: "#/components/schemas/UserCreate"
   /users/me:
     get:
       operationId: Users_me
       parameters: []
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: "#/components/schemas/User"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Users
   /users/{userId}:
@@ -1159,18 +1159,18 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: "#/components/schemas/User"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Users
     patch:
@@ -1183,18 +1183,18 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: "#/components/schemas/User"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Users
       requestBody:
@@ -1202,7 +1202,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserUpdate'
+              $ref: "#/components/schemas/UserUpdate"
     delete:
       operationId: Users_delete
       parameters:
@@ -1213,14 +1213,14 @@ paths:
           schema:
             type: string
       responses:
-        '204':
-          description: 'There is no content to send for this request, but the headers may be useful. '
+        "204":
+          description: "There is no content to send for this request, but the headers may be useful. "
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Users
   /users/{userId}/activity:
@@ -1233,21 +1233,21 @@ paths:
           description: User ID.
           schema:
             type: string
-        - $ref: '#/components/parameters/PageParams.cursor'
-        - $ref: '#/components/parameters/PageParams.limit'
+        - $ref: "#/components/parameters/PageParams.cursor"
+        - $ref: "#/components/parameters/PageParams.limit"
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActivityLogPage'
+                $ref: "#/components/schemas/ActivityLogPage"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Activity
   /users/{userId}/tasks:
@@ -1260,21 +1260,21 @@ paths:
           description: User ID.
           schema:
             type: string
-        - $ref: '#/components/parameters/PageParams.cursor'
-        - $ref: '#/components/parameters/PageParams.limit'
+        - $ref: "#/components/parameters/PageParams.cursor"
+        - $ref: "#/components/parameters/PageParams.limit"
       responses:
-        '200':
+        "200":
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TaskPage'
+                $ref: "#/components/schemas/TaskPage"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: "#/components/schemas/ApiError"
       tags:
         - Users
 security:
@@ -1318,11 +1318,11 @@ components:
         from:
           anyOf:
             - type: string
-            - type: 'null'
+            - type: "null"
         to:
           anyOf:
             - type: string
-            - type: 'null'
+            - type: "null"
     ActivityEntityType:
       type: string
       enum:
@@ -1355,25 +1355,25 @@ components:
         actorId:
           anyOf:
             - type: string
-            - type: 'null'
+            - type: "null"
         tokenId:
           anyOf:
             - type: string
-            - type: 'null'
+            - type: "null"
         tokenName:
           anyOf:
             - type: string
-            - type: 'null'
+            - type: "null"
         entityType:
-          $ref: '#/components/schemas/ActivityEntityType'
+          $ref: "#/components/schemas/ActivityEntityType"
         entityId:
           type: string
         action:
-          $ref: '#/components/schemas/ActivityAction'
+          $ref: "#/components/schemas/ActivityAction"
         details:
           type: array
           items:
-            $ref: '#/components/schemas/ActivityDetail'
+            $ref: "#/components/schemas/ActivityDetail"
         createdAt:
           type: string
           format: date-time
@@ -1386,11 +1386,11 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/ActivityLogEntry'
+            $ref: "#/components/schemas/ActivityLogEntry"
         nextCursor:
           anyOf:
             - type: string
-            - type: 'null'
+            - type: "null"
     ApiError:
       type: object
       required:
@@ -1408,9 +1408,9 @@ components:
         - password
       properties:
         oidc:
-          $ref: '#/components/schemas/AuthConfigOIDC'
+          $ref: "#/components/schemas/AuthConfigOIDC"
         password:
-          $ref: '#/components/schemas/AuthConfigPassword'
+          $ref: "#/components/schemas/AuthConfigPassword"
     AuthConfigOIDC:
       type: object
       required:
@@ -1477,7 +1477,7 @@ components:
         - user
       properties:
         user:
-          $ref: '#/components/schemas/User'
+          $ref: "#/components/schemas/User"
     AuthToken:
       type: object
       required:
@@ -1491,7 +1491,7 @@ components:
         name:
           type: string
         kind:
-          $ref: '#/components/schemas/AuthTokenKind'
+          $ref: "#/components/schemas/AuthTokenKind"
         createdAt:
           type: string
           format: date-time
@@ -1513,7 +1513,7 @@ components:
         token:
           type: string
         authToken:
-          $ref: '#/components/schemas/AuthToken'
+          $ref: "#/components/schemas/AuthToken"
     AuthTokenKind:
       type: string
       enum:
@@ -1527,7 +1527,7 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/AuthToken'
+            $ref: "#/components/schemas/AuthToken"
     Space:
       type: object
       required:
@@ -1575,7 +1575,7 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/Space'
+            $ref: "#/components/schemas/Space"
     SpaceMember:
       type: object
       required:
@@ -1592,7 +1592,7 @@ components:
         userEmail:
           type: string
         role:
-          $ref: '#/components/schemas/SpaceRole'
+          $ref: "#/components/schemas/SpaceRole"
         createdAt:
           type: string
           format: date-time
@@ -1605,7 +1605,7 @@ components:
         userId:
           type: string
         role:
-          $ref: '#/components/schemas/SpaceRole'
+          $ref: "#/components/schemas/SpaceRole"
     SpaceMemberList:
       type: object
       required:
@@ -1614,14 +1614,14 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/SpaceMember'
+            $ref: "#/components/schemas/SpaceMember"
     SpaceMemberUpdate:
       type: object
       required:
         - role
       properties:
         role:
-          $ref: '#/components/schemas/SpaceRole'
+          $ref: "#/components/schemas/SpaceRole"
     SpaceRole:
       type: string
       enum:
@@ -1671,7 +1671,7 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/Tag'
+            $ref: "#/components/schemas/Tag"
     TagUpdate:
       type: object
       required:
@@ -1716,22 +1716,22 @@ components:
         effort:
           anyOf:
             - type: string
-            - type: 'null'
+            - type: "null"
         priority:
           anyOf:
             - type: string
-            - type: 'null'
+            - type: "null"
         recurrenceType:
-          $ref: '#/components/schemas/TaskRecurrenceType'
+          $ref: "#/components/schemas/TaskRecurrenceType"
         recurrenceRule:
           anyOf:
             - type: string
-            - type: 'null'
+            - type: "null"
         lastCompletedAt:
           anyOf:
             - type: string
               format: date-time
-            - type: 'null'
+            - type: "null"
         assigneeIds:
           type: array
           items:
@@ -1747,15 +1747,15 @@ components:
         relations:
           type: array
           items:
-            $ref: '#/components/schemas/TaskRelation'
+            $ref: "#/components/schemas/TaskRelation"
         due:
           anyOf:
-            - $ref: '#/components/schemas/TaskDue'
-            - type: 'null'
+            - $ref: "#/components/schemas/TaskDue"
+            - type: "null"
         overdueActionRule:
           anyOf:
-            - $ref: '#/components/schemas/TaskOverdueActionRule'
-            - type: 'null'
+            - $ref: "#/components/schemas/TaskOverdueActionRule"
+            - type: "null"
         createdAt:
           type: string
           format: date-time
@@ -1791,7 +1791,7 @@ components:
           description: Priority level name.
         recurrenceType:
           allOf:
-            - $ref: '#/components/schemas/TaskRecurrenceType'
+            - $ref: "#/components/schemas/TaskRecurrenceType"
           description: Recurrence type (e.g. one_off, completion_based, fixed_accumulating).
         recurrenceRule:
           type: string
@@ -1815,12 +1815,12 @@ components:
           maxItems: 100
         due:
           anyOf:
-            - $ref: '#/components/schemas/TaskDue'
-            - type: 'null'
+            - $ref: "#/components/schemas/TaskDue"
+            - type: "null"
         overdueActionRule:
           anyOf:
-            - $ref: '#/components/schemas/TaskOverdueActionRule'
-            - type: 'null'
+            - $ref: "#/components/schemas/TaskOverdueActionRule"
+            - type: "null"
     TaskDue:
       type: object
       required:
@@ -1870,7 +1870,7 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/TaskEffortLevel'
+            $ref: "#/components/schemas/TaskEffortLevel"
     TaskEffortLevelReplace:
       type: object
       required:
@@ -1879,7 +1879,7 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/TaskEffortLevelInput'
+            $ref: "#/components/schemas/TaskEffortLevelInput"
     TaskOverdueAction:
       type: string
       enum:
@@ -1896,12 +1896,12 @@ components:
           anyOf:
             - type: integer
               format: int32
-            - type: 'null'
+            - type: "null"
           description: |-
             Grace period in days after the due date before the action fires.
                   null means act immediately when the task becomes overdue.
         action:
-          $ref: '#/components/schemas/TaskOverdueAction'
+          $ref: "#/components/schemas/TaskOverdueAction"
         status:
           type: string
           minLength: 1
@@ -1916,11 +1916,11 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/Task'
+            $ref: "#/components/schemas/Task"
         nextCursor:
           anyOf:
             - type: string
-            - type: 'null'
+            - type: "null"
     TaskPriorityLevel:
       type: object
       required:
@@ -1957,7 +1957,7 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/TaskPriorityLevel'
+            $ref: "#/components/schemas/TaskPriorityLevel"
     TaskPriorityLevelReplace:
       type: object
       required:
@@ -1966,7 +1966,7 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/TaskPriorityLevelInput'
+            $ref: "#/components/schemas/TaskPriorityLevelInput"
     TaskRecurrenceType:
       type: string
       enum:
@@ -1983,7 +1983,7 @@ components:
         - createdAt
       properties:
         kind:
-          $ref: '#/components/schemas/TaskRelationKind'
+          $ref: "#/components/schemas/TaskRelationKind"
         relatedTaskId:
           type: string
         createdAt:
@@ -1997,7 +1997,7 @@ components:
       properties:
         kind:
           allOf:
-            - $ref: '#/components/schemas/TaskRelationKind'
+            - $ref: "#/components/schemas/TaskRelationKind"
           description: Relation kind (e.g. parent_of, child_of, blocks, blocked_by, relates_to, duplicates, triggers, triggered_by).
         relatedTaskId:
           type: string
@@ -2039,7 +2039,7 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/TaskSearchResult'
+            $ref: "#/components/schemas/TaskSearchResult"
     TaskStatus:
       type: object
       required:
@@ -2051,7 +2051,7 @@ components:
         name:
           type: string
         category:
-          $ref: '#/components/schemas/TaskStatusCategory'
+          $ref: "#/components/schemas/TaskStatusCategory"
         position:
           type: integer
           format: int64
@@ -2075,7 +2075,7 @@ components:
           minLength: 1
           maxLength: 100
         category:
-          $ref: '#/components/schemas/TaskStatusCategory'
+          $ref: "#/components/schemas/TaskStatusCategory"
         icon:
           type: string
           maxLength: 50
@@ -2088,7 +2088,7 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/TaskStatus'
+            $ref: "#/components/schemas/TaskStatus"
     TaskStatusReplace:
       type: object
       required:
@@ -2097,7 +2097,7 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/TaskStatusInput'
+            $ref: "#/components/schemas/TaskStatusInput"
     TaskUpdate:
       type: object
       properties:
@@ -2116,25 +2116,25 @@ components:
         effort:
           anyOf:
             - type: string
-            - type: 'null'
+            - type: "null"
           minLength: 1
           maxLength: 100
           description: New effort level name.
         priority:
           anyOf:
             - type: string
-            - type: 'null'
+            - type: "null"
           minLength: 1
           maxLength: 100
           description: New priority level name.
         recurrenceType:
           allOf:
-            - $ref: '#/components/schemas/TaskRecurrenceType'
+            - $ref: "#/components/schemas/TaskRecurrenceType"
           description: New recurrence type.
         recurrenceRule:
           anyOf:
             - type: string
-            - type: 'null'
+            - type: "null"
           minLength: 1
           maxLength: 500
           description: New recurrence rule (RRULE string, max 500 chars).
@@ -2155,12 +2155,12 @@ components:
           maxItems: 100
         due:
           anyOf:
-            - $ref: '#/components/schemas/TaskDue'
-            - type: 'null'
+            - $ref: "#/components/schemas/TaskDue"
+            - type: "null"
         overdueActionRule:
           anyOf:
-            - $ref: '#/components/schemas/TaskOverdueActionRule'
-            - type: 'null'
+            - $ref: "#/components/schemas/TaskOverdueActionRule"
+            - type: "null"
     User:
       type: object
       required:
@@ -2216,7 +2216,7 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/User'
+            $ref: "#/components/schemas/User"
     UserUpdate:
       type: object
       properties:

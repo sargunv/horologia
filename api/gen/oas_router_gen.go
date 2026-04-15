@@ -11,6 +11,12 @@ import (
 )
 
 var (
+	rn42AllowedHeaders = map[string]string{
+		"POST": "Content-Type",
+	}
+	rn45AllowedHeaders = map[string]string{
+		"POST": "Content-Type",
+	}
 	rn1AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
@@ -150,66 +156,234 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 			switch elem[0] {
-			case 'a': // Prefix: "auth/tokens"
+			case 'a': // Prefix: "auth/"
 
-				if l := len("auth/tokens"); len(elem) >= l && elem[0:l] == "auth/tokens" {
+				if l := len("auth/"); len(elem) >= l && elem[0:l] == "auth/" {
 					elem = elem[l:]
 				} else {
 					break
 				}
 
 				if len(elem) == 0 {
-					switch r.Method {
-					case "GET":
-						s.handleAuthListTokensRequest([0]string{}, elemIsEscaped, w, r)
-					case "POST":
-						s.handleAuthCreateTokenRequest([0]string{}, elemIsEscaped, w, r)
-					default:
-						s.notAllowed(w, r, notAllowedParams{
-							allowedMethods: "GET,POST",
-							allowedHeaders: rn1AllowedHeaders,
-							acceptPost:     "application/json",
-							acceptPatch:    "",
-						})
-					}
-
-					return
+					break
 				}
 				switch elem[0] {
-				case '/': // Prefix: "/"
+				case 'c': // Prefix: "config"
 
-					if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+					if l := len("config"); len(elem) >= l && elem[0:l] == "config" {
 						elem = elem[l:]
 					} else {
 						break
 					}
 
-					// Param: "tokenId"
-					// Leaf parameter, slashes are prohibited
-					idx := strings.IndexByte(elem, '/')
-					if idx >= 0 {
-						break
-					}
-					args[0] = elem
-					elem = ""
-
 					if len(elem) == 0 {
 						// Leaf node.
 						switch r.Method {
-						case "DELETE":
-							s.handleAuthDeleteTokenRequest([1]string{
-								args[0],
-							}, elemIsEscaped, w, r)
+						case "GET":
+							s.handleWebAuthConfigRequest([0]string{}, elemIsEscaped, w, r)
 						default:
 							s.notAllowed(w, r, notAllowedParams{
-								allowedMethods: "DELETE",
-								allowedHeaders: rn3AllowedHeaders,
+								allowedMethods: "GET",
+								allowedHeaders: nil,
 								acceptPost:     "",
 								acceptPatch:    "",
 							})
 						}
 
 						return
+					}
+
+				case 'l': // Prefix: "l"
+
+					if l := len("l"); len(elem) >= l && elem[0:l] == "l" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						break
+					}
+					switch elem[0] {
+					case 'i': // Prefix: "ink"
+
+						if l := len("ink"); len(elem) >= l && elem[0:l] == "ink" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							switch r.Method {
+							case "POST":
+								s.handleWebAuthLinkRequest([0]string{}, elemIsEscaped, w, r)
+							default:
+								s.notAllowed(w, r, notAllowedParams{
+									allowedMethods: "POST",
+									allowedHeaders: rn42AllowedHeaders,
+									acceptPost:     "application/json",
+									acceptPatch:    "",
+								})
+							}
+
+							return
+						}
+						switch elem[0] {
+						case '/': // Prefix: "/pending"
+
+							if l := len("/pending"); len(elem) >= l && elem[0:l] == "/pending" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch r.Method {
+								case "GET":
+									s.handleWebAuthLinkPendingRequest([0]string{}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "GET",
+										allowedHeaders: nil,
+										acceptPost:     "",
+										acceptPatch:    "",
+									})
+								}
+
+								return
+							}
+
+						}
+
+					case 'o': // Prefix: "og"
+
+						if l := len("og"); len(elem) >= l && elem[0:l] == "og" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							break
+						}
+						switch elem[0] {
+						case 'i': // Prefix: "in"
+
+							if l := len("in"); len(elem) >= l && elem[0:l] == "in" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch r.Method {
+								case "POST":
+									s.handleWebAuthLoginRequest([0]string{}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "POST",
+										allowedHeaders: rn45AllowedHeaders,
+										acceptPost:     "application/json",
+										acceptPatch:    "",
+									})
+								}
+
+								return
+							}
+
+						case 'o': // Prefix: "out"
+
+							if l := len("out"); len(elem) >= l && elem[0:l] == "out" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch r.Method {
+								case "POST":
+									s.handleWebAuthLogoutRequest([0]string{}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "POST",
+										allowedHeaders: nil,
+										acceptPost:     "",
+										acceptPatch:    "",
+									})
+								}
+
+								return
+							}
+
+						}
+
+					}
+
+				case 't': // Prefix: "tokens"
+
+					if l := len("tokens"); len(elem) >= l && elem[0:l] == "tokens" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						switch r.Method {
+						case "GET":
+							s.handleAuthListTokensRequest([0]string{}, elemIsEscaped, w, r)
+						case "POST":
+							s.handleAuthCreateTokenRequest([0]string{}, elemIsEscaped, w, r)
+						default:
+							s.notAllowed(w, r, notAllowedParams{
+								allowedMethods: "GET,POST",
+								allowedHeaders: rn1AllowedHeaders,
+								acceptPost:     "application/json",
+								acceptPatch:    "",
+							})
+						}
+
+						return
+					}
+					switch elem[0] {
+					case '/': // Prefix: "/"
+
+						if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						// Param: "tokenId"
+						// Leaf parameter, slashes are prohibited
+						idx := strings.IndexByte(elem, '/')
+						if idx >= 0 {
+							break
+						}
+						args[0] = elem
+						elem = ""
+
+						if len(elem) == 0 {
+							// Leaf node.
+							switch r.Method {
+							case "DELETE":
+								s.handleAuthDeleteTokenRequest([1]string{
+									args[0],
+								}, elemIsEscaped, w, r)
+							default:
+								s.notAllowed(w, r, notAllowedParams{
+									allowedMethods: "DELETE",
+									allowedHeaders: rn3AllowedHeaders,
+									acceptPost:     "",
+									acceptPatch:    "",
+								})
+							}
+
+							return
+						}
+
 					}
 
 				}
@@ -1121,71 +1295,239 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 				break
 			}
 			switch elem[0] {
-			case 'a': // Prefix: "auth/tokens"
+			case 'a': // Prefix: "auth/"
 
-				if l := len("auth/tokens"); len(elem) >= l && elem[0:l] == "auth/tokens" {
+				if l := len("auth/"); len(elem) >= l && elem[0:l] == "auth/" {
 					elem = elem[l:]
 				} else {
 					break
 				}
 
 				if len(elem) == 0 {
-					switch method {
-					case "GET":
-						r.name = AuthListTokensOperation
-						r.summary = ""
-						r.operationID = "Auth_listTokens"
-						r.operationGroup = ""
-						r.pathPattern = "/auth/tokens"
-						r.args = args
-						r.count = 0
-						return r, true
-					case "POST":
-						r.name = AuthCreateTokenOperation
-						r.summary = ""
-						r.operationID = "Auth_createToken"
-						r.operationGroup = ""
-						r.pathPattern = "/auth/tokens"
-						r.args = args
-						r.count = 0
-						return r, true
-					default:
-						return
-					}
+					break
 				}
 				switch elem[0] {
-				case '/': // Prefix: "/"
+				case 'c': // Prefix: "config"
 
-					if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+					if l := len("config"); len(elem) >= l && elem[0:l] == "config" {
 						elem = elem[l:]
 					} else {
 						break
 					}
 
-					// Param: "tokenId"
-					// Leaf parameter, slashes are prohibited
-					idx := strings.IndexByte(elem, '/')
-					if idx >= 0 {
-						break
-					}
-					args[0] = elem
-					elem = ""
-
 					if len(elem) == 0 {
 						// Leaf node.
 						switch method {
-						case "DELETE":
-							r.name = AuthDeleteTokenOperation
+						case "GET":
+							r.name = WebAuthConfigOperation
 							r.summary = ""
-							r.operationID = "Auth_deleteToken"
+							r.operationID = "WebAuth_config"
 							r.operationGroup = ""
-							r.pathPattern = "/auth/tokens/{tokenId}"
+							r.pathPattern = "/auth/config"
 							r.args = args
-							r.count = 1
+							r.count = 0
 							return r, true
 						default:
 							return
 						}
+					}
+
+				case 'l': // Prefix: "l"
+
+					if l := len("l"); len(elem) >= l && elem[0:l] == "l" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						break
+					}
+					switch elem[0] {
+					case 'i': // Prefix: "ink"
+
+						if l := len("ink"); len(elem) >= l && elem[0:l] == "ink" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							switch method {
+							case "POST":
+								r.name = WebAuthLinkOperation
+								r.summary = ""
+								r.operationID = "WebAuth_link"
+								r.operationGroup = ""
+								r.pathPattern = "/auth/link"
+								r.args = args
+								r.count = 0
+								return r, true
+							default:
+								return
+							}
+						}
+						switch elem[0] {
+						case '/': // Prefix: "/pending"
+
+							if l := len("/pending"); len(elem) >= l && elem[0:l] == "/pending" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch method {
+								case "GET":
+									r.name = WebAuthLinkPendingOperation
+									r.summary = ""
+									r.operationID = "WebAuth_linkPending"
+									r.operationGroup = ""
+									r.pathPattern = "/auth/link/pending"
+									r.args = args
+									r.count = 0
+									return r, true
+								default:
+									return
+								}
+							}
+
+						}
+
+					case 'o': // Prefix: "og"
+
+						if l := len("og"); len(elem) >= l && elem[0:l] == "og" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							break
+						}
+						switch elem[0] {
+						case 'i': // Prefix: "in"
+
+							if l := len("in"); len(elem) >= l && elem[0:l] == "in" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch method {
+								case "POST":
+									r.name = WebAuthLoginOperation
+									r.summary = ""
+									r.operationID = "WebAuth_login"
+									r.operationGroup = ""
+									r.pathPattern = "/auth/login"
+									r.args = args
+									r.count = 0
+									return r, true
+								default:
+									return
+								}
+							}
+
+						case 'o': // Prefix: "out"
+
+							if l := len("out"); len(elem) >= l && elem[0:l] == "out" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch method {
+								case "POST":
+									r.name = WebAuthLogoutOperation
+									r.summary = ""
+									r.operationID = "WebAuth_logout"
+									r.operationGroup = ""
+									r.pathPattern = "/auth/logout"
+									r.args = args
+									r.count = 0
+									return r, true
+								default:
+									return
+								}
+							}
+
+						}
+
+					}
+
+				case 't': // Prefix: "tokens"
+
+					if l := len("tokens"); len(elem) >= l && elem[0:l] == "tokens" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						switch method {
+						case "GET":
+							r.name = AuthListTokensOperation
+							r.summary = ""
+							r.operationID = "Auth_listTokens"
+							r.operationGroup = ""
+							r.pathPattern = "/auth/tokens"
+							r.args = args
+							r.count = 0
+							return r, true
+						case "POST":
+							r.name = AuthCreateTokenOperation
+							r.summary = ""
+							r.operationID = "Auth_createToken"
+							r.operationGroup = ""
+							r.pathPattern = "/auth/tokens"
+							r.args = args
+							r.count = 0
+							return r, true
+						default:
+							return
+						}
+					}
+					switch elem[0] {
+					case '/': // Prefix: "/"
+
+						if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						// Param: "tokenId"
+						// Leaf parameter, slashes are prohibited
+						idx := strings.IndexByte(elem, '/')
+						if idx >= 0 {
+							break
+						}
+						args[0] = elem
+						elem = ""
+
+						if len(elem) == 0 {
+							// Leaf node.
+							switch method {
+							case "DELETE":
+								r.name = AuthDeleteTokenOperation
+								r.summary = ""
+								r.operationID = "Auth_deleteToken"
+								r.operationGroup = ""
+								r.pathPattern = "/auth/tokens/{tokenId}"
+								r.args = args
+								r.count = 1
+								return r, true
+							default:
+								return
+							}
+						}
+
 					}
 
 				}

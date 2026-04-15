@@ -2,11 +2,9 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { CircleAlert } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
-import * as v from "valibot";
+import { apiClient, getApiErrorMessage } from "../api/client.ts";
 import { authConfigQueryOptions } from "../lib/queries.ts";
 import { shouldUseDocumentNavigation } from "../lib/redirects.ts";
-
-const ErrorBodySchema = v.object({ message: v.string() });
 
 interface LoginSearch {
   redirect?: string;
@@ -39,17 +37,10 @@ function LoginPage() {
 
   const loginMutation = useMutation({
     mutationFn: async ({ email, password }: { email: string; password: string }) => {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email, password }),
+      const { error } = await apiClient.POST("/auth/login", {
+        body: { email, password },
       });
-      if (!res.ok) {
-        const body: unknown = await res.json().catch(() => null);
-        const parsed = v.safeParse(ErrorBodySchema, body);
-        throw new Error(parsed.success ? parsed.output.message : "Invalid email or password");
-      }
+      if (error) throw new Error(getApiErrorMessage(error, "Invalid email or password"));
     },
     onSuccess: () => {
       const target = redirect ?? "/";

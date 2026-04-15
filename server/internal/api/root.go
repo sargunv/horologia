@@ -5,10 +5,13 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/sargunv/horologia/server/internal/apidocs"
 	"github.com/sargunv/horologia/server/internal/webui"
 )
 
@@ -17,11 +20,15 @@ import (
 //   - /api/* routes to the API handler (with /api prefix stripped)
 //   - /auth/*, /oauth/*, /.well-known/*, and /mcp/.well-known/* route to the
 //     auth/OAuth stack without a prefix rewrite
+//   - /openapi.yaml serves the generated OpenAPI document
+//   - /docs serves the Scalar API reference UI
 //   - /mcp routes to the MCP Streamable HTTP handler (if non-nil)
 //   - /* routes to the embedded SPA (static files + index.html fallback)
 func MountRoot(apiHandler http.Handler, mcpHandler http.Handler, pool *pgxpool.Pool, log *slog.Logger) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", healthHandler(pool, log))
+	mux.HandleFunc("GET /openapi.yaml", apidocs.OpenAPIHandler)
+	mux.HandleFunc("GET /docs", apidocs.ScalarHandler)
 	mux.Handle("/api/", http.StripPrefix("/api", apiHandler))
 	mux.Handle("/auth/", apiHandler)
 	mux.Handle("/oauth/", apiHandler)
@@ -31,7 +38,57 @@ func MountRoot(apiHandler http.Handler, mcpHandler http.Handler, pool *pgxpool.P
 		mux.Handle("/mcp", mcpHandler)
 	}
 	mux.Handle("/", webui.Handler())
-	return mux
+	return internalCORSMiddleware(mux)
+}
+
+func internalCORSMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if isInternalAPIPath(r.URL.Path) && !sameOriginRequest(r) {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func isInternalAPIPath(path string) bool {
+	if normalized, ok := strings.CutPrefix(path, "/api"); ok {
+		path = normalized
+	}
+
+	switch path {
+	case "/auth/config", "/auth/login", "/auth/logout", "/auth/link", "/auth/link/pending":
+		return true
+	default:
+		return false
+	}
+}
+
+func sameOriginRequest(r *http.Request) bool {
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return true
+	}
+	u, err := url.Parse(origin)
+	if err != nil {
+		return false
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return false
+	}
+	return u.Host == r.Host && u.Scheme == requestScheme(r)
+}
+
+func requestScheme(r *http.Request) string {
+	if forwarded := r.Header.Get("X-Forwarded-Proto"); forwarded != "" {
+		if scheme, _, _ := strings.Cut(forwarded, ","); scheme != "" {
+			return strings.TrimSpace(scheme)
+		}
+	}
+	if r.TLS != nil {
+		return "https"
+	}
+	return "http"
 }
 
 func healthHandler(pool *pgxpool.Pool, log *slog.Logger) http.HandlerFunc {

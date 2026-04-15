@@ -85,7 +85,7 @@ func TestLoginRejectsMissingContentType(t *testing.T) {
 	if err != nil {
 		t.Fatalf("do request: %v", err)
 	}
-	assertStatus(t, resp, http.StatusUnsupportedMediaType)
+	assertStatus(t, resp, http.StatusBadRequest)
 }
 
 func postLogout(t *testing.T, env *testEnv, sessionToken string) *http.Response {
@@ -156,7 +156,7 @@ func TestLoginDisabledPasswordAuth(t *testing.T) {
 	srv := httptest.NewServer(api.MountWebAuth(h, handler))
 	t.Cleanup(srv.Close)
 
-	// POST /auth/login should 404 when password auth is disabled.
+	// POST /auth/login should 403 when password auth is disabled.
 	req, _ := http.NewRequestWithContext(t.Context(), http.MethodPost, srv.URL+"/auth/login",
 		strings.NewReader(`{"email":"test@example.com","password":"password"}`))
 	req.Header.Set("Content-Type", "application/json")
@@ -165,8 +165,8 @@ func TestLoginDisabledPasswordAuth(t *testing.T) {
 		t.Fatalf("do request: %v", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode != http.StatusNotFound {
-		t.Errorf("got status %d, want %d", resp.StatusCode, http.StatusNotFound)
+	if resp.StatusCode != http.StatusForbidden {
+		t.Errorf("got status %d, want %d", resp.StatusCode, http.StatusForbidden)
 	}
 }
 

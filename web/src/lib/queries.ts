@@ -18,10 +18,9 @@ export type AuthConfig = v.InferOutput<typeof AuthConfigSchema>;
 export const authConfigQueryOptions = queryOptions({
   queryKey: ["authConfig"],
   queryFn: async (): Promise<AuthConfig> => {
-    const res = await fetch("/api/auth/config");
-    if (!res.ok) throw new Error("Failed to fetch auth config");
-    const raw: unknown = await res.json();
-    return v.parse(AuthConfigSchema, raw);
+    const { data, error } = await apiClient.GET("/auth/config");
+    if (error) throw error;
+    return v.parse(AuthConfigSchema, data);
   },
   staleTime: Infinity,
 });
@@ -36,11 +35,10 @@ export type LinkPendingInfo = v.InferOutput<typeof LinkPendingInfoSchema>;
 export const linkPendingQueryOptions = queryOptions({
   queryKey: ["linkPending"],
   queryFn: async (): Promise<LinkPendingInfo | null> => {
-    const res = await fetch("/api/auth/link/pending", { credentials: "include" });
-    if (res.status === 404) return null;
-    if (!res.ok) throw new Error("Failed to fetch link state");
-    const raw: unknown = await res.json();
-    return v.parse(LinkPendingInfoSchema, raw);
+    const { data, error, response } = await apiClient.GET("/auth/link/pending");
+    if (response.status === 404) return null;
+    if (error) throw error;
+    return v.parse(LinkPendingInfoSchema, data);
   },
   retry: false,
   staleTime: Infinity,

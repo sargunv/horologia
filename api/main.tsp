@@ -15,5 +15,6 @@ import "./src/activity_log.tsp";
 using Http;
 
 @service(#{ title: "Horologia API" })
-@useAuth(BearerAuth)
+@server("/api", "Same-origin API")
+@useAuth(BearerAuth | ApiKeyAuth<ApiKeyLocation.cookie, "horologia_session">)
 namespace Horologia;

@@ -2,15 +2,9 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { CircleAlert } from "lucide-react";
 import { type FormEvent, useState } from "react";
+import { apiClient, getApiErrorMessage } from "../api/client.ts";
 import { shouldUseDocumentNavigation } from "../lib/redirects.ts";
-import * as v from "valibot";
 import { linkPendingQueryOptions } from "../lib/queries.ts";
-
-const ErrorBodySchema = v.object({ message: v.string() });
-const LinkResponseSchema = v.object({
-  linked: v.boolean(),
-  redirectTo: v.string(),
-});
 
 export const Route = createFileRoute("/link-account")({
   component: LinkAccountPage,
@@ -28,19 +22,11 @@ function LinkAccountPage() {
     }: {
       password: string;
     }): Promise<{ linked: boolean; redirectTo: string }> => {
-      const res = await fetch("/api/auth/link", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ password }),
+      const { data, error } = await apiClient.POST("/auth/link", {
+        body: { password },
       });
-      if (!res.ok) {
-        const body: unknown = await res.json().catch(() => null);
-        const parsed = v.safeParse(ErrorBodySchema, body);
-        throw new Error(parsed.success ? parsed.output.message : "Failed to link account");
-      }
-      const raw: unknown = await res.json();
-      return v.parse(LinkResponseSchema, raw);
+      if (error) throw new Error(getApiErrorMessage(error, "Failed to link account"));
+      return data;
     },
     onSuccess: (data) => {
       const target = data.redirectTo || "/";

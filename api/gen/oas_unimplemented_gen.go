@@ -293,6 +293,59 @@ func (UnimplementedHandler) UsersUpdate(ctx context.Context, req *UserUpdate, pa
 	return r, ht.ErrNotImplemented
 }
 
+// WebAuthConfig implements WebAuth_config operation.
+//
+// Read public authentication configuration used by the web UI before login.
+//
+// GET /auth/config
+func (UnimplementedHandler) WebAuthConfig(ctx context.Context) (r *AuthConfig, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// WebAuthLink implements WebAuth_link operation.
+//
+// Confirm OIDC account linking using the existing account password.
+// This endpoint relies on the temporary `horologia_oidc_link` cookie issued
+// during the OIDC callback. On success it creates the normal
+// `horologia_session` cookie and clears the pending link cookie. This
+// endpoint is only available when OIDC link consent is enabled.
+//
+// POST /auth/link
+func (UnimplementedHandler) WebAuthLink(ctx context.Context, req *AuthLinkRequest) (r *AuthLinkResponseHeaders, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// WebAuthLinkPending implements WebAuth_linkPending operation.
+//
+// Read the pending OIDC account-link request created during the OIDC callback.
+// This endpoint relies on the temporary `horologia_oidc_link` cookie and is
+// only available when OIDC link consent is enabled.
+//
+// GET /auth/link/pending
+func (UnimplementedHandler) WebAuthLinkPending(ctx context.Context) (r *AuthLinkPendingResponse, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// WebAuthLogin implements WebAuth_login operation.
+//
+// Log in with email and password.
+// Returns the authenticated user and sets the `horologia_session` cookie on
+// success. This endpoint is only available when password auth is enabled.
+//
+// POST /auth/login
+func (UnimplementedHandler) WebAuthLogin(ctx context.Context, req *AuthLoginRequest) (r *AuthLoginResponseHeaders, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// WebAuthLogout implements WebAuth_logout operation.
+//
+// Clear the current browser session.
+//
+// POST /auth/logout
+func (UnimplementedHandler) WebAuthLogout(ctx context.Context) (r *WebAuthLogoutNoContent, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // NewError creates *ApiErrorStatusCode from error returned by handler.
 //
 // Used for common default response.

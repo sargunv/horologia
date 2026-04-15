@@ -375,8 +375,271 @@ func (s *ApiErrorStatusCode) SetResponse(val ApiError) {
 	s.Response = val
 }
 
+type ApiKeyAuth struct {
+	APIKey string
+	Roles  []string
+}
+
+// GetAPIKey returns the value of APIKey.
+func (s *ApiKeyAuth) GetAPIKey() string {
+	return s.APIKey
+}
+
+// GetRoles returns the value of Roles.
+func (s *ApiKeyAuth) GetRoles() []string {
+	return s.Roles
+}
+
+// SetAPIKey sets the value of APIKey.
+func (s *ApiKeyAuth) SetAPIKey(val string) {
+	s.APIKey = val
+}
+
+// SetRoles sets the value of Roles.
+func (s *ApiKeyAuth) SetRoles(val []string) {
+	s.Roles = val
+}
+
+// Ref: #/components/schemas/AuthConfig
+type AuthConfig struct {
+	Oidc     AuthConfigOIDC     `json:"oidc"`
+	Password AuthConfigPassword `json:"password"`
+}
+
+// GetOidc returns the value of Oidc.
+func (s *AuthConfig) GetOidc() AuthConfigOIDC {
+	return s.Oidc
+}
+
+// GetPassword returns the value of Password.
+func (s *AuthConfig) GetPassword() AuthConfigPassword {
+	return s.Password
+}
+
+// SetOidc sets the value of Oidc.
+func (s *AuthConfig) SetOidc(val AuthConfigOIDC) {
+	s.Oidc = val
+}
+
+// SetPassword sets the value of Password.
+func (s *AuthConfig) SetPassword(val AuthConfigPassword) {
+	s.Password = val
+}
+
+// Ref: #/components/schemas/AuthConfigOIDC
+type AuthConfigOIDC struct {
+	Enabled      bool   `json:"enabled"`
+	Label        string `json:"label"`
+	AutoRedirect bool   `json:"autoRedirect"`
+}
+
+// GetEnabled returns the value of Enabled.
+func (s *AuthConfigOIDC) GetEnabled() bool {
+	return s.Enabled
+}
+
+// GetLabel returns the value of Label.
+func (s *AuthConfigOIDC) GetLabel() string {
+	return s.Label
+}
+
+// GetAutoRedirect returns the value of AutoRedirect.
+func (s *AuthConfigOIDC) GetAutoRedirect() bool {
+	return s.AutoRedirect
+}
+
+// SetEnabled sets the value of Enabled.
+func (s *AuthConfigOIDC) SetEnabled(val bool) {
+	s.Enabled = val
+}
+
+// SetLabel sets the value of Label.
+func (s *AuthConfigOIDC) SetLabel(val string) {
+	s.Label = val
+}
+
+// SetAutoRedirect sets the value of AutoRedirect.
+func (s *AuthConfigOIDC) SetAutoRedirect(val bool) {
+	s.AutoRedirect = val
+}
+
+// Ref: #/components/schemas/AuthConfigPassword
+type AuthConfigPassword struct {
+	Enabled bool `json:"enabled"`
+}
+
+// GetEnabled returns the value of Enabled.
+func (s *AuthConfigPassword) GetEnabled() bool {
+	return s.Enabled
+}
+
+// SetEnabled sets the value of Enabled.
+func (s *AuthConfigPassword) SetEnabled(val bool) {
+	s.Enabled = val
+}
+
 // AuthDeleteTokenNoContent is response for AuthDeleteToken operation.
 type AuthDeleteTokenNoContent struct{}
+
+// Ref: #/components/schemas/AuthLinkPendingResponse
+type AuthLinkPendingResponse struct {
+	Email string `json:"email"`
+	Name  string `json:"name"`
+}
+
+// GetEmail returns the value of Email.
+func (s *AuthLinkPendingResponse) GetEmail() string {
+	return s.Email
+}
+
+// GetName returns the value of Name.
+func (s *AuthLinkPendingResponse) GetName() string {
+	return s.Name
+}
+
+// SetEmail sets the value of Email.
+func (s *AuthLinkPendingResponse) SetEmail(val string) {
+	s.Email = val
+}
+
+// SetName sets the value of Name.
+func (s *AuthLinkPendingResponse) SetName(val string) {
+	s.Name = val
+}
+
+// Ref: #/components/schemas/AuthLinkRequest
+type AuthLinkRequest struct {
+	Password string `json:"password"`
+}
+
+// GetPassword returns the value of Password.
+func (s *AuthLinkRequest) GetPassword() string {
+	return s.Password
+}
+
+// SetPassword sets the value of Password.
+func (s *AuthLinkRequest) SetPassword(val string) {
+	s.Password = val
+}
+
+// Ref: #/components/schemas/AuthLinkResponse
+type AuthLinkResponse struct {
+	Linked     bool   `json:"linked"`
+	RedirectTo string `json:"redirectTo"`
+}
+
+// GetLinked returns the value of Linked.
+func (s *AuthLinkResponse) GetLinked() bool {
+	return s.Linked
+}
+
+// GetRedirectTo returns the value of RedirectTo.
+func (s *AuthLinkResponse) GetRedirectTo() string {
+	return s.RedirectTo
+}
+
+// SetLinked sets the value of Linked.
+func (s *AuthLinkResponse) SetLinked(val bool) {
+	s.Linked = val
+}
+
+// SetRedirectTo sets the value of RedirectTo.
+func (s *AuthLinkResponse) SetRedirectTo(val string) {
+	s.RedirectTo = val
+}
+
+// AuthLinkResponseHeaders wraps AuthLinkResponse with response headers.
+type AuthLinkResponseHeaders struct {
+	SetCookie []string
+	Response  AuthLinkResponse
+}
+
+// GetSetCookie returns the value of SetCookie.
+func (s *AuthLinkResponseHeaders) GetSetCookie() []string {
+	return s.SetCookie
+}
+
+// GetResponse returns the value of Response.
+func (s *AuthLinkResponseHeaders) GetResponse() AuthLinkResponse {
+	return s.Response
+}
+
+// SetSetCookie sets the value of SetCookie.
+func (s *AuthLinkResponseHeaders) SetSetCookie(val []string) {
+	s.SetCookie = val
+}
+
+// SetResponse sets the value of Response.
+func (s *AuthLinkResponseHeaders) SetResponse(val AuthLinkResponse) {
+	s.Response = val
+}
+
+// Ref: #/components/schemas/AuthLoginRequest
+type AuthLoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+// GetEmail returns the value of Email.
+func (s *AuthLoginRequest) GetEmail() string {
+	return s.Email
+}
+
+// GetPassword returns the value of Password.
+func (s *AuthLoginRequest) GetPassword() string {
+	return s.Password
+}
+
+// SetEmail sets the value of Email.
+func (s *AuthLoginRequest) SetEmail(val string) {
+	s.Email = val
+}
+
+// SetPassword sets the value of Password.
+func (s *AuthLoginRequest) SetPassword(val string) {
+	s.Password = val
+}
+
+// Ref: #/components/schemas/AuthLoginResponse
+type AuthLoginResponse struct {
+	User User `json:"user"`
+}
+
+// GetUser returns the value of User.
+func (s *AuthLoginResponse) GetUser() User {
+	return s.User
+}
+
+// SetUser sets the value of User.
+func (s *AuthLoginResponse) SetUser(val User) {
+	s.User = val
+}
+
+// AuthLoginResponseHeaders wraps AuthLoginResponse with response headers.
+type AuthLoginResponseHeaders struct {
+	SetCookie string
+	Response  AuthLoginResponse
+}
+
+// GetSetCookie returns the value of SetCookie.
+func (s *AuthLoginResponseHeaders) GetSetCookie() string {
+	return s.SetCookie
+}
+
+// GetResponse returns the value of Response.
+func (s *AuthLoginResponseHeaders) GetResponse() AuthLoginResponse {
+	return s.Response
+}
+
+// SetSetCookie sets the value of SetCookie.
+func (s *AuthLoginResponseHeaders) SetSetCookie(val string) {
+	s.SetCookie = val
+}
+
+// SetResponse sets the value of Response.
+func (s *AuthLoginResponseHeaders) SetResponse(val AuthLoginResponse) {
+	s.Response = val
+}
 
 // Ref: #/components/schemas/AuthToken
 type AuthToken struct {
@@ -3026,3 +3289,18 @@ func (s *UserUpdate) SetClearPassword(val OptBool) {
 
 // UsersDeleteNoContent is response for UsersDelete operation.
 type UsersDeleteNoContent struct{}
+
+// WebAuthLogoutNoContent is response for WebAuthLogout operation.
+type WebAuthLogoutNoContent struct {
+	SetCookie string
+}
+
+// GetSetCookie returns the value of SetCookie.
+func (s *WebAuthLogoutNoContent) GetSetCookie() string {
+	return s.SetCookie
+}
+
+// SetSetCookie sets the value of SetCookie.
+func (s *WebAuthLogoutNoContent) SetSetCookie(val string) {
+	s.SetCookie = val
+}

@@ -15,9 +15,8 @@ import (
 	"github.com/sargunv/horologia/server/internal/types"
 )
 
-// HandleBearerAuth validates the bearer token and enriches the context with the user.
-func (h *Handler) HandleBearerAuth(ctx context.Context, operationName apigen.OperationName, t apigen.BearerAuth) (context.Context, error) {
-	user, err := auth.AuthenticateBearerToken(ctx, h.Pool, t.Token, time.Now())
+func (h *Handler) authenticateToken(ctx context.Context, token string) (context.Context, error) {
+	user, err := auth.AuthenticateBearerToken(ctx, h.Pool, token, time.Now())
 	if errors.Is(err, auth.ErrUnauthorized) {
 		return ctx, ogenerrors.ErrSkipServerSecurity
 	}
@@ -25,7 +24,21 @@ func (h *Handler) HandleBearerAuth(ctx context.Context, operationName apigen.Ope
 		return ctx, err
 	}
 
+	ctx = context.WithValue(ctx, sessionTokenContextKey{}, token)
 	return auth.ContextWithUser(ctx, user), nil
+}
+
+// HandleApiKeyAuth validates the session cookie token and enriches the context with the user.
+func (h *Handler) HandleApiKeyAuth(ctx context.Context, operationName apigen.OperationName, t apigen.ApiKeyAuth) (context.Context, error) {
+	if authHeaderPresent(ctx) {
+		return ctx, ogenerrors.ErrSkipServerSecurity
+	}
+	return h.authenticateToken(ctx, t.APIKey)
+}
+
+// HandleBearerAuth validates the bearer token and enriches the context with the user.
+func (h *Handler) HandleBearerAuth(ctx context.Context, operationName apigen.OperationName, t apigen.BearerAuth) (context.Context, error) {
+	return h.authenticateToken(ctx, t.Token)
 }
 
 // generateToken creates a cryptographically random token and returns both
