@@ -19,6 +19,7 @@ TILT_PORT = "{{env.TILT_PORT | default(value='10350')}}"
 [settings]
 experimental = true
 pin = true
+install_before = "3d"
 
 [settings.node]
 corepack = true

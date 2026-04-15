@@ -4,3 +4,4 @@ packages:
   - web
 onlyBuiltDependencies:
   - esbuild
+minimumReleaseAge: 4320

@@ -4,6 +4,8 @@
 # - Go workspaces (go.work): https://github.com/dependabot/dependabot-core/issues/6012
 # - mise tool versions: https://github.com/dependabot/dependabot-core/issues/12320
 version: 2
+cooldown:
+  default-days: 3
 updates:
   - package-ecosystem: gomod
     directory: /api
