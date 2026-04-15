@@ -1279,7 +1279,6 @@ paths:
         - Users
 security:
   - BearerAuth: []
-  - ApiKeyAuth: []
 components:
   parameters:
     PageParams.cursor:
@@ -2240,10 +2239,6 @@ components:
     BearerAuth:
       type: http
       scheme: Bearer
-    ApiKeyAuth:
-      type: apiKey
-      in: cookie
-      name: horologia_session
 servers:
   - url: /api
     description: Same-origin API

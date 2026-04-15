@@ -36,35 +36,40 @@ const (
 )
 
 type (
-	sessionTokenContextKey      struct{}
-	authHeaderPresentContextKey struct{}
+	sessionTokenContextKey struct{}
 )
 
-// CookieAuthMiddleware reads the horologia_session cookie and exposes it on the
-// request context for handlers that need the raw session token.
+// CookieAuthMiddleware keeps the session cookie available in request context for
+// browser auth routes, and translates it into bearer auth for same-origin API
+// requests that don't already provide an Authorization header.
 func CookieAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Authorization") != "" {
-			ctx := context.WithValue(r.Context(), authHeaderPresentContextKey{}, true)
-			r = r.Clone(ctx)
-		}
-
 		if c, err := r.Cookie(sessionCookieName); err == nil {
 			ctx := context.WithValue(r.Context(), sessionTokenContextKey{}, c.Value)
 			r = r.Clone(ctx)
+
+			if r.Header.Get("Authorization") == "" && shouldBridgeSessionAuth(r.URL.Path) {
+				if !sameOriginRequest(r) {
+					w.WriteHeader(http.StatusForbidden)
+					return
+				}
+				r.Header.Set("Authorization", "Bearer "+c.Value)
+			}
 		}
 		next.ServeHTTP(w, r)
 	})
 }
 
+func shouldBridgeSessionAuth(path string) bool {
+	return !strings.HasPrefix(path, "/auth/") &&
+		!strings.HasPrefix(path, "/oauth/") &&
+		!strings.HasPrefix(path, "/.well-known/") &&
+		!strings.HasPrefix(path, "/mcp/.well-known/")
+}
+
 func sessionTokenFromContext(ctx context.Context) (string, bool) {
 	token, ok := ctx.Value(sessionTokenContextKey{}).(string)
 	return token, ok
-}
-
-func authHeaderPresent(ctx context.Context) bool {
-	present, _ := ctx.Value(authHeaderPresentContextKey{}).(bool)
-	return present
 }
 
 func (h *Handler) sessionCookie(token string) *http.Cookie {

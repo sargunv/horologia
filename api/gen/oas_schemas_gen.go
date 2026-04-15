@@ -375,31 +375,6 @@ func (s *ApiErrorStatusCode) SetResponse(val ApiError) {
 	s.Response = val
 }
 
-type ApiKeyAuth struct {
-	APIKey string
-	Roles  []string
-}
-
-// GetAPIKey returns the value of APIKey.
-func (s *ApiKeyAuth) GetAPIKey() string {
-	return s.APIKey
-}
-
-// GetRoles returns the value of Roles.
-func (s *ApiKeyAuth) GetRoles() []string {
-	return s.Roles
-}
-
-// SetAPIKey sets the value of APIKey.
-func (s *ApiKeyAuth) SetAPIKey(val string) {
-	s.APIKey = val
-}
-
-// SetRoles sets the value of Roles.
-func (s *ApiKeyAuth) SetRoles(val []string) {
-	s.Roles = val
-}
-
 // Ref: #/components/schemas/AuthConfig
 type AuthConfig struct {
 	Oidc     AuthConfigOIDC     `json:"oidc"`

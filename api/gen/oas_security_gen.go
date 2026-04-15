@@ -13,8 +13,6 @@ import (
 
 // SecurityHandler is handler for security parameters.
 type SecurityHandler interface {
-	// HandleApiKeyAuth handles ApiKeyAuth security.
-	HandleApiKeyAuth(ctx context.Context, operationName OperationName, t ApiKeyAuth) (context.Context, error)
 	// HandleBearerAuth handles BearerAuth security.
 	HandleBearerAuth(ctx context.Context, operationName OperationName, t BearerAuth) (context.Context, error)
 }
@@ -32,71 +30,6 @@ func findAuthorization(h http.Header, prefix string) (string, bool) {
 		return value, true
 	}
 	return "", false
-}
-
-// operationRolesApiKeyAuth is a private map storing roles per operation.
-var operationRolesApiKeyAuth = map[string][]string{
-	AuthCreateTokenOperation:                []string{},
-	AuthDeleteTokenOperation:                []string{},
-	AuthListTokensOperation:                 []string{},
-	SpaceActivityListOperation:              []string{},
-	SpaceMembersCreateOperation:             []string{},
-	SpaceMembersDeleteOperation:             []string{},
-	SpaceMembersListOperation:               []string{},
-	SpaceMembersUpdateOperation:             []string{},
-	SpaceTagsCreateOperation:                []string{},
-	SpaceTagsDeleteOperation:                []string{},
-	SpaceTagsListOperation:                  []string{},
-	SpaceTagsUpdateOperation:                []string{},
-	SpaceTaskActivityListOperation:          []string{},
-	SpaceTaskEffortLevelsListOperation:      []string{},
-	SpaceTaskEffortLevelsReplaceOperation:   []string{},
-	SpaceTaskPriorityLevelsListOperation:    []string{},
-	SpaceTaskPriorityLevelsReplaceOperation: []string{},
-	SpaceTaskRelationsCreateOperation:       []string{},
-	SpaceTaskRelationsDeleteOperation:       []string{},
-	SpaceTaskStatusesListOperation:          []string{},
-	SpaceTaskStatusesReplaceOperation:       []string{},
-	SpaceTasksCreateOperation:               []string{},
-	SpaceTasksDeleteOperation:               []string{},
-	SpaceTasksListOperation:                 []string{},
-	SpaceTasksReadOperation:                 []string{},
-	SpaceTasksUpdateOperation:               []string{},
-	SpacesCreateOperation:                   []string{},
-	SpacesDeleteOperation:                   []string{},
-	SpacesListOperation:                     []string{},
-	SpacesReadOperation:                     []string{},
-	SpacesUpdateOperation:                   []string{},
-	TasksSearchOperation:                    []string{},
-	UserActivityListOperation:               []string{},
-	UserTasksListOperation:                  []string{},
-	UsersCreateOperation:                    []string{},
-	UsersDeleteOperation:                    []string{},
-	UsersGetOperation:                       []string{},
-	UsersListOperation:                      []string{},
-	UsersMeOperation:                        []string{},
-	UsersUpdateOperation:                    []string{},
-}
-
-// GetRolesForApiKeyAuth returns the required roles for the given operation.
-//
-// This is useful for authorization scenarios where you need to know which roles
-// are required for an operation.
-//
-// Example:
-//
-//	requiredRoles := GetRolesForApiKeyAuth(AddPetOperation)
-//
-// Returns nil if the operation has no role requirements or if the operation is unknown.
-func GetRolesForApiKeyAuth(operation string) []string {
-	roles, ok := operationRolesApiKeyAuth[operation]
-	if !ok {
-		return nil
-	}
-	// Return a copy to prevent external modification
-	result := make([]string, len(roles))
-	copy(result, roles)
-	return result
 }
 
 // operationRolesBearerAuth is a private map storing roles per operation.
@@ -164,29 +97,6 @@ func GetRolesForBearerAuth(operation string) []string {
 	return result
 }
 
-func (s *Server) securityApiKeyAuth(ctx context.Context, operationName OperationName, req *http.Request) (context.Context, bool, error) {
-	var t ApiKeyAuth
-	const parameterName = "horologia_session"
-	var value string
-	switch cookie, err := req.Cookie(parameterName); {
-	case err == nil: // if NO error
-		value = cookie.Value
-	case errors.Is(err, http.ErrNoCookie):
-		return ctx, false, nil
-	default:
-		return nil, false, errors.Wrap(err, "get cookie value")
-	}
-	t.APIKey = value
-	t.Roles = operationRolesApiKeyAuth[operationName]
-	rctx, err := s.sec.HandleApiKeyAuth(ctx, operationName, t)
-	if errors.Is(err, ogenerrors.ErrSkipServerSecurity) {
-		return nil, false, nil
-	} else if err != nil {
-		return nil, false, err
-	}
-	return rctx, true, err
-}
-
 func (s *Server) securityBearerAuth(ctx context.Context, operationName OperationName, req *http.Request) (context.Context, bool, error) {
 	var t BearerAuth
 	token, ok := findAuthorization(req.Header, "Bearer")
@@ -206,23 +116,10 @@ func (s *Server) securityBearerAuth(ctx context.Context, operationName Operation
 
 // SecuritySource is provider of security values (tokens, passwords, etc.).
 type SecuritySource interface {
-	// ApiKeyAuth provides ApiKeyAuth security value.
-	ApiKeyAuth(ctx context.Context, operationName OperationName) (ApiKeyAuth, error)
 	// BearerAuth provides BearerAuth security value.
 	BearerAuth(ctx context.Context, operationName OperationName) (BearerAuth, error)
 }
 
-func (s *Client) securityApiKeyAuth(ctx context.Context, operationName OperationName, req *http.Request) error {
-	t, err := s.sec.ApiKeyAuth(ctx, operationName)
-	if err != nil {
-		return errors.Wrap(err, "security source \"ApiKeyAuth\"")
-	}
-	req.AddCookie(&http.Cookie{
-		Name:  "horologia_session",
-		Value: t.APIKey,
-	})
-	return nil
-}
 func (s *Client) securityBearerAuth(ctx context.Context, operationName OperationName, req *http.Request) error {
 	t, err := s.sec.BearerAuth(ctx, operationName)
 	if err != nil {

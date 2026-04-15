@@ -128,30 +128,11 @@ func (s *Server) handleAuthCreateTokenRequest(args [0]string, argsEscaped bool, 
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, AuthCreateTokenOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -345,30 +326,11 @@ func (s *Server) handleAuthDeleteTokenRequest(args [1]string, argsEscaped bool, 
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, AuthDeleteTokenOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -562,30 +524,11 @@ func (s *Server) handleAuthListTokensRequest(args [0]string, argsEscaped bool, w
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, AuthListTokensOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -764,30 +707,11 @@ func (s *Server) handleSpaceActivityListRequest(args [1]string, argsEscaped bool
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpaceActivityListOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -989,30 +913,11 @@ func (s *Server) handleSpaceMembersCreateRequest(args [1]string, argsEscaped boo
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpaceMembersCreateOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -1221,30 +1126,11 @@ func (s *Server) handleSpaceMembersDeleteRequest(args [2]string, argsEscaped boo
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpaceMembersDeleteOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -1442,30 +1328,11 @@ func (s *Server) handleSpaceMembersListRequest(args [1]string, argsEscaped bool,
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpaceMembersListOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -1659,30 +1526,11 @@ func (s *Server) handleSpaceMembersUpdateRequest(args [2]string, argsEscaped boo
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpaceMembersUpdateOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -1895,30 +1743,11 @@ func (s *Server) handleSpaceTagsCreateRequest(args [1]string, argsEscaped bool, 
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpaceTagsCreateOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -2127,30 +1956,11 @@ func (s *Server) handleSpaceTagsDeleteRequest(args [2]string, argsEscaped bool, 
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpaceTagsDeleteOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -2348,30 +2158,11 @@ func (s *Server) handleSpaceTagsListRequest(args [1]string, argsEscaped bool, w 
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpaceTagsListOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -2565,30 +2356,11 @@ func (s *Server) handleSpaceTagsUpdateRequest(args [2]string, argsEscaped bool, 
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpaceTagsUpdateOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -2801,30 +2573,11 @@ func (s *Server) handleSpaceTaskActivityListRequest(args [2]string, argsEscaped 
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpaceTaskActivityListOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -3030,30 +2783,11 @@ func (s *Server) handleSpaceTaskEffortLevelsListRequest(args [1]string, argsEsca
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpaceTaskEffortLevelsListOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -3247,30 +2981,11 @@ func (s *Server) handleSpaceTaskEffortLevelsReplaceRequest(args [1]string, argsE
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpaceTaskEffortLevelsReplaceOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -3479,30 +3194,11 @@ func (s *Server) handleSpaceTaskPriorityLevelsListRequest(args [1]string, argsEs
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpaceTaskPriorityLevelsListOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -3696,30 +3392,11 @@ func (s *Server) handleSpaceTaskPriorityLevelsReplaceRequest(args [1]string, arg
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpaceTaskPriorityLevelsReplaceOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -3928,30 +3605,11 @@ func (s *Server) handleSpaceTaskRelationsCreateRequest(args [2]string, argsEscap
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpaceTaskRelationsCreateOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -4164,30 +3822,11 @@ func (s *Server) handleSpaceTaskRelationsDeleteRequest(args [4]string, argsEscap
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpaceTaskRelationsDeleteOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -4393,30 +4032,11 @@ func (s *Server) handleSpaceTaskStatusesListRequest(args [1]string, argsEscaped 
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpaceTaskStatusesListOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -4610,30 +4230,11 @@ func (s *Server) handleSpaceTaskStatusesReplaceRequest(args [1]string, argsEscap
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpaceTaskStatusesReplaceOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -4842,30 +4443,11 @@ func (s *Server) handleSpaceTasksCreateRequest(args [1]string, argsEscaped bool,
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpaceTasksCreateOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -5074,30 +4656,11 @@ func (s *Server) handleSpaceTasksDeleteRequest(args [2]string, argsEscaped bool,
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpaceTasksDeleteOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -5295,30 +4858,11 @@ func (s *Server) handleSpaceTasksListRequest(args [1]string, argsEscaped bool, w
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpaceTasksListOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -5520,30 +5064,11 @@ func (s *Server) handleSpaceTasksReadRequest(args [2]string, argsEscaped bool, w
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpaceTasksReadOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -5741,30 +5266,11 @@ func (s *Server) handleSpaceTasksUpdateRequest(args [2]string, argsEscaped bool,
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpaceTasksUpdateOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -5977,30 +5483,11 @@ func (s *Server) handleSpacesCreateRequest(args [0]string, argsEscaped bool, w h
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpacesCreateOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -6194,30 +5681,11 @@ func (s *Server) handleSpacesDeleteRequest(args [1]string, argsEscaped bool, w h
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpacesDeleteOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -6411,30 +5879,11 @@ func (s *Server) handleSpacesListRequest(args [0]string, argsEscaped bool, w htt
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpacesListOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -6613,30 +6062,11 @@ func (s *Server) handleSpacesReadRequest(args [1]string, argsEscaped bool, w htt
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpacesReadOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -6830,30 +6260,11 @@ func (s *Server) handleSpacesUpdateRequest(args [1]string, argsEscaped bool, w h
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, SpacesUpdateOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -7062,30 +6473,11 @@ func (s *Server) handleTasksSearchRequest(args [0]string, argsEscaped bool, w ht
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, TasksSearchOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -7291,30 +6683,11 @@ func (s *Server) handleUserActivityListRequest(args [1]string, argsEscaped bool,
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, UserActivityListOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -7516,30 +6889,11 @@ func (s *Server) handleUserTasksListRequest(args [1]string, argsEscaped bool, w 
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, UserTasksListOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -7741,30 +7095,11 @@ func (s *Server) handleUsersCreateRequest(args [0]string, argsEscaped bool, w ht
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, UsersCreateOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -7958,30 +7293,11 @@ func (s *Server) handleUsersDeleteRequest(args [1]string, argsEscaped bool, w ht
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, UsersDeleteOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -8175,30 +7491,11 @@ func (s *Server) handleUsersGetRequest(args [1]string, argsEscaped bool, w http.
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, UsersGetOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -8392,30 +7689,11 @@ func (s *Server) handleUsersListRequest(args [0]string, argsEscaped bool, w http
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, UsersListOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -8594,30 +7872,11 @@ func (s *Server) handleUsersMeRequest(args [0]string, argsEscaped bool, w http.R
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, UsersMeOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {
@@ -8796,30 +8055,11 @@ func (s *Server) handleUsersUpdateRequest(args [1]string, argsEscaped bool, w ht
 				ctx = sctx
 			}
 		}
-		{
-			sctx, ok, err := s.securityApiKeyAuth(ctx, UsersUpdateOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ApiKeyAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ApiKeyAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 1
-				ctx = sctx
-			}
-		}
 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
 				{0b00000001},
-				{0b00000010},
 			} {
 				for i, mask := range requirement {
 					if satisfied[i]&mask != mask {

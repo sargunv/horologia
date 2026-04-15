@@ -296,3 +296,36 @@ func TestPublicAPIsAllowCrossOriginRequests(t *testing.T) {
 	}
 	assertStatus(t, resp, http.StatusOK)
 }
+
+func TestAPICookieAuthRequiresSameOrigin(t *testing.T) {
+	env := setupTestServer(t)
+	sessionToken := createTestUser(t, env, "cookie-root@example.com", "Cookie Root", "password")
+
+	log := slog.New(slog.DiscardHandler)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, true)
+	srv := httptest.NewServer(root)
+	t.Cleanup(srv.Close)
+
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, srv.URL+"/api/users/me", nil)
+	if err != nil {
+		t.Fatalf("new request: %v", err)
+	}
+	req.AddCookie(&http.Cookie{Name: "horologia_session", Value: sessionToken})
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("same-origin api: %v", err)
+	}
+	assertStatus(t, resp, http.StatusOK)
+
+	req, err = http.NewRequestWithContext(t.Context(), http.MethodGet, srv.URL+"/api/users/me", nil)
+	if err != nil {
+		t.Fatalf("new request: %v", err)
+	}
+	req.Header.Set("Origin", "https://evil.example")
+	req.AddCookie(&http.Cookie{Name: "horologia_session", Value: sessionToken})
+	resp, err = http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("cross-origin api: %v", err)
+	}
+	assertStatusClose(t, resp, http.StatusForbidden)
+}

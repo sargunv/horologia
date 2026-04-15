@@ -22,25 +22,32 @@ func requireAuthenticatedDocs(pool *pgxpool.Pool, next http.Handler) http.Handle
 }
 
 func authenticateRequest(r *http.Request, pool *pgxpool.Pool) (*auth.User, error) {
-	token := requestAuthToken(r)
-	if token == "" {
+	if token, ok := requestBearerToken(r); ok {
+		return auth.AuthenticateBearerToken(r.Context(), pool, token, time.Now())
+	}
+
+	token, ok := requestSessionToken(r)
+	if !ok || !sameOriginRequest(r) {
 		return nil, auth.ErrUnauthorized
 	}
 
 	return auth.AuthenticateBearerToken(r.Context(), pool, token, time.Now())
 }
 
-func requestAuthToken(r *http.Request) string {
+func requestBearerToken(r *http.Request) (string, bool) {
 	if authorization := r.Header.Get("Authorization"); authorization != "" {
-		if token, ok := strings.CutPrefix(authorization, "Bearer "); ok {
-			return token
+		if len(authorization) > 7 && strings.EqualFold(authorization[:7], "Bearer ") {
+			return authorization[7:], true
 		}
-		return ""
+		return "", false
 	}
+	return "", false
+}
 
+func requestSessionToken(r *http.Request) (string, bool) {
 	if c, err := r.Cookie(sessionCookieName); err == nil {
-		return c.Value
+		return c.Value, true
 	}
 
-	return ""
+	return "", false
 }

@@ -28,14 +28,6 @@ func (h *Handler) authenticateToken(ctx context.Context, token string) (context.
 	return auth.ContextWithUser(ctx, user), nil
 }
 
-// HandleApiKeyAuth validates the session cookie token and enriches the context with the user.
-func (h *Handler) HandleApiKeyAuth(ctx context.Context, operationName apigen.OperationName, t apigen.ApiKeyAuth) (context.Context, error) {
-	if authHeaderPresent(ctx) {
-		return ctx, ogenerrors.ErrSkipServerSecurity
-	}
-	return h.authenticateToken(ctx, t.APIKey)
-}
-
 // HandleBearerAuth validates the bearer token and enriches the context with the user.
 func (h *Handler) HandleBearerAuth(ctx context.Context, operationName apigen.OperationName, t apigen.BearerAuth) (context.Context, error) {
 	return h.authenticateToken(ctx, t.Token)

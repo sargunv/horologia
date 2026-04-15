@@ -16,5 +16,5 @@ using Http;
 
 @service(#{ title: "Horologia API" })
 @server("/api", "Same-origin API")
-@useAuth(BearerAuth | ApiKeyAuth<ApiKeyLocation.cookie, "horologia_session">)
+@useAuth(BearerAuth)
 namespace Horologia;

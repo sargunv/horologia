@@ -1,36 +1,20 @@
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
-import * as v from "valibot";
 import { apiClient } from "../api/client.ts";
+import type { components } from "../api/schema.d.ts";
 
-const AuthConfigSchema = v.object({
-  oidc: v.object({
-    enabled: v.boolean(),
-    label: v.string(),
-    autoRedirect: v.boolean(),
-  }),
-  password: v.object({
-    enabled: v.boolean(),
-  }),
-});
-
-export type AuthConfig = v.InferOutput<typeof AuthConfigSchema>;
+export type AuthConfig = components["schemas"]["AuthConfig"];
 
 export const authConfigQueryOptions = queryOptions({
   queryKey: ["authConfig"],
   queryFn: async (): Promise<AuthConfig> => {
     const { data, error } = await apiClient.GET("/auth/config");
     if (error) throw error;
-    return v.parse(AuthConfigSchema, data);
+    return data;
   },
   staleTime: Infinity,
 });
 
-const LinkPendingInfoSchema = v.object({
-  email: v.string(),
-  name: v.string(),
-});
-
-export type LinkPendingInfo = v.InferOutput<typeof LinkPendingInfoSchema>;
+export type LinkPendingInfo = components["schemas"]["AuthLinkPendingResponse"];
 
 export const linkPendingQueryOptions = queryOptions({
   queryKey: ["linkPending"],
@@ -38,7 +22,7 @@ export const linkPendingQueryOptions = queryOptions({
     const { data, error, response } = await apiClient.GET("/auth/link/pending");
     if (response.status === 404) return null;
     if (error) throw error;
-    return v.parse(LinkPendingInfoSchema, data);
+    return data;
   },
   retry: false,
   staleTime: Infinity,
