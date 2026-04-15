@@ -12,7 +12,7 @@ All configuration uses environment variables with the `HOROLOGIA_` prefix.
 | `HOROLOGIA_LOG_LEVEL`        | `info`     | `debug`, `info`, `warn`, or `error`                             |
 | `HOROLOGIA_LOG_FORMAT`       | `text`     | `text` or `json`                                                |
 | `HOROLOGIA_SECURE_COOKIES`   | `true`     | Set `false` for non-HTTPS (dev only)                            |
-| `HOROLOGIA_API_DOCS_ENABLED` | `true`     | Enable authenticated `/api/docs` and `/api/openapi.yaml`        |
+| `HOROLOGIA_API_DOCS_ENABLED` | `true`     | Enable `/api/docs` and `/api/openapi.yaml`                      |
 
 ## OIDC
 
