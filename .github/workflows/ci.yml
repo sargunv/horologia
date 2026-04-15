@@ -28,13 +28,6 @@ jobs:
 
       - uses: ./.github/actions/setup-ci-deps
 
-      - name: Compute release image name
-        id: release-image
-        run: |
-          {
-            echo "image=ghcr.io/${GITHUB_REPOSITORY,,}"
-          } >> "$GITHUB_OUTPUT"
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
 
@@ -43,7 +36,7 @@ jobs:
 
       - name: Build release snapshot
         env:
-          IMAGE: ${{ steps.release-image.outputs.image }}
+          IMAGE: ghcr.io/${{ github.repository }}
         run: mise run release:snapshot
 
       - name: Upload release snapshot artifacts

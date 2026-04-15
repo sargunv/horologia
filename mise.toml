@@ -45,7 +45,6 @@ tilt = "0.37.0"
 "npm:@playwright/cli" = "0.1.1"
 "conda:postgresql" = "17.9"
 vhs = "0.11.0"
-cosign = "3.0.6"
 
 [hooks]
 postinstall = [
@@ -100,7 +99,7 @@ run = "./scripts/prepare-release-artifacts.sh"
 
 [tasks."release:snapshot"]
 description = "Build release snapshots with GoReleaser"
-run = "goreleaser release --snapshot --clean"
+run = "goreleaser release --snapshot --clean --skip=sign"
 
 [tasks.dev]
 description = "Start local dev environment"
