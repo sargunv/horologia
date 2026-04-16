@@ -28,6 +28,7 @@ type Handler struct {
 	OIDCEnabled            bool
 	OIDCLabel              string
 	OIDCAutoRedirect       bool
+	OIDCAutoRegister       bool
 	OIDCLinkConsentEnabled bool
 	LinkCookieHandler      *zhttp.CookieHandler
 	PasswordAuthEnabled    bool
