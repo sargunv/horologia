@@ -205,6 +205,12 @@ func (h *Handler) handleOIDCCallback(w http.ResponseWriter, r *http.Request, tok
 		}
 		switch {
 		case errors.Is(err, pgx.ErrNoRows):
+			if !h.OIDCAutoRegister {
+				h.Log.InfoContext(ctx, "oidc: rejected unknown user", "email", email, "subject", subject)
+				http.Error(w, "OIDC user registration is disabled", http.StatusForbidden)
+				return
+			}
+
 			// Completely new user — create one.
 			tstz := types.Timestamptz(now)
 			user, err = q.CreateUser(ctx, dbgen.CreateUserParams{

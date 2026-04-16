@@ -36,6 +36,11 @@ func setupOIDCEnv(t *testing.T) *testEnv {
 	return setupTestServer(t, withOIDC())
 }
 
+func setupOIDCAutoRegisterEnv(t *testing.T) *testEnv {
+	t.Helper()
+	return setupTestServer(t, withOIDC(), withOIDCAutoRegister())
+}
+
 // driveOIDCFlow drives the full OIDC authorization code flow:
 //  1. GET /app/auth/oidc → follows redirects to the OP's login form
 //  2. POST credentials to the login form
@@ -126,7 +131,7 @@ func extractSessionCookie(t *testing.T, client *http.Client, serverURL string) s
 }
 
 func TestOIDCLoginNewUser(t *testing.T) {
-	env := setupOIDCEnv(t)
+	env := setupOIDCAutoRegisterEnv(t)
 
 	env.addOIDCUser("new-oidc-subject", "oidc-user@example.com", true)
 
@@ -156,6 +161,31 @@ func TestOIDCLoginNewUser(t *testing.T) {
 	}
 	if user.Email != "oidc-user@example.com" {
 		t.Errorf("db email = %v, want oidc-user@example.com", user.Email)
+	}
+}
+
+func TestOIDCLoginNewUserRejectedWhenAutoRegisterDisabled(t *testing.T) {
+	env := setupOIDCEnv(t)
+
+	env.addOIDCUser("new-oidc-subject", "oidc-user@example.com", true)
+
+	client := newOIDCClient(t)
+	resp := driveOIDCFlow(t, env, client, "new-oidc-subject", "/after-login")
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusForbidden {
+		body, _ := io.ReadAll(resp.Body)
+		t.Fatalf("got status %d, want %d; body: %s", resp.StatusCode, http.StatusForbidden, body)
+	}
+
+	if tok := extractSessionCookie(t, client, env.Server.URL); tok != "" {
+		t.Fatal("session cookie should not be set when OIDC auto-registration is disabled")
+	}
+
+	q := dbgen.New(env.pool)
+	_, err := q.GetUserByOIDCSubject(t.Context(), pgtype.Text{String: "new-oidc-subject", Valid: true})
+	if !errors.Is(err, pgx.ErrNoRows) {
+		t.Fatalf("unexpected user created for rejected OIDC login: %v", err)
 	}
 }
 
@@ -320,7 +350,7 @@ func TestOIDCLoginEmailUnverified(t *testing.T) {
 }
 
 func TestOIDCLoginRedirectPreserved(t *testing.T) {
-	env := setupOIDCEnv(t)
+	env := setupOIDCAutoRegisterEnv(t)
 
 	env.addOIDCUser("redirect-subject", "redirect@example.com", true)
 
@@ -342,7 +372,7 @@ func TestOIDCLoginRedirectPreserved(t *testing.T) {
 }
 
 func TestOIDCLoginRedirectMaliciousIgnored(t *testing.T) {
-	env := setupOIDCEnv(t)
+	env := setupOIDCAutoRegisterEnv(t)
 	env.addOIDCUser("malicious-redirect-subject", "malicious-redirect@example.com", true)
 
 	client := newOIDCClient(t)
