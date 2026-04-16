@@ -32,5 +32,7 @@ func isInternalAPIPath(path string, method string) bool {
 }
 
 func shouldBridgeSessionAuth(path string) bool {
-	return !isPublicBrowserAuthHelperPath(path) && !isOAuthOrWellKnownPath(path)
+	return !isPublicBrowserAuthHelperPath(path) &&
+		!strings.HasPrefix(path, "/auth/oidc/") &&
+		!isOAuthOrWellKnownPath(path)
 }
