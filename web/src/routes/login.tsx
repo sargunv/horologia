@@ -2,7 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { CircleAlert } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
-import { apiClient, getApiErrorMessage } from "../api/client.ts";
+import { appClient, getApiErrorMessage } from "../api/client.ts";
 import { authConfigQueryOptions } from "../lib/queries.ts";
 import { navigateToTarget } from "../lib/navigation.ts";
 
@@ -37,7 +37,7 @@ function LoginPage() {
 
   const loginMutation = useMutation({
     mutationFn: async ({ email, password }: { email: string; password: string }) => {
-      const { error } = await apiClient.POST("/auth/login", {
+      const { error } = await appClient.POST("/app/auth/login", {
         body: { email, password },
       });
       if (error) throw new Error(getApiErrorMessage(error, "Invalid email or password"));
@@ -164,5 +164,5 @@ function buildOIDCLoginURL(redirect?: string): string {
     params.set("redirect", redirect);
   }
   const query = params.toString();
-  return `/api/auth/oidc${query ? `?${query}` : ""}`;
+  return `/app/auth/oidc${query ? `?${query}` : ""}`;
 }

@@ -12,7 +12,7 @@ import (
 
 func postLogin(t *testing.T, env *testEnv, body string) *http.Response {
 	t.Helper()
-	req, _ := http.NewRequestWithContext(t.Context(), http.MethodPost, env.Server.URL+"/auth/login",
+	req, _ := http.NewRequestWithContext(t.Context(), http.MethodPost, env.Server.URL+"/app/auth/login",
 		strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
@@ -65,7 +65,7 @@ func TestLoginUnknownEmail(t *testing.T) {
 func TestLoginRejectsFormContentType(t *testing.T) {
 	env := setupTestServer(t)
 
-	req, _ := http.NewRequestWithContext(t.Context(), http.MethodPost, env.Server.URL+"/auth/login",
+	req, _ := http.NewRequestWithContext(t.Context(), http.MethodPost, env.Server.URL+"/app/auth/login",
 		strings.NewReader(`email=test@example.com&password=password`))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := http.DefaultClient.Do(req)
@@ -78,7 +78,7 @@ func TestLoginRejectsFormContentType(t *testing.T) {
 func TestLoginRejectsMissingContentType(t *testing.T) {
 	env := setupTestServer(t)
 
-	req, _ := http.NewRequestWithContext(t.Context(), http.MethodPost, env.Server.URL+"/auth/login",
+	req, _ := http.NewRequestWithContext(t.Context(), http.MethodPost, env.Server.URL+"/app/auth/login",
 		strings.NewReader(`{"email":"test@example.com","password":"password"}`))
 	// No Content-Type header set.
 	resp, err := http.DefaultClient.Do(req)
@@ -90,7 +90,7 @@ func TestLoginRejectsMissingContentType(t *testing.T) {
 
 func postLogout(t *testing.T, env *testEnv, sessionToken string) *http.Response {
 	t.Helper()
-	req, _ := http.NewRequestWithContext(t.Context(), http.MethodPost, env.Server.URL+"/auth/logout", nil)
+	req, _ := http.NewRequestWithContext(t.Context(), http.MethodPost, env.Server.URL+"/app/auth/logout", nil)
 	if sessionToken != "" {
 		req.AddCookie(&http.Cookie{Name: "horologia_session", Value: sessionToken})
 	}
@@ -156,8 +156,8 @@ func TestLoginDisabledPasswordAuth(t *testing.T) {
 	srv := httptest.NewServer(api.MountWebAuth(h, handler))
 	t.Cleanup(srv.Close)
 
-	// POST /auth/login should 403 when password auth is disabled.
-	req, _ := http.NewRequestWithContext(t.Context(), http.MethodPost, srv.URL+"/auth/login",
+	// POST /app/auth/login should 403 when password auth is disabled.
+	req, _ := http.NewRequestWithContext(t.Context(), http.MethodPost, srv.URL+"/app/auth/login",
 		strings.NewReader(`{"email":"test@example.com","password":"password"}`))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
@@ -173,7 +173,7 @@ func TestLoginDisabledPasswordAuth(t *testing.T) {
 func TestAuthConfigPasswordEnabled(t *testing.T) {
 	env := setupTestServer(t)
 
-	resp := doRequestAs(t, env, "", "GET", "/auth/config", "")
+	resp := doRequestAs(t, env, "", "GET", "/app/auth/config", "")
 	assertStatus(t, resp, http.StatusOK)
 
 	var config map[string]any
@@ -198,7 +198,7 @@ func TestAuthConfigPasswordDisabled(t *testing.T) {
 	srv := httptest.NewServer(api.MountWebAuth(h, handler))
 	t.Cleanup(srv.Close)
 
-	req, _ := http.NewRequestWithContext(t.Context(), http.MethodGet, srv.URL+"/auth/config", nil)
+	req, _ := http.NewRequestWithContext(t.Context(), http.MethodGet, srv.URL+"/app/auth/config", nil)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("do request: %v", err)

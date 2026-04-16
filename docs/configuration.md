@@ -26,7 +26,7 @@ OIDC stays disabled unless you set `HOROLOGIA_OIDC_ISSUER`. Requires `HOROLOGIA_
 | `HOROLOGIA_OIDC_AUTO_REDIRECT` | `false` | Auto-redirect to OIDC provider. Requires `HOROLOGIA_PASSWORD_AUTH_ENABLED=false`.                   |
 | `HOROLOGIA_OIDC_LINK_CONSENT`  | `true`  | Require user consent before linking OIDC to an existing account. When `false`, links automatically. |
 
-Register `https://your-domain/auth/oidc/callback` as the authorized redirect URI in your OIDC
+Register `https://your-domain/app/auth/oidc/callback` as the authorized redirect URI in your OIDC
 provider.
 
 ## Auth

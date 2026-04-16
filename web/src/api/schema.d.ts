@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/auth/config": {
+    "/app/auth/config": {
         parameters: {
             query?: never;
             header?: never;
@@ -21,7 +21,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/auth/link": {
+    "/app/auth/link": {
         parameters: {
             query?: never;
             header?: never;
@@ -45,7 +45,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/auth/link/pending": {
+    "/app/auth/link/pending": {
         parameters: {
             query?: never;
             header?: never;
@@ -67,7 +67,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/auth/login": {
+    "/app/auth/login": {
         parameters: {
             query?: never;
             header?: never;
@@ -89,7 +89,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/auth/logout": {
+    "/app/auth/logout": {
         parameters: {
             query?: never;
             header?: never;

@@ -297,7 +297,7 @@ func (UnimplementedHandler) UsersUpdate(ctx context.Context, req *UserUpdate, pa
 //
 // Read public authentication configuration used by the web UI before login.
 //
-// GET /auth/config
+// GET /app/auth/config
 func (UnimplementedHandler) WebAuthConfig(ctx context.Context) (r *AuthConfig, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -310,7 +310,7 @@ func (UnimplementedHandler) WebAuthConfig(ctx context.Context) (r *AuthConfig, _
 // `horologia_session` cookie and clears the pending link cookie. This
 // endpoint is only available when OIDC link consent is enabled.
 //
-// POST /auth/link
+// POST /app/auth/link
 func (UnimplementedHandler) WebAuthLink(ctx context.Context, req *AuthLinkRequest) (r *AuthLinkResponseHeaders, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -321,7 +321,7 @@ func (UnimplementedHandler) WebAuthLink(ctx context.Context, req *AuthLinkReques
 // This endpoint relies on the temporary `horologia_oidc_link` cookie and is
 // only available when OIDC link consent is enabled.
 //
-// GET /auth/link/pending
+// GET /app/auth/link/pending
 func (UnimplementedHandler) WebAuthLinkPending(ctx context.Context) (r *AuthLinkPendingResponse, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -332,7 +332,7 @@ func (UnimplementedHandler) WebAuthLinkPending(ctx context.Context) (r *AuthLink
 // Returns the authenticated user and sets the `horologia_session` cookie on
 // success. This endpoint is only available when password auth is enabled.
 //
-// POST /auth/login
+// POST /app/auth/login
 func (UnimplementedHandler) WebAuthLogin(ctx context.Context, req *AuthLoginRequest) (r *AuthLoginResponseHeaders, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -341,7 +341,7 @@ func (UnimplementedHandler) WebAuthLogin(ctx context.Context, req *AuthLoginRequ
 //
 // Clear the current browser session.
 //
-// POST /auth/logout
+// POST /app/auth/logout
 func (UnimplementedHandler) WebAuthLogout(ctx context.Context) (r *WebAuthLogoutNoContent, _ error) {
 	return r, ht.ErrNotImplemented
 }

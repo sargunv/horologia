@@ -8177,14 +8177,14 @@ func (s *Server) handleUsersUpdateRequest(args [1]string, argsEscaped bool, w ht
 //
 // Read public authentication configuration used by the web UI before login.
 //
-// GET /auth/config
+// GET /app/auth/config
 func (s *Server) handleWebAuthConfigRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("WebAuth_config"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/auth/config"),
+		semconv.HTTPRouteKey.String("/app/auth/config"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -8316,14 +8316,14 @@ func (s *Server) handleWebAuthConfigRequest(args [0]string, argsEscaped bool, w 
 // `horologia_session` cookie and clears the pending link cookie. This
 // endpoint is only available when OIDC link consent is enabled.
 //
-// POST /auth/link
+// POST /app/auth/link
 func (s *Server) handleWebAuthLinkRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("WebAuth_link"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/auth/link"),
+		semconv.HTTPRouteKey.String("/app/auth/link"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -8472,14 +8472,14 @@ func (s *Server) handleWebAuthLinkRequest(args [0]string, argsEscaped bool, w ht
 // This endpoint relies on the temporary `horologia_oidc_link` cookie and is
 // only available when OIDC link consent is enabled.
 //
-// GET /auth/link/pending
+// GET /app/auth/link/pending
 func (s *Server) handleWebAuthLinkPendingRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("WebAuth_linkPending"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/auth/link/pending"),
+		semconv.HTTPRouteKey.String("/app/auth/link/pending"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -8609,14 +8609,14 @@ func (s *Server) handleWebAuthLinkPendingRequest(args [0]string, argsEscaped boo
 // Returns the authenticated user and sets the `horologia_session` cookie on
 // success. This endpoint is only available when password auth is enabled.
 //
-// POST /auth/login
+// POST /app/auth/login
 func (s *Server) handleWebAuthLoginRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("WebAuth_login"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/auth/login"),
+		semconv.HTTPRouteKey.String("/app/auth/login"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -8763,14 +8763,14 @@ func (s *Server) handleWebAuthLoginRequest(args [0]string, argsEscaped bool, w h
 //
 // Clear the current browser session.
 //
-// POST /auth/logout
+// POST /app/auth/logout
 func (s *Server) handleWebAuthLogoutRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("WebAuth_logout"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/auth/logout"),
+		semconv.HTTPRouteKey.String("/app/auth/logout"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)

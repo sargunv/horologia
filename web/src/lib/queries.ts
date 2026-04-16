@@ -1,5 +1,5 @@
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
-import { apiClient } from "../api/client.ts";
+import { apiClient, appClient } from "../api/client.ts";
 import type { components } from "../api/schema.d.ts";
 
 export type AuthConfig = components["schemas"]["AuthConfig"];
@@ -7,7 +7,7 @@ export type AuthConfig = components["schemas"]["AuthConfig"];
 export const authConfigQueryOptions = queryOptions({
   queryKey: ["authConfig"],
   queryFn: async (): Promise<AuthConfig> => {
-    const { data, error } = await apiClient.GET("/auth/config");
+    const { data, error } = await appClient.GET("/app/auth/config");
     if (error) throw error;
     return data;
   },
@@ -19,7 +19,7 @@ export type LinkPendingInfo = components["schemas"]["AuthLinkPendingResponse"];
 export const linkPendingQueryOptions = queryOptions({
   queryKey: ["linkPending"],
   queryFn: async (): Promise<LinkPendingInfo | null> => {
-    const { data, error, response } = await apiClient.GET("/auth/link/pending");
+    const { data, error, response } = await appClient.GET("/app/auth/link/pending");
     if (response.status === 404) return null;
     if (error) throw error;
     return data;

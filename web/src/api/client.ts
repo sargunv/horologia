@@ -6,14 +6,21 @@ export const apiClient = createClient<paths>({
   credentials: "include",
 });
 
-apiClient.use({
-  onResponse({ response }) {
-    if (response.status === 401) {
-      window.dispatchEvent(new CustomEvent("horologia:unauthorized"));
-    }
-    return response;
-  },
+export const appClient = createClient<paths>({
+  baseUrl: "",
+  credentials: "include",
 });
+
+for (const client of [apiClient, appClient]) {
+  client.use({
+    onResponse({ response }) {
+      if (response.status === 401) {
+        window.dispatchEvent(new CustomEvent("horologia:unauthorized"));
+      }
+      return response;
+    },
+  });
+}
 
 export function getApiErrorMessage(error: unknown, fallback: string): string {
   if (

@@ -2,7 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { CircleAlert } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
-import { getApiErrorMessage } from "../api/client.ts";
+import { appClient, getApiErrorMessage } from "../api/client.ts";
 import type { components } from "../api/schema.d.ts";
 import { navigateToTarget } from "../lib/navigation.ts";
 import { linkPendingQueryOptions } from "../lib/queries.ts";
@@ -23,21 +23,15 @@ function LinkAccountPage() {
     }: {
       password: string;
     }): Promise<components["schemas"]["AuthLinkResponse"]> => {
-      const response = await fetch("/api/auth/link", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+      const { data, error } = await appClient.POST("/app/auth/link", {
+        body: { password },
       });
-
-      const raw: unknown = await response.json().catch(() => null);
-      if (!response.ok) {
-        throw new Error(getApiErrorMessage(raw, "Failed to link account"));
+      if (error) {
+        throw new Error(getApiErrorMessage(error, "Failed to link account"));
       }
-
-      if (isAuthLinkResponse(raw)) {
-        return raw;
+      if (isAuthLinkResponse(data)) {
+        return data;
       }
-
       throw new Error("Failed to link account");
     },
     onSuccess: (data) => {

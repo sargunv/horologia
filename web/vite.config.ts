@@ -49,7 +49,7 @@ export default defineConfig({
       "/api": {
         target: `http://localhost:${serverPort}`,
       },
-      "/auth": {
+      "/app": {
         target: `http://localhost:${serverPort}`,
       },
       "/oauth": {

@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createLink, useNavigate } from "@tanstack/react-router";
 import { ChevronsUpDown } from "lucide-react";
 import { Menu, Portal } from "@skeletonlabs/skeleton-react";
-import { apiClient } from "../api/client.ts";
+import { appClient } from "../api/client.ts";
 import type { components } from "../api/schema.d.ts";
 
 const MenuItemLink = createLink(Menu.Item);
@@ -15,7 +15,7 @@ export function UserMenu({ user }: { user: User }) {
 
   async function handleLogout() {
     try {
-      await apiClient.POST("/auth/logout");
+      await appClient.POST("/app/auth/logout");
     } catch {
       // Proceed with local logout regardless of network failure
     }

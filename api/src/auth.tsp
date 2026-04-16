@@ -77,7 +77,7 @@ model AuthTokenList {
  * `horologia_session` cookie, which same-origin browser requests can use for
  * authenticated API calls.
  */
-@route("/auth")
+@route("/app/auth")
 @tag("Auth")
 @useAuth(NoAuth)
 interface WebAuth {

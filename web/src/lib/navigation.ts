@@ -3,6 +3,7 @@ export function navigateToTarget(
   navigate: (options: { to: string }) => void | Promise<void>,
 ): void {
   if (
+    target.startsWith("/app/") ||
     target.startsWith("/oauth/") ||
     target.startsWith("/auth/") ||
     target.startsWith("/.well-known/") ||

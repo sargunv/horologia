@@ -41,7 +41,7 @@ func main() {
 	}
 
 	issuer := fmt.Sprintf("http://localhost:%s/", port)
-	callbackURL := "http://localhost:5173/api/auth/oidc/callback"
+	callbackURL := "http://localhost:5173/app/auth/oidc/callback"
 	if u := os.Getenv("DEV_OIDC_CALLBACK_URL"); u != "" {
 		callbackURL = u
 	}

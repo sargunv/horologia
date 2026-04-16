@@ -59,8 +59,8 @@ type OIDCConfig struct {
 // NewOIDCHandler creates an http.Handler that handles the OIDC authorization
 // code flow. It registers two routes:
 //
-//	GET /auth/oidc          → redirects to the OIDC provider
-//	GET /auth/oidc/callback → handles the callback, creates a user+token
+//	GET /app/auth/oidc          → redirects to the OIDC provider
+//	GET /app/auth/oidc/callback → handles the callback, creates a user+token
 func NewOIDCHandler(ctx context.Context, cfg OIDCConfig, handler *Handler) (http.Handler, error) {
 	// Generate keys for HMAC authentication and AES encryption of OIDC state cookies.
 	hashKey := make([]byte, 32)
@@ -85,7 +85,7 @@ func NewOIDCHandler(ctx context.Context, cfg OIDCConfig, handler *Handler) (http
 		cfg.Issuer,
 		cfg.ClientID,
 		cfg.ClientSecret,
-		cfg.PublicURL+"/auth/oidc/callback",
+		cfg.PublicURL+"/app/auth/oidc/callback",
 		[]string{"openid", "email", "profile"},
 		options...,
 	)
@@ -95,7 +95,7 @@ func NewOIDCHandler(ctx context.Context, cfg OIDCConfig, handler *Handler) (http
 
 	mux := http.NewServeMux()
 
-	// GET /auth/oidc → redirect to IdP.
+	// GET /app/auth/oidc → redirect to IdP.
 	// Wraps AuthURLHandler to preserve an optional ?redirect= param in a
 	// short-lived cookie so the callback can send the user to the right page.
 	// Note: the redirect cookie has the same Safari/ITP limitation as the state
@@ -108,7 +108,7 @@ func NewOIDCHandler(ctx context.Context, cfg OIDCConfig, handler *Handler) (http
 		}
 		return hex.EncodeToString(b)
 	}, provider)
-	mux.Handle("GET /auth/oidc", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("GET /app/auth/oidc", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if rd := r.URL.Query().Get("redirect"); isValidRedirect(rd) {
 			http.SetCookie(w, &http.Cookie{
 				Name:     oidcRedirectCookieName,
@@ -123,11 +123,11 @@ func NewOIDCHandler(ctx context.Context, cfg OIDCConfig, handler *Handler) (http
 		authURLHandler.ServeHTTP(w, r)
 	}))
 
-	// GET /auth/oidc/callback → exchange code, find/create user, issue token.
+	// GET /app/auth/oidc/callback → exchange code, find/create user, issue token.
 	marshalToken := func(w http.ResponseWriter, r *http.Request, tokens *oidc.Tokens[*oidc.IDTokenClaims], state string, relyingParty rp.RelyingParty) {
 		handler.handleOIDCCallback(w, r, tokens, relyingParty)
 	}
-	mux.Handle("GET /auth/oidc/callback", rp.CodeExchangeHandler(marshalToken, provider))
+	mux.Handle("GET /app/auth/oidc/callback", rp.CodeExchangeHandler(marshalToken, provider))
 
 	return mux, nil
 }
@@ -222,7 +222,7 @@ func (h *Handler) handleOIDCCallback(w http.ResponseWriter, r *http.Request, tok
 			h.Log.InfoContext(ctx, "oidc: created user", "email", email, "subject", subject)
 		case h.OIDCLinkConsentEnabled:
 			// Existing user found by email — require consent before linking.
-			// The deferred tx.Rollback will clean up; linking happens in POST /auth/link.
+			// The deferred tx.Rollback will clean up; linking happens in POST /app/auth/link.
 			redirectTo := h.readAndClearRedirectCookie(w, r, "")
 
 			if err := setPendingLinkCookie(w, h.LinkCookieHandler, pendingLinkState{
@@ -287,8 +287,8 @@ func MountOIDC(base http.Handler, oidcHandler http.Handler, log *slog.Logger) ht
 		return base
 	}
 	mux := http.NewServeMux()
-	mux.Handle("/auth/oidc", oidcHandler)
-	mux.Handle("/auth/oidc/", oidcHandler)
+	mux.Handle("/app/auth/oidc", oidcHandler)
+	mux.Handle("/app/auth/oidc/", oidcHandler)
 	mux.Handle("/", base)
 	log.Info("OIDC enabled")
 	return mux
