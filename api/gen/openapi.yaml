@@ -14,7 +14,7 @@ tags:
   - name: Task Priority Levels
   - name: Activity
 paths:
-  /auth/config:
+  /app/auth/config:
     get:
       operationId: WebAuth_config
       description: Read public authentication configuration used by the web UI before login.
@@ -36,8 +36,7 @@ paths:
         - Auth
       security:
         - {}
-      x-internal: true
-  /auth/link:
+  /app/auth/link:
     post:
       operationId: WebAuth_link
       description: |-
@@ -78,8 +77,7 @@ paths:
               $ref: '#/components/schemas/AuthLinkRequest'
       security:
         - {}
-      x-internal: true
-  /auth/link/pending:
+  /app/auth/link/pending:
     get:
       operationId: WebAuth_linkPending
       description: |-
@@ -105,8 +103,7 @@ paths:
         - Auth
       security:
         - {}
-      x-internal: true
-  /auth/login:
+  /app/auth/login:
     post:
       operationId: WebAuth_login
       description: |-
@@ -143,8 +140,7 @@ paths:
               $ref: '#/components/schemas/AuthLoginRequest'
       security:
         - {}
-      x-internal: true
-  /auth/logout:
+  /app/auth/logout:
     post:
       operationId: WebAuth_logout
       description: Clear the current browser session.
@@ -167,7 +163,6 @@ paths:
         - Auth
       security:
         - {}
-      x-internal: true
   /auth/tokens:
     get:
       operationId: Auth_listTokens

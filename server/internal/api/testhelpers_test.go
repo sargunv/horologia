@@ -215,7 +215,7 @@ func setupTestServer(t *testing.T, opts ...testServerOption) *testEnv {
 		if err != nil {
 			t.Fatalf("listen for test server: %v", err)
 		}
-		callbackURL := "http://" + srvLn.Addr().String() + "/auth/oidc/callback"
+		callbackURL := "http://" + srvLn.Addr().String() + "/app/auth/oidc/callback"
 		clients[testOIDCClientID] = storage.WebClient(testOIDCClientID, testOIDCClientSecret, callbackURL)
 
 		// Start the OP on its own listener.
@@ -304,7 +304,7 @@ func createTestUser(t *testing.T, env *testEnv, email, name, password string) st
 	}
 
 	// Login via web endpoint to get a session cookie.
-	resp := doRequestAs(t, env, "", "POST", "/auth/login",
+	resp := doRequestAs(t, env, "", "POST", "/app/auth/login",
 		`{"email":"`+email+`","password":"`+password+`"}`)
 	if resp.StatusCode != http.StatusOK {
 		data, _ := io.ReadAll(resp.Body)

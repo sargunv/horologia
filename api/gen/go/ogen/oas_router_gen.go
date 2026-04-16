@@ -11,10 +11,10 @@ import (
 )
 
 var (
-	rn42AllowedHeaders = map[string]string{
+	rn43AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn45AllowedHeaders = map[string]string{
+	rn46AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
 	rn1AllowedHeaders = map[string]string{
@@ -156,9 +156,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 			switch elem[0] {
-			case 'a': // Prefix: "auth/"
+			case 'a': // Prefix: "a"
 
-				if l := len("auth/"); len(elem) >= l && elem[0:l] == "auth/" {
+				if l := len("a"); len(elem) >= l && elem[0:l] == "a" {
 					elem = elem[l:]
 				} else {
 					break
@@ -168,34 +168,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					break
 				}
 				switch elem[0] {
-				case 'c': // Prefix: "config"
+				case 'p': // Prefix: "pp/auth/"
 
-					if l := len("config"); len(elem) >= l && elem[0:l] == "config" {
-						elem = elem[l:]
-					} else {
-						break
-					}
-
-					if len(elem) == 0 {
-						// Leaf node.
-						switch r.Method {
-						case "GET":
-							s.handleWebAuthConfigRequest([0]string{}, elemIsEscaped, w, r)
-						default:
-							s.notAllowed(w, r, notAllowedParams{
-								allowedMethods: "GET",
-								allowedHeaders: nil,
-								acceptPost:     "",
-								acceptPatch:    "",
-							})
-						}
-
-						return
-					}
-
-				case 'l': // Prefix: "l"
-
-					if l := len("l"); len(elem) >= l && elem[0:l] == "l" {
+					if l := len("pp/auth/"); len(elem) >= l && elem[0:l] == "pp/auth/" {
 						elem = elem[l:]
 					} else {
 						break
@@ -205,60 +180,34 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						break
 					}
 					switch elem[0] {
-					case 'i': // Prefix: "ink"
+					case 'c': // Prefix: "config"
 
-						if l := len("ink"); len(elem) >= l && elem[0:l] == "ink" {
+						if l := len("config"); len(elem) >= l && elem[0:l] == "config" {
 							elem = elem[l:]
 						} else {
 							break
 						}
 
 						if len(elem) == 0 {
+							// Leaf node.
 							switch r.Method {
-							case "POST":
-								s.handleWebAuthLinkRequest([0]string{}, elemIsEscaped, w, r)
+							case "GET":
+								s.handleWebAuthConfigRequest([0]string{}, elemIsEscaped, w, r)
 							default:
 								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "POST",
-									allowedHeaders: rn42AllowedHeaders,
-									acceptPost:     "application/json",
+									allowedMethods: "GET",
+									allowedHeaders: nil,
+									acceptPost:     "",
 									acceptPatch:    "",
 								})
 							}
 
 							return
 						}
-						switch elem[0] {
-						case '/': // Prefix: "/pending"
 
-							if l := len("/pending"); len(elem) >= l && elem[0:l] == "/pending" {
-								elem = elem[l:]
-							} else {
-								break
-							}
+					case 'l': // Prefix: "l"
 
-							if len(elem) == 0 {
-								// Leaf node.
-								switch r.Method {
-								case "GET":
-									s.handleWebAuthLinkPendingRequest([0]string{}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "GET",
-										allowedHeaders: nil,
-										acceptPost:     "",
-										acceptPatch:    "",
-									})
-								}
-
-								return
-							}
-
-						}
-
-					case 'o': // Prefix: "og"
-
-						if l := len("og"); len(elem) >= l && elem[0:l] == "og" {
+						if l := len("l"); len(elem) >= l && elem[0:l] == "l" {
 							elem = elem[l:]
 						} else {
 							break
@@ -268,23 +217,22 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							break
 						}
 						switch elem[0] {
-						case 'i': // Prefix: "in"
+						case 'i': // Prefix: "ink"
 
-							if l := len("in"); len(elem) >= l && elem[0:l] == "in" {
+							if l := len("ink"); len(elem) >= l && elem[0:l] == "ink" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
 							if len(elem) == 0 {
-								// Leaf node.
 								switch r.Method {
 								case "POST":
-									s.handleWebAuthLoginRequest([0]string{}, elemIsEscaped, w, r)
+									s.handleWebAuthLinkRequest([0]string{}, elemIsEscaped, w, r)
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "POST",
-										allowedHeaders: rn45AllowedHeaders,
+										allowedHeaders: rn43AllowedHeaders,
 										acceptPost:     "application/json",
 										acceptPatch:    "",
 									})
@@ -292,39 +240,105 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 								return
 							}
+							switch elem[0] {
+							case '/': // Prefix: "/pending"
 
-						case 'o': // Prefix: "out"
+								if l := len("/pending"); len(elem) >= l && elem[0:l] == "/pending" {
+									elem = elem[l:]
+								} else {
+									break
+								}
 
-							if l := len("out"); len(elem) >= l && elem[0:l] == "out" {
+								if len(elem) == 0 {
+									// Leaf node.
+									switch r.Method {
+									case "GET":
+										s.handleWebAuthLinkPendingRequest([0]string{}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "GET",
+											allowedHeaders: nil,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+
+							}
+
+						case 'o': // Prefix: "og"
+
+							if l := len("og"); len(elem) >= l && elem[0:l] == "og" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
 							if len(elem) == 0 {
-								// Leaf node.
-								switch r.Method {
-								case "POST":
-									s.handleWebAuthLogoutRequest([0]string{}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "POST",
-										allowedHeaders: nil,
-										acceptPost:     "",
-										acceptPatch:    "",
-									})
+								break
+							}
+							switch elem[0] {
+							case 'i': // Prefix: "in"
+
+								if l := len("in"); len(elem) >= l && elem[0:l] == "in" {
+									elem = elem[l:]
+								} else {
+									break
 								}
 
-								return
+								if len(elem) == 0 {
+									// Leaf node.
+									switch r.Method {
+									case "POST":
+										s.handleWebAuthLoginRequest([0]string{}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "POST",
+											allowedHeaders: rn46AllowedHeaders,
+											acceptPost:     "application/json",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+
+							case 'o': // Prefix: "out"
+
+								if l := len("out"); len(elem) >= l && elem[0:l] == "out" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch r.Method {
+									case "POST":
+										s.handleWebAuthLogoutRequest([0]string{}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "POST",
+											allowedHeaders: nil,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+
 							}
 
 						}
 
 					}
 
-				case 't': // Prefix: "tokens"
+				case 'u': // Prefix: "uth/tokens"
 
-					if l := len("tokens"); len(elem) >= l && elem[0:l] == "tokens" {
+					if l := len("uth/tokens"); len(elem) >= l && elem[0:l] == "uth/tokens" {
 						elem = elem[l:]
 					} else {
 						break
@@ -1295,9 +1309,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 				break
 			}
 			switch elem[0] {
-			case 'a': // Prefix: "auth/"
+			case 'a': // Prefix: "a"
 
-				if l := len("auth/"); len(elem) >= l && elem[0:l] == "auth/" {
+				if l := len("a"); len(elem) >= l && elem[0:l] == "a" {
 					elem = elem[l:]
 				} else {
 					break
@@ -1307,34 +1321,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					break
 				}
 				switch elem[0] {
-				case 'c': // Prefix: "config"
+				case 'p': // Prefix: "pp/auth/"
 
-					if l := len("config"); len(elem) >= l && elem[0:l] == "config" {
-						elem = elem[l:]
-					} else {
-						break
-					}
-
-					if len(elem) == 0 {
-						// Leaf node.
-						switch method {
-						case "GET":
-							r.name = WebAuthConfigOperation
-							r.summary = ""
-							r.operationID = "WebAuth_config"
-							r.operationGroup = ""
-							r.pathPattern = "/auth/config"
-							r.args = args
-							r.count = 0
-							return r, true
-						default:
-							return
-						}
-					}
-
-				case 'l': // Prefix: "l"
-
-					if l := len("l"); len(elem) >= l && elem[0:l] == "l" {
+					if l := len("pp/auth/"); len(elem) >= l && elem[0:l] == "pp/auth/" {
 						elem = elem[l:]
 					} else {
 						break
@@ -1344,22 +1333,23 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						break
 					}
 					switch elem[0] {
-					case 'i': // Prefix: "ink"
+					case 'c': // Prefix: "config"
 
-						if l := len("ink"); len(elem) >= l && elem[0:l] == "ink" {
+						if l := len("config"); len(elem) >= l && elem[0:l] == "config" {
 							elem = elem[l:]
 						} else {
 							break
 						}
 
 						if len(elem) == 0 {
+							// Leaf node.
 							switch method {
-							case "POST":
-								r.name = WebAuthLinkOperation
+							case "GET":
+								r.name = WebAuthConfigOperation
 								r.summary = ""
-								r.operationID = "WebAuth_link"
+								r.operationID = "WebAuth_config"
 								r.operationGroup = ""
-								r.pathPattern = "/auth/link"
+								r.pathPattern = "/app/auth/config"
 								r.args = args
 								r.count = 0
 								return r, true
@@ -1367,37 +1357,10 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								return
 							}
 						}
-						switch elem[0] {
-						case '/': // Prefix: "/pending"
 
-							if l := len("/pending"); len(elem) >= l && elem[0:l] == "/pending" {
-								elem = elem[l:]
-							} else {
-								break
-							}
+					case 'l': // Prefix: "l"
 
-							if len(elem) == 0 {
-								// Leaf node.
-								switch method {
-								case "GET":
-									r.name = WebAuthLinkPendingOperation
-									r.summary = ""
-									r.operationID = "WebAuth_linkPending"
-									r.operationGroup = ""
-									r.pathPattern = "/auth/link/pending"
-									r.args = args
-									r.count = 0
-									return r, true
-								default:
-									return
-								}
-							}
-
-						}
-
-					case 'o': // Prefix: "og"
-
-						if l := len("og"); len(elem) >= l && elem[0:l] == "og" {
+						if l := len("l"); len(elem) >= l && elem[0:l] == "l" {
 							elem = elem[l:]
 						} else {
 							break
@@ -1407,23 +1370,22 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							break
 						}
 						switch elem[0] {
-						case 'i': // Prefix: "in"
+						case 'i': // Prefix: "ink"
 
-							if l := len("in"); len(elem) >= l && elem[0:l] == "in" {
+							if l := len("ink"); len(elem) >= l && elem[0:l] == "ink" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
 							if len(elem) == 0 {
-								// Leaf node.
 								switch method {
 								case "POST":
-									r.name = WebAuthLoginOperation
+									r.name = WebAuthLinkOperation
 									r.summary = ""
-									r.operationID = "WebAuth_login"
+									r.operationID = "WebAuth_link"
 									r.operationGroup = ""
-									r.pathPattern = "/auth/login"
+									r.pathPattern = "/app/auth/link"
 									r.args = args
 									r.count = 0
 									return r, true
@@ -1431,39 +1393,105 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									return
 								}
 							}
+							switch elem[0] {
+							case '/': // Prefix: "/pending"
 
-						case 'o': // Prefix: "out"
+								if l := len("/pending"); len(elem) >= l && elem[0:l] == "/pending" {
+									elem = elem[l:]
+								} else {
+									break
+								}
 
-							if l := len("out"); len(elem) >= l && elem[0:l] == "out" {
+								if len(elem) == 0 {
+									// Leaf node.
+									switch method {
+									case "GET":
+										r.name = WebAuthLinkPendingOperation
+										r.summary = ""
+										r.operationID = "WebAuth_linkPending"
+										r.operationGroup = ""
+										r.pathPattern = "/app/auth/link/pending"
+										r.args = args
+										r.count = 0
+										return r, true
+									default:
+										return
+									}
+								}
+
+							}
+
+						case 'o': // Prefix: "og"
+
+							if l := len("og"); len(elem) >= l && elem[0:l] == "og" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
 							if len(elem) == 0 {
-								// Leaf node.
-								switch method {
-								case "POST":
-									r.name = WebAuthLogoutOperation
-									r.summary = ""
-									r.operationID = "WebAuth_logout"
-									r.operationGroup = ""
-									r.pathPattern = "/auth/logout"
-									r.args = args
-									r.count = 0
-									return r, true
-								default:
-									return
+								break
+							}
+							switch elem[0] {
+							case 'i': // Prefix: "in"
+
+								if l := len("in"); len(elem) >= l && elem[0:l] == "in" {
+									elem = elem[l:]
+								} else {
+									break
 								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch method {
+									case "POST":
+										r.name = WebAuthLoginOperation
+										r.summary = ""
+										r.operationID = "WebAuth_login"
+										r.operationGroup = ""
+										r.pathPattern = "/app/auth/login"
+										r.args = args
+										r.count = 0
+										return r, true
+									default:
+										return
+									}
+								}
+
+							case 'o': // Prefix: "out"
+
+								if l := len("out"); len(elem) >= l && elem[0:l] == "out" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch method {
+									case "POST":
+										r.name = WebAuthLogoutOperation
+										r.summary = ""
+										r.operationID = "WebAuth_logout"
+										r.operationGroup = ""
+										r.pathPattern = "/app/auth/logout"
+										r.args = args
+										r.count = 0
+										return r, true
+									default:
+										return
+									}
+								}
+
 							}
 
 						}
 
 					}
 
-				case 't': // Prefix: "tokens"
+				case 'u': // Prefix: "uth/tokens"
 
-					if l := len("tokens"); len(elem) >= l && elem[0:l] == "tokens" {
+					if l := len("uth/tokens"); len(elem) >= l && elem[0:l] == "uth/tokens" {
 						elem = elem[l:]
 					} else {
 						break

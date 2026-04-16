@@ -515,7 +515,7 @@ func newOAuthBrowserClient(t *testing.T) *http.Client {
 
 func loginOAuthBrowserSession(t *testing.T, env *testEnv, client *http.Client) {
 	t.Helper()
-	loginReq, err := http.NewRequestWithContext(t.Context(), http.MethodPost, env.Server.URL+"/auth/login", strings.NewReader(`{"email":"test@example.com","password":"password"}`))
+	loginReq, err := http.NewRequestWithContext(t.Context(), http.MethodPost, env.Server.URL+"/app/auth/login", strings.NewReader(`{"email":"test@example.com","password":"password"}`))
 	if err != nil {
 		t.Fatalf("new login request: %v", err)
 	}
@@ -556,7 +556,7 @@ func authorizeOAuthCode(t *testing.T, env *testEnv, client *http.Client, form ur
 	}
 	postForm.Set("decision", "approve")
 
-	postResp, err := doOAuthRequest(t, client, http.MethodPost, env.Server.URL+"/oauth/authorize", strings.NewReader(postForm.Encode()), "application/x-www-form-urlencoded")
+	postResp, err := doOAuthRequest(t, client, http.MethodPost, env.Server.URL+"/app/oauth/consent", strings.NewReader(postForm.Encode()), "application/x-www-form-urlencoded")
 	if err != nil {
 		t.Fatalf("authorize POST: %v", err)
 	}

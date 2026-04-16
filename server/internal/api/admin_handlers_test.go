@@ -238,7 +238,7 @@ func TestUsersUpdate(t *testing.T) {
 		assertStatusClose(t, resp, http.StatusOK)
 
 		// Verify the user can log in with the new password.
-		resp = doRequestAs(t, env, "", "POST", "/auth/login",
+		resp = doRequestAs(t, env, "", "POST", "/app/auth/login",
 			`{"email":"newemail@example.com","password":"brandnewpass123"}`)
 		if resp.StatusCode != http.StatusOK {
 			body, _ := io.ReadAll(resp.Body)
@@ -255,7 +255,7 @@ func TestUsersUpdate(t *testing.T) {
 		assertStatusClose(t, resp, http.StatusOK)
 
 		// Verify login is rejected.
-		resp = doRequestAs(t, env, "", "POST", "/auth/login",
+		resp = doRequestAs(t, env, "", "POST", "/app/auth/login",
 			`{"email":"newemail@example.com","password":"brandnewpass123"}`)
 		if resp.StatusCode == http.StatusOK {
 			_ = resp.Body.Close()
@@ -332,7 +332,7 @@ func TestUsersUpdate(t *testing.T) {
 		assertStatusClose(t, resp, http.StatusOK)
 
 		// Verify login with new password works.
-		resp = doRequestAs(t, env, "", "POST", "/auth/login",
+		resp = doRequestAs(t, env, "", "POST", "/app/auth/login",
 			`{"email":"selfpwd@example.com","password":"newpassword123"}`)
 		if resp.StatusCode != http.StatusOK {
 			body, _ := io.ReadAll(resp.Body)
@@ -350,7 +350,7 @@ func TestUsersUpdate(t *testing.T) {
 		assertStatusClose(t, resp, http.StatusOK)
 
 		// Verify login is rejected.
-		resp = doRequestAs(t, env, "", "POST", "/auth/login",
+		resp = doRequestAs(t, env, "", "POST", "/app/auth/login",
 			`{"email":"selfclear@example.com","password":"password"}`)
 		if resp.StatusCode == http.StatusOK {
 			_ = resp.Body.Close()
@@ -365,7 +365,7 @@ func TestUsersUpdate(t *testing.T) {
 		selfID := getUserID(t, env, token1)
 
 		// Log in again to get a second session.
-		resp := doRequestAs(t, env, "", "POST", "/auth/login",
+		resp := doRequestAs(t, env, "", "POST", "/app/auth/login",
 			`{"email":"sessiontest@example.com","password":"password"}`)
 		assertStatus(t, resp, http.StatusOK)
 		var token2 string

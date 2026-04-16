@@ -42,7 +42,7 @@ func setupOIDCAutoRegisterEnv(t *testing.T) *testEnv {
 }
 
 // driveOIDCFlow drives the full OIDC authorization code flow:
-//  1. GET /auth/oidc → follows redirects to the OP's login form
+//  1. GET /app/auth/oidc → follows redirects to the OP's login form
 //  2. POST credentials to the login form
 //  3. Follows remaining redirects (OP callback → our callback → final redirect)
 //
@@ -53,7 +53,7 @@ func driveOIDCFlow(t *testing.T, env *testEnv, client *http.Client, username, re
 	ctx := t.Context()
 
 	// Phase 1: initiate OIDC flow — follows redirects until the OP login form (200 OK).
-	u := env.Server.URL + "/auth/oidc"
+	u := env.Server.URL + "/app/auth/oidc"
 	if redirectPath != "" {
 		u += "?redirect=" + url.QueryEscape(redirectPath)
 	}
@@ -80,7 +80,7 @@ func driveOIDCFlow(t *testing.T, env *testEnv, client *http.Client, username, re
 	}
 
 	// Phase 2: POST credentials to the OP login form.
-	// This follows redirects through OP auth callback → our /auth/oidc/callback → final redirect.
+	// This follows redirects through OP auth callback → our /app/auth/oidc/callback → final redirect.
 	loginURL := loginResp.Request.URL.String()
 	form := url.Values{
 		"username": {username},
@@ -101,12 +101,12 @@ func driveOIDCFlow(t *testing.T, env *testEnv, client *http.Client, username, re
 
 // stopAfterCallback configures the client to stop following redirects once
 // the OIDC callback redirects to an app route, so the test can inspect the
-// 303 response. It allows redirects to /auth/oidc, /auth/oidc/callback, and
+// 303 response. It allows redirects to /app/auth/oidc, /app/auth/oidc/callback, and
 // any non-server URL (the OP) to proceed normally.
 func stopAfterCallback(client *http.Client, serverURL string) {
 	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-		if req.URL.Path != "/auth/oidc" &&
-			req.URL.Path != "/auth/oidc/callback" &&
+		if req.URL.Path != "/app/auth/oidc" &&
+			req.URL.Path != "/app/auth/oidc/callback" &&
 			strings.HasPrefix(req.URL.String(), serverURL) {
 			return http.ErrUseLastResponse
 		}
@@ -450,7 +450,7 @@ func TestOIDCLinkConsent(t *testing.T) {
 	}
 
 	// Verify the pending link info is accessible.
-	pendingReq, err := http.NewRequestWithContext(t.Context(), http.MethodGet, env.Server.URL+"/auth/link/pending", nil)
+	pendingReq, err := http.NewRequestWithContext(t.Context(), http.MethodGet, env.Server.URL+"/app/auth/link/pending", nil)
 	if err != nil {
 		t.Fatalf("new request: %v", err)
 	}
@@ -467,7 +467,7 @@ func TestOIDCLinkConsent(t *testing.T) {
 
 	// Submit password to complete the link.
 	linkReq, err := http.NewRequestWithContext(t.Context(), http.MethodPost,
-		env.Server.URL+"/auth/link",
+		env.Server.URL+"/app/auth/link",
 		strings.NewReader(`{"password":"password123"}`))
 	if err != nil {
 		t.Fatalf("new request: %v", err)
@@ -542,7 +542,7 @@ func TestOIDCLinkConsentPreservesOAuthRedirect(t *testing.T) {
 	}
 
 	linkReq, err := http.NewRequestWithContext(t.Context(), http.MethodPost,
-		env.Server.URL+"/auth/link",
+		env.Server.URL+"/app/auth/link",
 		strings.NewReader(`{"password":"password123"}`))
 	if err != nil {
 		t.Fatalf("new request: %v", err)
@@ -583,7 +583,7 @@ func TestOIDCLinkConsentWrongPassword(t *testing.T) {
 
 	// Submit wrong password.
 	linkReq, err := http.NewRequestWithContext(t.Context(), http.MethodPost,
-		env.Server.URL+"/auth/link",
+		env.Server.URL+"/app/auth/link",
 		strings.NewReader(`{"password":"wrongpassword"}`))
 	if err != nil {
 		t.Fatalf("new request: %v", err)

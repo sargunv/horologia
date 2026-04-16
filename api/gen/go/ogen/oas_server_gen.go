@@ -172,7 +172,7 @@ type Handler interface {
 	//
 	// Read public authentication configuration used by the web UI before login.
 	//
-	// GET /auth/config
+	// GET /app/auth/config
 	WebAuthConfig(ctx context.Context) (*AuthConfig, error)
 	// WebAuthLink implements WebAuth_link operation.
 	//
@@ -182,7 +182,7 @@ type Handler interface {
 	// `horologia_session` cookie and clears the pending link cookie. This
 	// endpoint is only available when OIDC link consent is enabled.
 	//
-	// POST /auth/link
+	// POST /app/auth/link
 	WebAuthLink(ctx context.Context, req *AuthLinkRequest) (*AuthLinkResponseHeaders, error)
 	// WebAuthLinkPending implements WebAuth_linkPending operation.
 	//
@@ -190,7 +190,7 @@ type Handler interface {
 	// This endpoint relies on the temporary `horologia_oidc_link` cookie and is
 	// only available when OIDC link consent is enabled.
 	//
-	// GET /auth/link/pending
+	// GET /app/auth/link/pending
 	WebAuthLinkPending(ctx context.Context) (*AuthLinkPendingResponse, error)
 	// WebAuthLogin implements WebAuth_login operation.
 	//
@@ -198,13 +198,13 @@ type Handler interface {
 	// Returns the authenticated user and sets the `horologia_session` cookie on
 	// success. This endpoint is only available when password auth is enabled.
 	//
-	// POST /auth/login
+	// POST /app/auth/login
 	WebAuthLogin(ctx context.Context, req *AuthLoginRequest) (*AuthLoginResponseHeaders, error)
 	// WebAuthLogout implements WebAuth_logout operation.
 	//
 	// Clear the current browser session.
 	//
-	// POST /auth/logout
+	// POST /app/auth/logout
 	WebAuthLogout(ctx context.Context) (*WebAuthLogoutNoContent, error)
 	// NewError creates *ApiErrorStatusCode from error returned by handler.
 	//

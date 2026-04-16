@@ -192,7 +192,7 @@ type Invoker interface {
 	//
 	// Read public authentication configuration used by the web UI before login.
 	//
-	// GET /auth/config
+	// GET /app/auth/config
 	WebAuthConfig(ctx context.Context) (*AuthConfig, error)
 	// WebAuthLink invokes WebAuth_link operation.
 	//
@@ -202,7 +202,7 @@ type Invoker interface {
 	// `horologia_session` cookie and clears the pending link cookie. This
 	// endpoint is only available when OIDC link consent is enabled.
 	//
-	// POST /auth/link
+	// POST /app/auth/link
 	WebAuthLink(ctx context.Context, request *AuthLinkRequest) (*AuthLinkResponseHeaders, error)
 	// WebAuthLinkPending invokes WebAuth_linkPending operation.
 	//
@@ -210,7 +210,7 @@ type Invoker interface {
 	// This endpoint relies on the temporary `horologia_oidc_link` cookie and is
 	// only available when OIDC link consent is enabled.
 	//
-	// GET /auth/link/pending
+	// GET /app/auth/link/pending
 	WebAuthLinkPending(ctx context.Context) (*AuthLinkPendingResponse, error)
 	// WebAuthLogin invokes WebAuth_login operation.
 	//
@@ -218,13 +218,13 @@ type Invoker interface {
 	// Returns the authenticated user and sets the `horologia_session` cookie on
 	// success. This endpoint is only available when password auth is enabled.
 	//
-	// POST /auth/login
+	// POST /app/auth/login
 	WebAuthLogin(ctx context.Context, request *AuthLoginRequest) (*AuthLoginResponseHeaders, error)
 	// WebAuthLogout invokes WebAuth_logout operation.
 	//
 	// Clear the current browser session.
 	//
-	// POST /auth/logout
+	// POST /app/auth/logout
 	WebAuthLogout(ctx context.Context) (*WebAuthLogoutNoContent, error)
 }
 
@@ -5598,7 +5598,7 @@ func (c *Client) sendUsersUpdate(ctx context.Context, request *UserUpdate, param
 //
 // Read public authentication configuration used by the web UI before login.
 //
-// GET /auth/config
+// GET /app/auth/config
 func (c *Client) WebAuthConfig(ctx context.Context) (*AuthConfig, error) {
 	res, err := c.sendWebAuthConfig(ctx)
 	return res, err
@@ -5608,7 +5608,7 @@ func (c *Client) sendWebAuthConfig(ctx context.Context) (res *AuthConfig, err er
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("WebAuth_config"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/auth/config"),
+		semconv.URLTemplateKey.String("/app/auth/config"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -5642,7 +5642,7 @@ func (c *Client) sendWebAuthConfig(ctx context.Context) (res *AuthConfig, err er
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [1]string
-	pathParts[0] = "/auth/config"
+	pathParts[0] = "/app/auth/config"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -5676,7 +5676,7 @@ func (c *Client) sendWebAuthConfig(ctx context.Context) (res *AuthConfig, err er
 // `horologia_session` cookie and clears the pending link cookie. This
 // endpoint is only available when OIDC link consent is enabled.
 //
-// POST /auth/link
+// POST /app/auth/link
 func (c *Client) WebAuthLink(ctx context.Context, request *AuthLinkRequest) (*AuthLinkResponseHeaders, error) {
 	res, err := c.sendWebAuthLink(ctx, request)
 	return res, err
@@ -5686,7 +5686,7 @@ func (c *Client) sendWebAuthLink(ctx context.Context, request *AuthLinkRequest) 
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("WebAuth_link"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/auth/link"),
+		semconv.URLTemplateKey.String("/app/auth/link"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -5720,7 +5720,7 @@ func (c *Client) sendWebAuthLink(ctx context.Context, request *AuthLinkRequest) 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [1]string
-	pathParts[0] = "/auth/link"
+	pathParts[0] = "/app/auth/link"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -5755,7 +5755,7 @@ func (c *Client) sendWebAuthLink(ctx context.Context, request *AuthLinkRequest) 
 // This endpoint relies on the temporary `horologia_oidc_link` cookie and is
 // only available when OIDC link consent is enabled.
 //
-// GET /auth/link/pending
+// GET /app/auth/link/pending
 func (c *Client) WebAuthLinkPending(ctx context.Context) (*AuthLinkPendingResponse, error) {
 	res, err := c.sendWebAuthLinkPending(ctx)
 	return res, err
@@ -5765,7 +5765,7 @@ func (c *Client) sendWebAuthLinkPending(ctx context.Context) (res *AuthLinkPendi
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("WebAuth_linkPending"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/auth/link/pending"),
+		semconv.URLTemplateKey.String("/app/auth/link/pending"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -5799,7 +5799,7 @@ func (c *Client) sendWebAuthLinkPending(ctx context.Context) (res *AuthLinkPendi
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [1]string
-	pathParts[0] = "/auth/link/pending"
+	pathParts[0] = "/app/auth/link/pending"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -5831,7 +5831,7 @@ func (c *Client) sendWebAuthLinkPending(ctx context.Context) (res *AuthLinkPendi
 // Returns the authenticated user and sets the `horologia_session` cookie on
 // success. This endpoint is only available when password auth is enabled.
 //
-// POST /auth/login
+// POST /app/auth/login
 func (c *Client) WebAuthLogin(ctx context.Context, request *AuthLoginRequest) (*AuthLoginResponseHeaders, error) {
 	res, err := c.sendWebAuthLogin(ctx, request)
 	return res, err
@@ -5841,7 +5841,7 @@ func (c *Client) sendWebAuthLogin(ctx context.Context, request *AuthLoginRequest
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("WebAuth_login"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/auth/login"),
+		semconv.URLTemplateKey.String("/app/auth/login"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -5875,7 +5875,7 @@ func (c *Client) sendWebAuthLogin(ctx context.Context, request *AuthLoginRequest
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [1]string
-	pathParts[0] = "/auth/login"
+	pathParts[0] = "/app/auth/login"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -5908,7 +5908,7 @@ func (c *Client) sendWebAuthLogin(ctx context.Context, request *AuthLoginRequest
 //
 // Clear the current browser session.
 //
-// POST /auth/logout
+// POST /app/auth/logout
 func (c *Client) WebAuthLogout(ctx context.Context) (*WebAuthLogoutNoContent, error) {
 	res, err := c.sendWebAuthLogout(ctx)
 	return res, err
@@ -5918,7 +5918,7 @@ func (c *Client) sendWebAuthLogout(ctx context.Context) (res *WebAuthLogoutNoCon
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("WebAuth_logout"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/auth/logout"),
+		semconv.URLTemplateKey.String("/app/auth/logout"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -5952,7 +5952,7 @@ func (c *Client) sendWebAuthLogout(ctx context.Context) (res *WebAuthLogoutNoCon
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [1]string
-	pathParts[0] = "/auth/logout"
+	pathParts[0] = "/app/auth/logout"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
