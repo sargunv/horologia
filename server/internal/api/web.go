@@ -42,14 +42,14 @@ type (
 // CookieAuthMiddleware keeps the session cookie available in request context for
 // browser auth routes, and translates it into bearer auth for same-origin API
 // requests that don't already provide an Authorization header.
-func CookieAuthMiddleware(next http.Handler) http.Handler {
+func CookieAuthMiddleware(next http.Handler, publicURL string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if c, err := r.Cookie(sessionCookieName); err == nil {
 			ctx := context.WithValue(r.Context(), sessionTokenContextKey{}, c.Value)
 			r = r.Clone(ctx)
 
 			if r.Header.Get("Authorization") == "" && shouldBridgeSessionAuth(r.URL.Path) {
-				if !sameOriginRequest(r) {
+				if !sameOriginRequest(r, publicURL) {
 					w.WriteHeader(http.StatusForbidden)
 					return
 				}
@@ -205,5 +205,5 @@ func writeJSONError(w http.ResponseWriter, status int, message string) {
 
 // MountWebAuth wraps the base handler with cookie-backed request context.
 func MountWebAuth(base http.Handler, handler *Handler) http.Handler {
-	return PendingLinkMiddleware(handler, CookieAuthMiddleware(base))
+	return PendingLinkMiddleware(handler, CookieAuthMiddleware(base, handler.PublicURL))
 }

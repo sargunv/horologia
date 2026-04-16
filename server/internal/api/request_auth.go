@@ -10,9 +10,9 @@ import (
 	"github.com/sargunv/horologia/server/internal/auth"
 )
 
-func requireAuthenticatedDocs(pool *pgxpool.Pool, next http.Handler) http.Handler {
+func requireAuthenticatedDocs(pool *pgxpool.Pool, publicURL string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if _, err := authenticateRequest(r, pool); err != nil {
+		if _, err := authenticateRequest(r, pool, publicURL); err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
@@ -21,13 +21,13 @@ func requireAuthenticatedDocs(pool *pgxpool.Pool, next http.Handler) http.Handle
 	})
 }
 
-func authenticateRequest(r *http.Request, pool *pgxpool.Pool) (*auth.User, error) {
+func authenticateRequest(r *http.Request, pool *pgxpool.Pool, publicURL string) (*auth.User, error) {
 	if token, ok := requestBearerToken(r); ok {
 		return auth.AuthenticateBearerToken(r.Context(), pool, token, time.Now())
 	}
 
 	token, ok := requestSessionToken(r)
-	if !ok || !sameOriginRequest(r) {
+	if !ok || !sameOriginRequest(r, publicURL) {
 		return nil, auth.ErrUnauthorized
 	}
 

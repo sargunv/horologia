@@ -18,7 +18,12 @@ func OpenAPIHandler(w http.ResponseWriter, r *http.Request) {
 func ScalarHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-cache")
-	_, _ = fmt.Fprintf(w, scalarHTML, "/api/openapi.yaml")
+	spec, err := openAPIFS.ReadFile("openapi.yaml")
+	if err != nil {
+		http.Error(w, "failed to load OpenAPI document", http.StatusInternalServerError)
+		return
+	}
+	_, _ = fmt.Fprintf(w, scalarHTML, string(spec))
 }
 
 const scalarHTML = `<!doctype html>
@@ -33,7 +38,7 @@ const scalarHTML = `<!doctype html>
     <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
     <script>
       Scalar.createApiReference("#api-reference", {
-        url: %q,
+        content: %q,
         title: "Horologia API",
         theme: "default",
         layout: "modern",

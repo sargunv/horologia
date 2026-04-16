@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -24,12 +23,12 @@ import (
 //   - /api/docs serves the Scalar API reference UI
 //   - /mcp routes to the MCP Streamable HTTP handler (if non-nil)
 //   - /* routes to the embedded SPA (static files + index.html fallback)
-func MountRoot(apiHandler http.Handler, mcpHandler http.Handler, pool *pgxpool.Pool, log *slog.Logger, apiDocsEnabled bool) http.Handler {
+func MountRoot(apiHandler http.Handler, mcpHandler http.Handler, pool *pgxpool.Pool, log *slog.Logger, publicURL string, apiDocsEnabled bool) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", healthHandler(pool, log))
 	if apiDocsEnabled {
-		mux.Handle("GET /api/openapi.yaml", requireAuthenticatedDocs(pool, http.HandlerFunc(apidocs.OpenAPIHandler)))
-		mux.Handle("GET /api/docs", requireAuthenticatedDocs(pool, http.HandlerFunc(apidocs.ScalarHandler)))
+		mux.Handle("GET /api/openapi.yaml", requireAuthenticatedDocs(pool, publicURL, http.HandlerFunc(apidocs.OpenAPIHandler)))
+		mux.Handle("GET /api/docs", requireAuthenticatedDocs(pool, publicURL, http.HandlerFunc(apidocs.ScalarHandler)))
 	}
 	mux.Handle("/api/", http.StripPrefix("/api", apiHandler))
 	mux.Handle("/auth/", apiHandler)
@@ -40,12 +39,12 @@ func MountRoot(apiHandler http.Handler, mcpHandler http.Handler, pool *pgxpool.P
 		mux.Handle("/mcp", mcpHandler)
 	}
 	mux.Handle("/", webui.Handler())
-	return internalCORSMiddleware(mux)
+	return internalCORSMiddleware(publicURL, mux)
 }
 
-func internalCORSMiddleware(next http.Handler) http.Handler {
+func internalCORSMiddleware(publicURL string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if isInternalAPIPath(r.URL.Path) && !sameOriginRequest(r) {
+		if isInternalAPIPath(r.URL.Path, r.Method) && !sameOriginRequest(r, publicURL) {
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
@@ -53,7 +52,7 @@ func internalCORSMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func isInternalAPIPath(path string) bool {
+func isInternalAPIPath(path string, method string) bool {
 	if normalized, ok := strings.CutPrefix(path, "/api"); ok {
 		path = normalized
 	}
@@ -61,36 +60,11 @@ func isInternalAPIPath(path string) bool {
 	switch path {
 	case "/auth/config", "/auth/login", "/auth/logout", "/auth/link", "/auth/link/pending":
 		return true
+	case "/oauth/authorize":
+		return method == http.MethodPost
 	default:
 		return false
 	}
-}
-
-func sameOriginRequest(r *http.Request) bool {
-	origin := r.Header.Get("Origin")
-	if origin == "" {
-		return true
-	}
-	u, err := url.Parse(origin)
-	if err != nil {
-		return false
-	}
-	if u.Scheme != "http" && u.Scheme != "https" {
-		return false
-	}
-	return u.Host == r.Host && u.Scheme == requestScheme(r)
-}
-
-func requestScheme(r *http.Request) string {
-	if forwarded := r.Header.Get("X-Forwarded-Proto"); forwarded != "" {
-		if scheme, _, _ := strings.Cut(forwarded, ","); scheme != "" {
-			return strings.TrimSpace(scheme)
-		}
-	}
-	if r.TLS != nil {
-		return "https"
-	}
-	return "http"
 }
 
 func healthHandler(pool *pgxpool.Pool, log *slog.Logger) http.HandlerFunc {

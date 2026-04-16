@@ -40,7 +40,7 @@ func TestHealthzOK(t *testing.T) {
 	env := setupTestServer(t)
 
 	log := slog.New(slog.DiscardHandler)
-	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, true)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, "", true)
 	srv := httptest.NewServer(root)
 	t.Cleanup(srv.Close)
 
@@ -67,7 +67,7 @@ func TestHealthzDBDown(t *testing.T) {
 	env.pool.Close()
 
 	log := slog.New(slog.DiscardHandler)
-	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, true)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, "", true)
 	srv := httptest.NewServer(root)
 	t.Cleanup(srv.Close)
 
@@ -94,7 +94,7 @@ func TestMountRootExposesOAuthAuthorizeRoute(t *testing.T) {
 	env := setupTestServer(t)
 
 	log := slog.New(slog.DiscardHandler)
-	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, true)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, "", true)
 	srv := httptest.NewServer(root)
 	t.Cleanup(srv.Close)
 
@@ -135,7 +135,7 @@ func TestMountRootExposesOpenAPISchema(t *testing.T) {
 	env := setupTestServer(t)
 
 	log := slog.New(slog.DiscardHandler)
-	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, true)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, "", true)
 	srv := httptest.NewServer(root)
 	t.Cleanup(srv.Close)
 
@@ -163,7 +163,7 @@ func TestMountRootRequiresAuthForOpenAPISchema(t *testing.T) {
 	env := setupTestServer(t)
 
 	log := slog.New(slog.DiscardHandler)
-	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, true)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, "", true)
 	srv := httptest.NewServer(root)
 	t.Cleanup(srv.Close)
 
@@ -182,7 +182,7 @@ func TestMountRootExposesDocs(t *testing.T) {
 	env := setupTestServer(t)
 
 	log := slog.New(slog.DiscardHandler)
-	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, true)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, "", true)
 	srv := httptest.NewServer(root)
 	t.Cleanup(srv.Close)
 
@@ -201,8 +201,8 @@ func TestMountRootExposesDocs(t *testing.T) {
 	if !strings.Contains(body, "@scalar/api-reference") {
 		t.Fatalf("expected Scalar docs page, got %q", body)
 	}
-	if !strings.Contains(body, "/api/openapi.yaml") {
-		t.Fatalf("expected docs page to point at schema, got %q", body)
+	if !strings.Contains(body, `content: "openapi: 3.1.0`) {
+		t.Fatalf("expected docs page to inline the schema, got %q", body)
 	}
 	if !strings.Contains(body, `showDeveloperTools: "never"`) {
 		t.Fatalf("expected docs page to disable Scalar developer tools, got %q", body)
@@ -213,7 +213,7 @@ func TestMountRootRequiresAuthForDocs(t *testing.T) {
 	env := setupTestServer(t)
 
 	log := slog.New(slog.DiscardHandler)
-	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, true)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, "", true)
 	srv := httptest.NewServer(root)
 	t.Cleanup(srv.Close)
 
@@ -232,7 +232,7 @@ func TestMountRootCanDisableDocs(t *testing.T) {
 	env := setupTestServer(t)
 
 	log := slog.New(slog.DiscardHandler)
-	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, false)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, "", false)
 	srv := httptest.NewServer(root)
 	t.Cleanup(srv.Close)
 
@@ -261,7 +261,7 @@ func TestInternalAPIsRejectCrossOriginRequests(t *testing.T) {
 	env := setupTestServer(t)
 
 	log := slog.New(slog.DiscardHandler)
-	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, true)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, "", true)
 	srv := httptest.NewServer(root)
 	t.Cleanup(srv.Close)
 
@@ -281,7 +281,7 @@ func TestPublicAPIsAllowCrossOriginRequests(t *testing.T) {
 	env := setupTestServer(t)
 
 	log := slog.New(slog.DiscardHandler)
-	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, true)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, "", true)
 	srv := httptest.NewServer(root)
 	t.Cleanup(srv.Close)
 
@@ -302,7 +302,7 @@ func TestAPICookieAuthRequiresSameOrigin(t *testing.T) {
 	sessionToken := createTestUser(t, env, "cookie-root@example.com", "Cookie Root", "password")
 
 	log := slog.New(slog.DiscardHandler)
-	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, true)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, "", true)
 	srv := httptest.NewServer(root)
 	t.Cleanup(srv.Close)
 
@@ -326,6 +326,28 @@ func TestAPICookieAuthRequiresSameOrigin(t *testing.T) {
 	resp, err = http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("cross-origin api: %v", err)
+	}
+	assertStatusClose(t, resp, http.StatusForbidden)
+}
+
+func TestOAuthAuthorizePostRejectsCrossOriginRequests(t *testing.T) {
+	env := setupTestServer(t)
+
+	log := slog.New(slog.DiscardHandler)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, "", true)
+	srv := httptest.NewServer(root)
+	t.Cleanup(srv.Close)
+
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, srv.URL+"/oauth/authorize", strings.NewReader("decision=approve"))
+	if err != nil {
+		t.Fatalf("new request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Origin", "https://evil.example")
+	req.AddCookie(&http.Cookie{Name: "horologia_session", Value: env.Token})
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("oauth authorize: %v", err)
 	}
 	assertStatusClose(t, resp, http.StatusForbidden)
 }
