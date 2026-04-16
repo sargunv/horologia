@@ -310,6 +310,7 @@ func TestAPICookieAuthRequiresSameOrigin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new request: %v", err)
 	}
+	req.Header.Set("Sec-Fetch-Site", "same-origin")
 	req.AddCookie(&http.Cookie{Name: "horologia_session", Value: sessionToken})
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

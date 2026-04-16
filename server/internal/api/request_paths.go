@@ -5,14 +5,18 @@ import (
 	"strings"
 )
 
-func isBrowserAuthPath(path string) bool {
-	return strings.HasPrefix(path, "/auth/")
-}
-
 func isOAuthOrWellKnownPath(path string) bool {
 	return strings.HasPrefix(path, "/oauth/") ||
 		strings.HasPrefix(path, "/.well-known/") ||
 		strings.HasPrefix(path, "/mcp/.well-known/")
+}
+
+func isPublicBrowserAuthHelperPath(path string) bool {
+	return path == "/auth/config" ||
+		path == "/auth/login" ||
+		path == "/auth/logout" ||
+		path == "/auth/link" ||
+		path == "/auth/link/pending"
 }
 
 func isInternalAPIPath(path string, method string) bool {
@@ -20,16 +24,13 @@ func isInternalAPIPath(path string, method string) bool {
 		path = normalized
 	}
 
-	if isBrowserAuthPath(path) {
-		switch path {
-		case "/auth/config", "/auth/login", "/auth/logout", "/auth/link", "/auth/link/pending":
-			return true
-		}
+	if isPublicBrowserAuthHelperPath(path) {
+		return true
 	}
 
 	return path == "/oauth/authorize" && method == http.MethodPost
 }
 
 func shouldBridgeSessionAuth(path string) bool {
-	return !isBrowserAuthPath(path) && !isOAuthOrWellKnownPath(path)
+	return !isPublicBrowserAuthHelperPath(path) && !isOAuthOrWellKnownPath(path)
 }

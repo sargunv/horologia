@@ -9,7 +9,14 @@ import (
 func sameOriginRequest(r *http.Request, publicURL string) bool {
 	origin := r.Header.Get("Origin")
 	if origin == "" {
-		return true
+		switch r.Header.Get("Sec-Fetch-Site") {
+		case "same-origin", "none":
+			return true
+		case "same-site", "cross-site":
+			return false
+		default:
+			return false
+		}
 	}
 
 	originURL, err := url.Parse(origin)
