@@ -328,6 +328,7 @@ func TestUserMeRequiresToken(t *testing.T) {
 }
 
 func TestAuthStatusWithoutServerSkipsIdentity(t *testing.T) {
+	setConfigHome(t)
 	setEnvValue(t, "HOROLOGIA_SERVER", nil)
 	setEnvValue(t, "HOROLOGIA_TOKEN", stringPtr("abc123456789"))
 
