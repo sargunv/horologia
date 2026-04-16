@@ -2,10 +2,8 @@ import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import rehypeExternalLinks from "rehype-external-links";
 import rehypeHighlight from "rehype-highlight";
-import rehypeKatex from "rehype-katex";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
 import remarkSupersub from "remark-supersub";
 
 const components: Components = {
@@ -71,11 +69,10 @@ export function MarkdownRenderer({ children, className }: MarkdownRendererProps)
     <div className={["space-y-4 text-sm", className].filter(Boolean).join(" ")}>
       <ReactMarkdown
         components={components}
-        remarkPlugins={[[remarkGfm, { singleTilde: false }], remarkMath, remarkSupersub]}
+        remarkPlugins={[[remarkGfm, { singleTilde: false }], remarkSupersub]}
         rehypePlugins={[
           [rehypeSanitize, defaultSchema],
           rehypeHighlight,
-          rehypeKatex,
           [rehypeExternalLinks, { target: "_blank", rel: ["noopener", "noreferrer"] }],
         ]}
       >
