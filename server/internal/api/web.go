@@ -60,13 +60,6 @@ func CookieAuthMiddleware(next http.Handler, publicURL string) http.Handler {
 	})
 }
 
-func shouldBridgeSessionAuth(path string) bool {
-	return !strings.HasPrefix(path, "/auth/") &&
-		!strings.HasPrefix(path, "/oauth/") &&
-		!strings.HasPrefix(path, "/.well-known/") &&
-		!strings.HasPrefix(path, "/mcp/.well-known/")
-}
-
 func sessionTokenFromContext(ctx context.Context) (string, bool) {
 	token, ok := ctx.Value(sessionTokenContextKey{}).(string)
 	return token, ok

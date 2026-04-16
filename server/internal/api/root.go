@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -50,21 +49,6 @@ func internalCORSMiddleware(publicURL string, next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
-}
-
-func isInternalAPIPath(path string, method string) bool {
-	if normalized, ok := strings.CutPrefix(path, "/api"); ok {
-		path = normalized
-	}
-
-	switch path {
-	case "/auth/config", "/auth/login", "/auth/logout", "/auth/link", "/auth/link/pending":
-		return true
-	case "/oauth/authorize":
-		return method == http.MethodPost
-	default:
-		return false
-	}
 }
 
 func healthHandler(pool *pgxpool.Pool, log *slog.Logger) http.HandlerFunc {

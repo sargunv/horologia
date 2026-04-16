@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -12,8 +13,12 @@ import (
 
 func requireAuthenticatedDocs(pool *pgxpool.Pool, publicURL string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if _, err := authenticateRequest(r, pool, publicURL); err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
+		if err := checkAuthenticatedRequest(r, pool, publicURL); err != nil {
+			if errors.Is(err, auth.ErrUnauthorized) {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
@@ -21,17 +26,19 @@ func requireAuthenticatedDocs(pool *pgxpool.Pool, publicURL string, next http.Ha
 	})
 }
 
-func authenticateRequest(r *http.Request, pool *pgxpool.Pool, publicURL string) (*auth.User, error) {
+func checkAuthenticatedRequest(r *http.Request, pool *pgxpool.Pool, publicURL string) error {
 	if token, ok := requestBearerToken(r); ok {
-		return auth.AuthenticateBearerToken(r.Context(), pool, token, time.Now())
+		_, err := auth.AuthenticateBearerToken(r.Context(), pool, token, time.Now())
+		return err
 	}
 
 	token, ok := requestSessionToken(r)
 	if !ok || !sameOriginRequest(r, publicURL) {
-		return nil, auth.ErrUnauthorized
+		return auth.ErrUnauthorized
 	}
 
-	return auth.AuthenticateBearerToken(r.Context(), pool, token, time.Now())
+	_, err := auth.AuthenticateBearerToken(r.Context(), pool, token, time.Now())
+	return err
 }
 
 func requestBearerToken(r *http.Request) (string, bool) {
