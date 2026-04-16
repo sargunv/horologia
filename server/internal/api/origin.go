@@ -31,6 +31,9 @@ func sameOriginRequest(r *http.Request, publicURL string) bool {
 	if err != nil {
 		return false
 	}
+	if publicURL == "" && isLoopbackHost(originURL.Hostname()) && isLoopbackHost(requestURL.Hostname()) {
+		return true
+	}
 
 	return originURL.Scheme == requestURL.Scheme && originURL.Host == requestURL.Host
 }
@@ -50,4 +53,13 @@ func requestOriginURL(r *http.Request, publicURL string) (*url.URL, error) {
 	}
 
 	return url.Parse(scheme + "://" + r.Host)
+}
+
+func isLoopbackHost(host string) bool {
+	switch strings.ToLower(host) {
+	case "localhost", "127.0.0.1", "::1":
+		return true
+	default:
+		return false
+	}
 }
