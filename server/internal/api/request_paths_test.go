@@ -8,7 +8,7 @@ func TestIsInternalAPIPathUsesAppPrefix(t *testing.T) {
 		want bool
 	}{
 		{path: "/app/auth/config", want: true},
-		{path: "/app/oauth/authorize", want: true},
+		{path: "/app/oauth/consent", want: true},
 		{path: "/api/users/me", want: false},
 		{path: "/oauth/authorize", want: false},
 	}

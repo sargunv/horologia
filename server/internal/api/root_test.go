@@ -202,7 +202,7 @@ func TestOAuthAuthorizePostRejectsCrossOriginRequests(t *testing.T) {
 	srv := httptest.NewServer(root)
 	t.Cleanup(srv.Close)
 
-	req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, srv.URL+"/app/oauth/authorize", strings.NewReader("decision=approve"))
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, srv.URL+"/app/oauth/consent", strings.NewReader("decision=approve"))
 	if err != nil {
 		t.Fatalf("new request: %v", err)
 	}

@@ -64,7 +64,7 @@ var oauthAuthorizeTemplate = template.Must(template.New("oauth-authorize").Parse
       {{ if .Resource }}
       <p class="meta">Requested resource: <code>{{ .Resource }}</code></p>
       {{ end }}
-      <form method="post" action="/app/oauth/authorize">
+      <form method="post" action="/app/oauth/consent">
         <input type="hidden" name="response_type" value="{{ .ResponseType }}">
         <input type="hidden" name="client_id" value="{{ .ClientID }}">
         <input type="hidden" name="redirect_uri" value="{{ .RedirectURI }}">
@@ -102,7 +102,7 @@ func MountOAuth(base http.Handler, handler *Handler) http.Handler {
 	mux.Handle("/.well-known/oauth-protected-resource", oauthHandler)
 	mux.Handle("/api/.well-known/oauth-protected-resource", oauthHandler)
 	mux.Handle("/mcp/.well-known/oauth-protected-resource", oauthHandler)
-	mux.Handle("/app/oauth/authorize", oauthHandler)
+	mux.Handle("/app/oauth/consent", oauthHandler)
 	mux.Handle("/oauth/authorize", oauthHandler)
 	mux.Handle("/oauth/token", oauthHandler)
 	mux.Handle("/oauth/revoke", oauthHandler)
@@ -118,7 +118,7 @@ func NewOAuthHandler(handler *Handler) http.Handler {
 	mux.HandleFunc("GET /api/.well-known/oauth-protected-resource", handler.oauthProtectedResourceMetadata)
 	mux.HandleFunc("GET /mcp/.well-known/oauth-protected-resource", handler.oauthProtectedResourceMetadata)
 	mux.HandleFunc("GET /oauth/authorize", handler.oauthAuthorize)
-	mux.HandleFunc("POST /app/oauth/authorize", handler.oauthAuthorize)
+	mux.HandleFunc("POST /app/oauth/consent", handler.oauthAuthorize)
 	mux.HandleFunc("POST /oauth/token", handler.oauthToken)
 	mux.HandleFunc("POST /oauth/revoke", handler.oauthRevoke)
 	return mux

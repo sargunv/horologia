@@ -36,7 +36,6 @@ paths:
         - Auth
       security:
         - {}
-      x-internal: true
   /app/auth/link:
     post:
       operationId: WebAuth_link
@@ -78,7 +77,6 @@ paths:
               $ref: '#/components/schemas/AuthLinkRequest'
       security:
         - {}
-      x-internal: true
   /app/auth/link/pending:
     get:
       operationId: WebAuth_linkPending
@@ -105,7 +103,6 @@ paths:
         - Auth
       security:
         - {}
-      x-internal: true
   /app/auth/login:
     post:
       operationId: WebAuth_login
@@ -143,7 +140,6 @@ paths:
               $ref: '#/components/schemas/AuthLoginRequest'
       security:
         - {}
-      x-internal: true
   /app/auth/logout:
     post:
       operationId: WebAuth_logout
@@ -167,7 +163,6 @@ paths:
         - Auth
       security:
         - {}
-      x-internal: true
   /auth/tokens:
     get:
       operationId: Auth_listTokens

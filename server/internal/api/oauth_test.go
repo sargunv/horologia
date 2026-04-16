@@ -556,7 +556,7 @@ func authorizeOAuthCode(t *testing.T, env *testEnv, client *http.Client, form ur
 	}
 	postForm.Set("decision", "approve")
 
-	postResp, err := doOAuthRequest(t, client, http.MethodPost, env.Server.URL+"/app/oauth/authorize", strings.NewReader(postForm.Encode()), "application/x-www-form-urlencoded")
+	postResp, err := doOAuthRequest(t, client, http.MethodPost, env.Server.URL+"/app/oauth/consent", strings.NewReader(postForm.Encode()), "application/x-www-form-urlencoded")
 	if err != nil {
 		t.Fatalf("authorize POST: %v", err)
 	}

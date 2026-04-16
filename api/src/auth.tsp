@@ -84,7 +84,6 @@ interface WebAuth {
   /**
    * Read public authentication configuration used by the web UI before login.
    */
-  @extension("x-internal", true)
   @get
   @route("/config")
   config(): AuthConfig | ApiError;
@@ -95,7 +94,6 @@ interface WebAuth {
    * Returns the authenticated user and sets the `horologia_session` cookie on
    * success. This endpoint is only available when password auth is enabled.
    */
-  @extension("x-internal", true)
   @post
   @route("/login")
   login(@body body: AuthLoginRequest): {
@@ -107,7 +105,6 @@ interface WebAuth {
   /**
    * Clear the current browser session.
    */
-  @extension("x-internal", true)
   @post
   @route("/logout")
   logout(): {
@@ -121,7 +118,6 @@ interface WebAuth {
    * This endpoint relies on the temporary `horologia_oidc_link` cookie and is
    * only available when OIDC link consent is enabled.
    */
-  @extension("x-internal", true)
   @get
   @route("/link/pending")
   linkPending(): AuthLinkPendingResponse | ApiError;
@@ -134,7 +130,6 @@ interface WebAuth {
    * `horologia_session` cookie and clears the pending link cookie. This
    * endpoint is only available when OIDC link consent is enabled.
    */
-  @extension("x-internal", true)
   @post
   @route("/link")
   link(@body body: AuthLinkRequest): {
