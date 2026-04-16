@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	apigen "github.com/sargunv/horologia/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen/go/ogen"
 	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
 	"github.com/sargunv/horologia/server/internal/types"
 )

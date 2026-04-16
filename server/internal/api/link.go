@@ -11,7 +11,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 
-	apigen "github.com/sargunv/horologia/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen/go/ogen"
 	zhttp "github.com/zitadel/oidc/v3/pkg/http"
 
 	dbgen "github.com/sargunv/horologia/server/internal/database/gen"

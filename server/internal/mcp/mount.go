@@ -11,8 +11,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	mcpserver "github.com/mark3labs/mcp-go/server"
 
+	mcpgen "github.com/sargunv/horologia/api/gen/go/mcp"
 	"github.com/sargunv/horologia/server/internal/auth"
-	mcpgen "github.com/sargunv/horologia/server/internal/mcp/gen"
 )
 
 // NewTransport creates an http.Handler for the MCP Streamable HTTP endpoint.

@@ -1,7 +1,7 @@
 package taskcmd
 
 import (
-	apigen "github.com/sargunv/horologia/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen/go/ogen"
 	"github.com/spf13/cobra"
 
 	"github.com/sargunv/horologia/cli/internal/cmd/support"

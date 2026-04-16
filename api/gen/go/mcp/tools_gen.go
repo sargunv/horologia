@@ -10,7 +10,7 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	mcpserver "github.com/mark3labs/mcp-go/server"
 
-	apigen "github.com/sargunv/horologia/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen/go/ogen"
 )
 
 // Handlers is the interface MCP tool calls are dispatched through.

@@ -1,10 +1,10 @@
 [tasks.generate]
 description = "Run all code generation"
 depends = ["//api:build"]
-sources = ["../api/spec/openapi.yaml", "src/routes/**/*.tsx"]
+sources = ["../api/gen/openapi.yaml", "src/routes/**/*.tsx"]
 outputs = ["src/api/schema.d.ts", "src/routeTree.gen.ts"]
 run = [
-  "pnpm exec openapi-typescript ../api/spec/openapi.yaml -o src/api/schema.d.ts",
+  "pnpm exec openapi-typescript ../api/gen/openapi.yaml -o src/api/schema.d.ts",
   "pnpm exec tsr generate",
 ]
 

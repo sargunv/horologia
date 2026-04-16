@@ -3,9 +3,9 @@ emit:
   - "@horologia/typespec-mcp-go"
 options:
   "@typespec/openapi3":
-    emitter-output-dir: "{project-root}/spec"
+    emitter-output-dir: "{project-root}/gen"
     openapi-versions:
       - 3.1.0
   "@horologia/typespec-mcp-go":
-    emitter-output-dir: "{project-root}/../server/internal/mcp/gen"
-    ogenImportPath: "github.com/sargunv/horologia/api/gen"
+    emitter-output-dir: "{project-root}/gen/go/mcp"
+    ogenImportPath: "github.com/sargunv/horologia/api/gen/go/ogen"

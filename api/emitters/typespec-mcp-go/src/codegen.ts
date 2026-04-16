@@ -9,7 +9,7 @@ export interface ToolInfo {
 }
 
 export interface EmitterOptions {
-  /** Go import path for the ogen-generated API package (e.g. "github.com/foo/bar/internal/api/gen"). */
+  /** Go import path for the ogen-generated API package (e.g. "github.com/foo/bar/api/gen/go/ogen"). */
   ogenImportPath: string;
 }
 

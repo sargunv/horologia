@@ -2,12 +2,12 @@
 description = "Run all code generation"
 depends = ["//api:generate"]
 sources = [
-  "../api/spec/openapi.yaml",
+  "../api/gen/openapi.yaml",
   "internal/database/migrations/*.sql",
   "internal/database/queries/*.sql",
   "sqlc.yaml",
 ]
-outputs = ["internal/database/gen/*.go", "internal/mcp/gen/*.go"]
+outputs = ["internal/database/gen/*.go"]
 run = [
   "go run github.com/sqlc-dev/sqlc/cmd/sqlc generate",
 ]

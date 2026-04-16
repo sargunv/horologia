@@ -12,7 +12,7 @@ import (
 	"github.com/ogen-go/ogen/ogenerrors"
 	zhttp "github.com/zitadel/oidc/v3/pkg/http"
 
-	apigen "github.com/sargunv/horologia/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen/go/ogen"
 	"github.com/sargunv/horologia/server/internal/auth"
 	"github.com/sargunv/horologia/server/internal/pwdcheck"
 	"github.com/sargunv/horologia/server/internal/types"

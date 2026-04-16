@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	apigen "github.com/sargunv/horologia/api/gen"
+	apigen "github.com/sargunv/horologia/api/gen/go/ogen"
 	"github.com/sargunv/horologia/server/internal/activitylog"
 	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
 	"github.com/sargunv/horologia/server/internal/types"

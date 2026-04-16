@@ -36,7 +36,6 @@ linters:
           list-mode: lax
           files:
             - "!${config-path}/internal/api/*.go"
-            - "!${config-path}/internal/mcp/gen/*.go"
           deny:
-            - pkg: "github.com/sargunv/horologia/api/gen"
+            - pkg: "github.com/sargunv/horologia/api/gen/go/ogen"
               desc: "only internal/api may import apigen; use domain types from internal/types"
