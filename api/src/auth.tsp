@@ -42,7 +42,6 @@ model AuthLinkRequest {
 }
 
 model AuthLinkResponse {
-  linked: boolean;
   redirectTo: string;
 }
 

@@ -499,23 +499,12 @@ func (s *AuthLinkRequest) SetPassword(val string) {
 
 // Ref: #/components/schemas/AuthLinkResponse
 type AuthLinkResponse struct {
-	Linked     bool   `json:"linked"`
 	RedirectTo string `json:"redirectTo"`
-}
-
-// GetLinked returns the value of Linked.
-func (s *AuthLinkResponse) GetLinked() bool {
-	return s.Linked
 }
 
 // GetRedirectTo returns the value of RedirectTo.
 func (s *AuthLinkResponse) GetRedirectTo() string {
 	return s.RedirectTo
-}
-
-// SetLinked sets the value of Linked.
-func (s *AuthLinkResponse) SetLinked(val bool) {
-	s.Linked = val
 }
 
 // SetRedirectTo sets the value of RedirectTo.

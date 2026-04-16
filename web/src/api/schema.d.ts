@@ -528,7 +528,6 @@ export interface components {
             password: string;
         };
         AuthLinkResponse: {
-            linked: boolean;
             redirectTo: string;
         };
         AuthLoginRequest: {

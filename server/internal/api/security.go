@@ -7,6 +7,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ogen-go/ogen/ogenerrors"
 
 	apigen "github.com/sargunv/horologia/api/gen"
@@ -15,8 +16,12 @@ import (
 	"github.com/sargunv/horologia/server/internal/types"
 )
 
+func authenticateBearerToken(ctx context.Context, pool *pgxpool.Pool, token string) (*auth.User, error) {
+	return auth.AuthenticateBearerToken(ctx, pool, token, time.Now())
+}
+
 func (h *Handler) authenticateToken(ctx context.Context, token string) (context.Context, error) {
-	user, err := auth.AuthenticateBearerToken(ctx, h.Pool, token, time.Now())
+	user, err := authenticateBearerToken(ctx, h.Pool, token)
 	if errors.Is(err, auth.ErrUnauthorized) {
 		return ctx, ogenerrors.ErrSkipServerSecurity
 	}

@@ -9,7 +9,6 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/sargunv/horologia/server/internal/apidocs"
 	"github.com/sargunv/horologia/server/internal/webui"
 )
 
@@ -18,17 +17,11 @@ import (
 //   - /api/* routes to the API handler (with /api prefix stripped)
 //   - /auth/*, /oauth/*, /.well-known/*, and /mcp/.well-known/* route to the
 //     auth/OAuth stack without a prefix rewrite
-//   - /api/openapi.yaml serves the generated OpenAPI document
-//   - /api/docs serves the Scalar API reference UI
 //   - /mcp routes to the MCP Streamable HTTP handler (if non-nil)
 //   - /* routes to the embedded SPA (static files + index.html fallback)
-func MountRoot(apiHandler http.Handler, mcpHandler http.Handler, pool *pgxpool.Pool, log *slog.Logger, publicURL string, apiDocsEnabled bool) http.Handler {
+func MountRoot(apiHandler http.Handler, mcpHandler http.Handler, pool *pgxpool.Pool, log *slog.Logger, publicURL string) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", healthHandler(pool, log))
-	if apiDocsEnabled {
-		mux.Handle("GET /api/openapi.yaml", requireAuthenticatedDocs(pool, publicURL, http.HandlerFunc(apidocs.OpenAPIHandler)))
-		mux.Handle("GET /api/docs", requireAuthenticatedDocs(pool, publicURL, http.HandlerFunc(apidocs.ScalarHandler)))
-	}
 	mux.Handle("/api/", http.StripPrefix("/api", apiHandler))
 	mux.Handle("/auth/", apiHandler)
 	mux.Handle("/oauth/", apiHandler)

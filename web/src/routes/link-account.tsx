@@ -131,8 +131,6 @@ function isAuthLinkResponse(value: unknown): value is components["schemas"]["Aut
   return (
     typeof value === "object" &&
     value !== null &&
-    "linked" in value &&
-    typeof value.linked === "boolean" &&
     "redirectTo" in value &&
     typeof value.redirectTo === "string"
   );

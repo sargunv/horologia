@@ -1271,18 +1271,13 @@ func (s *AuthLinkResponse) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *AuthLinkResponse) encodeFields(e *jx.Encoder) {
 	{
-		e.FieldStart("linked")
-		e.Bool(s.Linked)
-	}
-	{
 		e.FieldStart("redirectTo")
 		e.Str(s.RedirectTo)
 	}
 }
 
-var jsonFieldsNameOfAuthLinkResponse = [2]string{
-	0: "linked",
-	1: "redirectTo",
+var jsonFieldsNameOfAuthLinkResponse = [1]string{
+	0: "redirectTo",
 }
 
 // Decode decodes AuthLinkResponse from json.
@@ -1294,20 +1289,8 @@ func (s *AuthLinkResponse) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "linked":
-			requiredBitSet[0] |= 1 << 0
-			if err := func() error {
-				v, err := d.Bool()
-				s.Linked = bool(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"linked\"")
-			}
 		case "redirectTo":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
 				v, err := d.Str()
 				s.RedirectTo = string(v)
@@ -1328,7 +1311,7 @@ func (s *AuthLinkResponse) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000011,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

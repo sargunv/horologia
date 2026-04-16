@@ -7,9 +7,8 @@ sources = [
   "internal/database/queries/*.sql",
   "sqlc.yaml",
 ]
-outputs = ["internal/apidocs/openapi.yaml", "internal/database/gen/*.go", "internal/mcp/gen/*.go"]
+outputs = ["internal/database/gen/*.go", "internal/mcp/gen/*.go"]
 run = [
-  "cp ../api/spec/openapi.yaml internal/apidocs/openapi.yaml",
   "go run github.com/sqlc-dev/sqlc/cmd/sqlc generate",
 ]
 

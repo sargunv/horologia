@@ -4,15 +4,14 @@ All configuration uses environment variables with the `HOROLOGIA_` prefix.
 
 ## Core
 
-| Variable                     | Default    | Description                                                     |
-| ---------------------------- | ---------- | --------------------------------------------------------------- |
-| `HOROLOGIA_DB`               | (required) | PostgreSQL connection URI                                       |
-| `HOROLOGIA_ADDR`             | `:8080`    | Listen address (`host:port`). Omit host to bind all interfaces. |
-| `HOROLOGIA_PUBLIC_URL`       | (none)     | External URL for redirects                                      |
-| `HOROLOGIA_LOG_LEVEL`        | `info`     | `debug`, `info`, `warn`, or `error`                             |
-| `HOROLOGIA_LOG_FORMAT`       | `text`     | `text` or `json`                                                |
-| `HOROLOGIA_SECURE_COOKIES`   | `true`     | Set `false` for non-HTTPS (dev only)                            |
-| `HOROLOGIA_API_DOCS_ENABLED` | `true`     | Enable `/api/docs` and `/api/openapi.yaml`                      |
+| Variable                   | Default    | Description                                                     |
+| -------------------------- | ---------- | --------------------------------------------------------------- |
+| `HOROLOGIA_DB`             | (required) | PostgreSQL connection URI                                       |
+| `HOROLOGIA_ADDR`           | `:8080`    | Listen address (`host:port`). Omit host to bind all interfaces. |
+| `HOROLOGIA_PUBLIC_URL`     | (none)     | External URL for redirects                                      |
+| `HOROLOGIA_LOG_LEVEL`      | `info`     | `debug`, `info`, `warn`, or `error`                             |
+| `HOROLOGIA_LOG_FORMAT`     | `text`     | `text` or `json`                                                |
+| `HOROLOGIA_SECURE_COOKIES` | `true`     | Set `false` for non-HTTPS (dev only)                            |
 
 ## OIDC
 

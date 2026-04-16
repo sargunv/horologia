@@ -1451,11 +1451,8 @@ components:
     AuthLinkResponse:
       type: object
       required:
-        - linked
         - redirectTo
       properties:
-        linked:
-          type: boolean
         redirectTo:
           type: string
     AuthLoginRequest:

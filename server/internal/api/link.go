@@ -197,7 +197,6 @@ func (h *Handler) WebAuthLink(ctx context.Context, req *apigen.AuthLinkRequest) 
 	return &apigen.AuthLinkResponseHeaders{
 		SetCookie: []string{h.sessionCookie(raw).String(), h.clearPendingLinkCookie().String()},
 		Response: apigen.AuthLinkResponse{
-			Linked:     true,
 			RedirectTo: redirectTo,
 		},
 	}, nil
