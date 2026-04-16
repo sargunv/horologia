@@ -44,6 +44,7 @@ const scalarHTML = `<!doctype html>
         layout: "modern",
         showDeveloperTools: "never",
         hideClientButton: true,
+        customCss: '[aria-label="Sidebar for undefined"] { display: none !important; }',
         agent: {
           disabled: true,
         },
