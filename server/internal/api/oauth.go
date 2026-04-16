@@ -496,7 +496,7 @@ func (h *Handler) oauthSessionUser(w http.ResponseWriter, r *http.Request) (*aut
 
 	user, err := auth.AuthenticateBearerToken(r.Context(), h.Pool, cookie.Value, time.Now())
 	if errors.Is(err, auth.ErrUnauthorized) {
-		h.clearSessionCookie(w)
+		h.clearSessionCookieHeader(w)
 		redirectTo := r.URL.Path
 		if r.URL.RawQuery != "" {
 			redirectTo += "?" + r.URL.RawQuery

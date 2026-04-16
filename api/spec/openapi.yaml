@@ -14,6 +14,160 @@ tags:
   - name: Task Priority Levels
   - name: Activity
 paths:
+  /auth/config:
+    get:
+      operationId: WebAuth_config
+      description: Read public authentication configuration used by the web UI before login.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthConfig'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+      security:
+        - {}
+      x-internal: true
+  /auth/link:
+    post:
+      operationId: WebAuth_link
+      description: |-
+        Confirm OIDC account linking using the existing account password.
+
+        This endpoint relies on the temporary `horologia_oidc_link` cookie issued
+        during the OIDC callback. On success it creates the normal
+        `horologia_session` cookie and clears the pending link cookie. This
+        endpoint is only available when OIDC link consent is enabled.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          headers:
+            Set-Cookie:
+              required: true
+              schema:
+                type: array
+                items:
+                  type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthLinkResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthLinkRequest'
+      security:
+        - {}
+      x-internal: true
+  /auth/link/pending:
+    get:
+      operationId: WebAuth_linkPending
+      description: |-
+        Read the pending OIDC account-link request created during the OIDC callback.
+
+        This endpoint relies on the temporary `horologia_oidc_link` cookie and is
+        only available when OIDC link consent is enabled.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthLinkPendingResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+      security:
+        - {}
+      x-internal: true
+  /auth/login:
+    post:
+      operationId: WebAuth_login
+      description: |-
+        Log in with email and password.
+
+        Returns the authenticated user and sets the `horologia_session` cookie on
+        success. This endpoint is only available when password auth is enabled.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          headers:
+            Set-Cookie:
+              required: true
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthLoginResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthLoginRequest'
+      security:
+        - {}
+      x-internal: true
+  /auth/logout:
+    post:
+      operationId: WebAuth_logout
+      description: Clear the current browser session.
+      parameters: []
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+          headers:
+            Set-Cookie:
+              required: true
+              schema:
+                type: string
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+      security:
+        - {}
+      x-internal: true
   /auth/tokens:
     get:
       operationId: Auth_listTokens
@@ -1246,6 +1400,80 @@ components:
           type: string
         message:
           type: string
+    AuthConfig:
+      type: object
+      required:
+        - oidc
+        - password
+      properties:
+        oidc:
+          $ref: '#/components/schemas/AuthConfigOIDC'
+        password:
+          $ref: '#/components/schemas/AuthConfigPassword'
+    AuthConfigOIDC:
+      type: object
+      required:
+        - enabled
+        - label
+        - autoRedirect
+      properties:
+        enabled:
+          type: boolean
+        label:
+          type: string
+        autoRedirect:
+          type: boolean
+    AuthConfigPassword:
+      type: object
+      required:
+        - enabled
+      properties:
+        enabled:
+          type: boolean
+    AuthLinkPendingResponse:
+      type: object
+      required:
+        - email
+        - name
+      properties:
+        email:
+          type: string
+        name:
+          type: string
+    AuthLinkRequest:
+      type: object
+      required:
+        - password
+      properties:
+        password:
+          type: string
+          minLength: 1
+    AuthLinkResponse:
+      type: object
+      required:
+        - redirectTo
+      properties:
+        redirectTo:
+          type: string
+    AuthLoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          minLength: 1
+    AuthLoginResponse:
+      type: object
+      required:
+        - user
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
     AuthToken:
       type: object
       required:
@@ -2008,3 +2236,7 @@ components:
     BearerAuth:
       type: http
       scheme: Bearer
+servers:
+  - url: /api
+    description: Same-origin API
+    variables: {}

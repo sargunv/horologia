@@ -46,4 +46,9 @@ const (
 	UsersListOperation                      OperationName = "UsersList"
 	UsersMeOperation                        OperationName = "UsersMe"
 	UsersUpdateOperation                    OperationName = "UsersUpdate"
+	WebAuthConfigOperation                  OperationName = "WebAuthConfig"
+	WebAuthLinkOperation                    OperationName = "WebAuthLink"
+	WebAuthLinkPendingOperation             OperationName = "WebAuthLinkPending"
+	WebAuthLoginOperation                   OperationName = "WebAuthLogin"
+	WebAuthLogoutOperation                  OperationName = "WebAuthLogout"
 )

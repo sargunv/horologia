@@ -168,6 +168,44 @@ type Handler interface {
 	//
 	// PATCH /users/{userId}
 	UsersUpdate(ctx context.Context, req *UserUpdate, params UsersUpdateParams) (*User, error)
+	// WebAuthConfig implements WebAuth_config operation.
+	//
+	// Read public authentication configuration used by the web UI before login.
+	//
+	// GET /auth/config
+	WebAuthConfig(ctx context.Context) (*AuthConfig, error)
+	// WebAuthLink implements WebAuth_link operation.
+	//
+	// Confirm OIDC account linking using the existing account password.
+	// This endpoint relies on the temporary `horologia_oidc_link` cookie issued
+	// during the OIDC callback. On success it creates the normal
+	// `horologia_session` cookie and clears the pending link cookie. This
+	// endpoint is only available when OIDC link consent is enabled.
+	//
+	// POST /auth/link
+	WebAuthLink(ctx context.Context, req *AuthLinkRequest) (*AuthLinkResponseHeaders, error)
+	// WebAuthLinkPending implements WebAuth_linkPending operation.
+	//
+	// Read the pending OIDC account-link request created during the OIDC callback.
+	// This endpoint relies on the temporary `horologia_oidc_link` cookie and is
+	// only available when OIDC link consent is enabled.
+	//
+	// GET /auth/link/pending
+	WebAuthLinkPending(ctx context.Context) (*AuthLinkPendingResponse, error)
+	// WebAuthLogin implements WebAuth_login operation.
+	//
+	// Log in with email and password.
+	// Returns the authenticated user and sets the `horologia_session` cookie on
+	// success. This endpoint is only available when password auth is enabled.
+	//
+	// POST /auth/login
+	WebAuthLogin(ctx context.Context, req *AuthLoginRequest) (*AuthLoginResponseHeaders, error)
+	// WebAuthLogout implements WebAuth_logout operation.
+	//
+	// Clear the current browser session.
+	//
+	// POST /auth/logout
+	WebAuthLogout(ctx context.Context) (*WebAuthLogoutNoContent, error)
 	// NewError creates *ApiErrorStatusCode from error returned by handler.
 	//
 	// Used for common default response.

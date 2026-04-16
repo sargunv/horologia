@@ -7,6 +7,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ogen-go/ogen/ogenerrors"
 
 	apigen "github.com/sargunv/horologia/api/gen"
@@ -15,9 +16,12 @@ import (
 	"github.com/sargunv/horologia/server/internal/types"
 )
 
-// HandleBearerAuth validates the bearer token and enriches the context with the user.
-func (h *Handler) HandleBearerAuth(ctx context.Context, operationName apigen.OperationName, t apigen.BearerAuth) (context.Context, error) {
-	user, err := auth.AuthenticateBearerToken(ctx, h.Pool, t.Token, time.Now())
+func authenticateBearerToken(ctx context.Context, pool *pgxpool.Pool, token string) (*auth.User, error) {
+	return auth.AuthenticateBearerToken(ctx, pool, token, time.Now())
+}
+
+func (h *Handler) authenticateToken(ctx context.Context, token string) (context.Context, error) {
+	user, err := authenticateBearerToken(ctx, h.Pool, token)
 	if errors.Is(err, auth.ErrUnauthorized) {
 		return ctx, ogenerrors.ErrSkipServerSecurity
 	}
@@ -25,7 +29,13 @@ func (h *Handler) HandleBearerAuth(ctx context.Context, operationName apigen.Ope
 		return ctx, err
 	}
 
+	ctx = context.WithValue(ctx, sessionTokenContextKey{}, token)
 	return auth.ContextWithUser(ctx, user), nil
+}
+
+// HandleBearerAuth validates the bearer token and enriches the context with the user.
+func (h *Handler) HandleBearerAuth(ctx context.Context, operationName apigen.OperationName, t apigen.BearerAuth) (context.Context, error) {
+	return h.authenticateToken(ctx, t.Token)
 }
 
 // generateToken creates a cryptographically random token and returns both

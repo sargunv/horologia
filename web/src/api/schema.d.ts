@@ -4,6 +4,108 @@
  */
 
 export interface paths {
+    "/auth/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read public authentication configuration used by the web UI before login. */
+        get: operations["WebAuth_config"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Confirm OIDC account linking using the existing account password.
+         *
+         *     This endpoint relies on the temporary `horologia_oidc_link` cookie issued
+         *     during the OIDC callback. On success it creates the normal
+         *     `horologia_session` cookie and clears the pending link cookie. This
+         *     endpoint is only available when OIDC link consent is enabled.
+         */
+        post: operations["WebAuth_link"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/link/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Read the pending OIDC account-link request created during the OIDC callback.
+         *
+         *     This endpoint relies on the temporary `horologia_oidc_link` cookie and is
+         *     only available when OIDC link consent is enabled.
+         */
+        get: operations["WebAuth_linkPending"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Log in with email and password.
+         *
+         *     Returns the authenticated user and sets the `horologia_session` cookie on
+         *     success. This endpoint is only available when password auth is enabled.
+         */
+        post: operations["WebAuth_login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Clear the current browser session. */
+        post: operations["WebAuth_logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/tokens": {
         parameters: {
             query?: never;
@@ -406,6 +508,35 @@ export interface components {
             code: string;
             message: string;
         };
+        AuthConfig: {
+            oidc: components["schemas"]["AuthConfigOIDC"];
+            password: components["schemas"]["AuthConfigPassword"];
+        };
+        AuthConfigOIDC: {
+            enabled: boolean;
+            label: string;
+            autoRedirect: boolean;
+        };
+        AuthConfigPassword: {
+            enabled: boolean;
+        };
+        AuthLinkPendingResponse: {
+            email: string;
+            name: string;
+        };
+        AuthLinkRequest: {
+            password: string;
+        };
+        AuthLinkResponse: {
+            redirectTo: string;
+        };
+        AuthLoginRequest: {
+            email: string;
+            password: string;
+        };
+        AuthLoginResponse: {
+            user: components["schemas"]["User"];
+        };
         AuthToken: {
             id: string;
             name: string;
@@ -690,6 +821,160 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    WebAuth_config: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthConfig"];
+                };
+            };
+            /** @description An unexpected error response. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    WebAuth_link: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthLinkRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    "Set-Cookie": string[];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthLinkResponse"];
+                };
+            };
+            /** @description An unexpected error response. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    WebAuth_linkPending: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthLinkPendingResponse"];
+                };
+            };
+            /** @description An unexpected error response. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    WebAuth_login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    "Set-Cookie": string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthLoginResponse"];
+                };
+            };
+            /** @description An unexpected error response. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    WebAuth_logout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description There is no content to send for this request, but the headers may be useful. */
+            204: {
+                headers: {
+                    "Set-Cookie": string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description An unexpected error response. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     Auth_listTokens: {
         parameters: {
             query?: never;

@@ -450,9 +450,6 @@ func TestOIDCLinkConsent(t *testing.T) {
 	assertStatus(t, linkResp, http.StatusOK)
 	var linkResult map[string]any
 	readJSON(t, linkResp, &linkResult)
-	if linkResult["linked"] != true {
-		t.Errorf("linked = %v, want true", linkResult["linked"])
-	}
 	if linkResult["redirectTo"] != "/spaces" {
 		t.Errorf("redirectTo = %v, want /spaces", linkResult["redirectTo"])
 	}
@@ -529,9 +526,6 @@ func TestOIDCLinkConsentPreservesOAuthRedirect(t *testing.T) {
 
 	var linkResult map[string]any
 	readJSON(t, linkResp, &linkResult)
-	if linkResult["linked"] != true {
-		t.Errorf("linked = %v, want true", linkResult["linked"])
-	}
 	if got := jsonAs[string](t, linkResult["redirectTo"]); got != redirectPath {
 		t.Fatalf("redirectTo = %q, want %q", got, redirectPath)
 	}

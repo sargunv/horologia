@@ -1,16 +1,17 @@
 package api
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 
+	apigen "github.com/sargunv/horologia/api/gen"
 	zhttp "github.com/zitadel/oidc/v3/pkg/http"
 
 	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
@@ -31,6 +32,8 @@ type pendingLinkState struct {
 	RedirectTo  string `json:"redirect,omitempty"`
 	ExpiresAt   int64  `json:"exp"`
 }
+
+type pendingLinkStateContextKey struct{}
 
 var errNoPendingLink = errors.New("no pending link cookie")
 
@@ -82,117 +85,129 @@ func readPendingLinkCookie(r *http.Request, ch *zhttp.CookieHandler) (pendingLin
 	return state, nil
 }
 
-// WebLinkPendingHandler returns an http.Handler for GET /auth/link/pending.
-// It reads the pending-link cookie and returns the email/name for the SPA to display.
-func WebLinkPendingHandler(handler *Handler) http.Handler {
+func pendingLinkStateFromContext(ctx context.Context) (pendingLinkState, bool) {
+	state, ok := ctx.Value(pendingLinkStateContextKey{}).(pendingLinkState)
+	return state, ok
+}
+
+func (h *Handler) clearPendingLinkCookie() *http.Cookie {
+	return &http.Cookie{
+		Name:     pendingLinkCookieName,
+		Value:    "",
+		Path:     pendingLinkCookiePath,
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   h.SecureCookies,
+		SameSite: http.SameSiteLaxMode,
+	}
+}
+
+func PendingLinkMiddleware(handler *Handler, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		state, err := readPendingLinkCookie(r, handler.LinkCookieHandler)
-		if err != nil {
-			writeJSONError(w, http.StatusNotFound, "no pending link request")
-			return
+		if handler.LinkCookieHandler != nil {
+			if state, err := readPendingLinkCookie(r, handler.LinkCookieHandler); err == nil {
+				ctx := context.WithValue(r.Context(), pendingLinkStateContextKey{}, state)
+				r = r.Clone(ctx)
+			}
 		}
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"email": state.Email,
-			"name":  state.Name,
-		})
+		next.ServeHTTP(w, r)
 	})
 }
 
-// WebLinkHandler returns an http.Handler for POST /auth/link.
-// It validates the user's password, links the OIDC subject, and creates a session.
-func WebLinkHandler(handler *Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Reject non-JSON content types to prevent cross-site form POST (CSRF).
-		ct := r.Header.Get("Content-Type")
-		if ct == "" || !strings.HasPrefix(strings.TrimSpace(strings.ToLower(ct)), "application/json") {
-			writeJSONError(w, http.StatusUnsupportedMediaType, "Content-Type must be application/json")
-			return
-		}
+func (h *Handler) WebAuthLinkPending(ctx context.Context) (*apigen.AuthLinkPendingResponse, error) {
+	if !h.OIDCLinkConsentEnabled {
+		return nil, forbidden("oidc link consent is disabled")
+	}
 
-		var req struct {
-			Password string `json:"password"`
-		}
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeJSONError(w, http.StatusBadRequest, "invalid request body")
-			return
-		}
+	state, ok := pendingLinkStateFromContext(ctx)
+	if !ok {
+		return nil, newAPIErrorResponse(http.StatusNotFound, "no pending link request")
+	}
 
-		ctx := r.Context()
+	return &apigen.AuthLinkPendingResponse{
+		Email: state.Email,
+		Name:  state.Name,
+	}, nil
+}
 
-		state, err := readPendingLinkCookie(r, handler.LinkCookieHandler)
-		if err != nil {
-			writeJSONError(w, http.StatusBadRequest, "link request not found or expired")
-			return
-		}
+func (h *Handler) WebAuthLink(ctx context.Context, req *apigen.AuthLinkRequest) (*apigen.AuthLinkResponseHeaders, error) {
+	if !h.OIDCLinkConsentEnabled {
+		return nil, forbidden("oidc link consent is disabled")
+	}
 
-		// Validate password, link OIDC subject, and create session in one transaction.
-		tx, err := handler.Pool.Begin(ctx)
-		if err != nil {
-			handler.Log.ErrorContext(ctx, "link: begin tx", "error", err)
-			writeJSONError(w, http.StatusInternalServerError, "internal error")
-			return
-		}
-		defer func() { _ = tx.Rollback(ctx) }()
+	state, ok := pendingLinkStateFromContext(ctx)
+	if !ok {
+		return nil, badRequest("link request not found or expired")
+	}
+	if err := defaultPasswordThrottle.beforeAttempt(ctx, state.Email); err != nil {
+		return nil, err
+	}
 
-		txq := dbgen.New(tx)
+	// Validate password, link OIDC subject, and create session in one transaction.
+	tx, err := h.Pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
 
-		// validatePassword handles no-password accounts with timing-safe sentinel comparison.
-		user, err := validatePassword(ctx, txq, state.Email, req.Password)
-		if errors.Is(err, errInvalidCredentials) {
-			writeJSONError(w, http.StatusBadRequest, "invalid password")
-			return
-		}
-		if err != nil {
-			handler.Log.ErrorContext(ctx, "link: validate password", "error", err)
-			writeJSONError(w, http.StatusInternalServerError, "internal error")
-			return
-		}
+	txq := dbgen.New(tx)
 
-		// Reject if the account was already linked to a different OIDC subject
-		// between cookie issuance and now.
-		if user.OidcSubject.Valid && user.OidcSubject.String != state.OIDCSubject {
-			writeJSONError(w, http.StatusConflict, "account already linked to a different identity")
-			return
-		}
+	// validatePassword handles no-password accounts with timing-safe sentinel comparison.
+	user, err := validatePassword(ctx, txq, state.Email, req.Password)
+	if errors.Is(err, errInvalidCredentials) {
+		defaultPasswordThrottle.recordFailure(state.Email)
+		return nil, badRequest("invalid password")
+	}
+	if err != nil {
+		return nil, err
+	}
+	defaultPasswordThrottle.recordSuccess(state.Email)
 
-		if err := txq.SetUserOIDCSubject(ctx, dbgen.SetUserOIDCSubjectParams{
-			OidcSubject: pgtype.Text{String: state.OIDCSubject, Valid: true},
-			UpdatedAt:   types.Timestamptz(time.Now()),
-			ID:          user.ID,
-		}); err != nil {
-			handler.Log.ErrorContext(ctx, "link: set oidc subject", "error", err)
-			writeJSONError(w, http.StatusInternalServerError, "failed to link account")
-			return
-		}
+	// Reject if the account was already linked to a different OIDC subject
+	// between cookie issuance and now.
+	if user.OidcSubject.Valid && user.OidcSubject.String != state.OIDCSubject {
+		return nil, newAPIErrorResponse(http.StatusConflict, "account already linked to a different identity")
+	}
 
-		raw, err := createSessionToken(ctx, txq, user.ID)
-		if err != nil {
-			handler.Log.ErrorContext(ctx, "link: create session", "error", err)
-			writeJSONError(w, http.StatusInternalServerError, "internal error")
-			return
-		}
+	if err := txq.SetUserOIDCSubject(ctx, dbgen.SetUserOIDCSubjectParams{
+		OidcSubject: pgtype.Text{String: state.OIDCSubject, Valid: true},
+		UpdatedAt:   types.Timestamptz(time.Now()),
+		ID:          user.ID,
+	}); err != nil {
+		h.Log.ErrorContext(ctx, "link: set oidc subject", "error", err)
+		return nil, newAPIErrorResponse(http.StatusInternalServerError, "failed to link account")
+	}
 
-		if err := tx.Commit(ctx); err != nil {
-			handler.Log.ErrorContext(ctx, "link: commit tx", "error", err)
-			writeJSONError(w, http.StatusInternalServerError, "internal error")
-			return
-		}
+	raw, err := createSessionToken(ctx, txq, user.ID)
+	if err != nil {
+		return nil, err
+	}
 
-		handler.setSessionCookie(w, raw)
-		handler.LinkCookieHandler.DeleteCookie(w, pendingLinkCookieName)
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
 
-		handler.Log.InfoContext(ctx, "link: linked oidc subject", "email", state.Email, "subject", state.OIDCSubject)
+	h.Log.InfoContext(ctx, "link: linked oidc subject", "email", state.Email, "subject", state.OIDCSubject)
 
-		redirectTo := "/"
-		if isValidRedirect(state.RedirectTo) {
-			redirectTo = state.RedirectTo
-		}
+	redirectTo := "/"
+	if isValidRedirect(state.RedirectTo) {
+		redirectTo = state.RedirectTo
+	}
 
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"linked":     true,
-			"redirectTo": redirectTo,
-		})
-	})
+	return &apigen.AuthLinkResponseHeaders{
+		SetCookie: []string{h.sessionCookie(raw).String(), h.clearPendingLinkCookie().String()},
+		Response: apigen.AuthLinkResponse{
+			RedirectTo: redirectTo,
+		},
+	}, nil
+}
+
+func newAPIErrorResponse(status int, message string) *apigen.ApiErrorStatusCode {
+	return &apigen.ApiErrorStatusCode{
+		StatusCode: status,
+		Response: apigen.ApiError{
+			Code:    httpStatusToCode(status),
+			Message: message,
+		},
+	}
 }

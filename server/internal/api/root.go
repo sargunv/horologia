@@ -19,7 +19,7 @@ import (
 //     auth/OAuth stack without a prefix rewrite
 //   - /mcp routes to the MCP Streamable HTTP handler (if non-nil)
 //   - /* routes to the embedded SPA (static files + index.html fallback)
-func MountRoot(apiHandler http.Handler, mcpHandler http.Handler, pool *pgxpool.Pool, log *slog.Logger) http.Handler {
+func MountRoot(apiHandler http.Handler, mcpHandler http.Handler, pool *pgxpool.Pool, log *slog.Logger, publicURL string) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", healthHandler(pool, log))
 	mux.Handle("/api/", http.StripPrefix("/api", apiHandler))
@@ -31,7 +31,17 @@ func MountRoot(apiHandler http.Handler, mcpHandler http.Handler, pool *pgxpool.P
 		mux.Handle("/mcp", mcpHandler)
 	}
 	mux.Handle("/", webui.Handler())
-	return mux
+	return internalCORSMiddleware(publicURL, mux)
+}
+
+func internalCORSMiddleware(publicURL string, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if isInternalAPIPath(r.URL.Path, r.Method) && !sameOriginRequest(r, publicURL) {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func healthHandler(pool *pgxpool.Pool, log *slog.Logger) http.HandlerFunc {

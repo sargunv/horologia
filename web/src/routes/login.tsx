@@ -2,11 +2,9 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { CircleAlert } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
-import * as v from "valibot";
+import { apiClient, getApiErrorMessage } from "../api/client.ts";
 import { authConfigQueryOptions } from "../lib/queries.ts";
-import { shouldUseDocumentNavigation } from "../lib/redirects.ts";
-
-const ErrorBodySchema = v.object({ message: v.string() });
+import { navigateToTarget } from "../lib/navigation.ts";
 
 interface LoginSearch {
   redirect?: string;
@@ -39,25 +37,13 @@ function LoginPage() {
 
   const loginMutation = useMutation({
     mutationFn: async ({ email, password }: { email: string; password: string }) => {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email, password }),
+      const { error } = await apiClient.POST("/auth/login", {
+        body: { email, password },
       });
-      if (!res.ok) {
-        const body: unknown = await res.json().catch(() => null);
-        const parsed = v.safeParse(ErrorBodySchema, body);
-        throw new Error(parsed.success ? parsed.output.message : "Invalid email or password");
-      }
+      if (error) throw new Error(getApiErrorMessage(error, "Invalid email or password"));
     },
     onSuccess: () => {
-      const target = redirect ?? "/";
-      if (shouldUseDocumentNavigation(target)) {
-        window.location.assign(target);
-        return;
-      }
-      void navigate({ to: target });
+      navigateToTarget(redirect ?? "/", navigate);
     },
   });
 
@@ -67,10 +53,7 @@ function LoginPage() {
   }
 
   function handleOIDCLogin() {
-    const params = new URLSearchParams();
-    if (redirect) params.set("redirect", redirect);
-    const query = params.toString();
-    window.location.href = `/api/auth/oidc${query ? `?${query}` : ""}`;
+    window.location.href = buildOIDCLoginURL(redirect);
   }
 
   useEffect(() => {
@@ -81,10 +64,7 @@ function LoginPage() {
       authConfig.oidc.autoRedirect &&
       !authConfig.password.enabled
     ) {
-      const params = new URLSearchParams();
-      if (redirect) params.set("redirect", redirect);
-      const query = params.toString();
-      window.location.href = `/api/auth/oidc${query ? `?${query}` : ""}`;
+      window.location.href = buildOIDCLoginURL(redirect);
     }
   }, [authConfig, noredirect, redirect]);
 
@@ -176,4 +156,13 @@ function LoginPage() {
       </div>
     </div>
   );
+}
+
+function buildOIDCLoginURL(redirect?: string): string {
+  const params = new URLSearchParams();
+  if (redirect) {
+    params.set("redirect", redirect);
+  }
+  const query = params.toString();
+  return `/api/auth/oidc${query ? `?${query}` : ""}`;
 }

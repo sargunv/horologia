@@ -85,7 +85,7 @@ func TestLoginRejectsMissingContentType(t *testing.T) {
 	if err != nil {
 		t.Fatalf("do request: %v", err)
 	}
-	assertStatus(t, resp, http.StatusUnsupportedMediaType)
+	assertStatus(t, resp, http.StatusBadRequest)
 }
 
 func postLogout(t *testing.T, env *testEnv, sessionToken string) *http.Response {
@@ -156,7 +156,7 @@ func TestLoginDisabledPasswordAuth(t *testing.T) {
 	srv := httptest.NewServer(api.MountWebAuth(h, handler))
 	t.Cleanup(srv.Close)
 
-	// POST /auth/login should 404 when password auth is disabled.
+	// POST /auth/login should 403 when password auth is disabled.
 	req, _ := http.NewRequestWithContext(t.Context(), http.MethodPost, srv.URL+"/auth/login",
 		strings.NewReader(`{"email":"test@example.com","password":"password"}`))
 	req.Header.Set("Content-Type", "application/json")
@@ -165,8 +165,8 @@ func TestLoginDisabledPasswordAuth(t *testing.T) {
 		t.Fatalf("do request: %v", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode != http.StatusNotFound {
-		t.Errorf("got status %d, want %d", resp.StatusCode, http.StatusNotFound)
+	if resp.StatusCode != http.StatusForbidden {
+		t.Errorf("got status %d, want %d", resp.StatusCode, http.StatusForbidden)
 	}
 }
 
@@ -229,5 +229,30 @@ func TestWebErrorCodeIsSnakeCase(t *testing.T) {
 	}
 	if code != "bad_request" {
 		t.Errorf("code = %q, want %q (must be snake_case, not Title Case)", code, "bad_request")
+	}
+}
+
+func TestBearerAuthTakesPrecedenceOverSessionCookie(t *testing.T) {
+	env := setupTestServer(t)
+
+	sessionToken := createTestUser(t, env, "cookie-user@example.com", "Cookie User", "password")
+
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, env.Server.URL+"/users/me", nil)
+	if err != nil {
+		t.Fatalf("new request: %v", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+env.Token)
+	req.AddCookie(&http.Cookie{Name: "horologia_session", Value: sessionToken})
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("do request: %v", err)
+	}
+	assertStatus(t, resp, http.StatusOK)
+
+	var me map[string]any
+	readJSON(t, resp, &me)
+	if got := me["email"]; got != "test@example.com" {
+		t.Fatalf("email = %v, want test@example.com", got)
 	}
 }

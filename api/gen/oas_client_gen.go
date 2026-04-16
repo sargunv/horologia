@@ -188,6 +188,44 @@ type Invoker interface {
 	//
 	// PATCH /users/{userId}
 	UsersUpdate(ctx context.Context, request *UserUpdate, params UsersUpdateParams) (*User, error)
+	// WebAuthConfig invokes WebAuth_config operation.
+	//
+	// Read public authentication configuration used by the web UI before login.
+	//
+	// GET /auth/config
+	WebAuthConfig(ctx context.Context) (*AuthConfig, error)
+	// WebAuthLink invokes WebAuth_link operation.
+	//
+	// Confirm OIDC account linking using the existing account password.
+	// This endpoint relies on the temporary `horologia_oidc_link` cookie issued
+	// during the OIDC callback. On success it creates the normal
+	// `horologia_session` cookie and clears the pending link cookie. This
+	// endpoint is only available when OIDC link consent is enabled.
+	//
+	// POST /auth/link
+	WebAuthLink(ctx context.Context, request *AuthLinkRequest) (*AuthLinkResponseHeaders, error)
+	// WebAuthLinkPending invokes WebAuth_linkPending operation.
+	//
+	// Read the pending OIDC account-link request created during the OIDC callback.
+	// This endpoint relies on the temporary `horologia_oidc_link` cookie and is
+	// only available when OIDC link consent is enabled.
+	//
+	// GET /auth/link/pending
+	WebAuthLinkPending(ctx context.Context) (*AuthLinkPendingResponse, error)
+	// WebAuthLogin invokes WebAuth_login operation.
+	//
+	// Log in with email and password.
+	// Returns the authenticated user and sets the `horologia_session` cookie on
+	// success. This endpoint is only available when password auth is enabled.
+	//
+	// POST /auth/login
+	WebAuthLogin(ctx context.Context, request *AuthLoginRequest) (*AuthLoginResponseHeaders, error)
+	// WebAuthLogout invokes WebAuth_logout operation.
+	//
+	// Clear the current browser session.
+	//
+	// POST /auth/logout
+	WebAuthLogout(ctx context.Context) (*WebAuthLogoutNoContent, error)
 }
 
 // Client implements OAS client.
@@ -5549,6 +5587,390 @@ func (c *Client) sendUsersUpdate(ctx context.Context, request *UserUpdate, param
 
 	stage = "DecodeResponse"
 	result, err := decodeUsersUpdateResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// WebAuthConfig invokes WebAuth_config operation.
+//
+// Read public authentication configuration used by the web UI before login.
+//
+// GET /auth/config
+func (c *Client) WebAuthConfig(ctx context.Context) (*AuthConfig, error) {
+	res, err := c.sendWebAuthConfig(ctx)
+	return res, err
+}
+
+func (c *Client) sendWebAuthConfig(ctx context.Context) (res *AuthConfig, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("WebAuth_config"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/auth/config"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, WebAuthConfigOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/auth/config"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer body.Close()
+
+	stage = "DecodeResponse"
+	result, err := decodeWebAuthConfigResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// WebAuthLink invokes WebAuth_link operation.
+//
+// Confirm OIDC account linking using the existing account password.
+// This endpoint relies on the temporary `horologia_oidc_link` cookie issued
+// during the OIDC callback. On success it creates the normal
+// `horologia_session` cookie and clears the pending link cookie. This
+// endpoint is only available when OIDC link consent is enabled.
+//
+// POST /auth/link
+func (c *Client) WebAuthLink(ctx context.Context, request *AuthLinkRequest) (*AuthLinkResponseHeaders, error) {
+	res, err := c.sendWebAuthLink(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendWebAuthLink(ctx context.Context, request *AuthLinkRequest) (res *AuthLinkResponseHeaders, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("WebAuth_link"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/auth/link"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, WebAuthLinkOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/auth/link"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeWebAuthLinkRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer body.Close()
+
+	stage = "DecodeResponse"
+	result, err := decodeWebAuthLinkResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// WebAuthLinkPending invokes WebAuth_linkPending operation.
+//
+// Read the pending OIDC account-link request created during the OIDC callback.
+// This endpoint relies on the temporary `horologia_oidc_link` cookie and is
+// only available when OIDC link consent is enabled.
+//
+// GET /auth/link/pending
+func (c *Client) WebAuthLinkPending(ctx context.Context) (*AuthLinkPendingResponse, error) {
+	res, err := c.sendWebAuthLinkPending(ctx)
+	return res, err
+}
+
+func (c *Client) sendWebAuthLinkPending(ctx context.Context) (res *AuthLinkPendingResponse, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("WebAuth_linkPending"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/auth/link/pending"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, WebAuthLinkPendingOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/auth/link/pending"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer body.Close()
+
+	stage = "DecodeResponse"
+	result, err := decodeWebAuthLinkPendingResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// WebAuthLogin invokes WebAuth_login operation.
+//
+// Log in with email and password.
+// Returns the authenticated user and sets the `horologia_session` cookie on
+// success. This endpoint is only available when password auth is enabled.
+//
+// POST /auth/login
+func (c *Client) WebAuthLogin(ctx context.Context, request *AuthLoginRequest) (*AuthLoginResponseHeaders, error) {
+	res, err := c.sendWebAuthLogin(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendWebAuthLogin(ctx context.Context, request *AuthLoginRequest) (res *AuthLoginResponseHeaders, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("WebAuth_login"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/auth/login"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, WebAuthLoginOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/auth/login"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeWebAuthLoginRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer body.Close()
+
+	stage = "DecodeResponse"
+	result, err := decodeWebAuthLoginResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// WebAuthLogout invokes WebAuth_logout operation.
+//
+// Clear the current browser session.
+//
+// POST /auth/logout
+func (c *Client) WebAuthLogout(ctx context.Context) (*WebAuthLogoutNoContent, error) {
+	res, err := c.sendWebAuthLogout(ctx)
+	return res, err
+}
+
+func (c *Client) sendWebAuthLogout(ctx context.Context) (res *WebAuthLogoutNoContent, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("WebAuth_logout"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/auth/logout"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, WebAuthLogoutOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/auth/logout"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer body.Close()
+
+	stage = "DecodeResponse"
+	result, err := decodeWebAuthLogoutResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

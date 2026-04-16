@@ -218,6 +218,17 @@ func NormalizeError(err error) error {
 
 type securitySource struct{ app *App }
 
+func (s securitySource) ApiKeyAuth(ctx context.Context, operationName apigen.OperationName) (apigen.ApiKeyAuth, error) {
+	token := strings.TrimSpace(s.app.BearerToken())
+	if token == "" {
+		return apigen.ApiKeyAuth{}, MissingTokenError()
+	}
+
+	return apigen.ApiKeyAuth{
+		APIKey: token,
+	}, nil
+}
+
 func (s securitySource) BearerAuth(ctx context.Context, operationName apigen.OperationName) (apigen.BearerAuth, error) {
 	token := strings.TrimSpace(s.app.BearerToken())
 	if token == "" {

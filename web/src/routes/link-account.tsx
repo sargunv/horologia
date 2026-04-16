@@ -1,16 +1,11 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { CircleAlert } from "lucide-react";
-import { type FormEvent, useState } from "react";
-import { shouldUseDocumentNavigation } from "../lib/redirects.ts";
-import * as v from "valibot";
+import { type FormEvent, useEffect, useState } from "react";
+import { getApiErrorMessage } from "../api/client.ts";
+import type { components } from "../api/schema.d.ts";
+import { navigateToTarget } from "../lib/navigation.ts";
 import { linkPendingQueryOptions } from "../lib/queries.ts";
-
-const ErrorBodySchema = v.object({ message: v.string() });
-const LinkResponseSchema = v.object({
-  linked: v.boolean(),
-  redirectTo: v.string(),
-});
 
 export const Route = createFileRoute("/link-account")({
   component: LinkAccountPage,
@@ -27,39 +22,41 @@ function LinkAccountPage() {
       password,
     }: {
       password: string;
-    }): Promise<{ linked: boolean; redirectTo: string }> => {
-      const res = await fetch("/api/auth/link", {
+    }): Promise<components["schemas"]["AuthLinkResponse"]> => {
+      const response = await fetch("/api/auth/link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ password }),
       });
-      if (!res.ok) {
-        const body: unknown = await res.json().catch(() => null);
-        const parsed = v.safeParse(ErrorBodySchema, body);
-        throw new Error(parsed.success ? parsed.output.message : "Failed to link account");
+
+      const raw: unknown = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(getApiErrorMessage(raw, "Failed to link account"));
       }
-      const raw: unknown = await res.json();
-      return v.parse(LinkResponseSchema, raw);
+
+      if (isAuthLinkResponse(raw)) {
+        return raw;
+      }
+
+      throw new Error("Failed to link account");
     },
     onSuccess: (data) => {
-      const target = data.redirectTo || "/";
-      if (shouldUseDocumentNavigation(target)) {
-        window.location.assign(target);
-        return;
-      }
-      void navigate({ to: target });
+      navigateToTarget(data.redirectTo || "/", navigate);
     },
   });
+
+  useEffect(() => {
+    if (!isLoading && (pending === null || isError)) {
+      void navigate({ to: "/login" });
+    }
+  }, [isError, isLoading, navigate, pending]);
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     linkMutation.mutate({ password });
   }
 
-  // No pending link or fetch error — redirect to login.
   if (!isLoading && (pending === null || isError)) {
-    void navigate({ to: "/login" });
     return null;
   }
 
@@ -127,5 +124,14 @@ function LinkAccountPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function isAuthLinkResponse(value: unknown): value is components["schemas"]["AuthLinkResponse"] {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "redirectTo" in value &&
+    typeof value.redirectTo === "string"
   );
 }
