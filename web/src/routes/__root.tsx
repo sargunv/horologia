@@ -40,7 +40,7 @@ function NotFoundPage() {
   return (
     <div className="flex min-h-svh items-center justify-center p-4">
       <div className="card preset-outlined-surface-200-800 flex w-full max-w-md flex-col items-center gap-4 p-8 text-center">
-        <h1 className="h1">Page not found</h1>
+        <h1 className="h3">Page not found</h1>
         <p className="text-surface-600-400 text-sm">
           The page you requested does not exist or is not available here.
         </p>
