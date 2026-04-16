@@ -31,7 +31,7 @@ func sameOriginRequest(r *http.Request, publicURL string) bool {
 	if err != nil {
 		return false
 	}
-	if publicURL == "" && isLoopbackHost(originURL.Hostname()) && isLoopbackHost(requestURL.Hostname()) {
+	if isLoopbackHost(originURL.Hostname()) && isLoopbackHost(requestURL.Hostname()) {
 		return true
 	}
 
