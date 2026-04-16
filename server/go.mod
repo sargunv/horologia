@@ -7,7 +7,7 @@ require (
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/knadh/koanf/providers/env v1.1.0
 	github.com/knadh/koanf/v2 v2.3.4
-	github.com/mark3labs/mcp-go v0.47.0
+	github.com/mark3labs/mcp-go v0.48.0
 	github.com/ogen-go/ogen v1.20.3
 	github.com/pressly/goose/v3 v3.27.0
 	github.com/sargunv/horologia/api v0.0.0
