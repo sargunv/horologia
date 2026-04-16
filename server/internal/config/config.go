@@ -22,6 +22,7 @@ type Config struct {
 	OIDCClientSecret string `koanf:"oidc_client_secret"`
 	OIDCLabel        string `koanf:"oidc_label"`
 	OIDCAutoRedirect bool   `koanf:"oidc_auto_redirect"`
+	OIDCAutoRegister bool   `koanf:"oidc_auto_register"`
 	OIDCLinkConsent  bool   `koanf:"oidc_link_consent"`
 
 	PasswordAuthEnabled bool `koanf:"password_auth_enabled"`

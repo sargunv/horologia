@@ -121,6 +121,7 @@ var serveCmd = &cobra.Command{
 			OIDCEnabled:            cfg.OIDCIssuer != "",
 			OIDCLabel:              cfg.OIDCLabel,
 			OIDCAutoRedirect:       cfg.OIDCAutoRedirect,
+			OIDCAutoRegister:       cfg.OIDCAutoRegister,
 			OIDCLinkConsentEnabled: cfg.OIDCIssuer != "" && cfg.PasswordAuthEnabled && cfg.OIDCLinkConsent,
 			PasswordAuthEnabled:    cfg.PasswordAuthEnabled,
 			PasswordChecker:        checker,
