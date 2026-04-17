@@ -30,9 +30,60 @@ func dueTzFromResponse(task map[string]any) (string, bool) {
 	return tz, ok
 }
 
-func TestRecurrenceOneOffDefault(t *testing.T) {
+func TestRecurrenceValidation(t *testing.T) {
 	t.Parallel()
 	env := setupTestServer(t)
+
+	t.Run("one off default", func(t *testing.T) { testRecurrenceOneOffDefault(t, env) })
+	t.Run("one off rejects rule", func(t *testing.T) { testRecurrenceOneOffRejectsRule(t, env) })
+	t.Run("requires rule", func(t *testing.T) { testRecurrenceRequiresRule(t, env) })
+	t.Run("invalid rrule", func(t *testing.T) { testRecurrenceInvalidRRule(t, env) })
+	t.Run("rejects sub day frequency", func(t *testing.T) { testRecurrenceRejectsSubDayFrequency(t, env) })
+	t.Run("rejects unsupported property", func(t *testing.T) { testRecurrenceRejectsUnsupportedProperty(t, env) })
+	t.Run("update type from one off", func(t *testing.T) { testRecurrenceUpdateTypeFromOneOff(t, env) })
+	t.Run("update type requires rule", func(t *testing.T) { testRecurrenceUpdateTypeRequiresRule(t, env) })
+	t.Run("cross space isolation", func(t *testing.T) { testRecurrenceCrossSpaceIsolation(t, env) })
+	t.Run("on dependency rejects rule", func(t *testing.T) { testRecurrenceOnDependencyRejectsRule(t, env) })
+	t.Run("count rejected", func(t *testing.T) { testRecurrenceCountRejected(t, env) })
+	t.Run("due invalid timezone rejected", func(t *testing.T) { testDueInvalidTimezoneRejected(t, env) })
+}
+
+func TestRecurrenceCompletionFlows(t *testing.T) {
+	t.Parallel()
+	env := setupTestServer(t)
+
+	t.Run("completion based", func(t *testing.T) { testRecurrenceCompletionBased(t, env) })
+	t.Run("fixed non accumulating", func(t *testing.T) { testRecurrenceFixedNonAccumulating(t, env) })
+	t.Run("one off completion", func(t *testing.T) { testRecurrenceOneOffCompletion(t, env) })
+	t.Run("fixed accumulating completion", func(t *testing.T) { testRecurrenceFixedAccumulatingCompletion(t, env) })
+	t.Run("no retrigger on non transition", func(t *testing.T) { testRecurrenceNoRetriggerOnNonTransition(t, env) })
+	t.Run("on dependency trigger", func(t *testing.T) { testRecurrenceOnDependencyTrigger(t, env) })
+	t.Run("triggers relation kind", func(t *testing.T) { testRecurrenceTriggersRelationKind(t, env) })
+	t.Run("on dependency direct completion", func(t *testing.T) { testRecurrenceOnDependencyDirectCompletion(t, env) })
+	t.Run("until exhaustion", func(t *testing.T) { testRecurrenceUntilExhaustion(t, env) })
+	t.Run("double completion", func(t *testing.T) { testRecurrenceDoubleCompletion(t, env) })
+	t.Run("auto clean rule on type change", func(t *testing.T) { testRecurrenceAutoCleanRuleOnTypeChange(t, env) })
+	t.Run("fixed accumulating due date advances", func(t *testing.T) { testRecurrenceFixedAccumulatingDueDateAdvances(t, env) })
+	t.Run("same status no retrigger", func(t *testing.T) { testRecurrenceSameStatusNoRetrigger(t, env) })
+	t.Run("completion based non utc timezone", func(t *testing.T) { testRecurrenceCompletionBasedNonUTCTimezone(t, env) })
+	t.Run("fixed non accumulating non utc timezone", func(t *testing.T) { testRecurrenceFixedNonAccumulatingNonUTCTimezone(t, env) })
+	t.Run("due timezone round trip", func(t *testing.T) { testDueTimezoneRoundTrip(t, env) })
+	t.Run("fixed accumulating completion copies fields", func(t *testing.T) { testFixedAccumulatingCompletionCopiesFields(t, env) })
+	t.Run("fixed accumulating completion copies relations", func(t *testing.T) { testFixedAccumulatingCompletionCopiesRelations(t, env) })
+}
+
+func TestRecurrenceCronFlows(t *testing.T) {
+	t.Parallel()
+	env := setupTestServer(t)
+
+	t.Run("fixed accumulating cron backfill", func(t *testing.T) { testFixedAccumulatingCronBackfill(t, env) })
+	t.Run("fixed accumulating cron idempotent", func(t *testing.T) { testFixedAccumulatingCronIdempotent(t, env) })
+	t.Run("fixed accumulating cron exhausted rule", func(t *testing.T) { testFixedAccumulatingCronExhaustedRule(t, env) })
+	t.Run("fixed accumulating cron non utc timezone", func(t *testing.T) { testFixedAccumulatingCronNonUTCTimezone(t, env) })
+	t.Run("fixed accumulating cron after completion", func(t *testing.T) { testFixedAccumulatingCronAfterCompletion(t, env) })
+}
+
+func testRecurrenceOneOffDefault(t *testing.T, env *testEnv) {
 	createSpace(t, env, "rec-def", "Rec Default")
 
 	task := createTask(t, env, "rec-def", `{"title":"Normal task"}`)
@@ -47,9 +98,7 @@ func TestRecurrenceOneOffDefault(t *testing.T) {
 	}
 }
 
-func TestRecurrenceOneOffRejectsRule(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testRecurrenceOneOffRejectsRule(t *testing.T, env *testEnv) {
 	createSpace(t, env, "rec-rej", "Rec Reject")
 
 	assertStatusClose(t,
@@ -58,9 +107,7 @@ func TestRecurrenceOneOffRejectsRule(t *testing.T) {
 		http.StatusBadRequest)
 }
 
-func TestRecurrenceRequiresRule(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testRecurrenceRequiresRule(t *testing.T, env *testEnv) {
 	createSpace(t, env, "rec-req", "Rec Require")
 
 	assertStatusClose(t,
@@ -69,9 +116,7 @@ func TestRecurrenceRequiresRule(t *testing.T) {
 		http.StatusBadRequest)
 }
 
-func TestRecurrenceInvalidRRule(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testRecurrenceInvalidRRule(t *testing.T, env *testEnv) {
 	createSpace(t, env, "rec-inv", "Rec Invalid")
 
 	assertStatusClose(t,
@@ -80,9 +125,7 @@ func TestRecurrenceInvalidRRule(t *testing.T) {
 		http.StatusBadRequest)
 }
 
-func TestRecurrenceRejectsSubDayFrequency(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testRecurrenceRejectsSubDayFrequency(t *testing.T, env *testEnv) {
 	createSpace(t, env, "rec-sub", "Rec SubDay")
 
 	assertStatusClose(t,
@@ -91,9 +134,7 @@ func TestRecurrenceRejectsSubDayFrequency(t *testing.T) {
 		http.StatusBadRequest)
 }
 
-func TestRecurrenceRejectsUnsupportedProperty(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testRecurrenceRejectsUnsupportedProperty(t *testing.T, env *testEnv) {
 	createSpace(t, env, "rec-prop", "Rec Prop")
 
 	assertStatusClose(t,
@@ -102,9 +143,7 @@ func TestRecurrenceRejectsUnsupportedProperty(t *testing.T) {
 		http.StatusBadRequest)
 }
 
-func TestRecurrenceCompletionBased(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testRecurrenceCompletionBased(t *testing.T, env *testEnv) {
 	createSpace(t, env, "rec-cb", "Rec CB")
 
 	// Create a completion-based task recurring weekly.
@@ -150,9 +189,7 @@ func TestRecurrenceCompletionBased(t *testing.T) {
 	}
 }
 
-func TestRecurrenceFixedNonAccumulating(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testRecurrenceFixedNonAccumulating(t *testing.T, env *testEnv) {
 	createSpace(t, env, "rec-fna", "Rec FNA")
 
 	// Create a fixed non-accumulating task due every Saturday.
@@ -197,9 +234,7 @@ func TestRecurrenceFixedNonAccumulating(t *testing.T) {
 	}
 }
 
-func TestRecurrenceOneOffCompletion(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testRecurrenceOneOffCompletion(t *testing.T, env *testEnv) {
 	createSpace(t, env, "rec-oc", "Rec One Off Complete")
 
 	task := createTask(t, env, "rec-oc", `{"title":"One-off task"}`)
@@ -221,9 +256,7 @@ func TestRecurrenceOneOffCompletion(t *testing.T) {
 	}
 }
 
-func TestRecurrenceFixedAccumulatingCompletion(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testRecurrenceFixedAccumulatingCompletion(t *testing.T, env *testEnv) {
 	createSpace(t, env, "rec-fa", "Rec FA")
 
 	nextMonth := time.Date(time.Now().Year(), time.Now().Month()+1, 1, 0, 0, 0, 0, time.UTC)
@@ -284,9 +317,7 @@ func TestRecurrenceFixedAccumulatingCompletion(t *testing.T) {
 	}
 }
 
-func TestRecurrenceNoRetriggerOnNonTransition(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testRecurrenceNoRetriggerOnNonTransition(t *testing.T, env *testEnv) {
 	createSpace(t, env, "rec-nrt", "Rec No Retrigger")
 
 	pastDue := time.Now().AddDate(0, 0, -7).Format(time.DateOnly)
@@ -313,9 +344,7 @@ func TestRecurrenceNoRetriggerOnNonTransition(t *testing.T) {
 	}
 }
 
-func TestRecurrenceOnDependencyTrigger(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testRecurrenceOnDependencyTrigger(t *testing.T, env *testEnv) {
 	createSpace(t, env, "rec-dep", "Rec Dep")
 
 	// Create task A (one_off) and task B (on_dependency).
@@ -344,9 +373,7 @@ func TestRecurrenceOnDependencyTrigger(t *testing.T) {
 	}
 }
 
-func TestRecurrenceTriggersRelationKind(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testRecurrenceTriggersRelationKind(t *testing.T, env *testEnv) {
 	createSpace(t, env, "rec-trk", "Rec Trigger Kind")
 
 	taskA := createTask(t, env, "rec-trk", `{"title":"Task A"}`)
@@ -366,9 +393,7 @@ func TestRecurrenceTriggersRelationKind(t *testing.T) {
 	assertRelationKind(t, relsB[0], "triggered_by", taskAID)
 }
 
-func TestRecurrenceUpdateTypeFromOneOff(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testRecurrenceUpdateTypeFromOneOff(t *testing.T, env *testEnv) {
 	createSpace(t, env, "rec-upd", "Rec Update")
 
 	task := createTask(t, env, "rec-upd", `{"title":"Was one-off"}`)
@@ -389,9 +414,7 @@ func TestRecurrenceUpdateTypeFromOneOff(t *testing.T) {
 	}
 }
 
-func TestRecurrenceUpdateTypeRequiresRule(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testRecurrenceUpdateTypeRequiresRule(t *testing.T, env *testEnv) {
 	createSpace(t, env, "rec-ur", "Rec Update Req")
 
 	task := createTask(t, env, "rec-ur", `{"title":"Was one-off"}`)
@@ -404,9 +427,7 @@ func TestRecurrenceUpdateTypeRequiresRule(t *testing.T) {
 		http.StatusBadRequest)
 }
 
-func TestRecurrenceCrossSpaceIsolation(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testRecurrenceCrossSpaceIsolation(t *testing.T, env *testEnv) {
 	createSpace(t, env, "rec-iso-a", "Rec Iso A")
 	createSpace(t, env, "rec-iso-b", "Rec Iso B")
 
@@ -420,9 +441,7 @@ func TestRecurrenceCrossSpaceIsolation(t *testing.T) {
 		http.StatusNotFound)
 }
 
-func TestRecurrenceOnDependencyDirectCompletion(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testRecurrenceOnDependencyDirectCompletion(t *testing.T, env *testEnv) {
 	createSpace(t, env, "rec-odc", "Rec OnDep Complete")
 
 	// Create an on_dependency task and complete it directly.
@@ -444,9 +463,7 @@ func TestRecurrenceOnDependencyDirectCompletion(t *testing.T) {
 	}
 }
 
-func TestRecurrenceOnDependencyRejectsRule(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testRecurrenceOnDependencyRejectsRule(t *testing.T, env *testEnv) {
 	createSpace(t, env, "rec-odr", "Rec OnDep Rule")
 
 	assertStatusClose(t,
@@ -455,9 +472,7 @@ func TestRecurrenceOnDependencyRejectsRule(t *testing.T) {
 		http.StatusBadRequest)
 }
 
-func TestRecurrenceUntilExhaustion(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testRecurrenceUntilExhaustion(t *testing.T, env *testEnv) {
 	createSpace(t, env, "rec-unt", "Rec Until")
 
 	// Create a completion_based task with UNTIL in the past. The rule is
@@ -482,9 +497,7 @@ func TestRecurrenceUntilExhaustion(t *testing.T) {
 	}
 }
 
-func TestRecurrenceDoubleCompletion(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testRecurrenceDoubleCompletion(t *testing.T, env *testEnv) {
 	createSpace(t, env, "rec-dbl", "Rec Double")
 
 	pastDue := time.Now().AddDate(0, 0, -7).Format(time.DateOnly)
@@ -534,9 +547,7 @@ func TestRecurrenceDoubleCompletion(t *testing.T) {
 	}
 }
 
-func TestRecurrenceAutoCleanRuleOnTypeChange(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testRecurrenceAutoCleanRuleOnTypeChange(t *testing.T, env *testEnv) {
 	createSpace(t, env, "rec-acr", "Rec Auto Clean")
 
 	// Create a completion_based task with a rule.
@@ -560,9 +571,7 @@ func TestRecurrenceAutoCleanRuleOnTypeChange(t *testing.T) {
 	}
 }
 
-func TestRecurrenceFixedAccumulatingDueDateAdvances(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testRecurrenceFixedAccumulatingDueDateAdvances(t *testing.T, env *testEnv) {
 	createSpace(t, env, "rec-fap", "Rec FA Advance")
 
 	// Use a past due date so the next occurrence is clearly in the future.
@@ -620,9 +629,7 @@ func TestRecurrenceFixedAccumulatingDueDateAdvances(t *testing.T) {
 	}
 }
 
-func TestRecurrenceCountRejected(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testRecurrenceCountRejected(t *testing.T, env *testEnv) {
 	createSpace(t, env, "rec-cnt", "Rec Count")
 
 	// COUNT is not supported — use UNTIL instead.
@@ -632,9 +639,7 @@ func TestRecurrenceCountRejected(t *testing.T) {
 		http.StatusBadRequest)
 }
 
-func TestRecurrenceSameStatusNoRetrigger(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testRecurrenceSameStatusNoRetrigger(t *testing.T, env *testEnv) {
 	createSpace(t, env, "rec-snr", "Rec Same No Retrigger")
 
 	// Complete a one_off task, then PATCH status "done" again.
@@ -659,9 +664,7 @@ func TestRecurrenceSameStatusNoRetrigger(t *testing.T) {
 	}
 }
 
-func TestRecurrenceCompletionBasedNonUTCTimezone(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testRecurrenceCompletionBasedNonUTCTimezone(t *testing.T, env *testEnv) {
 	createSpace(t, env, "rec-tz", "Rec TZ")
 
 	// Create a completion-based task with America/New_York timezone.
@@ -708,9 +711,7 @@ func TestRecurrenceCompletionBasedNonUTCTimezone(t *testing.T) {
 	}
 }
 
-func TestRecurrenceFixedNonAccumulatingNonUTCTimezone(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testRecurrenceFixedNonAccumulatingNonUTCTimezone(t *testing.T, env *testEnv) {
 	createSpace(t, env, "rec-ftz", "Rec Fixed TZ")
 
 	// Create a fixed non-accumulating task recurring every Saturday in Los Angeles.
@@ -748,9 +749,7 @@ func TestRecurrenceFixedNonAccumulatingNonUTCTimezone(t *testing.T) {
 	}
 }
 
-func TestDueTimezoneRoundTrip(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testDueTimezoneRoundTrip(t *testing.T, env *testEnv) {
 	createSpace(t, env, "due-rt", "Due Round Trip")
 
 	// Create with a non-UTC timezone.
@@ -795,9 +794,7 @@ func TestDueTimezoneRoundTrip(t *testing.T) {
 	}
 }
 
-func TestDueInvalidTimezoneRejected(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testDueInvalidTimezoneRejected(t *testing.T, env *testEnv) {
 	createSpace(t, env, "due-inv", "Due Invalid TZ")
 
 	futureDate := time.Now().AddDate(0, 0, 30).Format(time.DateOnly)
@@ -807,9 +804,7 @@ func TestDueInvalidTimezoneRejected(t *testing.T) {
 		http.StatusBadRequest)
 }
 
-func TestFixedAccumulatingCompletionCopiesFields(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testFixedAccumulatingCompletionCopiesFields(t *testing.T, env *testEnv) {
 	createSpace(t, env, "fa-copy", "FA Copy")
 
 	// Create task with all user-settable fields.
@@ -872,9 +867,7 @@ func TestFixedAccumulatingCompletionCopiesFields(t *testing.T) {
 	}
 }
 
-func TestFixedAccumulatingCompletionCopiesRelations(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testFixedAccumulatingCompletionCopiesRelations(t *testing.T, env *testEnv) {
 	createSpace(t, env, "fa-rel", "FA Relations")
 
 	// Create a parent task.
@@ -951,9 +944,7 @@ func TestFixedAccumulatingCompletionCopiesRelations(t *testing.T) {
 	}
 }
 
-func TestFixedAccumulatingCronBackfill(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testFixedAccumulatingCronBackfill(t *testing.T, env *testEnv) {
 	createSpace(t, env, "fa-cron", "FA Cron")
 
 	// Create a weekly task with due date ~3.5 weeks in the past (dynamically computed).
@@ -1018,9 +1009,7 @@ func TestFixedAccumulatingCronBackfill(t *testing.T) {
 	}
 }
 
-func TestFixedAccumulatingCronIdempotent(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testFixedAccumulatingCronIdempotent(t *testing.T, env *testEnv) {
 	createSpace(t, env, "fa-idem", "FA Idempotent")
 
 	// Create a weekly task with due date in the past (dynamically computed).
@@ -1052,9 +1041,7 @@ func TestFixedAccumulatingCronIdempotent(t *testing.T) {
 	}
 }
 
-func TestFixedAccumulatingCronExhaustedRule(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testFixedAccumulatingCronExhaustedRule(t *testing.T, env *testEnv) {
 	createSpace(t, env, "fa-exh", "FA Exhausted")
 
 	// Create a task with UNTIL in the past — rule is already exhausted.
@@ -1077,9 +1064,7 @@ func TestFixedAccumulatingCronExhaustedRule(t *testing.T) {
 	}
 }
 
-func TestFixedAccumulatingCronNonUTCTimezone(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testFixedAccumulatingCronNonUTCTimezone(t *testing.T, env *testEnv) {
 	createSpace(t, env, "fa-tz", "FA TZ")
 
 	// Weekly task due in Eastern timezone.
@@ -1138,9 +1123,7 @@ func TestFixedAccumulatingCronNonUTCTimezone(t *testing.T) {
 	}
 }
 
-func TestFixedAccumulatingCronAfterCompletion(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testFixedAccumulatingCronAfterCompletion(t *testing.T, env *testEnv) {
 	createSpace(t, env, "fa-race", "FA Race")
 
 	// Create a task with due date in the past (dynamically computed).

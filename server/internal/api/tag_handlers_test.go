@@ -7,9 +7,9 @@ import (
 
 func TestSpaceTagHandlers(t *testing.T) {
 	t.Parallel()
-	env := setupTestServer(t)
 
 	t.Run("create", func(t *testing.T) {
+		env := setupTestServer(t)
 		createSpace(t, env, "tag-create", "Tag Create")
 
 		resp := doRequest(t, env, "POST", "/spaces/tag-create/tags", `{"name":"Bug"}`)
@@ -25,23 +25,27 @@ func TestSpaceTagHandlers(t *testing.T) {
 	})
 
 	t.Run("create duplicate", func(t *testing.T) {
+		env := setupTestServer(t)
 		createSpace(t, env, "tag-dup", "Tag Dup")
 		assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-dup/tags", `{"name":"Bug"}`), http.StatusCreated)
 		assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-dup/tags", `{"name":"Bug"}`), http.StatusConflict)
 	})
 
 	t.Run("create case fold duplicate", func(t *testing.T) {
+		env := setupTestServer(t)
 		createSpace(t, env, "tag-fold", "Tag Fold")
 		assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-fold/tags", `{"name":"Bug"}`), http.StatusCreated)
 		assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-fold/tags", `{"name":"bug"}`), http.StatusConflict)
 	})
 
 	t.Run("create empty", func(t *testing.T) {
+		env := setupTestServer(t)
 		createSpace(t, env, "tag-empty", "Tag Empty")
 		assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-empty/tags", `{"name":""}`), http.StatusBadRequest)
 	})
 
 	t.Run("list", func(t *testing.T) {
+		env := setupTestServer(t)
 		createSpace(t, env, "tag-list", "Tag List")
 		assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-list/tags", `{"name":"Alpha"}`), http.StatusCreated)
 		assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-list/tags", `{"name":"Beta"}`), http.StatusCreated)
@@ -57,6 +61,7 @@ func TestSpaceTagHandlers(t *testing.T) {
 	})
 
 	t.Run("list empty", func(t *testing.T) {
+		env := setupTestServer(t)
 		createSpace(t, env, "tag-list-empty", "Tag List Empty")
 		resp := doRequest(t, env, "GET", "/spaces/tag-list-empty/tags", "")
 		assertStatus(t, resp, http.StatusOK)
@@ -69,6 +74,7 @@ func TestSpaceTagHandlers(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
+		env := setupTestServer(t)
 		createSpace(t, env, "tag-update", "Tag Update")
 		assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-update/tags", `{"name":"Bug"}`), http.StatusCreated)
 
@@ -82,6 +88,7 @@ func TestSpaceTagHandlers(t *testing.T) {
 	})
 
 	t.Run("update case fold collision", func(t *testing.T) {
+		env := setupTestServer(t)
 		createSpace(t, env, "tag-collision", "Tag Collision")
 		assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-collision/tags", `{"name":"Bug"}`), http.StatusCreated)
 		assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-collision/tags", `{"name":"Feature"}`), http.StatusCreated)
@@ -89,11 +96,13 @@ func TestSpaceTagHandlers(t *testing.T) {
 	})
 
 	t.Run("update not found", func(t *testing.T) {
+		env := setupTestServer(t)
 		createSpace(t, env, "tag-update-missing", "Tag Update Missing")
 		assertStatusClose(t, doRequest(t, env, "PATCH", "/spaces/tag-update-missing/tags/nonexistent", `{"name":"X"}`), http.StatusNotFound)
 	})
 
 	t.Run("delete", func(t *testing.T) {
+		env := setupTestServer(t)
 		createSpace(t, env, "tag-delete", "Tag Delete")
 		assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-delete/tags", `{"name":"Bug"}`), http.StatusCreated)
 		assertStatusClose(t, doRequest(t, env, "DELETE", "/spaces/tag-delete/tags/Bug", ""), http.StatusNoContent)
@@ -108,11 +117,13 @@ func TestSpaceTagHandlers(t *testing.T) {
 	})
 
 	t.Run("delete not found", func(t *testing.T) {
+		env := setupTestServer(t)
 		createSpace(t, env, "tag-delete-missing", "Tag Delete Missing")
 		assertStatusClose(t, doRequest(t, env, "DELETE", "/spaces/tag-delete-missing/tags/nonexistent", ""), http.StatusNotFound)
 	})
 
 	t.Run("cross space isolation", func(t *testing.T) {
+		env := setupTestServer(t)
 		createSpace(t, env, "tag-a", "Tag A")
 		createSpace(t, env, "tag-b", "Tag B")
 		assertStatusClose(t, doRequest(t, env, "POST", "/spaces/tag-a/tags", `{"name":"Bug"}`), http.StatusCreated)
@@ -127,15 +138,17 @@ func TestSpaceTagHandlers(t *testing.T) {
 	})
 
 	t.Run("non member rejected", func(t *testing.T) {
+		env := setupTestServer(t)
 		createSpace(t, env, "tag-acl", "Tag ACL")
-		outsiderToken := createTestUser(t, env, "tag-outsider@example.com", "Outsider", "pass1234")
+		outsiderToken := createTestUser(t, env, testEmail(t, "tag-outsider"), "Outsider", "pass1234")
 		assertStatusClose(t, doRequestAs(t, env, outsiderToken, "GET", "/spaces/tag-acl/tags", ""), http.StatusNotFound)
 		assertStatusClose(t, doRequestAs(t, env, outsiderToken, "POST", "/spaces/tag-acl/tags", `{"name":"Bug"}`), http.StatusNotFound)
 	})
 
 	t.Run("viewer cannot write", func(t *testing.T) {
+		env := setupTestServer(t)
 		createSpace(t, env, "tag-viewer", "Tag Viewer Write")
-		viewerToken, _ := createAndAddMember(t, env, "tag-viewer", "tag-viewer@example.com", "Viewer", "pass1234", "viewer")
+		viewerToken, _ := createAndAddMember(t, env, "tag-viewer", testEmail(t, "tag-viewer"), "Viewer", "pass1234", "viewer")
 		assertStatusClose(t, doRequestAs(t, env, viewerToken, "GET", "/spaces/tag-viewer/tags", ""), http.StatusOK)
 		assertStatusClose(t, doRequestAs(t, env, viewerToken, "POST", "/spaces/tag-viewer/tags", `{"name":"Bug"}`), http.StatusForbidden)
 	})

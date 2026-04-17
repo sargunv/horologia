@@ -1,16 +1,16 @@
 package api_test
 
 import (
-	"fmt"
 	"net/http"
+	"strconv"
 	"testing"
 )
 
 func TestSpaceHandlers(t *testing.T) {
 	t.Parallel()
-	env := setupTestServer(t)
 
 	t.Run("create", func(t *testing.T) {
+		env := setupTestServer(t)
 		resp := doRequest(t, env, "POST", "/spaces", `{"slug":"create-home","name":"Home"}`)
 		assertStatus(t, resp, http.StatusCreated)
 
@@ -34,6 +34,7 @@ func TestSpaceHandlers(t *testing.T) {
 	})
 
 	t.Run("create slug valid", func(t *testing.T) {
+		env := setupTestServer(t)
 		slugs := []string{
 			"home",
 			"my-project",
@@ -49,6 +50,7 @@ func TestSpaceHandlers(t *testing.T) {
 	})
 
 	t.Run("create slug invalid", func(t *testing.T) {
+		env := setupTestServer(t)
 		slugs := []string{
 			"",
 			"-leading",
@@ -65,6 +67,7 @@ func TestSpaceHandlers(t *testing.T) {
 	})
 
 	t.Run("create duplicate", func(t *testing.T) {
+		env := setupTestServer(t)
 		createSpace(t, env, "dup-home", "Home")
 
 		resp := doRequest(t, env, "POST", "/spaces", `{"slug":"dup-home","name":"Home 2"}`)
@@ -72,6 +75,7 @@ func TestSpaceHandlers(t *testing.T) {
 	})
 
 	t.Run("read", func(t *testing.T) {
+		env := setupTestServer(t)
 		createSpace(t, env, "read-home", "Home")
 
 		resp := doRequest(t, env, "GET", "/spaces/read-home", "")
@@ -85,12 +89,14 @@ func TestSpaceHandlers(t *testing.T) {
 	})
 
 	t.Run("read not found", func(t *testing.T) {
+		env := setupTestServer(t)
 		resp := doRequest(t, env, "GET", "/spaces/nonexistent", "")
 		assertStatusClose(t, resp, http.StatusNotFound)
 	})
 
 	t.Run("list empty for non-owner", func(t *testing.T) {
-		userToken := createTestUser(t, env, "spaces-empty@example.com", "Spaces Empty", "pass1234")
+		env := setupTestServer(t)
+		userToken := createTestUser(t, env, testEmail(t, "spaces-empty"), "Spaces Empty", "pass1234")
 
 		resp := doRequestAs(t, env, userToken, "GET", "/spaces", "")
 		assertStatus(t, resp, http.StatusOK)
@@ -104,6 +110,7 @@ func TestSpaceHandlers(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
+		env := setupTestServer(t)
 		createSpace(t, env, "list-gamma", "Gamma")
 		createSpace(t, env, "list-alpha", "Alpha")
 		createSpace(t, env, "list-beta", "Beta")
@@ -126,6 +133,7 @@ func TestSpaceHandlers(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
+		env := setupTestServer(t)
 		createSpace(t, env, "update-home", "Home")
 
 		resp := doRequest(t, env, "PATCH", "/spaces/update-home", `{"description":"My house"}`)
@@ -144,6 +152,7 @@ func TestSpaceHandlers(t *testing.T) {
 	})
 
 	t.Run("update slug", func(t *testing.T) {
+		env := setupTestServer(t)
 		createSpace(t, env, "rename-old", "My Space")
 
 		resp := doRequest(t, env, "PATCH", "/spaces/rename-old", `{"slug":"rename-new"}`)
@@ -165,6 +174,7 @@ func TestSpaceHandlers(t *testing.T) {
 	})
 
 	t.Run("update slug cascades to tasks", func(t *testing.T) {
+		env := setupTestServer(t)
 		createSpace(t, env, "cascade-old", "My Space")
 
 		resp := doRequest(t, env, "POST", "/spaces/cascade-old/tasks", `{"title":"Test task"}`)
@@ -184,6 +194,7 @@ func TestSpaceHandlers(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
+		env := setupTestServer(t)
 		createSpace(t, env, "delete-home", "Home")
 
 		resp := doRequest(t, env, "DELETE", "/spaces/delete-home", "")
@@ -196,11 +207,11 @@ func TestSpaceHandlers(t *testing.T) {
 
 func TestSpacePermissions(t *testing.T) {
 	t.Parallel()
-	env := setupTestServer(t)
 
 	t.Run("non member cannot access space", func(t *testing.T) {
+		env := setupTestServer(t)
 		createSpace(t, env, "secret-space", "Secret")
-		userToken := createTestUser(t, env, "bob@example.com", "Bob", "pass1234")
+		userToken := createTestUser(t, env, testEmail(t, "bob"), "Bob", "pass1234")
 
 		assertStatusClose(t, doRequestAs(t, env, userToken, "GET", "/spaces/secret-space", ""), http.StatusNotFound)
 		assertStatusClose(t, doRequestAs(t, env, userToken, "PATCH", "/spaces/secret-space", `{"name":"X"}`), http.StatusNotFound)
@@ -210,8 +221,9 @@ func TestSpacePermissions(t *testing.T) {
 	})
 
 	t.Run("viewer cannot write to space", func(t *testing.T) {
+		env := setupTestServer(t)
 		createSpace(t, env, "viewer-home", "Home")
-		userToken, _ := createAndAddMember(t, env, "viewer-home", "viewer@example.com", "Viewer", "pass1234", "viewer")
+		userToken, _ := createAndAddMember(t, env, "viewer-home", testEmail(t, "viewer"), "Viewer", "pass1234", "viewer")
 
 		assertStatusClose(t, doRequestAs(t, env, userToken, "GET", "/spaces/viewer-home", ""), http.StatusOK)
 		assertStatusClose(t, doRequestAs(t, env, userToken, "GET", "/spaces/viewer-home/tasks", ""), http.StatusOK)
@@ -221,8 +233,9 @@ func TestSpacePermissions(t *testing.T) {
 	})
 
 	t.Run("member cannot manage space", func(t *testing.T) {
+		env := setupTestServer(t)
 		createSpace(t, env, "member-home", "Home")
-		userToken, userID := createAndAddMember(t, env, "member-home", "member@example.com", "Member", "pass1234", "member")
+		userToken, userID := createAndAddMember(t, env, "member-home", testEmail(t, "member"), "Member", "pass1234", "member")
 
 		resp := doRequestAs(t, env, userToken, "POST", "/spaces/member-home/tasks", `{"title":"My task"}`)
 		assertStatusClose(t, resp, http.StatusCreated)
@@ -232,11 +245,12 @@ func TestSpacePermissions(t *testing.T) {
 	})
 
 	t.Run("non owner spaces list filtered", func(t *testing.T) {
+		env := setupTestServer(t)
 		createSpace(t, env, "filter-alpha", "Alpha")
 		createSpace(t, env, "filter-beta", "Beta")
 		createSpace(t, env, "filter-gamma", "Gamma")
 
-		userToken, _ := createAndAddMember(t, env, "filter-beta", "user@example.com", "User", "pass1234", "member")
+		userToken, _ := createAndAddMember(t, env, "filter-beta", testEmail(t, "user"), "User", "pass1234", "member")
 
 		resp := doRequestAs(t, env, userToken, "GET", "/spaces", "")
 		assertStatus(t, resp, http.StatusOK)

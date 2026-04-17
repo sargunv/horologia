@@ -150,6 +150,56 @@ func testDatabaseName(t *testing.T) string {
 	return fmt.Sprintf("test_%s_%06d", base, seq)
 }
 
+func testSlug(t *testing.T, base string) string {
+	t.Helper()
+
+	slug := strings.Map(func(r rune) rune {
+		switch {
+		case unicode.IsLetter(r), unicode.IsDigit(r):
+			return unicode.ToLower(r)
+		case r == '/':
+			return '-'
+		default:
+			return '-'
+		}
+	}, base+"-"+t.Name())
+	slug = strings.Trim(slug, "-")
+	for strings.Contains(slug, "--") {
+		slug = strings.ReplaceAll(slug, "--", "-")
+	}
+	if slug == "" {
+		return "test-slug"
+	}
+	if len(slug) > 60 {
+		slug = strings.Trim(slug[:60], "-")
+	}
+	return slug
+}
+
+func testEmail(t *testing.T, local string) string {
+	t.Helper()
+
+	base := strings.Map(func(r rune) rune {
+		switch {
+		case unicode.IsLetter(r), unicode.IsDigit(r):
+			return unicode.ToLower(r)
+		default:
+			return '-'
+		}
+	}, local+"-"+t.Name())
+	base = strings.Trim(base, "-")
+	for strings.Contains(base, "--") {
+		base = strings.ReplaceAll(base, "--", "-")
+	}
+	if base == "" {
+		base = "test-user"
+	}
+	if len(base) > 48 {
+		base = strings.Trim(base[:48], "-")
+	}
+	return base + "@example.com"
+}
+
 func setupTestServer(t *testing.T, opts ...testServerOption) *testEnv {
 	t.Helper()
 	ctx := t.Context()
