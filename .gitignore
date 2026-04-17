@@ -4,6 +4,7 @@
 /server/horologia-server
 /server/dev-oidc
 /cli/horo
+*.out
 
 # Web
 node_modules/
