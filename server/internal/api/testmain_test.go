@@ -2,16 +2,22 @@ package api_test
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"net"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/sargunv/horologia/server/internal/database"
+	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
+	"github.com/sargunv/horologia/server/internal/taskengine"
 )
 
 // testDSN is the connection string for the shared embedded PG instance.
@@ -125,6 +131,31 @@ func setupTemplate() error {
 	}
 	if _, err := migrator.Up(ctx); err != nil {
 		return fmt.Errorf("migrate template: %w", err)
+	}
+
+	pool, err := database.OpenPool(ctx, templateDSN)
+	if err != nil {
+		return fmt.Errorf("open template pool: %w", err)
+	}
+	defer pool.Close()
+
+	user, err := taskengine.CreateUserWithPassword(ctx, pool, testOwnerEmail, testOwnerName, testOwnerPassword, true, nil, time.Now())
+	if err != nil {
+		return fmt.Errorf("seed template owner: %w", err)
+	}
+
+	hash := sha256.Sum256([]byte(testSessionToken))
+	tokenHash := hex.EncodeToString(hash[:])
+	q := dbgen.New(pool)
+	_, err = q.CreateAuthToken(ctx, dbgen.CreateAuthTokenParams{
+		UserID:    user.ID,
+		TokenHash: tokenHash,
+		Name:      "test",
+		Kind:      dbgen.AuthTokenKindSession,
+		CreatedAt: pgtype.Timestamptz{Time: time.Now(), Valid: true},
+	})
+	if err != nil {
+		return fmt.Errorf("seed template token: %w", err)
 	}
 
 	return nil

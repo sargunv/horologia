@@ -2,8 +2,6 @@ package api_test
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,7 +17,6 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/zitadel/oidc/v3/example/server/exampleop"
 	"github.com/zitadel/oidc/v3/example/server/storage"
@@ -27,7 +24,6 @@ import (
 
 	"github.com/sargunv/horologia/server/internal/api"
 	"github.com/sargunv/horologia/server/internal/database"
-	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
 	"github.com/sargunv/horologia/server/internal/taskengine"
 )
 
@@ -35,6 +31,10 @@ const (
 	testOIDCClientID     = "horologia-test"
 	testOIDCClientSecret = "horologia-test-secret" //nolint:gosec // test credentials
 	testOIDCUserPassword = "password"              //nolint:gosec // test credentials
+	testOwnerEmail       = "test@example.com"
+	testOwnerName        = "Test User"
+	testOwnerPassword    = "password" //nolint:gosec // test credentials
+	testSessionToken     = "test-token-for-integration-tests"
 	testCleanupTimeout   = 10 * time.Second
 )
 
@@ -181,29 +181,6 @@ func setupTestServer(t *testing.T, opts ...testServerOption) *testEnv {
 		_, _ = testAdminPool.Exec(cleanupCtx, `DROP DATABASE IF EXISTS "`+dbName+`" WITH (FORCE)`)
 	})
 
-	// Create a test owner user.
-	user, err := taskengine.CreateUserWithPassword(ctx, pool, "test@example.com", "Test User", "password", true, nil, time.Now())
-	if err != nil {
-		t.Fatalf("create user: %v", err)
-	}
-
-	// Create a test auth token.
-	rawToken := "test-token-for-integration-tests"
-	hash := sha256.Sum256([]byte(rawToken))
-	tokenHash := hex.EncodeToString(hash[:])
-
-	q := dbgen.New(pool)
-	_, err = q.CreateAuthToken(ctx, dbgen.CreateAuthTokenParams{
-		UserID:    user.ID,
-		TokenHash: tokenHash,
-		Name:      "test",
-		Kind:      dbgen.AuthTokenKindSession,
-		CreatedAt: pgtype.Timestamptz{Time: time.Now(), Valid: true},
-	})
-	if err != nil {
-		t.Fatalf("create token: %v", err)
-	}
-
 	log := slog.New(slog.DiscardHandler)
 	handler := &api.Handler{Pool: pool, Log: log, PasswordAuthEnabled: true}
 
@@ -284,7 +261,7 @@ func setupTestServer(t *testing.T, opts ...testServerOption) *testEnv {
 
 	return &testEnv{
 		Server:  srv,
-		Token:   rawToken,
+		Token:   testSessionToken,
 		Handler: handler,
 		pool:    pool,
 		oidc:    oidcUserStore,
