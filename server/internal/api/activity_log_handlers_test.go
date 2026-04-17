@@ -70,11 +70,65 @@ func hasDetail(details []map[string]any, field string) bool {
 	return false
 }
 
+func TestActivityLogHandlers(t *testing.T) {
+	t.Parallel()
+
+	t.Run("space activity log basic smoke", func(t *testing.T) {
+		testSpaceActivityLog_BasicSmoke(t, setupTestServer(t))
+	})
+	t.Run("task activity log create and update details", func(t *testing.T) {
+		testTaskActivityLog_CreateAndUpdateDetails(t, setupTestServer(t))
+	})
+	t.Run("task activity log assignee diff", func(t *testing.T) {
+		testTaskActivityLog_AssigneeDiff(t, setupTestServer(t))
+	})
+	t.Run("task activity log survives task deletion", func(t *testing.T) {
+		testTaskActivityLog_SurvivesTaskDeletion(t, setupTestServer(t))
+	})
+	t.Run("space activity log survives space deletion", func(t *testing.T) {
+		testSpaceActivityLog_SurvivesSpaceDeletion(t, setupTestServer(t))
+	})
+	t.Run("user activity list self access", func(t *testing.T) {
+		testUserActivityList_SelfAccess(t, setupTestServer(t))
+	})
+	t.Run("user activity list non owner forbidden for other user", func(t *testing.T) {
+		testUserActivityList_NonOwnerForbiddenForOtherUser(t, setupTestServer(t))
+	})
+	t.Run("user activity list cross space filtering", func(t *testing.T) {
+		testUserActivityList_CrossSpaceFiltering(t, setupTestServer(t))
+	})
+	t.Run("user activity list owner sees all spaces", func(t *testing.T) {
+		testUserActivityList_OwnerSeesAllSpaces(t, setupTestServer(t))
+	})
+	t.Run("space activity log pagination", func(t *testing.T) {
+		testSpaceActivityLog_Pagination(t, setupTestServer(t))
+	})
+	t.Run("space task activity log system null actor", func(t *testing.T) {
+		testSpaceTaskActivityLog_SystemNullActor(t, setupTestServer(t))
+	})
+	t.Run("space task activity log no update entry on no op", func(t *testing.T) {
+		testSpaceTaskActivityLog_NoUpdateEntryOnNoOp(t, setupTestServer(t))
+	})
+	t.Run("member activity", func(t *testing.T) {
+		testMemberActivity(t, setupTestServer(t))
+	})
+	t.Run("tag activity", func(t *testing.T) {
+		testTagActivity(t, setupTestServer(t))
+	})
+	t.Run("relation activity", func(t *testing.T) {
+		testRelationActivity(t, setupTestServer(t))
+	})
+	t.Run("token id and name in activity log", func(t *testing.T) {
+		testTokenIdAndNameInActivityLog(t, setupTestServer(t))
+	})
+	t.Run("status replace activity", func(t *testing.T) {
+		testStatusReplaceActivity(t, setupTestServer(t))
+	})
+}
+
 // --- Test 1: SpaceActivityLog_BasicSmoke ---
 
-func TestSpaceActivityLog_BasicSmoke(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testSpaceActivityLog_BasicSmoke(t *testing.T, env *testEnv) {
 	createSpace(t, env, "ws", "WS")
 	task := createTask(t, env, "ws", `{"title":"Do laundry"}`)
 	taskID := jsonAs[string](t, task["id"])
@@ -100,9 +154,7 @@ func TestSpaceActivityLog_BasicSmoke(t *testing.T) {
 
 // --- Test 2: TaskActivityLog_CreateAndUpdateDetails ---
 
-func TestTaskActivityLog_CreateAndUpdateDetails(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testTaskActivityLog_CreateAndUpdateDetails(t *testing.T, env *testEnv) {
 	createSpace(t, env, "ws", "WS")
 	task := createTask(t, env, "ws", `{"title":"Old"}`)
 	taskID := jsonAs[string](t, task["id"])
@@ -148,9 +200,7 @@ func TestTaskActivityLog_CreateAndUpdateDetails(t *testing.T) {
 
 // --- Test 3: TaskActivityLog_AssigneeDiff ---
 
-func TestTaskActivityLog_AssigneeDiff(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testTaskActivityLog_AssigneeDiff(t *testing.T, env *testEnv) {
 	createSpace(t, env, "ws", "WS")
 	_, aliceID := createAndAddMember(t, env, "ws", "alice@test.com", "Alice", "pass1234", "member")
 	_, bobID := createAndAddMember(t, env, "ws", "bob@test.com", "Bob", "pass1234", "member")
@@ -190,9 +240,7 @@ func TestTaskActivityLog_AssigneeDiff(t *testing.T) {
 
 // --- Test 4: TaskActivityLog_SurvivesTaskDeletion ---
 
-func TestTaskActivityLog_SurvivesTaskDeletion(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testTaskActivityLog_SurvivesTaskDeletion(t *testing.T, env *testEnv) {
 	createSpace(t, env, "ws", "WS")
 	task := createTask(t, env, "ws", `{"title":"Temporary"}`)
 	taskID := jsonAs[string](t, task["id"])
@@ -232,9 +280,7 @@ func TestTaskActivityLog_SurvivesTaskDeletion(t *testing.T) {
 
 // --- Test 5: SpaceActivityLog_SurvivesSpaceDeletion ---
 
-func TestSpaceActivityLog_SurvivesSpaceDeletion(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testSpaceActivityLog_SurvivesSpaceDeletion(t *testing.T, env *testEnv) {
 	createSpace(t, env, "tmp", "Tmp")
 	createTask(t, env, "tmp", `{"title":"Something"}`)
 
@@ -254,9 +300,7 @@ func TestSpaceActivityLog_SurvivesSpaceDeletion(t *testing.T) {
 
 // --- Test 6: UserActivityList_SelfAccess ---
 
-func TestUserActivityList_SelfAccess(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testUserActivityList_SelfAccess(t *testing.T, env *testEnv) {
 	createSpace(t, env, "ws", "WS")
 	aliceToken, aliceID := createAndAddMember(t, env, "ws", "alice@test.com", "Alice", "pass1234", "member")
 
@@ -278,9 +322,7 @@ func TestUserActivityList_SelfAccess(t *testing.T) {
 
 // --- Test 7: UserActivityList_NonOwnerForbiddenForOtherUser ---
 
-func TestUserActivityList_NonOwnerForbiddenForOtherUser(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testUserActivityList_NonOwnerForbiddenForOtherUser(t *testing.T, env *testEnv) {
 	createSpace(t, env, "ws", "WS")
 	aliceToken, _ := createAndAddMember(t, env, "ws", "alice@test.com", "Alice", "pass1234", "member")
 	_, bobID := createAndAddMember(t, env, "ws", "bob@test.com", "Bob", "pass1234", "member")
@@ -291,9 +333,7 @@ func TestUserActivityList_NonOwnerForbiddenForOtherUser(t *testing.T) {
 
 // --- Test 8: UserActivityList_CrossSpaceFiltering ---
 
-func TestUserActivityList_CrossSpaceFiltering(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testUserActivityList_CrossSpaceFiltering(t *testing.T, env *testEnv) {
 	createSpace(t, env, "visible", "Visible")
 	createSpace(t, env, "hidden", "Hidden")
 	aliceToken, aliceID := createAndAddMember(t, env, "visible", "alice@test.com", "Alice", "pass1234", "member")
@@ -330,9 +370,7 @@ func TestUserActivityList_CrossSpaceFiltering(t *testing.T) {
 
 // --- Test 9: UserActivityList_OwnerSeesAllSpaces ---
 
-func TestUserActivityList_OwnerSeesAllSpaces(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testUserActivityList_OwnerSeesAllSpaces(t *testing.T, env *testEnv) {
 	ownerID := getUserID(t, env, env.Token)
 
 	// Alice creates a space where the owner is NOT a member.
@@ -371,9 +409,7 @@ func TestUserActivityList_OwnerSeesAllSpaces(t *testing.T) {
 
 // --- Test 10: SpaceActivityLog_Pagination ---
 
-func TestSpaceActivityLog_Pagination(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testSpaceActivityLog_Pagination(t *testing.T, env *testEnv) {
 	createSpace(t, env, "ws", "WS")
 	// Space creation produces 1 entry. Create 3 tasks for 3 more = 4 total.
 	createTask(t, env, "ws", `{"title":"A"}`)
@@ -432,9 +468,7 @@ func TestSpaceActivityLog_Pagination(t *testing.T) {
 
 // --- Test 11: SystemNullActor ---
 
-func TestSpaceTaskActivityLog_SystemNullActor(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testSpaceTaskActivityLog_SystemNullActor(t *testing.T, env *testEnv) {
 	createSpace(t, env, "ws", "WS")
 
 	// Create a fixed_accumulating task with a past due date so we can call
@@ -477,9 +511,7 @@ func TestSpaceTaskActivityLog_SystemNullActor(t *testing.T) {
 
 // --- Test 12: NoUpdateEntryOnNoOp ---
 
-func TestSpaceTaskActivityLog_NoUpdateEntryOnNoOp(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testSpaceTaskActivityLog_NoUpdateEntryOnNoOp(t *testing.T, env *testEnv) {
 	createSpace(t, env, "ws", "WS")
 	task := createTask(t, env, "ws", `{"title":"Static"}`)
 	taskID := jsonAs[string](t, task["id"])
@@ -495,9 +527,7 @@ func TestSpaceTaskActivityLog_NoUpdateEntryOnNoOp(t *testing.T) {
 
 // --- Test 13: MemberActivity ---
 
-func TestMemberActivity(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testMemberActivity(t *testing.T, env *testEnv) {
 	createSpace(t, env, "ws", "WS")
 	_, aliceID := createAndAddMember(t, env, "ws", "alice@test.com", "Alice", "pass1234", "member")
 
@@ -548,9 +578,7 @@ func TestMemberActivity(t *testing.T) {
 
 // --- Test 14: TagActivity ---
 
-func TestTagActivity(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testTagActivity(t *testing.T, env *testEnv) {
 	createSpace(t, env, "ws", "WS")
 
 	// Create a tag.
@@ -591,9 +619,7 @@ func TestTagActivity(t *testing.T) {
 
 // --- Test 15: RelationActivity ---
 
-func TestRelationActivity(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testRelationActivity(t *testing.T, env *testEnv) {
 	createSpace(t, env, "ws", "WS")
 	taskA := createTask(t, env, "ws", `{"title":"A"}`)
 	taskAID := jsonAs[string](t, taskA["id"])
@@ -637,9 +663,7 @@ func TestRelationActivity(t *testing.T) {
 
 // --- Test 16: TokenIdAndNameInActivityLog ---
 
-func TestTokenIdAndNameInActivityLog(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testTokenIdAndNameInActivityLog(t *testing.T, env *testEnv) {
 	createSpace(t, env, "ws", "WS")
 
 	// Create an API token.
@@ -686,9 +710,7 @@ func TestTokenIdAndNameInActivityLog(t *testing.T) {
 
 // --- Test 17: StatusReplaceActivity ---
 
-func TestStatusReplaceActivity(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+func testStatusReplaceActivity(t *testing.T, env *testEnv) {
 	createSpace(t, env, "ws", "WS")
 
 	// Default statuses are [todo, done]. Replace with [todo, in_progress, done].
