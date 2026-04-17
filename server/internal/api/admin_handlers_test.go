@@ -15,6 +15,7 @@ import (
 )
 
 func TestUsersGet(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	t.Run("get existing user", func(t *testing.T) {
@@ -56,6 +57,7 @@ func TestUsersGet(t *testing.T) {
 }
 
 func TestUsersList(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	t.Run("authenticated user can list users", func(t *testing.T) {
@@ -97,6 +99,7 @@ func TestUsersList(t *testing.T) {
 }
 
 func TestUsersCreate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	t.Run("owner can create user with password", func(t *testing.T) {
@@ -162,6 +165,7 @@ func TestUsersCreate(t *testing.T) {
 }
 
 func TestUsersUpdate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	// Create a user to update.
@@ -465,6 +469,7 @@ func createOAuthRefreshTokenForBearerUser(t *testing.T, env *testEnv, bearerToke
 }
 
 func TestUsersDelete(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	t.Run("owner can delete user", func(t *testing.T) {

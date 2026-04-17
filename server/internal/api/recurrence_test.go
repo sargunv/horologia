@@ -31,6 +31,7 @@ func dueTzFromResponse(task map[string]any) (string, bool) {
 }
 
 func TestRecurrenceOneOffDefault(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-def", "Rec Default")
 
@@ -47,6 +48,7 @@ func TestRecurrenceOneOffDefault(t *testing.T) {
 }
 
 func TestRecurrenceOneOffRejectsRule(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-rej", "Rec Reject")
 
@@ -57,6 +59,7 @@ func TestRecurrenceOneOffRejectsRule(t *testing.T) {
 }
 
 func TestRecurrenceRequiresRule(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-req", "Rec Require")
 
@@ -67,6 +70,7 @@ func TestRecurrenceRequiresRule(t *testing.T) {
 }
 
 func TestRecurrenceInvalidRRule(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-inv", "Rec Invalid")
 
@@ -77,6 +81,7 @@ func TestRecurrenceInvalidRRule(t *testing.T) {
 }
 
 func TestRecurrenceRejectsSubDayFrequency(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-sub", "Rec SubDay")
 
@@ -87,6 +92,7 @@ func TestRecurrenceRejectsSubDayFrequency(t *testing.T) {
 }
 
 func TestRecurrenceRejectsUnsupportedProperty(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-prop", "Rec Prop")
 
@@ -97,6 +103,7 @@ func TestRecurrenceRejectsUnsupportedProperty(t *testing.T) {
 }
 
 func TestRecurrenceCompletionBased(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-cb", "Rec CB")
 
@@ -144,6 +151,7 @@ func TestRecurrenceCompletionBased(t *testing.T) {
 }
 
 func TestRecurrenceFixedNonAccumulating(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-fna", "Rec FNA")
 
@@ -190,6 +198,7 @@ func TestRecurrenceFixedNonAccumulating(t *testing.T) {
 }
 
 func TestRecurrenceOneOffCompletion(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-oc", "Rec One Off Complete")
 
@@ -213,6 +222,7 @@ func TestRecurrenceOneOffCompletion(t *testing.T) {
 }
 
 func TestRecurrenceFixedAccumulatingCompletion(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-fa", "Rec FA")
 
@@ -275,6 +285,7 @@ func TestRecurrenceFixedAccumulatingCompletion(t *testing.T) {
 }
 
 func TestRecurrenceNoRetriggerOnNonTransition(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-nrt", "Rec No Retrigger")
 
@@ -303,6 +314,7 @@ func TestRecurrenceNoRetriggerOnNonTransition(t *testing.T) {
 }
 
 func TestRecurrenceOnDependencyTrigger(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-dep", "Rec Dep")
 
@@ -333,6 +345,7 @@ func TestRecurrenceOnDependencyTrigger(t *testing.T) {
 }
 
 func TestRecurrenceTriggersRelationKind(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-trk", "Rec Trigger Kind")
 
@@ -354,6 +367,7 @@ func TestRecurrenceTriggersRelationKind(t *testing.T) {
 }
 
 func TestRecurrenceUpdateTypeFromOneOff(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-upd", "Rec Update")
 
@@ -376,6 +390,7 @@ func TestRecurrenceUpdateTypeFromOneOff(t *testing.T) {
 }
 
 func TestRecurrenceUpdateTypeRequiresRule(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-ur", "Rec Update Req")
 
@@ -390,6 +405,7 @@ func TestRecurrenceUpdateTypeRequiresRule(t *testing.T) {
 }
 
 func TestRecurrenceCrossSpaceIsolation(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-iso-a", "Rec Iso A")
 	createSpace(t, env, "rec-iso-b", "Rec Iso B")
@@ -405,6 +421,7 @@ func TestRecurrenceCrossSpaceIsolation(t *testing.T) {
 }
 
 func TestRecurrenceOnDependencyDirectCompletion(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-odc", "Rec OnDep Complete")
 
@@ -428,6 +445,7 @@ func TestRecurrenceOnDependencyDirectCompletion(t *testing.T) {
 }
 
 func TestRecurrenceOnDependencyRejectsRule(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-odr", "Rec OnDep Rule")
 
@@ -438,6 +456,7 @@ func TestRecurrenceOnDependencyRejectsRule(t *testing.T) {
 }
 
 func TestRecurrenceUntilExhaustion(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-unt", "Rec Until")
 
@@ -464,6 +483,7 @@ func TestRecurrenceUntilExhaustion(t *testing.T) {
 }
 
 func TestRecurrenceDoubleCompletion(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-dbl", "Rec Double")
 
@@ -515,6 +535,7 @@ func TestRecurrenceDoubleCompletion(t *testing.T) {
 }
 
 func TestRecurrenceAutoCleanRuleOnTypeChange(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-acr", "Rec Auto Clean")
 
@@ -540,6 +561,7 @@ func TestRecurrenceAutoCleanRuleOnTypeChange(t *testing.T) {
 }
 
 func TestRecurrenceFixedAccumulatingDueDateAdvances(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-fap", "Rec FA Advance")
 
@@ -599,6 +621,7 @@ func TestRecurrenceFixedAccumulatingDueDateAdvances(t *testing.T) {
 }
 
 func TestRecurrenceCountRejected(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-cnt", "Rec Count")
 
@@ -610,6 +633,7 @@ func TestRecurrenceCountRejected(t *testing.T) {
 }
 
 func TestRecurrenceSameStatusNoRetrigger(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-snr", "Rec Same No Retrigger")
 
@@ -636,6 +660,7 @@ func TestRecurrenceSameStatusNoRetrigger(t *testing.T) {
 }
 
 func TestRecurrenceCompletionBasedNonUTCTimezone(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-tz", "Rec TZ")
 
@@ -684,6 +709,7 @@ func TestRecurrenceCompletionBasedNonUTCTimezone(t *testing.T) {
 }
 
 func TestRecurrenceFixedNonAccumulatingNonUTCTimezone(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "rec-ftz", "Rec Fixed TZ")
 
@@ -723,6 +749,7 @@ func TestRecurrenceFixedNonAccumulatingNonUTCTimezone(t *testing.T) {
 }
 
 func TestDueTimezoneRoundTrip(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "due-rt", "Due Round Trip")
 
@@ -769,6 +796,7 @@ func TestDueTimezoneRoundTrip(t *testing.T) {
 }
 
 func TestDueInvalidTimezoneRejected(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "due-inv", "Due Invalid TZ")
 
@@ -780,6 +808,7 @@ func TestDueInvalidTimezoneRejected(t *testing.T) {
 }
 
 func TestFixedAccumulatingCompletionCopiesFields(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "fa-copy", "FA Copy")
 
@@ -844,6 +873,7 @@ func TestFixedAccumulatingCompletionCopiesFields(t *testing.T) {
 }
 
 func TestFixedAccumulatingCompletionCopiesRelations(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "fa-rel", "FA Relations")
 
@@ -922,6 +952,7 @@ func TestFixedAccumulatingCompletionCopiesRelations(t *testing.T) {
 }
 
 func TestFixedAccumulatingCronBackfill(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "fa-cron", "FA Cron")
 
@@ -988,6 +1019,7 @@ func TestFixedAccumulatingCronBackfill(t *testing.T) {
 }
 
 func TestFixedAccumulatingCronIdempotent(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "fa-idem", "FA Idempotent")
 
@@ -1021,6 +1053,7 @@ func TestFixedAccumulatingCronIdempotent(t *testing.T) {
 }
 
 func TestFixedAccumulatingCronExhaustedRule(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "fa-exh", "FA Exhausted")
 
@@ -1045,6 +1078,7 @@ func TestFixedAccumulatingCronExhaustedRule(t *testing.T) {
 }
 
 func TestFixedAccumulatingCronNonUTCTimezone(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "fa-tz", "FA TZ")
 
@@ -1105,6 +1139,7 @@ func TestFixedAccumulatingCronNonUTCTimezone(t *testing.T) {
 }
 
 func TestFixedAccumulatingCronAfterCompletion(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "fa-race", "FA Race")
 

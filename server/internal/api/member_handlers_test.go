@@ -6,6 +6,7 @@ import (
 )
 
 func TestSpaceMembersCreate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -28,6 +29,7 @@ func TestSpaceMembersCreate(t *testing.T) {
 }
 
 func TestSpaceMembersCreateDuplicate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -42,6 +44,7 @@ func TestSpaceMembersCreateDuplicate(t *testing.T) {
 }
 
 func TestSpaceMembersList(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -61,6 +64,7 @@ func TestSpaceMembersList(t *testing.T) {
 }
 
 func TestSpaceMembersUpdate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -77,6 +81,7 @@ func TestSpaceMembersUpdate(t *testing.T) {
 }
 
 func TestSpaceMembersUpdateNotFound(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -86,6 +91,7 @@ func TestSpaceMembersUpdateNotFound(t *testing.T) {
 }
 
 func TestSpaceMembersDelete(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -99,6 +105,7 @@ func TestSpaceMembersDelete(t *testing.T) {
 }
 
 func TestSpaceMembersLastAdminGuard(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -112,6 +119,7 @@ func TestSpaceMembersLastAdminGuard(t *testing.T) {
 }
 
 func TestMemberRemovalClearsAssignments(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -146,6 +154,7 @@ func TestMemberRemovalClearsAssignments(t *testing.T) {
 }
 
 func TestMemberRemovalIsolation(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "alpha", "Alpha")

@@ -11,6 +11,7 @@ import (
 )
 
 func TestConvert_clampLimit(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		opt  apigen.OptInt32
@@ -35,6 +36,7 @@ func TestConvert_clampLimit(t *testing.T) {
 }
 
 func TestConvert_decodeCursorInt64(t *testing.T) {
+	t.Parallel()
 	encode := func(s string) string {
 		return base64.RawURLEncoding.EncodeToString([]byte(s))
 	}
@@ -65,6 +67,7 @@ func TestConvert_decodeCursorInt64(t *testing.T) {
 }
 
 func TestConvert_formatParseTaskID(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		id      int64
@@ -110,6 +113,7 @@ func TestConvert_formatParseTaskID(t *testing.T) {
 }
 
 func TestConvert_formatParseUserID(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		id   int64
@@ -154,6 +158,7 @@ func TestConvert_formatParseUserID(t *testing.T) {
 }
 
 func TestConvert_canonicalizeRelation(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		kind       apigen.TaskRelationKind
@@ -256,6 +261,7 @@ func TestConvert_canonicalizeRelation(t *testing.T) {
 }
 
 func TestConvert_relationFromDB(t *testing.T) {
+	t.Parallel()
 	ts := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	tests := []struct {
@@ -374,6 +380,7 @@ func TestConvert_relationFromDB(t *testing.T) {
 }
 
 func TestConvert_paginate(t *testing.T) {
+	t.Parallel()
 	identity := func(rows []int) ([]int, error) { return rows, nil }
 	cursorOf := func(v int) string { return "c" }
 

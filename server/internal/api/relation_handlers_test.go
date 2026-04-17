@@ -6,6 +6,7 @@ import (
 )
 
 func TestTaskRelationsCreate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "rel-test", "Relation Test")
@@ -35,6 +36,7 @@ func TestTaskRelationsCreate(t *testing.T) {
 }
 
 func TestTaskRelationsSymmetric(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "sym-test", "Symmetric Test")
@@ -53,6 +55,7 @@ func TestTaskRelationsSymmetric(t *testing.T) {
 }
 
 func TestTaskRelationsDelete(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "del-test", "Delete Test")
@@ -72,6 +75,7 @@ func TestTaskRelationsDelete(t *testing.T) {
 }
 
 func TestTaskRelationsDeleteFromOtherSide(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "del2-test", "Delete Other Side Test")
@@ -92,6 +96,7 @@ func TestTaskRelationsDeleteFromOtherSide(t *testing.T) {
 }
 
 func TestTaskRelationsDeleteNonExistent(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "del-ne", "Delete Non-Existent")
@@ -105,6 +110,7 @@ func TestTaskRelationsDeleteNonExistent(t *testing.T) {
 }
 
 func TestTaskRelationsSelfRejected(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "self-test", "Self Test")
@@ -117,6 +123,7 @@ func TestTaskRelationsSelfRejected(t *testing.T) {
 }
 
 func TestTaskRelationsCrossSpaceRejected(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "space-a", "Space A")
@@ -130,6 +137,7 @@ func TestTaskRelationsCrossSpaceRejected(t *testing.T) {
 }
 
 func TestTaskRelationsNonExistentTask(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "ne-test", "Non-Existent Test")
@@ -141,6 +149,7 @@ func TestTaskRelationsNonExistentTask(t *testing.T) {
 }
 
 func TestTaskRelationsDuplicateRejected(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "dup-test", "Dup Test")
@@ -157,6 +166,7 @@ func TestTaskRelationsDuplicateRejected(t *testing.T) {
 }
 
 func TestTaskRelationsDuplicateViaInverse(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "dup-inv", "Dup Inverse Test")
@@ -173,6 +183,7 @@ func TestTaskRelationsDuplicateViaInverse(t *testing.T) {
 }
 
 func TestTaskRelationsCreateViaBlockedBy(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "blkby-test", "Blocked By Test")
@@ -190,6 +201,7 @@ func TestTaskRelationsCreateViaBlockedBy(t *testing.T) {
 }
 
 func TestTaskRelationsParentChild(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "pc-test", "Parent Child Test")
@@ -207,6 +219,7 @@ func TestTaskRelationsParentChild(t *testing.T) {
 }
 
 func TestTaskRelationsDuplicatesKind(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "dup-kind", "Duplicates Kind Test")
@@ -225,6 +238,7 @@ func TestTaskRelationsDuplicatesKind(t *testing.T) {
 }
 
 func TestTaskRelationsInListResponse(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "list-rel", "List Rel Test")
@@ -260,6 +274,7 @@ func TestTaskRelationsInListResponse(t *testing.T) {
 }
 
 func TestTaskRelationsEmptyByDefault(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "empty-rel", "Empty Rel Test")
@@ -274,6 +289,7 @@ func TestTaskRelationsEmptyByDefault(t *testing.T) {
 }
 
 func TestTaskRelationsNonMemberRejected(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "perm-test", "Permission Test")
@@ -290,6 +306,7 @@ func TestTaskRelationsNonMemberRejected(t *testing.T) {
 }
 
 func TestTaskRelationsCascadeOnTaskDelete(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "cascade-rel", "Cascade Test")

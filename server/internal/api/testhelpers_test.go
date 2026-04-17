@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -13,8 +14,10 @@ import (
 	"net/http/httptest"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
+	"unicode"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -32,7 +35,10 @@ const (
 	testOIDCClientID     = "horologia-test"
 	testOIDCClientSecret = "horologia-test-secret" //nolint:gosec // test credentials
 	testOIDCUserPassword = "password"              //nolint:gosec // test credentials
+	testCleanupTimeout   = 10 * time.Second
 )
+
+var testDBSeq uint64
 
 // testOIDCUserStore implements storage.UserStore with dynamic user addition.
 // All methods are safe for concurrent use.
@@ -118,6 +124,32 @@ func withOIDCLinkConsent() testServerOption {
 	}
 }
 
+func testDatabaseName(t *testing.T) string {
+	t.Helper()
+
+	base := strings.Map(func(r rune) rune {
+		switch {
+		case unicode.IsLetter(r), unicode.IsDigit(r):
+			return unicode.ToLower(r)
+		case r == '/':
+			return '_'
+		default:
+			return '_'
+		}
+	}, t.Name())
+	base = strings.Trim(base, "_")
+	if base == "" {
+		base = "test"
+	}
+	const maxBaseLen = 40
+	if len(base) > maxBaseLen {
+		base = base[:maxBaseLen]
+	}
+
+	seq := atomic.AddUint64(&testDBSeq, 1)
+	return fmt.Sprintf("test_%s_%06d", base, seq)
+}
+
 func setupTestServer(t *testing.T, opts ...testServerOption) *testEnv {
 	t.Helper()
 	ctx := t.Context()
@@ -128,17 +160,10 @@ func setupTestServer(t *testing.T, opts ...testServerOption) *testEnv {
 	}
 
 	// Create a fresh database from the pre-migrated template.
-	dbName := "test_" + strings.ReplaceAll(strings.ToLower(t.Name()), "/", "_")
-
-	adminPool, err := pgxpool.New(ctx, testDSN)
-	if err != nil {
-		t.Fatalf("connect to test postgres: %v", err)
-	}
-	if _, err := adminPool.Exec(ctx, fmt.Sprintf("CREATE DATABASE %s TEMPLATE %s", dbName, testTemplateName)); err != nil {
-		adminPool.Close()
+	dbName := testDatabaseName(t)
+	if _, err := testAdminPool.Exec(ctx, `CREATE DATABASE "`+dbName+`" TEMPLATE "`+testTemplateName+`"`); err != nil {
 		t.Fatalf("create test database: %v", err)
 	}
-	adminPool.Close()
 
 	dsn := fmt.Sprintf("postgres://postgres:postgres@localhost:%d/%s?sslmode=disable", testPort, dbName)
 
@@ -149,12 +174,11 @@ func setupTestServer(t *testing.T, opts ...testServerOption) *testEnv {
 	}
 	t.Cleanup(func() {
 		pool.Close()
-		// Drop the test database.
-		adminPool, err := pgxpool.New(ctx, testDSN)
-		if err == nil {
-			_, _ = adminPool.Exec(ctx, fmt.Sprintf("DROP DATABASE %q", dbName))
-			adminPool.Close()
-		}
+
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), testCleanupTimeout)
+		defer cancel()
+
+		_, _ = testAdminPool.Exec(cleanupCtx, `DROP DATABASE IF EXISTS "`+dbName+`" WITH (FORCE)`)
 	})
 
 	// Create a test owner user.

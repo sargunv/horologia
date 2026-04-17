@@ -7,6 +7,7 @@ import (
 )
 
 func TestUsersMe(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	resp := doRequest(t, env, "GET", "/users/me", "")
@@ -23,6 +24,7 @@ func TestUsersMe(t *testing.T) {
 }
 
 func TestUserTasksList(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	ownerID := getUserID(t, env, env.Token)
@@ -110,6 +112,7 @@ func TestUserTasksList(t *testing.T) {
 }
 
 func TestUserTasksListPagination(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	ownerID := getUserID(t, env, env.Token)
@@ -164,6 +167,7 @@ func TestUserTasksListPagination(t *testing.T) {
 }
 
 func TestUserTasksListCrossSpaceIdenticalSortKeys(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	ownerID := getUserID(t, env, env.Token)
@@ -222,6 +226,7 @@ func TestUserTasksListCrossSpaceIdenticalSortKeys(t *testing.T) {
 }
 
 func TestUserTasksListForbiddenForOtherUser(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	// Create a non-owner user.
@@ -245,6 +250,7 @@ func TestUserTasksListForbiddenForOtherUser(t *testing.T) {
 }
 
 func TestUserTasksListEmpty(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	ownerID := getUserID(t, env, env.Token)

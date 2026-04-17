@@ -15,6 +15,7 @@ import (
 )
 
 func TestUnauthenticatedRequest(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	// Request without auth header.
@@ -27,6 +28,7 @@ func TestUnauthenticatedRequest(t *testing.T) {
 }
 
 func TestAuthTokenCreate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	resp := doRequest(t, env, "POST", "/auth/tokens", `{"name":"my-token"}`)
@@ -47,6 +49,7 @@ func TestAuthTokenCreate(t *testing.T) {
 }
 
 func TestAuthTokenList(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	doRequest(t, env, "POST", "/auth/tokens", `{"name":"token-a"}`)
@@ -64,6 +67,7 @@ func TestAuthTokenList(t *testing.T) {
 }
 
 func TestAuthTokenDelete(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	// Create a token.
@@ -85,6 +89,7 @@ func TestAuthTokenDelete(t *testing.T) {
 }
 
 func TestAuthTokenDeleteOtherUser(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	// Create a token as owner.
@@ -100,6 +105,7 @@ func TestAuthTokenDeleteOtherUser(t *testing.T) {
 }
 
 func TestAuthTokenListIsolation(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	// Owner creates a token.
@@ -124,6 +130,7 @@ func TestAuthTokenListIsolation(t *testing.T) {
 }
 
 func TestExpiredTokenRejected(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	// Look up the owner user ID via the standard helper.
@@ -156,6 +163,7 @@ func TestExpiredTokenRejected(t *testing.T) {
 }
 
 func TestOAuthAccessTokenAccepted(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	ownerID := getUserID(t, env, env.Token)
@@ -188,6 +196,7 @@ func TestOAuthAccessTokenAccepted(t *testing.T) {
 }
 
 func TestAuthTokenListExcludesOAuthTokens(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	ownerID := getUserID(t, env, env.Token)
@@ -228,6 +237,7 @@ func TestAuthTokenListExcludesOAuthTokens(t *testing.T) {
 }
 
 func TestOAuthAccessTokenMissingScopeForbidden(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	ownerID := getUserID(t, env, env.Token)
@@ -260,6 +270,7 @@ func TestOAuthAccessTokenMissingScopeForbidden(t *testing.T) {
 }
 
 func TestOAuthAccessTokenStillRequiresOwner(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	userToken := createTestUser(t, env, "worker@example.com", "Worker", "password")
@@ -270,6 +281,7 @@ func TestOAuthAccessTokenStillRequiresOwner(t *testing.T) {
 }
 
 func TestOAuthAccessTokenStillRequiresSpaceMembership(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "secret", "Secret")

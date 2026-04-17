@@ -6,6 +6,7 @@ import (
 )
 
 func TestSpaceTagsCreate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "tag-test", "Tag Test")
 
@@ -22,6 +23,7 @@ func TestSpaceTagsCreate(t *testing.T) {
 }
 
 func TestSpaceTagsCreateDuplicate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "tag-dup", "Tag Dup")
 
@@ -32,6 +34,7 @@ func TestSpaceTagsCreateDuplicate(t *testing.T) {
 }
 
 func TestSpaceTagsCreateCaseFoldDuplicate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "tag-fold", "Tag Fold")
 
@@ -42,6 +45,7 @@ func TestSpaceTagsCreateCaseFoldDuplicate(t *testing.T) {
 }
 
 func TestSpaceTagsCreateEmpty(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "tag-empty", "Tag Empty")
 
@@ -49,6 +53,7 @@ func TestSpaceTagsCreateEmpty(t *testing.T) {
 }
 
 func TestSpaceTagsList(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "tag-list", "Tag List")
 
@@ -66,6 +71,7 @@ func TestSpaceTagsList(t *testing.T) {
 }
 
 func TestSpaceTagsListEmpty(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "tag-le", "Tag List Empty")
 
@@ -80,6 +86,7 @@ func TestSpaceTagsListEmpty(t *testing.T) {
 }
 
 func TestSpaceTagsUpdate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "tag-upd", "Tag Update")
 
@@ -95,6 +102,7 @@ func TestSpaceTagsUpdate(t *testing.T) {
 }
 
 func TestSpaceTagsUpdateCaseFoldCollision(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "tag-coll", "Tag Collision")
 
@@ -106,6 +114,7 @@ func TestSpaceTagsUpdateCaseFoldCollision(t *testing.T) {
 }
 
 func TestSpaceTagsUpdateNotFound(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "tag-unf", "Tag Update NF")
 
@@ -113,6 +122,7 @@ func TestSpaceTagsUpdateNotFound(t *testing.T) {
 }
 
 func TestSpaceTagsDelete(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "tag-del", "Tag Delete")
 
@@ -131,6 +141,7 @@ func TestSpaceTagsDelete(t *testing.T) {
 }
 
 func TestSpaceTagsDeleteNotFound(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "tag-dnf", "Tag Delete NF")
 
@@ -138,6 +149,7 @@ func TestSpaceTagsDeleteNotFound(t *testing.T) {
 }
 
 func TestSpaceTagsCrossSpaceIsolation(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "tag-a", "Tag A")
 	createSpace(t, env, "tag-b", "Tag B")
@@ -155,6 +167,7 @@ func TestSpaceTagsCrossSpaceIsolation(t *testing.T) {
 }
 
 func TestSpaceTagsNonMemberRejected(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "tag-acl", "Tag ACL")
 
@@ -169,6 +182,7 @@ func TestSpaceTagsNonMemberRejected(t *testing.T) {
 }
 
 func TestSpaceTagsViewerCannotWrite(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "tag-vw", "Tag Viewer Write")
 

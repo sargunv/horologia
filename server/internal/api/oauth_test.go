@@ -14,6 +14,7 @@ import (
 )
 
 func TestOAuthAuthorizationServerMetadata(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	resp, err := doOAuthRequest(t, http.DefaultClient, http.MethodGet, env.Server.URL+"/.well-known/oauth-authorization-server", nil, "")
@@ -33,6 +34,7 @@ func TestOAuthAuthorizationServerMetadata(t *testing.T) {
 }
 
 func TestOAuthProtectedResourceMetadataForMCP(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	resp, err := doOAuthRequest(t, http.DefaultClient, http.MethodGet, env.Server.URL+"/mcp/.well-known/oauth-protected-resource", nil, "")
@@ -49,6 +51,7 @@ func TestOAuthProtectedResourceMetadataForMCP(t *testing.T) {
 }
 
 func TestOAuthAuthorizeRequiresLogin(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	client := noRedirectClient(t)
@@ -73,6 +76,7 @@ func TestOAuthAuthorizeRequiresLogin(t *testing.T) {
 }
 
 func TestOAuthAuthorizationCodeFlow(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	client := newOAuthBrowserClient(t)
 	loginOAuthBrowserSession(t, env, client)
@@ -159,6 +163,7 @@ func TestOAuthAuthorizationCodeFlow(t *testing.T) {
 }
 
 func TestOAuthAuthorizationServerMetadataRejectsUntrustedDynamicHost(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, env.Server.URL+"/.well-known/oauth-authorization-server", nil)
@@ -175,6 +180,7 @@ func TestOAuthAuthorizationServerMetadataRejectsUntrustedDynamicHost(t *testing.
 }
 
 func TestOAuthAuthorizeAcceptsConfiguredPublicResourceWhenProxied(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	env.Handler.PublicURL = env.Server.URL
 
@@ -222,6 +228,7 @@ func TestOAuthAuthorizeAcceptsConfiguredPublicResourceWhenProxied(t *testing.T) 
 }
 
 func TestOAuthAuthorizeRejectsInvalidRequests(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	testCases := []struct {
@@ -309,6 +316,7 @@ func TestOAuthAuthorizeRejectsInvalidRequests(t *testing.T) {
 }
 
 func TestOAuthTokenRejectsInvalidAuthorizationCodeExchanges(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	t.Run("wrong verifier", func(t *testing.T) {

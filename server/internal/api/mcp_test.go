@@ -60,6 +60,7 @@ func doMCP(t *testing.T, handler http.Handler, token string) *http.Response {
 
 // TestMCPUnauthenticated verifies that requests without a bearer token are rejected.
 func TestMCPUnauthenticated(t *testing.T) {
+	t.Parallel()
 	handler, _ := mcpHandler(t)
 	resp := doMCP(t, handler, "")
 	defer func() { _ = resp.Body.Close() }()
@@ -72,6 +73,7 @@ func TestMCPUnauthenticated(t *testing.T) {
 
 // TestMCPInvalidToken verifies that an invalid bearer token is rejected.
 func TestMCPInvalidToken(t *testing.T) {
+	t.Parallel()
 	handler, _ := mcpHandler(t)
 	resp := doMCP(t, handler, "not-a-real-token")
 	defer func() { _ = resp.Body.Close() }()
@@ -83,6 +85,7 @@ func TestMCPInvalidToken(t *testing.T) {
 }
 
 func TestMCPUnauthenticatedDoesNotReflectUntrustedHostInChallenge(t *testing.T) {
+	t.Parallel()
 	handler, _ := mcpHandler(t)
 
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/mcp", mcpInitBody(t))
@@ -103,6 +106,7 @@ func TestMCPUnauthenticatedDoesNotReflectUntrustedHostInChallenge(t *testing.T) 
 
 // TestMCPExpiredToken verifies that an expired bearer token is rejected.
 func TestMCPExpiredToken(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	handler := mcp.NewTransport(env.pool, env.Handler)
 
@@ -138,6 +142,7 @@ func TestMCPExpiredToken(t *testing.T) {
 // TestMCPInitializeHandshake verifies that a valid bearer token allows the MCP
 // initialize handshake to complete successfully.
 func TestMCPInitializeHandshake(t *testing.T) {
+	t.Parallel()
 	handler, token := mcpHandler(t)
 	resp := doMCP(t, handler, token)
 	defer func() { _ = resp.Body.Close() }()
@@ -172,6 +177,7 @@ func TestMCPInitializeHandshake(t *testing.T) {
 }
 
 func TestMCPOAuthAccessTokenInitializeHandshake(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	handler := mcp.NewTransport(env.pool, env.Handler)
 
@@ -208,6 +214,7 @@ func TestMCPOAuthAccessTokenInitializeHandshake(t *testing.T) {
 }
 
 func TestMCPOAuthRefreshTokenRejected(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	handler := mcp.NewTransport(env.pool, env.Handler)
 

@@ -7,6 +7,7 @@ import (
 )
 
 func TestSpacesCreate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	resp := doRequest(t, env, "POST", "/spaces", `{"slug":"home","name":"Home"}`)
@@ -32,6 +33,7 @@ func TestSpacesCreate(t *testing.T) {
 }
 
 func TestSpacesCreateSlugValid(t *testing.T) {
+	t.Parallel()
 	slugs := []string{
 		"home",
 		"my-project",
@@ -50,6 +52,7 @@ func TestSpacesCreateSlugValid(t *testing.T) {
 }
 
 func TestSpacesCreateSlugInvalid(t *testing.T) {
+	t.Parallel()
 	slugs := []string{
 		"",
 		"-leading",
@@ -69,6 +72,7 @@ func TestSpacesCreateSlugInvalid(t *testing.T) {
 }
 
 func TestSpacesCreateDuplicate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -78,6 +82,7 @@ func TestSpacesCreateDuplicate(t *testing.T) {
 }
 
 func TestSpacesRead(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -93,6 +98,7 @@ func TestSpacesRead(t *testing.T) {
 }
 
 func TestSpacesReadNotFound(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	resp := doRequest(t, env, "GET", "/spaces/nonexistent", "")
@@ -100,6 +106,7 @@ func TestSpacesReadNotFound(t *testing.T) {
 }
 
 func TestSpacesListEmpty(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	resp := doRequest(t, env, "GET", "/spaces", "")
@@ -114,6 +121,7 @@ func TestSpacesListEmpty(t *testing.T) {
 }
 
 func TestSpacesList(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	// Insert in non-alphabetical order to prove sort is applied.
@@ -137,6 +145,7 @@ func TestSpacesList(t *testing.T) {
 }
 
 func TestSpacesUpdate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -159,6 +168,7 @@ func TestSpacesUpdate(t *testing.T) {
 }
 
 func TestSpacesUpdateSlug(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "old-slug", "My Space")
@@ -185,6 +195,7 @@ func TestSpacesUpdateSlug(t *testing.T) {
 }
 
 func TestSpacesUpdateSlugCascadesToTasks(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "old-slug", "My Space")
@@ -212,6 +223,7 @@ func TestSpacesUpdateSlugCascadesToTasks(t *testing.T) {
 }
 
 func TestSpacesDelete(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -225,6 +237,7 @@ func TestSpacesDelete(t *testing.T) {
 }
 
 func TestNonMemberCannotAccessSpace(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "secret", "Secret")
@@ -243,6 +256,7 @@ func TestNonMemberCannotAccessSpace(t *testing.T) {
 }
 
 func TestViewerCannotWriteToSpace(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -261,6 +275,7 @@ func TestViewerCannotWriteToSpace(t *testing.T) {
 }
 
 func TestMemberCannotManageSpace(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -278,6 +293,7 @@ func TestMemberCannotManageSpace(t *testing.T) {
 }
 
 func TestNonOwnerSpacesListFiltered(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "alpha", "Alpha")

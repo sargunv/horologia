@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
 	"testing"
 
 	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
@@ -19,6 +20,9 @@ var testDSN string
 
 // testPort is the port the embedded PG instance is listening on.
 var testPort uint32
+
+// testAdminPool is a shared admin connection used to create and drop per-test databases.
+var testAdminPool *pgxpool.Pool
 
 // testTemplateName is the template database with migrations already applied.
 // Tests use CREATE DATABASE ... TEMPLATE to get a fresh copy instantly.
@@ -48,8 +52,16 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
+	runtimeDir, err := os.MkdirTemp("", "horologia-embedded-postgres-*")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "create embedded postgres temp dir: %v\n", err)
+		os.Exit(1)
+	}
+
 	pg := embeddedpostgres.NewDatabase(embeddedpostgres.DefaultConfig().
 		Port(port).
+		RuntimePath(runtimeDir).
+		DataPath(filepath.Join(runtimeDir, "data")).
 		Database("horologia_test"))
 
 	if err := pg.Start(); err != nil {
@@ -60,17 +72,32 @@ func TestMain(m *testing.M) {
 	testPort = port
 	testDSN = fmt.Sprintf("postgres://postgres:postgres@localhost:%d/horologia_test?sslmode=disable", testPort) //nolint:gosec // test credentials for embedded postgres
 
+	testAdminPool, err = pgxpool.New(context.Background(), testDSN)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "connect admin pool: %v\n", err)
+		_ = pg.Stop()
+		_ = os.RemoveAll(runtimeDir)
+		os.Exit(1)
+	}
+
 	// Create and migrate the template database once.
 	if err := setupTemplate(); err != nil {
 		fmt.Fprintf(os.Stderr, "setup template: %v\n", err)
+		testAdminPool.Close()
 		_ = pg.Stop()
+		_ = os.RemoveAll(runtimeDir)
 		os.Exit(1)
 	}
 
 	code := m.Run()
 
+	testAdminPool.Close()
+
 	if err := pg.Stop(); err != nil {
 		fmt.Fprintf(os.Stderr, "stop embedded postgres: %v\n", err)
+	}
+	if err := os.RemoveAll(runtimeDir); err != nil {
+		fmt.Fprintf(os.Stderr, "remove embedded postgres temp dir: %v\n", err)
 	}
 
 	os.Exit(code)
@@ -81,13 +108,7 @@ func TestMain(m *testing.M) {
 func setupTemplate() error {
 	ctx := context.Background()
 
-	pool, err := pgxpool.New(ctx, testDSN)
-	if err != nil {
-		return fmt.Errorf("connect: %w", err)
-	}
-	defer pool.Close()
-
-	if _, err := pool.Exec(ctx, "CREATE DATABASE "+testTemplateName); err != nil {
+	if _, err := testAdminPool.Exec(ctx, `CREATE DATABASE "`+testTemplateName+`"`); err != nil {
 		return fmt.Errorf("create template db: %w", err)
 	}
 

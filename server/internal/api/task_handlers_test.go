@@ -8,6 +8,7 @@ import (
 )
 
 func TestTasksCreate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -40,6 +41,7 @@ func TestTasksCreate(t *testing.T) {
 }
 
 func TestTasksCreateWithFields(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -67,6 +69,7 @@ func TestTasksCreateWithFields(t *testing.T) {
 }
 
 func TestTasksCreateInNonexistentSpace(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	resp := doRequest(t, env, "POST", "/spaces/nonexistent/tasks", `{"title":"Task"}`)
@@ -74,6 +77,7 @@ func TestTasksCreateInNonexistentSpace(t *testing.T) {
 }
 
 func TestTasksCreateInvalidStatus(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -83,6 +87,7 @@ func TestTasksCreateInvalidStatus(t *testing.T) {
 }
 
 func TestTasksRead(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -99,6 +104,7 @@ func TestTasksRead(t *testing.T) {
 }
 
 func TestTasksReadNotFound(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -108,6 +114,7 @@ func TestTasksReadNotFound(t *testing.T) {
 }
 
 func TestTasksReadInvalidID(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -117,6 +124,7 @@ func TestTasksReadInvalidID(t *testing.T) {
 }
 
 func TestTasksListEmpty(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -136,6 +144,7 @@ func TestTasksListEmpty(t *testing.T) {
 }
 
 func TestTasksListPagination(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -186,6 +195,7 @@ func TestTasksListPagination(t *testing.T) {
 }
 
 func TestTasksListSortOrder(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "proj", "Project")
@@ -266,6 +276,7 @@ func TestTasksListSortOrder(t *testing.T) {
 }
 
 func TestTasksSearchOwnerAcrossSpaces(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -297,6 +308,7 @@ func TestTasksSearchOwnerAcrossSpaces(t *testing.T) {
 }
 
 func TestTasksSearchFiltersToVisibleSpaces(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "alpha", "Alpha")
@@ -326,6 +338,7 @@ func TestTasksSearchFiltersToVisibleSpaces(t *testing.T) {
 }
 
 func TestTasksSearchOptionalSpaceFilter(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "alpha", "Alpha")
@@ -353,6 +366,7 @@ func TestTasksSearchOptionalSpaceFilter(t *testing.T) {
 }
 
 func TestTasksSearchExcludeTaskIDAndExactID(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -390,6 +404,7 @@ func TestTasksSearchExcludeTaskIDAndExactID(t *testing.T) {
 }
 
 func TestTasksSearchLeadingTStillDoesTextSearch(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -412,6 +427,7 @@ func TestTasksSearchLeadingTStillDoesTextSearch(t *testing.T) {
 }
 
 func TestTasksListSortPagination(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -473,6 +489,7 @@ func TestTasksListSortPagination(t *testing.T) {
 }
 
 func TestTasksListNonexistentSpace(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	resp := doRequest(t, env, "GET", "/spaces/nonexistent/tasks", "")
@@ -480,6 +497,7 @@ func TestTasksListNonexistentSpace(t *testing.T) {
 }
 
 func TestTasksUpdate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -501,6 +519,7 @@ func TestTasksUpdate(t *testing.T) {
 }
 
 func TestTasksUpdateStatus(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -517,6 +536,7 @@ func TestTasksUpdateStatus(t *testing.T) {
 }
 
 func TestTasksUpdateInvalidStatus(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -528,6 +548,7 @@ func TestTasksUpdateInvalidStatus(t *testing.T) {
 }
 
 func TestTasksUpdateClearDue(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -555,6 +576,7 @@ func TestTasksUpdateClearDue(t *testing.T) {
 }
 
 func TestTasksDelete(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -570,6 +592,7 @@ func TestTasksDelete(t *testing.T) {
 }
 
 func TestSpaceDeleteCascadesTasks(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -588,6 +611,7 @@ func TestSpaceDeleteCascadesTasks(t *testing.T) {
 // --- Cross-Space Isolation Tests ---
 
 func TestCrossSpaceTaskRead(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "space-a", "Space A")
@@ -601,6 +625,7 @@ func TestCrossSpaceTaskRead(t *testing.T) {
 }
 
 func TestCrossSpaceTaskUpdate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "space-a", "Space A")
@@ -614,6 +639,7 @@ func TestCrossSpaceTaskUpdate(t *testing.T) {
 }
 
 func TestCrossSpaceTaskDelete(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "space-a", "Space A")
@@ -633,6 +659,7 @@ func TestCrossSpaceTaskDelete(t *testing.T) {
 // --- Task Assignee Tests ---
 
 func TestTaskAssigneesOnCreate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -652,6 +679,7 @@ func TestTaskAssigneesOnCreate(t *testing.T) {
 }
 
 func TestTaskAssigneesEmptyByDefault(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -663,6 +691,7 @@ func TestTaskAssigneesEmptyByDefault(t *testing.T) {
 }
 
 func TestTaskAssigneesUpdate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -706,6 +735,7 @@ func TestTaskAssigneesUpdate(t *testing.T) {
 }
 
 func TestTaskAssigneesPreservedOnUnrelatedUpdate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -734,6 +764,7 @@ func TestTaskAssigneesPreservedOnUnrelatedUpdate(t *testing.T) {
 }
 
 func TestTaskAssigneesNonMemberRejected(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -750,6 +781,7 @@ func TestTaskAssigneesNonMemberRejected(t *testing.T) {
 }
 
 func TestTaskAssigneesCrossSpaceRejected(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "alpha", "Alpha")
@@ -766,6 +798,7 @@ func TestTaskAssigneesCrossSpaceRejected(t *testing.T) {
 }
 
 func TestTaskAssigneesDeduplicated(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -781,6 +814,7 @@ func TestTaskAssigneesDeduplicated(t *testing.T) {
 }
 
 func TestTaskDeleteCascadesAssignees(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -798,6 +832,7 @@ func TestTaskDeleteCascadesAssignees(t *testing.T) {
 }
 
 func TestTaskAssigneesInListResponse(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -835,6 +870,7 @@ func TestTaskAssigneesInListResponse(t *testing.T) {
 }
 
 func TestTaskTagsInListResponse(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -870,6 +906,7 @@ func TestTaskTagsInListResponse(t *testing.T) {
 }
 
 func TestTaskAssigneesInvalidIDFormat(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -882,6 +919,7 @@ func TestTaskAssigneesInvalidIDFormat(t *testing.T) {
 }
 
 func TestTaskAssigneesNonExistentUser(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")
@@ -894,6 +932,7 @@ func TestTaskAssigneesNonExistentUser(t *testing.T) {
 }
 
 func TestTaskTagCaseFoldingPreservesDisplayName(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "tag-fold", "Tag Fold")

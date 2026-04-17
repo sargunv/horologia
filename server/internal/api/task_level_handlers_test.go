@@ -8,6 +8,7 @@ import (
 // --- Task Statuses ---
 
 func TestTaskStatusesList(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "st", "Status Test")
 
@@ -34,6 +35,7 @@ func TestTaskStatusesList(t *testing.T) {
 }
 
 func TestTaskStatusesReplaceBasic(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "st", "Status Test")
 
@@ -63,6 +65,7 @@ func TestTaskStatusesReplaceBasic(t *testing.T) {
 }
 
 func TestTaskStatusesReplaceRejectOutOfOrderCategories(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "st", "Status Test")
 
@@ -76,6 +79,7 @@ func TestTaskStatusesReplaceRejectOutOfOrderCategories(t *testing.T) {
 }
 
 func TestTaskStatusesReplaceRejectIntermediateAfterCompletion(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "st", "Status Test")
 
@@ -90,6 +94,7 @@ func TestTaskStatusesReplaceRejectIntermediateAfterCompletion(t *testing.T) {
 }
 
 func TestTaskStatusesReplaceRejectRemoveWithTasks(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "st", "Status Test")
 
@@ -107,6 +112,7 @@ func TestTaskStatusesReplaceRejectRemoveWithTasks(t *testing.T) {
 }
 
 func TestTaskStatusesReplaceAllowRemoveUnusedStatus(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "st", "Status Test")
 
@@ -127,6 +133,7 @@ func TestTaskStatusesReplaceAllowRemoveUnusedStatus(t *testing.T) {
 }
 
 func TestTaskStatusesReplaceRejectNoInitial(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "st", "Status Test")
 
@@ -139,6 +146,7 @@ func TestTaskStatusesReplaceRejectNoInitial(t *testing.T) {
 }
 
 func TestTaskStatusesReplaceRejectMultipleInitial(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "st", "Status Test")
 
@@ -153,6 +161,7 @@ func TestTaskStatusesReplaceRejectMultipleInitial(t *testing.T) {
 }
 
 func TestTaskStatusesReplaceRejectNoCompletion(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "st", "Status Test")
 
@@ -165,6 +174,7 @@ func TestTaskStatusesReplaceRejectNoCompletion(t *testing.T) {
 }
 
 func TestTaskStatusesReplaceRejectDuplicateNames(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "st", "Status Test")
 
@@ -178,6 +188,7 @@ func TestTaskStatusesReplaceRejectDuplicateNames(t *testing.T) {
 }
 
 func TestTaskStatusesReplaceNonAdminRejected(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "st", "Status Test")
 
@@ -192,6 +203,7 @@ func TestTaskStatusesReplaceNonAdminRejected(t *testing.T) {
 }
 
 func TestTaskStatusesReplaceUpdateCategory(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "st", "Status Test")
 
@@ -218,6 +230,7 @@ func TestTaskStatusesReplaceUpdateCategory(t *testing.T) {
 }
 
 func TestTaskStatusesCrossSpaceIsolation(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "iso-a", "Iso A")
 	createSpace(t, env, "iso-b", "Iso B")
@@ -247,6 +260,7 @@ func TestTaskStatusesCrossSpaceIsolation(t *testing.T) {
 }
 
 func TestTaskStatusesListNonMemberRejected(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "st-acl", "Status ACL")
 
@@ -257,6 +271,7 @@ func TestTaskStatusesListNonMemberRejected(t *testing.T) {
 // --- Task Effort Levels ---
 
 func TestTaskEffortLevelsList(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "eff", "Effort Test")
 
@@ -290,6 +305,7 @@ func TestTaskEffortLevelsList(t *testing.T) {
 }
 
 func TestTaskEffortLevelsReplaceBasic(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "eff", "Effort Test")
 
@@ -313,6 +329,7 @@ func TestTaskEffortLevelsReplaceBasic(t *testing.T) {
 }
 
 func TestTaskEffortLevelsReplaceEmpty(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "eff", "Effort Test")
 
@@ -327,6 +344,7 @@ func TestTaskEffortLevelsReplaceEmpty(t *testing.T) {
 }
 
 func TestTaskEffortLevelsReplaceNullsTasksOnRemoval(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "eff", "Effort Test")
 
@@ -350,6 +368,7 @@ func TestTaskEffortLevelsReplaceNullsTasksOnRemoval(t *testing.T) {
 }
 
 func TestTaskEffortLevelsReplaceRejectDuplicateNames(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "eff", "Effort Test")
 
@@ -360,6 +379,7 @@ func TestTaskEffortLevelsReplaceRejectDuplicateNames(t *testing.T) {
 }
 
 func TestTaskEffortLevelsReplaceNonAdminRejected(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "eff", "Effort Test")
 
@@ -371,6 +391,7 @@ func TestTaskEffortLevelsReplaceNonAdminRejected(t *testing.T) {
 }
 
 func TestTaskEffortLevelsCrossSpaceIsolation(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "iso-a", "Iso A")
 	createSpace(t, env, "iso-b", "Iso B")
@@ -395,6 +416,7 @@ func TestTaskEffortLevelsCrossSpaceIsolation(t *testing.T) {
 // --- Task Priority Levels ---
 
 func TestTaskPriorityLevelsList(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "pri", "Priority Test")
 
@@ -427,6 +449,7 @@ func TestTaskPriorityLevelsList(t *testing.T) {
 }
 
 func TestTaskPriorityLevelsReplaceBasic(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "pri", "Priority Test")
 
@@ -443,6 +466,7 @@ func TestTaskPriorityLevelsReplaceBasic(t *testing.T) {
 }
 
 func TestTaskPriorityLevelsReplaceNullsTasksOnRemoval(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "pri", "Priority Test")
 
@@ -466,6 +490,7 @@ func TestTaskPriorityLevelsReplaceNullsTasksOnRemoval(t *testing.T) {
 }
 
 func TestTaskPriorityLevelsReplaceRejectDuplicateNames(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "pri", "Priority Test")
 
@@ -476,6 +501,7 @@ func TestTaskPriorityLevelsReplaceRejectDuplicateNames(t *testing.T) {
 }
 
 func TestTaskPriorityLevelsReplaceNonAdminRejected(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "pri", "Priority Test")
 
@@ -489,6 +515,7 @@ func TestTaskPriorityLevelsReplaceNonAdminRejected(t *testing.T) {
 // --- Existing effort/priority tests on tasks ---
 
 func TestTaskCreateWithEffortAndPriority(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "home", "Home")
 
@@ -502,6 +529,7 @@ func TestTaskCreateWithEffortAndPriority(t *testing.T) {
 }
 
 func TestTaskCreateEffortAndPriorityNullByDefault(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "home", "Home")
 
@@ -515,6 +543,7 @@ func TestTaskCreateEffortAndPriorityNullByDefault(t *testing.T) {
 }
 
 func TestTaskCreateInvalidEffort(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "home", "Home")
 
@@ -523,6 +552,7 @@ func TestTaskCreateInvalidEffort(t *testing.T) {
 }
 
 func TestTaskCreateInvalidPriority(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "home", "Home")
 
@@ -531,6 +561,7 @@ func TestTaskCreateInvalidPriority(t *testing.T) {
 }
 
 func TestTaskUpdateEffort(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "home", "Home")
 
@@ -560,6 +591,7 @@ func TestTaskUpdateEffort(t *testing.T) {
 }
 
 func TestTaskUpdatePriority(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "home", "Home")
 
@@ -589,6 +621,7 @@ func TestTaskUpdatePriority(t *testing.T) {
 }
 
 func TestTaskUpdateInvalidEffort(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "home", "Home")
 
@@ -603,6 +636,7 @@ func TestTaskUpdateInvalidEffort(t *testing.T) {
 }
 
 func TestTaskEffortPreservedOnUnrelatedUpdate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "home", "Home")
 
@@ -629,6 +663,7 @@ func TestTaskEffortPreservedOnUnrelatedUpdate(t *testing.T) {
 }
 
 func TestTaskEffortInListResponse(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "home", "Home")
 
@@ -666,6 +701,7 @@ func TestTaskEffortInListResponse(t *testing.T) {
 }
 
 func TestTaskEffortLevelsNonMemberRejected(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "eff-acl", "Effort ACL")
 
@@ -674,6 +710,7 @@ func TestTaskEffortLevelsNonMemberRejected(t *testing.T) {
 }
 
 func TestTaskPriorityLevelsNonMemberRejected(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "pri-acl", "Priority ACL")
 
@@ -682,6 +719,7 @@ func TestTaskPriorityLevelsNonMemberRejected(t *testing.T) {
 }
 
 func TestTaskPriorityLevelsCrossSpaceIsolation(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "piso-a", "Piso A")
 	createSpace(t, env, "piso-b", "Piso B")

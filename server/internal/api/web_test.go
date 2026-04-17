@@ -23,6 +23,7 @@ func postLogin(t *testing.T, env *testEnv, body string) *http.Response {
 }
 
 func TestLoginSuccess(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	resp := postLogin(t, env, `{"email":"test@example.com","password":"password"}`)
@@ -49,6 +50,7 @@ func TestLoginSuccess(t *testing.T) {
 }
 
 func TestLoginBadPassword(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	resp := postLogin(t, env, `{"email":"test@example.com","password":"wrong"}`)
@@ -56,6 +58,7 @@ func TestLoginBadPassword(t *testing.T) {
 }
 
 func TestLoginUnknownEmail(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	resp := postLogin(t, env, `{"email":"nobody@example.com","password":"anything"}`)
@@ -63,6 +66,7 @@ func TestLoginUnknownEmail(t *testing.T) {
 }
 
 func TestLoginRejectsFormContentType(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	req, _ := http.NewRequestWithContext(t.Context(), http.MethodPost, env.Server.URL+"/app/auth/login",
@@ -76,6 +80,7 @@ func TestLoginRejectsFormContentType(t *testing.T) {
 }
 
 func TestLoginRejectsMissingContentType(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	req, _ := http.NewRequestWithContext(t.Context(), http.MethodPost, env.Server.URL+"/app/auth/login",
@@ -102,6 +107,7 @@ func postLogout(t *testing.T, env *testEnv, sessionToken string) *http.Response 
 }
 
 func TestLogoutWithSession(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	// Login to get a session cookie.
@@ -137,6 +143,7 @@ func TestLogoutWithSession(t *testing.T) {
 }
 
 func TestLogoutWithoutSession(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	resp := postLogout(t, env, "")
@@ -144,6 +151,7 @@ func TestLogoutWithoutSession(t *testing.T) {
 }
 
 func TestLoginDisabledPasswordAuth(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	// Override: create a new server with password auth disabled.
@@ -171,6 +179,7 @@ func TestLoginDisabledPasswordAuth(t *testing.T) {
 }
 
 func TestAuthConfigPasswordEnabled(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	resp := doRequestAs(t, env, "", "GET", "/app/auth/config", "")
@@ -186,6 +195,7 @@ func TestAuthConfigPasswordEnabled(t *testing.T) {
 }
 
 func TestAuthConfigPasswordDisabled(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	// Create a server with password auth disabled.
@@ -215,6 +225,7 @@ func TestAuthConfigPasswordDisabled(t *testing.T) {
 }
 
 func TestWebErrorCodeIsSnakeCase(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	resp := postLogin(t, env, `{"email":"test@example.com","password":"wrong"}`)
@@ -233,6 +244,7 @@ func TestWebErrorCodeIsSnakeCase(t *testing.T) {
 }
 
 func TestBearerAuthTakesPrecedenceOverSessionCookie(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	sessionToken := createTestUser(t, env, "cookie-user@example.com", "Cookie User", "password")

@@ -10,6 +10,7 @@ import (
 )
 
 func TestRotationPoolRoundTrip(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "alpha", "Alpha")
 	_, bobID := createAndAddMember(t, env, "alpha", "bob@example.com", "Bob", "password", "member")
@@ -55,6 +56,7 @@ func TestRotationPoolRoundTrip(t *testing.T) {
 }
 
 func TestRotationPoolDefaultEmpty(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "alpha", "Alpha")
 
@@ -66,6 +68,7 @@ func TestRotationPoolDefaultEmpty(t *testing.T) {
 }
 
 func TestRotationPoolPreservedOnUnrelatedUpdate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "alpha", "Alpha")
 	ownerID := getUserID(t, env, env.Token)
@@ -87,6 +90,7 @@ func TestRotationPoolPreservedOnUnrelatedUpdate(t *testing.T) {
 }
 
 func TestRotationOnCompletionBased(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "alpha", "Alpha")
 	_, bobID := createAndAddMember(t, env, "alpha", "bob@example.com", "Bob", "password", "member")
@@ -135,6 +139,7 @@ func TestRotationOnCompletionBased(t *testing.T) {
 }
 
 func TestRotationNoOpWithEmptyPool(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "alpha", "Alpha")
 	ownerID := getUserID(t, env, env.Token)
@@ -159,6 +164,7 @@ func TestRotationNoOpWithEmptyPool(t *testing.T) {
 }
 
 func TestRotationCurrentAssigneeNotInPool(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "alpha", "Alpha")
 	_, bobID := createAndAddMember(t, env, "alpha", "bob@example.com", "Bob", "password", "member")
@@ -185,6 +191,7 @@ func TestRotationCurrentAssigneeNotInPool(t *testing.T) {
 }
 
 func TestRotationOneOffNoRotation(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "alpha", "Alpha")
 	_, bobID := createAndAddMember(t, env, "alpha", "bob@example.com", "Bob", "password", "member")
@@ -210,6 +217,7 @@ func TestRotationOneOffNoRotation(t *testing.T) {
 }
 
 func TestRotationFixedAccumulating(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "alpha", "Alpha")
 	_, bobID := createAndAddMember(t, env, "alpha", "bob@example.com", "Bob", "password", "member")
@@ -277,6 +285,7 @@ func TestRotationFixedAccumulating(t *testing.T) {
 }
 
 func TestRotationCronMultiSpawn(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "alpha", "Alpha")
 	_, bobID := createAndAddMember(t, env, "alpha", "bob@example.com", "Bob", "password", "member")
@@ -363,6 +372,7 @@ func TestRotationCronMultiSpawn(t *testing.T) {
 }
 
 func TestRotationPoolNonMemberRejected(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "alpha", "Alpha")
 
@@ -373,6 +383,7 @@ func TestRotationPoolNonMemberRejected(t *testing.T) {
 }
 
 func TestRotationPoolDeduplication(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "alpha", "Alpha")
 	ownerID := getUserID(t, env, env.Token)
@@ -387,6 +398,7 @@ func TestRotationPoolDeduplication(t *testing.T) {
 }
 
 func TestRotationPoolInListResponse(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "alpha", "Alpha")
 	ownerID := getUserID(t, env, env.Token)
@@ -417,6 +429,7 @@ func TestRotationPoolInListResponse(t *testing.T) {
 }
 
 func TestRotationOnFixedNonAccumulating(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "alpha", "Alpha")
 	_, bobID := createAndAddMember(t, env, "alpha", "bob@example.com", "Bob", "password", "member")
@@ -460,6 +473,7 @@ func TestRotationOnFixedNonAccumulating(t *testing.T) {
 }
 
 func TestRotationExplicitAssigneesOverrideRotation(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "alpha", "Alpha")
 	_, bobID := createAndAddMember(t, env, "alpha", "bob@example.com", "Bob", "password", "member")

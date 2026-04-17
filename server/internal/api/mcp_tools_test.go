@@ -205,6 +205,7 @@ func toolResultList(t *testing.T, rpcResp map[string]any) []any {
 // --- Tests ---
 
 func TestMCPTaskCreate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -228,6 +229,7 @@ func TestMCPTaskCreate(t *testing.T) {
 }
 
 func TestMCPTaskCreateWithFields(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -249,6 +251,7 @@ func TestMCPTaskCreateWithFields(t *testing.T) {
 }
 
 func TestMCPTaskCreateMissingTitle(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -264,6 +267,7 @@ func TestMCPTaskCreateMissingTitle(t *testing.T) {
 }
 
 func TestMCPTaskList(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -282,6 +286,7 @@ func TestMCPTaskList(t *testing.T) {
 }
 
 func TestMCPTaskGet(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -303,6 +308,7 @@ func TestMCPTaskGet(t *testing.T) {
 }
 
 func TestMCPTaskSearch(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -327,6 +333,7 @@ func TestMCPTaskSearch(t *testing.T) {
 }
 
 func TestMCPTaskUpdate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -350,6 +357,7 @@ func TestMCPTaskUpdate(t *testing.T) {
 }
 
 func TestMCPTaskCreateInNonexistentSpace(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -368,6 +376,7 @@ func TestMCPTaskCreateInNonexistentSpace(t *testing.T) {
 }
 
 func TestMCPTaskGetNonexistent(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -388,6 +397,7 @@ func TestMCPTaskGetNonexistent(t *testing.T) {
 }
 
 func TestMCPTaskDelete(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -418,6 +428,7 @@ func TestMCPTaskDelete(t *testing.T) {
 // --- Space tools ---
 
 func TestMCPSpaceList(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -432,6 +443,7 @@ func TestMCPSpaceList(t *testing.T) {
 }
 
 func TestMCPSpaceListRequiresSpacesReadScope(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	ownerID := getUserID(t, env, env.Token)
@@ -472,6 +484,7 @@ func TestMCPSpaceListRequiresSpacesReadScope(t *testing.T) {
 }
 
 func TestMCPSpaceCreate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -489,6 +502,7 @@ func TestMCPSpaceCreate(t *testing.T) {
 }
 
 func TestMCPSpaceGet(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -504,6 +518,7 @@ func TestMCPSpaceGet(t *testing.T) {
 }
 
 func TestMCPSpaceUpdate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -520,6 +535,7 @@ func TestMCPSpaceUpdate(t *testing.T) {
 }
 
 func TestMCPSpaceDelete(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -543,6 +559,7 @@ func TestMCPSpaceDelete(t *testing.T) {
 // --- Tag tools ---
 
 func TestMCPTagList(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -560,6 +577,7 @@ func TestMCPTagList(t *testing.T) {
 }
 
 func TestMCPTagCreate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -576,6 +594,7 @@ func TestMCPTagCreate(t *testing.T) {
 }
 
 func TestMCPTagUpdate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -594,6 +613,7 @@ func TestMCPTagUpdate(t *testing.T) {
 }
 
 func TestMCPTagDelete(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -619,6 +639,7 @@ func TestMCPTagDelete(t *testing.T) {
 // --- Member tools ---
 
 func TestMCPMemberList(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -635,6 +656,7 @@ func TestMCPMemberList(t *testing.T) {
 }
 
 func TestMCPMemberCreate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -662,6 +684,7 @@ func TestMCPMemberCreate(t *testing.T) {
 }
 
 func TestMCPMemberCreateViaMCP(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -684,6 +707,7 @@ func TestMCPMemberCreateViaMCP(t *testing.T) {
 }
 
 func TestMCPMemberUpdate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -702,6 +726,7 @@ func TestMCPMemberUpdate(t *testing.T) {
 }
 
 func TestMCPMemberDelete(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -730,6 +755,7 @@ func TestMCPMemberDelete(t *testing.T) {
 // --- Level tools ---
 
 func TestMCPStatusList(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -745,6 +771,7 @@ func TestMCPStatusList(t *testing.T) {
 }
 
 func TestMCPEffortLevelList(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -760,6 +787,7 @@ func TestMCPEffortLevelList(t *testing.T) {
 }
 
 func TestMCPPriorityLevelList(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -775,6 +803,7 @@ func TestMCPPriorityLevelList(t *testing.T) {
 }
 
 func TestMCPStatusReplace(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -816,6 +845,7 @@ func TestMCPStatusReplace(t *testing.T) {
 }
 
 func TestMCPEffortLevelReplace(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -848,6 +878,7 @@ func TestMCPEffortLevelReplace(t *testing.T) {
 }
 
 func TestMCPPriorityLevelReplace(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -881,6 +912,7 @@ func TestMCPPriorityLevelReplace(t *testing.T) {
 }
 
 func TestMCPStatusReplaceMissingCategory(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -899,6 +931,7 @@ func TestMCPStatusReplaceMissingCategory(t *testing.T) {
 }
 
 func TestMCPStatusReplaceMissingName(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -917,6 +950,7 @@ func TestMCPStatusReplaceMissingName(t *testing.T) {
 }
 
 func TestMCPEffortLevelReplaceMissingItems(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -934,6 +968,7 @@ func TestMCPEffortLevelReplaceMissingItems(t *testing.T) {
 // --- Activity tools ---
 
 func TestMCPSpaceActivityList(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -950,6 +985,7 @@ func TestMCPSpaceActivityList(t *testing.T) {
 }
 
 func TestMCPTaskActivityList(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -968,6 +1004,7 @@ func TestMCPTaskActivityList(t *testing.T) {
 }
 
 func TestMCPUserActivityList(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -986,6 +1023,7 @@ func TestMCPUserActivityList(t *testing.T) {
 // --- User tasks tool ---
 
 func TestMCPUserTaskList(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -1005,6 +1043,7 @@ func TestMCPUserTaskList(t *testing.T) {
 // --- Relation tools ---
 
 func TestMCPRelationCreate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -1027,6 +1066,7 @@ func TestMCPRelationCreate(t *testing.T) {
 }
 
 func TestMCPRelationDelete(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -1053,6 +1093,7 @@ func TestMCPRelationDelete(t *testing.T) {
 // --- Error path tests ---
 
 func TestMCPSpaceGetNonexistent(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -1069,6 +1110,7 @@ func TestMCPSpaceGetNonexistent(t *testing.T) {
 }
 
 func TestMCPTaskDeleteNonexistent(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -1088,6 +1130,7 @@ func TestMCPTaskDeleteNonexistent(t *testing.T) {
 }
 
 func TestMCPSpaceDeleteNonexistent(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -1104,6 +1147,7 @@ func TestMCPSpaceDeleteNonexistent(t *testing.T) {
 }
 
 func TestMCPSpaceCreateDuplicate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	s := newMCPSession(t, env)
 
@@ -1123,6 +1167,7 @@ func TestMCPSpaceCreateDuplicate(t *testing.T) {
 }
 
 func TestMCPMemberUpdateForbidden(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	createSpace(t, env, "home", "Home")

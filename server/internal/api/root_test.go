@@ -26,6 +26,7 @@ func doHealthz(t *testing.T, srv *httptest.Server) *http.Response {
 }
 
 func TestHealthzOK(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	log := slog.New(slog.DiscardHandler)
@@ -50,6 +51,7 @@ func TestHealthzOK(t *testing.T) {
 }
 
 func TestHealthzDBDown(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	// Close the pool to simulate a dead database.
@@ -80,6 +82,7 @@ func TestHealthzDBDown(t *testing.T) {
 }
 
 func TestMountRootExposesOAuthAuthorizeRoute(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	log := slog.New(slog.DiscardHandler)
@@ -121,6 +124,7 @@ func TestMountRootExposesOAuthAuthorizeRoute(t *testing.T) {
 }
 
 func TestInternalAPIsRejectCrossOriginRequests(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	log := slog.New(slog.DiscardHandler)
@@ -141,6 +145,7 @@ func TestInternalAPIsRejectCrossOriginRequests(t *testing.T) {
 }
 
 func TestPublicAPIsAllowCrossOriginRequests(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	log := slog.New(slog.DiscardHandler)
@@ -161,6 +166,7 @@ func TestPublicAPIsAllowCrossOriginRequests(t *testing.T) {
 }
 
 func TestAPICookieAuthRequiresSameOrigin(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	sessionToken := createTestUser(t, env, "cookie-root@example.com", "Cookie Root", "password")
 
@@ -195,6 +201,7 @@ func TestAPICookieAuthRequiresSameOrigin(t *testing.T) {
 }
 
 func TestOAuthAuthorizePostRejectsCrossOriginRequests(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 
 	log := slog.New(slog.DiscardHandler)

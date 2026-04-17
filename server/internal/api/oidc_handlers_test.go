@@ -131,6 +131,7 @@ func extractSessionCookie(t *testing.T, client *http.Client, serverURL string) s
 }
 
 func TestOIDCLoginNewUser(t *testing.T) {
+	t.Parallel()
 	env := setupOIDCAutoRegisterEnv(t)
 
 	env.addOIDCUser("new-oidc-subject", "oidc-user@example.com", true)
@@ -165,6 +166,7 @@ func TestOIDCLoginNewUser(t *testing.T) {
 }
 
 func TestOIDCLoginNewUserRejectedWhenAutoRegisterDisabled(t *testing.T) {
+	t.Parallel()
 	env := setupOIDCEnv(t)
 
 	env.addOIDCUser("new-oidc-subject", "oidc-user@example.com", true)
@@ -190,6 +192,7 @@ func TestOIDCLoginNewUserRejectedWhenAutoRegisterDisabled(t *testing.T) {
 }
 
 func TestOIDCLoginReturningUser(t *testing.T) {
+	t.Parallel()
 	env := setupOIDCEnv(t)
 	ctx := t.Context()
 
@@ -236,6 +239,7 @@ func TestOIDCLoginReturningUser(t *testing.T) {
 }
 
 func TestOIDCLoginEmailAutoLink(t *testing.T) {
+	t.Parallel()
 	env := setupOIDCEnv(t)
 
 	// Create a password-based user with no OIDC subject.
@@ -283,6 +287,7 @@ func TestOIDCLoginEmailAutoLink(t *testing.T) {
 }
 
 func TestOIDCLoginEmailAutoLinkUpdatesSubject(t *testing.T) {
+	t.Parallel()
 	env := setupOIDCEnv(t)
 	ctx := t.Context()
 
@@ -330,6 +335,7 @@ func TestOIDCLoginEmailAutoLinkUpdatesSubject(t *testing.T) {
 }
 
 func TestOIDCLoginEmailUnverified(t *testing.T) {
+	t.Parallel()
 	env := setupOIDCEnv(t)
 
 	env.addOIDCUser("unverified-subject", "unverified@example.com", false)
@@ -350,6 +356,7 @@ func TestOIDCLoginEmailUnverified(t *testing.T) {
 }
 
 func TestOIDCLoginRedirectPreserved(t *testing.T) {
+	t.Parallel()
 	env := setupOIDCAutoRegisterEnv(t)
 
 	env.addOIDCUser("redirect-subject", "redirect@example.com", true)
@@ -372,6 +379,7 @@ func TestOIDCLoginRedirectPreserved(t *testing.T) {
 }
 
 func TestOIDCLoginRedirectMaliciousIgnored(t *testing.T) {
+	t.Parallel()
 	env := setupOIDCAutoRegisterEnv(t)
 	env.addOIDCUser("malicious-redirect-subject", "malicious-redirect@example.com", true)
 
@@ -391,6 +399,7 @@ func TestOIDCLoginRedirectMaliciousIgnored(t *testing.T) {
 }
 
 func TestOIDCLoginMissingEmail(t *testing.T) {
+	t.Parallel()
 	env := setupOIDCEnv(t)
 
 	// User with valid username but empty email — the OP authenticates
@@ -419,6 +428,7 @@ func setupOIDCConsentEnv(t *testing.T) *testEnv {
 }
 
 func TestOIDCLinkConsent(t *testing.T) {
+	t.Parallel()
 	env := setupOIDCConsentEnv(t)
 
 	// Create a password-based user with no OIDC subject.
@@ -518,6 +528,7 @@ func TestOIDCLinkConsent(t *testing.T) {
 }
 
 func TestOIDCLinkConsentPreservesOAuthRedirect(t *testing.T) {
+	t.Parallel()
 	env := setupOIDCConsentEnv(t)
 
 	_, err := taskengine.CreateUserWithPassword(t.Context(), env.pool, "oauth-consent@example.com", "OAuth Consent User", "password123", false, nil, time.Now())
@@ -562,6 +573,7 @@ func TestOIDCLinkConsentPreservesOAuthRedirect(t *testing.T) {
 }
 
 func TestOIDCLinkConsentWrongPassword(t *testing.T) {
+	t.Parallel()
 	env := setupOIDCConsentEnv(t)
 
 	_, err := taskengine.CreateUserWithPassword(t.Context(), env.pool, "wrong@example.com", "Wrong User", "correctpassword", false, nil, time.Now())

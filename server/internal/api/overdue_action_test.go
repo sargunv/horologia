@@ -12,6 +12,7 @@ import (
 // ─── Handler tests ────────────────────────────────────────────────────────────
 
 func TestOverdueActionCreateWithAdvanceRecurrence(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "home", "Home")
 
@@ -34,6 +35,7 @@ func TestOverdueActionCreateWithAdvanceRecurrence(t *testing.T) {
 }
 
 func TestOverdueActionCreateWithSetStatus(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "home", "Home")
 
@@ -60,6 +62,7 @@ func TestOverdueActionCreateWithSetStatus(t *testing.T) {
 }
 
 func TestOverdueActionRejectedOnOneOff(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "home", "Home")
 
@@ -72,6 +75,7 @@ func TestOverdueActionRejectedOnOneOff(t *testing.T) {
 }
 
 func TestOverdueActionRejectedWithoutDue(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "home", "Home")
 
@@ -82,6 +86,7 @@ func TestOverdueActionRejectedWithoutDue(t *testing.T) {
 }
 
 func TestOverdueActionRejectedAdvanceOnFixedAccumulating(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "home", "Home")
 
@@ -94,6 +99,7 @@ func TestOverdueActionRejectedAdvanceOnFixedAccumulating(t *testing.T) {
 }
 
 func TestOverdueActionRejectedSetStatusWithoutStatus(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "home", "Home")
 
@@ -106,6 +112,7 @@ func TestOverdueActionRejectedSetStatusWithoutStatus(t *testing.T) {
 }
 
 func TestOverdueActionPatchPreservesRule(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "home", "Home")
 
@@ -132,6 +139,7 @@ func TestOverdueActionPatchPreservesRule(t *testing.T) {
 }
 
 func TestOverdueActionPatchClearsRule(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "home", "Home")
 
@@ -156,6 +164,7 @@ func TestOverdueActionPatchClearsRule(t *testing.T) {
 // ─── Cron integration tests ───────────────────────────────────────────────────
 
 func TestOverdueActionCronAdvanceRecurrence(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "home", "Home")
 
@@ -195,6 +204,7 @@ func TestOverdueActionCronAdvanceRecurrence(t *testing.T) {
 }
 
 func TestOverdueActionCronSetStatus(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "home", "Home")
 
@@ -219,6 +229,7 @@ func TestOverdueActionCronSetStatus(t *testing.T) {
 }
 
 func TestOverdueActionCronClearDueDate(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "home", "Home")
 
@@ -247,6 +258,7 @@ func TestOverdueActionCronClearDueDate(t *testing.T) {
 }
 
 func TestOverdueActionCronGracePeriodNotYetElapsed(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "home", "Home")
 
@@ -274,6 +286,7 @@ func TestOverdueActionCronGracePeriodNotYetElapsed(t *testing.T) {
 }
 
 func TestOverdueActionCronSkipsSilentlyWhenStatusDeleted(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "home", "Home")
 
@@ -321,6 +334,7 @@ func TestOverdueActionCronSkipsSilentlyWhenStatusDeleted(t *testing.T) {
 }
 
 func TestOverdueActionCronDoesNotFireForFutureDue(t *testing.T) {
+	t.Parallel()
 	env := setupTestServer(t)
 	createSpace(t, env, "home", "Home")
 

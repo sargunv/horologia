@@ -3,6 +3,7 @@ package api
 import "testing"
 
 func TestIsInternalAPIPathUsesAppPrefix(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		path string
 		want bool
@@ -21,6 +22,7 @@ func TestIsInternalAPIPathUsesAppPrefix(t *testing.T) {
 }
 
 func TestShouldBridgeSessionAuthOnlyForAPIPrefix(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		path string
 		want bool
