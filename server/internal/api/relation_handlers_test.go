@@ -5,320 +5,202 @@ import (
 	"testing"
 )
 
-func TestTaskRelationsCreate(t *testing.T) {
+func TestTaskRelationHandlers(t *testing.T) {
 	t.Parallel()
 	env := setupTestServer(t)
 
-	createSpace(t, env, "rel-test", "Relation Test")
-	t1 := createTask(t, env, "rel-test", `{"title":"Task 1"}`)
-	t2 := createTask(t, env, "rel-test", `{"title":"Task 2"}`)
-	t1id, t2id := jsonAs[string](t, t1["id"]), jsonAs[string](t, t2["id"])
+	t.Run("create", func(t *testing.T) {
+		createSpace(t, env, "rel-create", "Relation Test")
+		t1 := createTask(t, env, "rel-create", `{"title":"Task 1"}`)
+		t2 := createTask(t, env, "rel-create", `{"title":"Task 2"}`)
+		t1id, t2id := jsonAs[string](t, t1["id"]), jsonAs[string](t, t2["id"])
 
-	// Create a "blocks" relation: T1 blocks T2.
-	resp := doRequest(t, env, "POST", "/spaces/rel-test/tasks/"+t1id+"/relations",
-		`{"kind":"blocks","relatedTaskId":"`+t2id+`"}`)
-	assertStatus(t, resp, http.StatusCreated)
-	var rel map[string]any
-	readJSON(t, resp, &rel)
-	if rel["kind"] != "blocks" {
-		t.Fatalf("got kind %v, want blocks", rel["kind"])
-	}
-	if rel["relatedTaskId"] != t2id {
-		t.Fatalf("got relatedTaskId %v, want %v", rel["relatedTaskId"], t2id)
-	}
-
-	// Verify relation appears on T1 as "blocks" and T2 as "blocked_by".
-	rels1 := assertTaskRelations(t, env, "rel-test", t1id, 1)
-	assertRelationKind(t, rels1[0], "blocks", t2id)
-
-	rels2 := assertTaskRelations(t, env, "rel-test", t2id, 1)
-	assertRelationKind(t, rels2[0], "blocked_by", t1id)
-}
-
-func TestTaskRelationsSymmetric(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
-
-	createSpace(t, env, "sym-test", "Symmetric Test")
-	t1 := createTask(t, env, "sym-test", `{"title":"Task 1"}`)
-	t2 := createTask(t, env, "sym-test", `{"title":"Task 2"}`)
-	t1id, t2id := jsonAs[string](t, t1["id"]), jsonAs[string](t, t2["id"])
-
-	createRelation(t, env, "sym-test", t1id, "relates_to", t2id)
-
-	// Both tasks should show "relates_to" pointing at the other.
-	rels1 := assertTaskRelations(t, env, "sym-test", t1id, 1)
-	assertRelationKind(t, rels1[0], "relates_to", t2id)
-
-	rels2 := assertTaskRelations(t, env, "sym-test", t2id, 1)
-	assertRelationKind(t, rels2[0], "relates_to", t1id)
-}
-
-func TestTaskRelationsDelete(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
-
-	createSpace(t, env, "del-test", "Delete Test")
-	t1 := createTask(t, env, "del-test", `{"title":"Task 1"}`)
-	t2 := createTask(t, env, "del-test", `{"title":"Task 2"}`)
-	t1id, t2id := jsonAs[string](t, t1["id"]), jsonAs[string](t, t2["id"])
-
-	createRelation(t, env, "del-test", t1id, "blocks", t2id)
-
-	assertStatusClose(t, doRequest(t, env, "DELETE",
-		"/spaces/del-test/tasks/"+t1id+"/relations/blocks/"+t2id, ""),
-		http.StatusNoContent)
-
-	// Verify relation is gone from both tasks (T1).
-	assertTaskRelations(t, env, "del-test", t1id, 0)
-	assertTaskRelations(t, env, "del-test", t2id, 0)
-}
-
-func TestTaskRelationsDeleteFromOtherSide(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
-
-	createSpace(t, env, "del2-test", "Delete Other Side Test")
-	t1 := createTask(t, env, "del2-test", `{"title":"Task 1"}`)
-	t2 := createTask(t, env, "del2-test", `{"title":"Task 2"}`)
-	t1id, t2id := jsonAs[string](t, t1["id"]), jsonAs[string](t, t2["id"])
-
-	createRelation(t, env, "del2-test", t1id, "blocks", t2id)
-
-	// Delete from T2's perspective as "blocked_by".
-	assertStatusClose(t, doRequest(t, env, "DELETE",
-		"/spaces/del2-test/tasks/"+t2id+"/relations/blocked_by/"+t1id, ""),
-		http.StatusNoContent)
-
-	// Verify it's gone from both sides.
-	assertTaskRelations(t, env, "del2-test", t1id, 0)
-	assertTaskRelations(t, env, "del2-test", t2id, 0)
-}
-
-func TestTaskRelationsDeleteNonExistent(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
-
-	createSpace(t, env, "del-ne", "Delete Non-Existent")
-	t1 := createTask(t, env, "del-ne", `{"title":"Task 1"}`)
-	t2 := createTask(t, env, "del-ne", `{"title":"Task 2"}`)
-
-	// Delete a relation that was never created.
-	assertStatusClose(t, doRequest(t, env, "DELETE",
-		"/spaces/del-ne/tasks/"+jsonAs[string](t, t1["id"])+"/relations/blocks/"+jsonAs[string](t, t2["id"]), ""),
-		http.StatusNotFound)
-}
-
-func TestTaskRelationsSelfRejected(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
-
-	createSpace(t, env, "self-test", "Self Test")
-	t1 := createTask(t, env, "self-test", `{"title":"Task 1"}`)
-
-	t1id := jsonAs[string](t, t1["id"])
-	resp := doRequest(t, env, "POST", "/spaces/self-test/tasks/"+t1id+"/relations",
-		`{"kind":"blocks","relatedTaskId":"`+t1id+`"}`)
-	assertStatusClose(t, resp, http.StatusBadRequest)
-}
-
-func TestTaskRelationsCrossSpaceRejected(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
-
-	createSpace(t, env, "space-a", "Space A")
-	createSpace(t, env, "space-b", "Space B")
-	t1 := createTask(t, env, "space-a", `{"title":"Task 1"}`)
-	t2 := createTask(t, env, "space-b", `{"title":"Task 2"}`)
-
-	resp := doRequest(t, env, "POST", "/spaces/space-a/tasks/"+jsonAs[string](t, t1["id"])+"/relations",
-		`{"kind":"blocks","relatedTaskId":"`+jsonAs[string](t, t2["id"])+`"}`)
-	assertStatusClose(t, resp, http.StatusNotFound)
-}
-
-func TestTaskRelationsNonExistentTask(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
-
-	createSpace(t, env, "ne-test", "Non-Existent Test")
-	t1 := createTask(t, env, "ne-test", `{"title":"Task 1"}`)
-
-	resp := doRequest(t, env, "POST", "/spaces/ne-test/tasks/"+jsonAs[string](t, t1["id"])+"/relations",
-		`{"kind":"blocks","relatedTaskId":"T99999"}`)
-	assertStatusClose(t, resp, http.StatusNotFound)
-}
-
-func TestTaskRelationsDuplicateRejected(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
-
-	createSpace(t, env, "dup-test", "Dup Test")
-	t1 := createTask(t, env, "dup-test", `{"title":"Task 1"}`)
-	t2 := createTask(t, env, "dup-test", `{"title":"Task 2"}`)
-	t1id, t2id := jsonAs[string](t, t1["id"]), jsonAs[string](t, t2["id"])
-
-	createRelation(t, env, "dup-test", t1id, "blocks", t2id)
-
-	// Same relation again should 409.
-	resp := doRequest(t, env, "POST", "/spaces/dup-test/tasks/"+t1id+"/relations",
-		`{"kind":"blocks","relatedTaskId":"`+t2id+`"}`)
-	assertStatusClose(t, resp, http.StatusConflict)
-}
-
-func TestTaskRelationsDuplicateViaInverse(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
-
-	createSpace(t, env, "dup-inv", "Dup Inverse Test")
-	t1 := createTask(t, env, "dup-inv", `{"title":"Task 1"}`)
-	t2 := createTask(t, env, "dup-inv", `{"title":"Task 2"}`)
-	t1id, t2id := jsonAs[string](t, t1["id"]), jsonAs[string](t, t2["id"])
-
-	createRelation(t, env, "dup-inv", t1id, "blocks", t2id)
-
-	// T2 blocked_by T1 should also 409 (same canonical row).
-	resp := doRequest(t, env, "POST", "/spaces/dup-inv/tasks/"+t2id+"/relations",
-		`{"kind":"blocked_by","relatedTaskId":"`+t1id+`"}`)
-	assertStatusClose(t, resp, http.StatusConflict)
-}
-
-func TestTaskRelationsCreateViaBlockedBy(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
-
-	createSpace(t, env, "blkby-test", "Blocked By Test")
-	t1 := createTask(t, env, "blkby-test", `{"title":"Task 1"}`)
-	t2 := createTask(t, env, "blkby-test", `{"title":"Task 2"}`)
-	t1id, t2id := jsonAs[string](t, t1["id"]), jsonAs[string](t, t2["id"])
-
-	createRelation(t, env, "blkby-test", t2id, "blocked_by", t1id)
-
-	rels1 := assertTaskRelations(t, env, "blkby-test", t1id, 1)
-	assertRelationKind(t, rels1[0], "blocks", t2id)
-
-	rels2 := assertTaskRelations(t, env, "blkby-test", t2id, 1)
-	assertRelationKind(t, rels2[0], "blocked_by", t1id)
-}
-
-func TestTaskRelationsParentChild(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
-
-	createSpace(t, env, "pc-test", "Parent Child Test")
-	parent := createTask(t, env, "pc-test", `{"title":"Parent"}`)
-	child := createTask(t, env, "pc-test", `{"title":"Child"}`)
-	parentID, childID := jsonAs[string](t, parent["id"]), jsonAs[string](t, child["id"])
-
-	createRelation(t, env, "pc-test", childID, "child_of", parentID)
-
-	pRels := assertTaskRelations(t, env, "pc-test", parentID, 1)
-	assertRelationKind(t, pRels[0], "parent_of", childID)
-
-	cRels := assertTaskRelations(t, env, "pc-test", childID, 1)
-	assertRelationKind(t, cRels[0], "child_of", parentID)
-}
-
-func TestTaskRelationsDuplicatesKind(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
-
-	createSpace(t, env, "dup-kind", "Duplicates Kind Test")
-	t1 := createTask(t, env, "dup-kind", `{"title":"Task 1"}`)
-	t2 := createTask(t, env, "dup-kind", `{"title":"Task 2"}`)
-	t1id, t2id := jsonAs[string](t, t1["id"]), jsonAs[string](t, t2["id"])
-
-	createRelation(t, env, "dup-kind", t1id, "duplicates", t2id)
-
-	// Both sides should show "duplicates" (symmetric).
-	rels1 := assertTaskRelations(t, env, "dup-kind", t1id, 1)
-	assertRelationKind(t, rels1[0], "duplicates", t2id)
-
-	rels2 := assertTaskRelations(t, env, "dup-kind", t2id, 1)
-	assertRelationKind(t, rels2[0], "duplicates", t1id)
-}
-
-func TestTaskRelationsInListResponse(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
-
-	createSpace(t, env, "list-rel", "List Rel Test")
-	t1 := createTask(t, env, "list-rel", `{"title":"Task 1"}`)
-	t2 := createTask(t, env, "list-rel", `{"title":"Task 2"}`)
-	t1id, t2id := jsonAs[string](t, t1["id"]), jsonAs[string](t, t2["id"])
-
-	createRelation(t, env, "list-rel", t1id, "blocks", t2id)
-
-	// List tasks and check relations are correctly included.
-	resp := doRequest(t, env, "GET", "/spaces/list-rel/tasks", "")
-	assertStatus(t, resp, http.StatusOK)
-	var page map[string]any
-	readJSON(t, resp, &page)
-	items := jsonAs[[]any](t, page["items"])
-
-	for _, item := range items {
-		task := jsonAs[map[string]any](t, item)
-		rels := jsonAs[[]any](t, task["relations"])
-		switch task["id"] {
-		case t1id:
-			if len(rels) != 1 {
-				t.Fatalf("T1 in list: got %d relations, want 1", len(rels))
-			}
-			assertRelationKind(t, rels[0], "blocks", t2id)
-		case t2id:
-			if len(rels) != 1 {
-				t.Fatalf("T2 in list: got %d relations, want 1", len(rels))
-			}
-			assertRelationKind(t, rels[0], "blocked_by", t1id)
+		resp := doRequest(t, env, "POST", "/spaces/rel-create/tasks/"+t1id+"/relations", `{"kind":"blocks","relatedTaskId":"`+t2id+`"}`)
+		assertStatus(t, resp, http.StatusCreated)
+		var rel map[string]any
+		readJSON(t, resp, &rel)
+		if rel["kind"] != "blocks" {
+			t.Fatalf("got kind %v, want blocks", rel["kind"])
 		}
-	}
-}
+		if rel["relatedTaskId"] != t2id {
+			t.Fatalf("got relatedTaskId %v, want %v", rel["relatedTaskId"], t2id)
+		}
 
-func TestTaskRelationsEmptyByDefault(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+		rels1 := assertTaskRelations(t, env, "rel-create", t1id, 1)
+		assertRelationKind(t, rels1[0], "blocks", t2id)
+		rels2 := assertTaskRelations(t, env, "rel-create", t2id, 1)
+		assertRelationKind(t, rels2[0], "blocked_by", t1id)
+	})
 
-	createSpace(t, env, "empty-rel", "Empty Rel Test")
-	task := createTask(t, env, "empty-rel", `{"title":"Task 1"}`)
+	t.Run("symmetric", func(t *testing.T) {
+		createSpace(t, env, "rel-symmetric", "Symmetric Test")
+		t1 := createTask(t, env, "rel-symmetric", `{"title":"Task 1"}`)
+		t2 := createTask(t, env, "rel-symmetric", `{"title":"Task 2"}`)
+		t1id, t2id := jsonAs[string](t, t1["id"]), jsonAs[string](t, t2["id"])
+		createRelation(t, env, "rel-symmetric", t1id, "relates_to", t2id)
+		assertRelationKind(t, assertTaskRelations(t, env, "rel-symmetric", t1id, 1)[0], "relates_to", t2id)
+		assertRelationKind(t, assertTaskRelations(t, env, "rel-symmetric", t2id, 1)[0], "relates_to", t1id)
+	})
 
-	// Check both create response and GET response.
-	rels := jsonAs[[]any](t, task["relations"])
-	if len(rels) != 0 {
-		t.Fatalf("create response: got %d relations, want 0", len(rels))
-	}
-	assertTaskRelations(t, env, "empty-rel", jsonAs[string](t, task["id"]), 0)
-}
+	t.Run("delete", func(t *testing.T) {
+		createSpace(t, env, "rel-delete", "Delete Test")
+		t1 := createTask(t, env, "rel-delete", `{"title":"Task 1"}`)
+		t2 := createTask(t, env, "rel-delete", `{"title":"Task 2"}`)
+		t1id, t2id := jsonAs[string](t, t1["id"]), jsonAs[string](t, t2["id"])
+		createRelation(t, env, "rel-delete", t1id, "blocks", t2id)
+		assertStatusClose(t, doRequest(t, env, "DELETE", "/spaces/rel-delete/tasks/"+t1id+"/relations/blocks/"+t2id, ""), http.StatusNoContent)
+		assertTaskRelations(t, env, "rel-delete", t1id, 0)
+		assertTaskRelations(t, env, "rel-delete", t2id, 0)
+	})
 
-func TestTaskRelationsNonMemberRejected(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+	t.Run("delete from other side", func(t *testing.T) {
+		createSpace(t, env, "rel-delete-other", "Delete Other Side Test")
+		t1 := createTask(t, env, "rel-delete-other", `{"title":"Task 1"}`)
+		t2 := createTask(t, env, "rel-delete-other", `{"title":"Task 2"}`)
+		t1id, t2id := jsonAs[string](t, t1["id"]), jsonAs[string](t, t2["id"])
+		createRelation(t, env, "rel-delete-other", t1id, "blocks", t2id)
+		assertStatusClose(t, doRequest(t, env, "DELETE", "/spaces/rel-delete-other/tasks/"+t2id+"/relations/blocked_by/"+t1id, ""), http.StatusNoContent)
+		assertTaskRelations(t, env, "rel-delete-other", t1id, 0)
+		assertTaskRelations(t, env, "rel-delete-other", t2id, 0)
+	})
 
-	createSpace(t, env, "perm-test", "Permission Test")
-	t1 := createTask(t, env, "perm-test", `{"title":"Task 1"}`)
-	t2 := createTask(t, env, "perm-test", `{"title":"Task 2"}`)
+	t.Run("delete non existent", func(t *testing.T) {
+		createSpace(t, env, "rel-delete-missing", "Delete Non-Existent")
+		t1 := createTask(t, env, "rel-delete-missing", `{"title":"Task 1"}`)
+		t2 := createTask(t, env, "rel-delete-missing", `{"title":"Task 2"}`)
+		assertStatusClose(t, doRequest(t, env, "DELETE", "/spaces/rel-delete-missing/tasks/"+jsonAs[string](t, t1["id"])+"/relations/blocks/"+jsonAs[string](t, t2["id"]), ""), http.StatusNotFound)
+	})
 
-	// Create a non-member user.
-	nonMemberToken := createTestUser(t, env, "outsider@example.com", "Outsider", "password")
+	t.Run("self rejected", func(t *testing.T) {
+		createSpace(t, env, "rel-self", "Self Test")
+		t1 := createTask(t, env, "rel-self", `{"title":"Task 1"}`)
+		t1id := jsonAs[string](t, t1["id"])
+		resp := doRequest(t, env, "POST", "/spaces/rel-self/tasks/"+t1id+"/relations", `{"kind":"blocks","relatedTaskId":"`+t1id+`"}`)
+		assertStatusClose(t, resp, http.StatusBadRequest)
+	})
 
-	// Non-member should not be able to create relations.
-	resp := doRequestAs(t, env, nonMemberToken, "POST", "/spaces/perm-test/tasks/"+jsonAs[string](t, t1["id"])+"/relations",
-		`{"kind":"blocks","relatedTaskId":"`+jsonAs[string](t, t2["id"])+`"}`)
-	assertStatusClose(t, resp, http.StatusNotFound)
-}
+	t.Run("cross space rejected", func(t *testing.T) {
+		createSpace(t, env, "rel-space-a", "Space A")
+		createSpace(t, env, "rel-space-b", "Space B")
+		t1 := createTask(t, env, "rel-space-a", `{"title":"Task 1"}`)
+		t2 := createTask(t, env, "rel-space-b", `{"title":"Task 2"}`)
+		resp := doRequest(t, env, "POST", "/spaces/rel-space-a/tasks/"+jsonAs[string](t, t1["id"])+"/relations", `{"kind":"blocks","relatedTaskId":"`+jsonAs[string](t, t2["id"])+`"}`)
+		assertStatusClose(t, resp, http.StatusNotFound)
+	})
 
-func TestTaskRelationsCascadeOnTaskDelete(t *testing.T) {
-	t.Parallel()
-	env := setupTestServer(t)
+	t.Run("non existent task", func(t *testing.T) {
+		createSpace(t, env, "rel-missing-task", "Non-Existent Test")
+		t1 := createTask(t, env, "rel-missing-task", `{"title":"Task 1"}`)
+		resp := doRequest(t, env, "POST", "/spaces/rel-missing-task/tasks/"+jsonAs[string](t, t1["id"])+"/relations", `{"kind":"blocks","relatedTaskId":"T99999"}`)
+		assertStatusClose(t, resp, http.StatusNotFound)
+	})
 
-	createSpace(t, env, "cascade-rel", "Cascade Test")
-	t1 := createTask(t, env, "cascade-rel", `{"title":"Task 1"}`)
-	t2 := createTask(t, env, "cascade-rel", `{"title":"Task 2"}`)
-	t2id := jsonAs[string](t, t2["id"])
+	t.Run("duplicate rejected", func(t *testing.T) {
+		createSpace(t, env, "rel-dup", "Dup Test")
+		t1 := createTask(t, env, "rel-dup", `{"title":"Task 1"}`)
+		t2 := createTask(t, env, "rel-dup", `{"title":"Task 2"}`)
+		t1id, t2id := jsonAs[string](t, t1["id"]), jsonAs[string](t, t2["id"])
+		createRelation(t, env, "rel-dup", t1id, "blocks", t2id)
+		resp := doRequest(t, env, "POST", "/spaces/rel-dup/tasks/"+t1id+"/relations", `{"kind":"blocks","relatedTaskId":"`+t2id+`"}`)
+		assertStatusClose(t, resp, http.StatusConflict)
+	})
 
-	createRelation(t, env, "cascade-rel", jsonAs[string](t, t1["id"]), "blocks", t2id)
+	t.Run("duplicate via inverse", func(t *testing.T) {
+		createSpace(t, env, "rel-dup-inverse", "Dup Inverse Test")
+		t1 := createTask(t, env, "rel-dup-inverse", `{"title":"Task 1"}`)
+		t2 := createTask(t, env, "rel-dup-inverse", `{"title":"Task 2"}`)
+		t1id, t2id := jsonAs[string](t, t1["id"]), jsonAs[string](t, t2["id"])
+		createRelation(t, env, "rel-dup-inverse", t1id, "blocks", t2id)
+		resp := doRequest(t, env, "POST", "/spaces/rel-dup-inverse/tasks/"+t2id+"/relations", `{"kind":"blocked_by","relatedTaskId":"`+t1id+`"}`)
+		assertStatusClose(t, resp, http.StatusConflict)
+	})
 
-	// Delete T1.
-	assertStatusClose(t, doRequest(t, env, "DELETE", "/spaces/cascade-rel/tasks/"+jsonAs[string](t, t1["id"]), ""), http.StatusNoContent)
+	t.Run("create via blocked by", func(t *testing.T) {
+		createSpace(t, env, "rel-blocked-by", "Blocked By Test")
+		t1 := createTask(t, env, "rel-blocked-by", `{"title":"Task 1"}`)
+		t2 := createTask(t, env, "rel-blocked-by", `{"title":"Task 2"}`)
+		t1id, t2id := jsonAs[string](t, t1["id"]), jsonAs[string](t, t2["id"])
+		createRelation(t, env, "rel-blocked-by", t2id, "blocked_by", t1id)
+		assertRelationKind(t, assertTaskRelations(t, env, "rel-blocked-by", t1id, 1)[0], "blocks", t2id)
+		assertRelationKind(t, assertTaskRelations(t, env, "rel-blocked-by", t2id, 1)[0], "blocked_by", t1id)
+	})
 
-	// T2 should have no relations.
-	assertTaskRelations(t, env, "cascade-rel", t2id, 0)
+	t.Run("parent child", func(t *testing.T) {
+		createSpace(t, env, "rel-parent-child", "Parent Child Test")
+		parent := createTask(t, env, "rel-parent-child", `{"title":"Parent"}`)
+		child := createTask(t, env, "rel-parent-child", `{"title":"Child"}`)
+		parentID, childID := jsonAs[string](t, parent["id"]), jsonAs[string](t, child["id"])
+		createRelation(t, env, "rel-parent-child", childID, "child_of", parentID)
+		assertRelationKind(t, assertTaskRelations(t, env, "rel-parent-child", parentID, 1)[0], "parent_of", childID)
+		assertRelationKind(t, assertTaskRelations(t, env, "rel-parent-child", childID, 1)[0], "child_of", parentID)
+	})
+
+	t.Run("duplicates kind", func(t *testing.T) {
+		createSpace(t, env, "rel-duplicates", "Duplicates Kind Test")
+		t1 := createTask(t, env, "rel-duplicates", `{"title":"Task 1"}`)
+		t2 := createTask(t, env, "rel-duplicates", `{"title":"Task 2"}`)
+		t1id, t2id := jsonAs[string](t, t1["id"]), jsonAs[string](t, t2["id"])
+		createRelation(t, env, "rel-duplicates", t1id, "duplicates", t2id)
+		assertRelationKind(t, assertTaskRelations(t, env, "rel-duplicates", t1id, 1)[0], "duplicates", t2id)
+		assertRelationKind(t, assertTaskRelations(t, env, "rel-duplicates", t2id, 1)[0], "duplicates", t1id)
+	})
+
+	t.Run("in list response", func(t *testing.T) {
+		createSpace(t, env, "rel-list", "List Rel Test")
+		t1 := createTask(t, env, "rel-list", `{"title":"Task 1"}`)
+		t2 := createTask(t, env, "rel-list", `{"title":"Task 2"}`)
+		t1id, t2id := jsonAs[string](t, t1["id"]), jsonAs[string](t, t2["id"])
+		createRelation(t, env, "rel-list", t1id, "blocks", t2id)
+
+		resp := doRequest(t, env, "GET", "/spaces/rel-list/tasks", "")
+		assertStatus(t, resp, http.StatusOK)
+		var page map[string]any
+		readJSON(t, resp, &page)
+		items := jsonAs[[]any](t, page["items"])
+		for _, item := range items {
+			task := jsonAs[map[string]any](t, item)
+			rels := jsonAs[[]any](t, task["relations"])
+			switch task["id"] {
+			case t1id:
+				if len(rels) != 1 {
+					t.Fatalf("T1 in list: got %d relations, want 1", len(rels))
+				}
+				assertRelationKind(t, rels[0], "blocks", t2id)
+			case t2id:
+				if len(rels) != 1 {
+					t.Fatalf("T2 in list: got %d relations, want 1", len(rels))
+				}
+				assertRelationKind(t, rels[0], "blocked_by", t1id)
+			}
+		}
+	})
+
+	t.Run("empty by default", func(t *testing.T) {
+		createSpace(t, env, "rel-empty", "Empty Rel Test")
+		task := createTask(t, env, "rel-empty", `{"title":"Task 1"}`)
+		rels := jsonAs[[]any](t, task["relations"])
+		if len(rels) != 0 {
+			t.Fatalf("create response: got %d relations, want 0", len(rels))
+		}
+		assertTaskRelations(t, env, "rel-empty", jsonAs[string](t, task["id"]), 0)
+	})
+
+	t.Run("non member rejected", func(t *testing.T) {
+		createSpace(t, env, "rel-perm", "Permission Test")
+		t1 := createTask(t, env, "rel-perm", `{"title":"Task 1"}`)
+		t2 := createTask(t, env, "rel-perm", `{"title":"Task 2"}`)
+		nonMemberToken := createTestUser(t, env, "rel-outsider@example.com", "Outsider", "password")
+		resp := doRequestAs(t, env, nonMemberToken, "POST", "/spaces/rel-perm/tasks/"+jsonAs[string](t, t1["id"])+"/relations", `{"kind":"blocks","relatedTaskId":"`+jsonAs[string](t, t2["id"])+`"}`)
+		assertStatusClose(t, resp, http.StatusNotFound)
+	})
+
+	t.Run("cascade on task delete", func(t *testing.T) {
+		createSpace(t, env, "rel-cascade", "Cascade Test")
+		t1 := createTask(t, env, "rel-cascade", `{"title":"Task 1"}`)
+		t2 := createTask(t, env, "rel-cascade", `{"title":"Task 2"}`)
+		t2id := jsonAs[string](t, t2["id"])
+		createRelation(t, env, "rel-cascade", jsonAs[string](t, t1["id"]), "blocks", t2id)
+		assertStatusClose(t, doRequest(t, env, "DELETE", "/spaces/rel-cascade/tasks/"+jsonAs[string](t, t1["id"]), ""), http.StatusNoContent)
+		assertTaskRelations(t, env, "rel-cascade", t2id, 0)
+	})
 }
