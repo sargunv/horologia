@@ -1,18 +1,13 @@
 import HorologiaCore
 import SwiftUI
 
+@MainActor
 struct ContentView: View {
-  @ObservedObject var storeOwner: IosViewModelStoreOwner
-  let profileViewModelFactory: any ViewModelProviderFactory
+  let viewModel: ProfileViewModel
 
   @State private var uiState: ProfileUiState = ProfileUiStateLoading.shared
 
   var body: some View {
-    let viewModel: ProfileViewModel = storeOwner.viewModel(
-      modelClass: ProfileViewModel.self,
-      factory: profileViewModelFactory
-    )
-
     VStack(alignment: .leading, spacing: 16) {
       Text("Horologia")
         .font(.largeTitle.weight(.bold))

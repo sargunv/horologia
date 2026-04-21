@@ -7,24 +7,21 @@ final class IosViewModelStoreOwner: ObservableObject, ViewModelStoreOwner {
   let viewModelStore: ViewModelStore = ViewModelStore()
 
   func viewModel<T: ViewModel>(
-    modelClass: AnyClass,
+    _ modelType: T.Type,
     factory: any ViewModelProviderFactory,
     key: String? = nil,
     extras: CreationExtras? = nil
   ) -> T {
     do {
       let resolved = try viewModelStore.resolveViewModel(
-        modelClass: modelClass,
+        modelClass: modelType,
         factory: factory,
         key: key,
         extras: extras
       )
-      guard let viewModel = resolved as? T else {
-        fatalError(
-          "Resolved ViewModel has unexpected type \(type(of: resolved)); expected \(T.self)"
-        )
-      }
-      return viewModel
+      // Safe: `resolveViewModel` returns an instance of `modelType` when it succeeds;
+      // a mismatch would indicate a Kotlin-side invariant violation.
+      return resolved as! T
     } catch {
       fatalError("Failed to resolve ViewModel of type \(T.self): \(error)")
     }
