@@ -8,11 +8,13 @@ import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 
 plugins {
   alias(libs.plugins.android.kmp.library)
   alias(libs.plugins.kotlin.multiplatform)
   alias(libs.plugins.kotlin.serialization)
+  alias(libs.plugins.skie)
 }
 
 @CacheableTask
@@ -180,9 +182,16 @@ kotlin {
   }
 
   jvm("desktop") { compilerOptions { jvmTarget = JvmTarget.JVM_17 } }
-  iosArm64()
-  iosSimulatorArm64()
-  iosX64()
+
+  val xcf = XCFramework("HorologiaCore")
+  listOf(iosArm64(), iosSimulatorArm64(), iosX64()).forEach { target ->
+    target.binaries.framework {
+      baseName = "HorologiaCore"
+      isStatic = true
+      xcf.add(this)
+      export(libs.androidx.lifecycle.viewmodel)
+    }
+  }
 
   sourceSets {
     commonMain {
@@ -191,9 +200,14 @@ kotlin {
         implementation(libs.androidx.compose.runtime.annotation)
         implementation(libs.kotlinx.coroutines.core)
         implementation(libs.openapi.kmpgen.companion)
+        api(libs.androidx.lifecycle.viewmodel)
       }
     }
-    commonTest.dependencies { implementation(kotlin("test")) }
+    commonTest.dependencies {
+      implementation(kotlin("test"))
+      implementation(libs.kotlinx.coroutines.test)
+    }
+    val desktopMain by getting { dependencies { implementation(libs.kotlinx.coroutines.swing) } }
   }
 }
 
