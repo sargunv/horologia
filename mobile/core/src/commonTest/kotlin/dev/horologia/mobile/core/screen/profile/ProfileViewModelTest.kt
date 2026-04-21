@@ -6,6 +6,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -83,6 +84,58 @@ class ProfileViewModelTest {
       assertTrue(state is ProfileUiState.Error, "expected Error, got $state")
       assertEquals("Response format mismatch", state.message)
       assertFalse(state.retryable, "permanent errors must not be retryable")
+    }
+
+  @Test
+  fun refreshAfterErrorCyclesBackToLoadingThenSuccess() =
+    runTest(dispatcher) {
+      var callCount = 0
+      val gateway = FakeProfileGateway {
+        when (callCount++) {
+          0 -> FetchProfileResult.Retryable(message = "network blip")
+          else -> FetchProfileResult.Ok(displayName = "Alice")
+        }
+      }
+
+      val viewModel = ProfileViewModel(gateway)
+      testScheduler.advanceUntilIdle()
+      val firstState = viewModel.uiState.value
+      assertTrue(firstState is ProfileUiState.Error, "first call should error, got $firstState")
+
+      viewModel.refresh()
+      assertEquals(ProfileUiState.Loading, viewModel.uiState.value)
+      testScheduler.advanceUntilIdle()
+      assertEquals(ProfileUiState.Success("Alice"), viewModel.uiState.value)
+      assertEquals(2, callCount, "refresh() should re-invoke the gateway")
+    }
+
+  @Test
+  fun concurrentRefreshCancelsInFlightCall() =
+    runTest(dispatcher) {
+      val gate = CompletableDeferred<FetchProfileResult>()
+      var callCount = 0
+      val gateway = FakeProfileGateway {
+        when (callCount++) {
+          0 -> gate.await()
+          else -> FetchProfileResult.Ok(displayName = "Bob")
+        }
+      }
+
+      val viewModel = ProfileViewModel(gateway)
+      // Let the init-time refresh reach gate.await before firing a second refresh.
+      testScheduler.advanceUntilIdle()
+      assertEquals(ProfileUiState.Loading, viewModel.uiState.value)
+      assertEquals(1, callCount, "init should have invoked the gateway once")
+
+      viewModel.refresh()
+      testScheduler.advanceUntilIdle()
+      assertEquals(ProfileUiState.Success("Bob"), viewModel.uiState.value)
+      assertEquals(2, callCount, "second refresh should have invoked the gateway again")
+
+      // Completing the now-cancelled first call should NOT overwrite Bob.
+      gate.complete(FetchProfileResult.Retryable(message = "stale blip"))
+      testScheduler.advanceUntilIdle()
+      assertEquals(ProfileUiState.Success("Bob"), viewModel.uiState.value)
     }
 
   private class FakeProfileGateway(private val result: suspend () -> FetchProfileResult) :
