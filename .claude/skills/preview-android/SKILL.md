@@ -86,6 +86,67 @@ proof (a screenshot) or runtime evidence (logcat) that an Android change works.
 
    Then `Read` the PNG to inspect.
 
+## Drive interaction
+
+`adb shell input` and `uiautomator` cover scripted taps, typing, and basic assertions from the CLI.
+Good for smoke tests and for exercising flows that `screencap` alone can't reach.
+
+- **Dump the view hierarchy** to find a target element's on-screen bounds or resource id:
+
+  ```bash
+  "$ADB" shell uiautomator dump /sdcard/window_dump.xml
+  "$ADB" pull /sdcard/window_dump.xml /tmp/window_dump.xml
+  ```
+
+  The XML contains `bounds="[x1,y1][x2,y2]"` for each node. Tap the center of the bounds.
+
+- **Tap** at screen coordinates (after uiautomator tells you where):
+
+  ```bash
+  "$ADB" shell input tap <x> <y>
+  ```
+
+- **Type text** (the focused field receives it):
+
+  ```bash
+  "$ADB" shell input text "hello%sworld"   # %s is the escape for space
+  ```
+
+- **Key events** — Enter, Back, Home, volume, etc.:
+
+  ```bash
+  "$ADB" shell input keyevent KEYCODE_ENTER
+  "$ADB" shell input keyevent KEYCODE_BACK
+  ```
+
+  Full list: `adb shell input keyevent --longpress ...` docs via `adb shell input` with no args.
+
+- **Swipe / drag** over N milliseconds:
+
+  ```bash
+  "$ADB" shell input swipe <x1> <y1> <x2> <y2> 300
+  ```
+
+- **Clipboard-based paste** (when `input text` mis-escapes or is too slow for long strings):
+
+  ```bash
+  "$ADB" shell service call clipboard 2 i32 1 i32 1 i32 1 s16 "long string" \
+    i32 1 i32 0 i32 0 i32 0
+  "$ADB" shell input keyevent KEYCODE_PASTE
+  ```
+
+  (Ugly; reach for it only when `input text` fails.)
+
+- **Deep link** — fastest way to land on a specific screen with params:
+
+  ```bash
+  "$ADB" shell am start -W -a android.intent.action.VIEW -d "https://example.com/path"
+  ```
+
+A typical scripted flow is: dump → tap → screenshot → assert pixel or dump again. For anything
+richer (multi-step flows with retries, flakiness tolerance), reach for Espresso or Maestro and flag
+the need.
+
 ## Common variations
 
 - **Tail the app's logcat** (essential when the UI shows a generic error state and you need the real
