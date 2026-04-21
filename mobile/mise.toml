@@ -1,6 +1,9 @@
 [tools]
 "github:yonaskolb/XcodeGen" = "latest"
 
+# The android-sdk mise plugin only puts cmdline-tools on PATH, so the tasks
+# below reach for `emulator` and `adb` via $ANDROID_HOME directly.
+
 [tasks._android-sdk-components]
 description = "Provision Android SDK components into the mise-managed SDK root"
 hide = true
@@ -8,13 +11,28 @@ run = """
 yes | sdkmanager --licenses >/dev/null
 sdkmanager \
   "platform-tools" \
+  "emulator" \
   "build-tools;$ANDROID_BUILD_TOOLS" \
-  "platforms;android-$ANDROID_COMPILE_SDK"
+  "platforms;android-$ANDROID_COMPILE_SDK" \
+  "system-images;android-$ANDROID_COMPILE_SDK;google_apis;arm64-v8a"
+"""
+
+[tasks._android-avd]
+description = "Create the horologia AVD if it doesn't already exist"
+hide = true
+depends = ["_android-sdk-components"]
+run = """
+if ! "$ANDROID_HOME/emulator/emulator" -list-avds | grep -qx horologia; then
+  echo "no" | avdmanager create avd \
+    --name horologia \
+    --package "system-images;android-$ANDROID_COMPILE_SDK;google_apis;arm64-v8a" \
+    --device pixel_9_pro
+fi
 """
 
 [tasks.setup]
-description = "Install mobile prerequisites, including Android SDK components"
-depends = ["_android-sdk-components"]
+description = "Install mobile prerequisites, including Android SDK + horologia AVD"
+depends = ["_android-sdk-components", "_android-avd"]
 
 [tasks."build:core"]
 description = "Build the shared mobile core for host-safe targets"
@@ -45,6 +63,16 @@ run = "./gradlew :compose-app:assembleDebug"
 [tasks."android:installDebug"]
 description = "Install the Android debug app"
 run = "./gradlew :compose-app:installDebug"
+
+[tasks."android:emulator"]
+description = "Boot the horologia Android emulator (foreground; Ctrl-C to shut down)"
+depends = ["_android-avd"]
+run = "\"$ANDROID_HOME/emulator/emulator\" -avd horologia -netdelay none -netspeed full"
+
+[tasks."android:run"]
+description = "Install the debug APK on the running emulator and launch MainActivity"
+depends = ["android:installDebug"]
+run = "\"$ANDROID_HOME/platform-tools/adb\" shell am start -n dev.horologia.mobile.compose/.MainActivity"
 
 [tasks."desktop:run"]
 description = "Run the desktop app"
