@@ -1,6 +1,6 @@
 ---
 name: preview-ios
-description: Use when the user asks you to run, preview, install, screenshot, or manually verify the iOS app on a simulator. Covers the full CLI loop: boot simulator, build, install, launch, capture screenshot, inspect logs. Not a substitute for Xcode — prefers `xcrun simctl` + `xcodebuild` over the GUI.
+description: Use when the user asks you to run, preview, install, screenshot, or manually verify the iOS app on a simulator. Covers the full CLI loop: boot simulator, build, install, launch, capture screenshot, inspect logs.
 ---
 
 # Preview / verify the iOS app on a simulator
