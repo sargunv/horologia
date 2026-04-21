@@ -1,0 +1,10 @@
+// Dev configuration for the iosApp target. Safe to commit: the default dev
+// token is blank, which forces the app into its Error state until a real
+// token is provided locally. Override locally by editing this file or by
+// injecting values via the environment before running xcodebuild.
+//
+// TODO: Remove once real auth flow is implemented —
+//   POST /app/auth/login → cookie session → POST /api/auth/tokens (bearer token).
+
+HOROLOGIA_BASE_URL = http:$()//localhost:8080/api/
+HOROLOGIA_DEV_TOKEN =

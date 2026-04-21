@@ -1,0 +1,50 @@
+import HorologiaCore
+import SwiftUI
+
+struct ContentView: View {
+  @ObservedObject var storeOwner: IosViewModelStoreOwner
+  let profileViewModelFactory: any ViewModelProviderFactory
+
+  @State private var uiState: ProfileUiState = ProfileUiStateLoading.shared
+
+  var body: some View {
+    let viewModel: ProfileViewModel = storeOwner.viewModel(
+      modelClass: ProfileViewModel.self,
+      factory: profileViewModelFactory
+    )
+
+    VStack(alignment: .leading, spacing: 16) {
+      Text("Horologia")
+        .font(.largeTitle.weight(.bold))
+
+      switch onEnum(of: uiState) {
+      case .loading:
+        ProgressView()
+          .progressViewStyle(.circular)
+          .padding(.top, 8)
+
+      case .success(let success):
+        Text("Signed in as \(success.displayName)")
+          .font(.title3)
+
+      case .error(let error):
+        Text(error.message)
+          .font(.body)
+          .foregroundStyle(.red)
+        if error.retryable {
+          Button("Retry") {
+            viewModel.refresh()
+          }
+          .buttonStyle(.borderedProminent)
+        }
+      }
+    }
+    .padding(24)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    .task {
+      for await newState in viewModel.uiState {
+        uiState = newState
+      }
+    }
+  }
+}

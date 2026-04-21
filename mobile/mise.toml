@@ -1,3 +1,6 @@
+[tools]
+"github:yonaskolb/XcodeGen" = "latest"
+
 [tasks._android-sdk-components]
 description = "Provision Android SDK components into the mise-managed SDK root"
 hide = true
@@ -32,8 +35,8 @@ depends = ["_android-sdk-components"]
 run = "./gradlew :core:desktopJar :compose-app:desktopJar :compose-app:assembleDebug"
 
 [tasks.test]
-description = "Compile the shared mobile core test sources for host-safe targets"
-run = "./gradlew :core:compileTestKotlinDesktop"
+description = "Run the shared mobile core tests on desktop JVM"
+run = "./gradlew :core:desktopTest"
 
 [tasks."android:assembleDebug"]
 description = "Assemble the Android debug app"
@@ -47,9 +50,27 @@ run = "./gradlew :compose-app:installDebug"
 description = "Run the desktop app"
 run = "./gradlew :compose-app:run"
 
+[tasks."ios:gen"]
+description = "Generate the iosApp Xcode project from project.yml"
+run = "cd iosApp && xcodegen"
+
+[tasks."ios:xcframework"]
+description = "Assemble the HorologiaCore XCFramework for iOS"
+run = "./gradlew :core:assembleHorologiaCoreXCFramework"
+
+[tasks."ios:build"]
+description = "Build the iosApp for the iOS simulator"
+depends = ["ios:gen"]
+run = "xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -configuration Debug CODE_SIGNING_ALLOWED=NO build"
+
+[tasks."ios:open"]
+description = "Open the iosApp Xcode project"
+depends = ["ios:gen"]
+run = "open iosApp/iosApp.xcodeproj"
+
 [tasks.check]
 description = "Run host-safe shared mobile checks"
-run = "./gradlew :core:compileKotlinDesktop :core:compileTestKotlinDesktop :compose-app:compileKotlinDesktop"
+run = "./gradlew :core:compileKotlinDesktop :core:desktopTest :compose-app:compileKotlinDesktop"
 
 [tasks.fix]
 description = "Format Kotlin and Gradle files"
