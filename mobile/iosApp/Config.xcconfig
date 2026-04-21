@@ -1,7 +1,17 @@
-// Dev configuration for the iosApp target. Safe to commit: the default dev
-// token is blank, which forces the app into its Error state until a real
-// token is provided locally. Override locally by editing this file or by
-// injecting values via the environment before running xcodebuild.
+// Dev configuration for the iosApp target. Safe to commit with the defaults
+// below: a blank HOROLOGIA_DEV_TOKEN forces the app into its Error state
+// until a real token is supplied locally.
+//
+// To run locally against a dev server:
+//   1. `mise run dev` from the repo root.
+//   2. Mint a bearer token: log in as admin (`admin@localhost` / `password`)
+//      and call POST /api/auth/tokens, then copy the token into
+//      HOROLOGIA_DEV_TOKEN below.
+//   3. Re-run `mise run //mobile:ios:build` or Cmd-R from Xcode.
+//
+// This file is tracked in git — do NOT commit a real token. If you need to
+// share a value persistently, set it via an environment override on the
+// xcodebuild invocation rather than editing this file.
 //
 // TODO: Remove once real auth flow is implemented —
 //   POST /app/auth/login → cookie session → POST /api/auth/tokens (bearer token).
