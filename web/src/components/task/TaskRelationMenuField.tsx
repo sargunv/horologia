@@ -1,21 +1,24 @@
-import { Menu, Portal } from "@skeletonlabs/skeleton-react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ChevronRight, Link2, LoaderCircle, X } from "lucide-react";
-import { useDeferredValue, useMemo } from "react";
+import { ChevronRight, Link2, X } from "lucide-react";
+import { type ReactNode, useDeferredValue, useMemo } from "react";
 import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
 import { useAddRelation, useDeleteRelation } from "../../lib/mutations.ts";
 import { taskSearchQueryOptions } from "../../lib/queries.ts";
 import { useMenuSearch } from "../../lib/useMenuSearch.ts";
+import {
+  DropdownMenuItem,
+  DropdownMenuRoot,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+} from "../../ui/DropdownMenu.tsx";
 import { FieldPill } from "../FieldPill.tsx";
-import { SearchableMenuContent } from "../SearchableMenuContent.tsx";
+import { SearchableMenuContent, SearchableSubMenuContent } from "../SearchableMenuContent.tsx";
 import { ErrorAlert } from "../space-settings/ErrorAlert.tsx";
 
 type TaskRelation = components["schemas"]["TaskRelation"];
 type TaskRelationKind = components["schemas"]["TaskRelationKind"];
-
-const Z_SUBMENU = "z-10";
 
 const KIND_LABELS: Record<TaskRelationKind, string> = {
   parent_of: "Parent of",
@@ -48,10 +51,12 @@ function TaskPickerSubMenu({
   spaceSlug,
   currentTaskId,
   onSelect,
+  triggerContent,
 }: {
   spaceSlug: string;
   currentTaskId: string;
   onSelect: (relatedTaskId: string) => void;
+  triggerContent: ReactNode;
 }) {
   const search = useMenuSearch();
   const deferredQuery = useDeferredValue(search.query.trim());
@@ -95,39 +100,41 @@ function TaskPickerSubMenu({
   const error = deferredQuery.length === 0 ? initialError : searchError;
 
   return (
-    <SearchableMenuContent
-      inputProps={search.inputProps}
-      placeholder={`Search tasks...`}
-      className={Z_SUBMENU}
-    >
-      {isFetching ? (
-        <div className="flex items-center gap-2 px-3 py-2 text-sm text-surface-500">
-          <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
-          {deferredQuery.length === 0 ? "Loading tasks…" : "Searching tasks…"}
-        </div>
-      ) : error ? (
-        <div className="px-3 py-2 text-sm text-error-500">
-          {getErrorMessage(error, "Task search failed")}
-        </div>
-      ) : results.length === 0 ? (
-        <div className="px-3 py-2 text-sm text-surface-500">No matching tasks</div>
-      ) : (
-        results.map((result) => (
-          <Menu.Item
-            key={result.id}
-            value={`task-${result.id}`}
-            className="flex flex-col items-start gap-1 px-3 py-2 text-left"
-            onClick={() => onSelect(result.id)}
-          >
-            <div className="flex w-full items-center gap-2">
-              <Menu.ItemText>{result.title}</Menu.ItemText>
-              <span className="ml-auto text-xs text-surface-500">{result.status}</span>
-            </div>
-            <div className="font-mono text-xs text-surface-500">{result.id}</div>
-          </Menu.Item>
-        ))
-      )}
-    </SearchableMenuContent>
+    <DropdownMenuSub {...search.menuProps}>
+      <DropdownMenuSubTrigger>{triggerContent}</DropdownMenuSubTrigger>
+      <SearchableSubMenuContent
+        search={search}
+        placeholder="Search tasks..."
+        inputLabel="Search tasks"
+      >
+        {isFetching ? (
+          <div className="flex items-center gap-2 px-3 py-2 text-sm text-base-content/60">
+            <span className="loading loading-spinner loading-xs" />
+            {deferredQuery.length === 0 ? "Loading tasks…" : "Searching tasks…"}
+          </div>
+        ) : error ? (
+          <div className="px-3 py-2 text-sm text-error">
+            {getErrorMessage(error, "Task search failed")}
+          </div>
+        ) : results.length === 0 ? (
+          <div className="px-3 py-2 text-sm text-base-content/60">No matching tasks</div>
+        ) : (
+          results.map((result) => (
+            <DropdownMenuItem
+              key={result.id}
+              className="flex flex-col items-start gap-1 px-3 py-2 text-left"
+              onSelect={() => onSelect(result.id)}
+            >
+              <div className="flex w-full items-center gap-2">
+                <span>{result.title}</span>
+                <span className="ml-auto text-xs text-base-content/60">{result.status}</span>
+              </div>
+              <div className="font-mono text-xs text-base-content/60">{result.id}</div>
+            </DropdownMenuItem>
+          ))
+        )}
+      </SearchableSubMenuContent>
+    </DropdownMenuSub>
   );
 }
 
@@ -157,49 +164,41 @@ export function TaskRelationMenuField({
 
   return (
     <div className="flex flex-col gap-1">
-      <Menu {...search.menuProps} closeOnSelect={false}>
+      <DropdownMenuRoot {...search.menuProps}>
         <FieldPill
           icon={<Link2 className="size-3.5" aria-hidden="true" />}
           label="Relations"
           value={displayValue}
         />
-        <Portal>
-          <Menu.Positioner>
-            <SearchableMenuContent
-              inputProps={search.inputProps}
-              placeholder="Search relation types..."
-            >
-              {kindItems.length === 0 ? (
-                <div className="px-3 py-2 text-sm text-surface-500">No matching relation types</div>
-              ) : (
-                kindItems.map((kind) => (
-                  <Menu key={kind} typeahead={false}>
-                    <Menu.TriggerItem value={kind} className="justify-start gap-2 text-sm">
-                      <span className="size-4" />
-                      <Menu.ItemText>{KIND_LABELS[kind]}</Menu.ItemText>
-                      <Menu.ItemIndicator className="ml-auto">
-                        <ChevronRight className="size-4" />
-                      </Menu.ItemIndicator>
-                    </Menu.TriggerItem>
-                    <Portal>
-                      <Menu.Positioner>
-                        <TaskPickerSubMenu
-                          spaceSlug={spaceSlug}
-                          currentTaskId={taskId}
-                          onSelect={(relatedTaskId) => {
-                            addMutation.reset();
-                            addMutation.mutate({ kind, relatedTaskId });
-                          }}
-                        />
-                      </Menu.Positioner>
-                    </Portal>
-                  </Menu>
-                ))
-              )}
-            </SearchableMenuContent>
-          </Menu.Positioner>
-        </Portal>
-      </Menu>
+        <SearchableMenuContent
+          search={search}
+          placeholder="Search relation types..."
+          inputLabel="Search relation types"
+        >
+          {kindItems.length === 0 ? (
+            <div className="px-3 py-2 text-sm text-base-content/60">No matching relation types</div>
+          ) : (
+            kindItems.map((kind) => (
+              <TaskPickerSubMenu
+                key={kind}
+                spaceSlug={spaceSlug}
+                currentTaskId={taskId}
+                onSelect={(relatedTaskId) => {
+                  addMutation.reset();
+                  addMutation.mutate({ kind, relatedTaskId });
+                }}
+                triggerContent={
+                  <>
+                    <span className="size-4" />
+                    <span>{KIND_LABELS[kind]}</span>
+                    <ChevronRight className="ml-auto size-4" aria-hidden="true" />
+                  </>
+                }
+              />
+            ))
+          )}
+        </SearchableMenuContent>
+      </DropdownMenuRoot>
       {addMutation.error && <ErrorAlert message={addMutation.error.message} />}
     </div>
   );
@@ -220,8 +219,8 @@ function RelationChip({
   return (
     <div className="flex flex-col gap-1">
       <div
-        className={`chip gap-1.5 pr-1 text-sm ${
-          isSystemManaged ? "preset-tonal-warning" : "preset-tonal-surface"
+        className={`badge gap-1.5 pr-1 ${
+          isSystemManaged ? "badge-warning badge-soft" : "badge-soft"
         }`}
       >
         <span className="text-xs opacity-70">{KIND_LABELS[relation.kind]}</span>
@@ -235,12 +234,15 @@ function RelationChip({
         {!isSystemManaged && (
           <button
             type="button"
-            className="rounded-base p-0.5 opacity-60 transition-opacity hover:opacity-100"
+            className="rounded-full p-0.5 opacity-60 transition-opacity hover:opacity-100 hover:bg-base-content/10"
             aria-label={`Remove ${KIND_LABELS[relation.kind]} relation to ${relation.relatedTaskId}`}
             disabled={deleteMutation.isPending}
             onClick={() => {
               deleteMutation.reset();
-              deleteMutation.mutate({ kind: relation.kind, relatedTaskId: relation.relatedTaskId });
+              deleteMutation.mutate({
+                kind: relation.kind,
+                relatedTaskId: relation.relatedTaskId,
+              });
             }}
           >
             <X className="size-3.5" aria-hidden="true" />

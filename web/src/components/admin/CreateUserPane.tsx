@@ -3,6 +3,7 @@ import { ArrowLeft, UserPlus } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
+import { notifyStaleData } from "../../lib/toaster.ts";
 import { ErrorAlert } from "../space-settings/ErrorAlert.tsx";
 import { SettingsSection } from "../space-settings/SettingsSection.tsx";
 
@@ -32,7 +33,12 @@ export function CreateUserPane({
       return data;
     },
     onSuccess: async (data) => {
-      await queryClient.invalidateQueries({ queryKey: ["users"] });
+      try {
+        await queryClient.invalidateQueries({ queryKey: ["users"] });
+      } catch (err) {
+        console.error("Cache invalidation failed after mutation:", err);
+        notifyStaleData();
+      }
       onCreated(data.id);
     },
   });
@@ -47,7 +53,7 @@ export function CreateUserPane({
       <button
         type="button"
         onClick={onBack}
-        className="btn-icon btn-icon-sm preset-outlined-surface-200-800 self-start lg:hidden"
+        className="btn btn-square btn-sm btn-soft self-start lg:hidden"
         aria-label="Back to user list"
       >
         <ArrowLeft className="size-4" aria-hidden="true" />
@@ -60,34 +66,34 @@ export function CreateUserPane({
       >
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <label className="flex flex-col gap-1">
-            <span className="text-surface-600-400 text-sm font-medium">Name</span>
+            <span className="text-base-content/70 text-sm font-medium">Name</span>
             <input
               type="text"
               required
               maxLength={200}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="input preset-outlined-surface-200-800 w-full"
+              className="input w-full"
               placeholder="Alice Johnson"
               disabled={createMutation.isPending}
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-surface-600-400 text-sm font-medium">Email</span>
+            <span className="text-base-content/70 text-sm font-medium">Email</span>
             <input
               type="email"
               required
               maxLength={200}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="input preset-outlined-surface-200-800 w-full"
+              className="input w-full"
               placeholder="alice@example.com"
               disabled={createMutation.isPending}
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-surface-600-400 text-sm font-medium">
-              Password <span className="text-surface-500">(optional)</span>
+            <span className="text-base-content/70 text-sm font-medium">
+              Password <span className="text-base-content/60">(optional)</span>
             </span>
             <input
               type="password"
@@ -95,7 +101,7 @@ export function CreateUserPane({
               maxLength={72}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="input preset-outlined-surface-200-800 w-full"
+              className="input w-full"
               placeholder="Leave blank for OIDC-only"
               disabled={createMutation.isPending}
             />
@@ -117,7 +123,7 @@ export function CreateUserPane({
             <button
               type="submit"
               disabled={createMutation.isPending || !name.trim() || !email.trim()}
-              className="btn preset-filled-primary-500"
+              className="btn btn-primary"
             >
               {createMutation.isPending ? "Creating..." : "Create user"}
             </button>

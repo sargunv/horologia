@@ -12,12 +12,12 @@ export function SettingsSection({
   children?: ReactNode;
 }) {
   return (
-    <div className="card preset-outlined-surface-200-800 flex flex-col gap-4 p-6">
+    <div className="flex flex-col gap-4 rounded-box border border-base-300 bg-base-100 p-6">
       <div className="flex items-center gap-3">
-        <span className="text-surface-600-400">{icon}</span>
+        <span className="text-base-content/70">{icon}</span>
         <div>
           <h2 className="font-medium">{title}</h2>
-          <p className="text-surface-600-400 text-sm">{description}</p>
+          <p className="text-sm text-base-content/70">{description}</p>
         </div>
       </div>
       {children}

@@ -4,6 +4,7 @@ import { CircleAlert } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { apiClient } from "../../../api/client.ts";
 import { notifyStaleData } from "../../../lib/toaster.ts";
+import { Card } from "../../../ui/Card.tsx";
 
 export const Route = createFileRoute("/_authenticated/spaces/new")({
   component: NewSpacePage,
@@ -65,21 +66,21 @@ function NewSpacePage() {
 
   return (
     <div className="mx-auto max-w-3xl p-6">
-      <h1 className="h3">Create space</h1>
-      <p className="text-surface-600-400 mt-1">
+      <h1 className="text-xl font-semibold">Create space</h1>
+      <p className="text-base-content/70 mt-1">
         Spaces are where you organize tasks around a project or team.
       </p>
 
-      <div className="card preset-outlined-surface-200-800 mt-6 flex flex-col gap-6 p-6">
+      <Card className="mt-6 flex flex-col gap-6 p-6">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <label className="flex flex-col gap-1">
-            <span className="text-surface-600-400 text-sm font-medium">Name</span>
+            <span className="text-base-content/70 text-sm font-medium">Name</span>
             <input
               type="text"
               required
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
-              className="input preset-outlined-surface-200-800 w-full"
+              className="input w-full"
               placeholder="My Project"
               maxLength={200}
               disabled={createMutation.isPending}
@@ -87,30 +88,30 @@ function NewSpacePage() {
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-surface-600-400 text-sm font-medium">Slug</span>
+            <span className="text-base-content/70 text-sm font-medium">Slug</span>
             <input
               type="text"
               required
               value={slug}
               onChange={(e) => handleSlugChange(e.target.value)}
-              className="input preset-outlined-surface-200-800 w-full"
+              className="input w-full"
               placeholder="my-project"
               maxLength={100}
               disabled={createMutation.isPending}
             />
-            <span className="text-surface-500 text-xs">
+            <span className="text-base-content/60 text-xs">
               Used in URLs. Auto-derived from name, but you can customize it.
             </span>
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-surface-600-400 text-sm font-medium">
-              Description <span className="text-surface-500 font-normal">(optional)</span>
+            <span className="text-base-content/70 text-sm font-medium">
+              Description <span className="text-base-content/60 font-normal">(optional)</span>
             </span>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="input preset-outlined-surface-200-800 w-full resize-none"
+              className="textarea w-full"
               placeholder="What is this space for?"
               rows={3}
               maxLength={1000}
@@ -119,7 +120,7 @@ function NewSpacePage() {
           </label>
 
           {createMutation.error && (
-            <div className="preset-filled-error-500 flex items-center gap-2 rounded-base px-3 py-2 text-sm">
+            <div role="alert" className="alert alert-error alert-soft text-sm">
               <CircleAlert className="size-4 shrink-0" />
               {createMutation.error.message}
             </div>
@@ -129,16 +130,16 @@ function NewSpacePage() {
             <button
               type="submit"
               disabled={createMutation.isPending}
-              className="btn preset-filled-primary-500 flex-1"
+              className="btn btn-primary flex-1"
             >
               {createMutation.isPending ? "Creating..." : "Create space"}
             </button>
-            <CancelLink to="/spaces" className="btn preset-outlined-surface-200-800">
+            <CancelLink to="/spaces" className="btn btn-soft">
               Cancel
             </CancelLink>
           </div>
         </form>
-      </div>
+      </Card>
     </div>
   );
 }

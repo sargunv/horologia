@@ -5,6 +5,7 @@ import { type FormEvent, useEffect, useState } from "react";
 import { appClient, getApiErrorMessage } from "../api/client.ts";
 import { authConfigQueryOptions } from "../lib/queries.ts";
 import { navigateToTarget } from "../lib/navigation.ts";
+import { Card } from "../ui/Card.tsx";
 
 interface LoginSearch {
   redirect?: string;
@@ -72,17 +73,17 @@ function LoginPage() {
     <div className="flex min-h-svh items-center justify-center p-4">
       <div className="flex w-full max-w-sm flex-col gap-4">
         <div className="flex flex-col items-center gap-1">
-          <h1 className="h1">Horologia</h1>
-          <p className="text-surface-600-400 text-sm">Sign in to your account</p>
+          <h1 className="text-3xl font-bold tracking-tight">Horologia</h1>
+          <p className="text-base-content/70 text-sm">Sign in to your account</p>
         </div>
 
-        <div className="card preset-outlined-surface-200-800 flex flex-col gap-6 p-6">
+        <Card className="flex flex-col gap-6 p-6">
           {isAuthConfigPending ? (
             <div className="flex items-center justify-center py-4">
-              <span className="text-surface-500 text-sm">Loading...</span>
+              <span className="text-base-content/60 text-sm">Loading...</span>
             </div>
           ) : !authConfig?.password.enabled && !authConfig?.oidc.enabled ? (
-            <div className="preset-filled-error-500 flex items-center gap-2 rounded-base px-3 py-2 text-sm">
+            <div role="alert" className="alert alert-error alert-soft text-sm">
               <CircleAlert className="size-4 shrink-0" />
               No authentication methods available
             </div>
@@ -91,13 +92,13 @@ function LoginPage() {
           {authConfig?.password.enabled && (
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <label className="flex flex-col gap-1">
-                <span className="text-surface-600-400 text-sm font-medium">Email</span>
+                <span className="text-base-content/70 text-sm font-medium">Email</span>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="input preset-outlined-surface-200-800 w-full"
+                  className="input w-full"
                   placeholder="you@example.com"
                   autoComplete="email"
                   disabled={loginMutation.isPending}
@@ -105,13 +106,13 @@ function LoginPage() {
               </label>
 
               <label className="flex flex-col gap-1">
-                <span className="text-surface-600-400 text-sm font-medium">Password</span>
+                <span className="text-base-content/70 text-sm font-medium">Password</span>
                 <input
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="input preset-outlined-surface-200-800 w-full"
+                  className="input w-full"
                   placeholder="Enter your password"
                   autoComplete="current-password"
                   disabled={loginMutation.isPending}
@@ -119,7 +120,7 @@ function LoginPage() {
               </label>
 
               {loginMutation.error && (
-                <div className="preset-filled-error-500 flex items-center gap-2 rounded-base px-3 py-2 text-sm">
+                <div role="alert" className="alert alert-error alert-soft text-sm">
                   <CircleAlert className="size-4 shrink-0" />
                   {loginMutation.error.message}
                 </div>
@@ -128,7 +129,7 @@ function LoginPage() {
               <button
                 type="submit"
                 disabled={loginMutation.isPending}
-                className="btn preset-filled-primary-500 w-full"
+                className="btn btn-primary w-full"
               >
                 {loginMutation.isPending ? "Signing in..." : "Sign in"}
               </button>
@@ -137,22 +138,18 @@ function LoginPage() {
 
           {authConfig?.password.enabled && authConfig?.oidc.enabled && (
             <div className="flex items-center gap-3">
-              <hr className="border-surface-200-800 flex-1" />
-              <span className="text-surface-500 text-xs uppercase tracking-wider">or</span>
-              <hr className="border-surface-200-800 flex-1" />
+              <hr className="border-base-300 flex-1" />
+              <span className="text-base-content/60 text-xs uppercase tracking-wider">or</span>
+              <hr className="border-base-300 flex-1" />
             </div>
           )}
 
           {authConfig?.oidc.enabled && (
-            <button
-              type="button"
-              onClick={handleOIDCLogin}
-              className="btn preset-outlined-surface-200-800 w-full"
-            >
+            <button type="button" onClick={handleOIDCLogin} className="btn btn-soft w-full">
               Sign in with {authConfig.oidc.label}
             </button>
           )}
-        </div>
+        </Card>
       </div>
     </div>
   );

@@ -1,24 +1,26 @@
-import { Menu, Portal } from "@skeletonlabs/skeleton-react";
 import { Calendar, Check, ChevronRight, RefreshCw, X } from "lucide-react";
-import { useMemo } from "react";
 import parseDuration from "parse-duration";
+import { type ReactNode, useMemo } from "react";
 import { RRule, Weekday } from "rrule";
 import type { components } from "../../api/schema.d.ts";
-import { FieldPill } from "../FieldPill.tsx";
-import { MENU_ITEM_CLASS, SearchableMenuContent } from "../SearchableMenuContent.tsx";
 import { addDays, formatDateDisplay, parseDateInput, toISODate } from "../../lib/dates.ts";
-import { useMenuSearch } from "../../lib/useMenuSearch.ts";
 import { useTaskPatch } from "../../lib/mutations.ts";
+import { useMenuSearch } from "../../lib/useMenuSearch.ts";
+import {
+  DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuRoot,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+} from "../../ui/DropdownMenu.tsx";
+import { FieldPill } from "../FieldPill.tsx";
+import { SearchableMenuContent, SearchableSubMenuContent } from "../SearchableMenuContent.tsx";
 import { ErrorAlert } from "../space-settings/ErrorAlert.tsx";
 
 type TaskRecurrenceType = components["schemas"]["TaskRecurrenceType"];
-
-// Zag.js reads z-index from Menu.Content's computed style and propagates
-// it to the positioner via --z-index. Apply z-index to Content (not
-// Positioner) so Zag picks it up. Child portals render before parent
-// portals in DOM, so deeper menus need higher z-index.
-const Z_SUBMENU = "z-10";
-const Z_DETAIL = "z-20";
 
 type FreqCode = "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
 
@@ -132,6 +134,10 @@ const MONTH_LABELS = [
   "December",
 ];
 
+// Toggle chip button classes for freq-specific grid selectors
+const CHIP_ON = "bg-primary text-primary-content";
+const CHIP_OFF = "bg-base-200 text-base-content hover:bg-base-300";
+
 // ─── RRULE Parsing ──────────────────────────────────────────────────────────
 
 export interface ParsedRule {
@@ -200,7 +206,16 @@ export function parseRRule(rruleStr: string | null): ParsedRule {
       until = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
     }
 
-    return { freq, interval, byweekday, bymonthday, nthWeekday, bymonth, until, parseError: false };
+    return {
+      freq,
+      interval,
+      byweekday,
+      bymonthday,
+      nthWeekday,
+      bymonth,
+      until,
+      parseError: false,
+    };
   } catch {
     return { ...defaults, parseError: true };
   }
@@ -259,7 +274,11 @@ export function parseDurationInput(input: string): ParsedDuration | null {
   }
   if (ms >= MS_MONTH && ms % MS_MONTH === 0) {
     const n = Math.round(ms / MS_MONTH);
-    return { freq: "MONTHLY", interval: n, label: formatFreqLabel("MONTHLY", n) };
+    return {
+      freq: "MONTHLY",
+      interval: n,
+      label: formatFreqLabel("MONTHLY", n),
+    };
   }
   if (ms >= MS_WEEK && ms % MS_WEEK === 0) {
     const n = Math.round(ms / MS_WEEK);
@@ -345,12 +364,12 @@ function FreqSubMenu({
   recurrenceType,
   currentRule,
   onSave,
-  className,
+  triggerContent,
 }: {
   recurrenceType: TaskRecurrenceType;
   currentRule: ParsedRule;
   onSave: (update: { recurrenceType: TaskRecurrenceType; recurrenceRule?: string | null }) => void;
-  className?: string;
+  triggerContent: ReactNode;
 }) {
   const search = useMenuSearch();
   const parsedDuration = useMemo(() => parseDurationInput(search.query), [search.query]);
@@ -424,294 +443,248 @@ function FreqSubMenu({
   const isSearching = search.query.length > 0;
 
   return (
-    <SearchableMenuContent
-      inputProps={search.inputProps}
-      placeholder='e.g. "2 weeks", "3 months"'
-      className={className}
-    >
-      {/* Parsed duration from search input */}
-      {isSearching && parsedDuration && (
-        <Menu.Item
-          value={`parsed-${parsedDuration.freq}-${parsedDuration.interval}`}
-          className={MENU_ITEM_CLASS}
-          onClick={() => selectFreq(parsedDuration.freq, parsedDuration.interval)}
-        >
-          <Menu.ItemText>{parsedDuration.label}</Menu.ItemText>
-        </Menu.Item>
-      )}
-
-      {/* Frequency shortcuts */}
-      {filteredShortcuts.map((shortcut) => {
-        const isCurrent = currentRule.freq === shortcut.freq;
-        return (
-          <Menu.OptionItem
-            key={shortcut.label}
-            type="radio"
-            checked={isCurrent}
-            value={shortcut.label}
-            onCheckedChange={(checked) => {
-              if (checked)
-                selectFreq(
-                  shortcut.freq,
-                  currentRule.freq === shortcut.freq ? currentRule.interval : 1,
-                );
+    <DropdownMenuSub {...search.menuProps}>
+      <DropdownMenuSubTrigger>{triggerContent}</DropdownMenuSubTrigger>
+      <SearchableSubMenuContent
+        search={search}
+        placeholder='e.g. "2 weeks", "3 months"'
+        inputLabel="Frequency"
+      >
+        {isSearching && parsedDuration && (
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              selectFreq(parsedDuration.freq, parsedDuration.interval);
             }}
-            className={MENU_ITEM_CLASS}
           >
-            <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
-              <Check className="size-4" />
-            </Menu.ItemIndicator>
-            <Menu.ItemText>{shortcut.label}</Menu.ItemText>
-          </Menu.OptionItem>
-        );
-      })}
+            <span>{parsedDuration.label}</span>
+          </DropdownMenuItem>
+        )}
 
-      {isSearching && !parsedDuration && filteredShortcuts.length === 0 && (
-        <div role="status" className="text-surface-500 px-3 py-2 text-sm">
-          No matching options
-        </div>
-      )}
+        <DropdownMenuRadioGroup
+          value={currentRule.freq}
+          onValueChange={(v) => {
+            const shortcut = FREQ_SHORTCUTS.find((s) => s.freq === v);
+            if (!shortcut) return;
+            selectFreq(
+              shortcut.freq,
+              currentRule.freq === shortcut.freq ? currentRule.interval : 1,
+            );
+          }}
+        >
+          {filteredShortcuts.map((shortcut) => (
+            <DropdownMenuRadioItem key={shortcut.label} value={shortcut.freq}>
+              <span>{shortcut.label}</span>
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
 
-      {/* Conditional submenu entries for freq-specific options */}
-      {currentRule.freq === "WEEKLY" && (
-        <>
-          <Menu.Separator />
-          <Menu typeahead={false} closeOnSelect={false}>
-            <Menu.TriggerItem value="weekdays" className="justify-start gap-2 text-sm">
-              <Menu.ItemText>
-                {currentRule.byweekday.length > 0
-                  ? `On ${currentRule.byweekday.map((d) => WEEKDAY_SHORT_LABELS[d]).join(", ")}`
-                  : "On days..."}
-              </Menu.ItemText>
-              <Menu.ItemIndicator className="ml-auto">
-                <ChevronRight className="size-4" />
-              </Menu.ItemIndicator>
-            </Menu.TriggerItem>
-            <Portal>
-              <Menu.Positioner>
-                <Menu.Content className={Z_DETAIL}>
-                  <div className="flex items-center gap-1">
-                    {WEEKDAY_CODES.map((day) => {
-                      const active = currentRule.byweekday.includes(day);
-                      return (
-                        <button
-                          key={day}
-                          type="button"
-                          onClick={() => toggleWeekday(day)}
-                          aria-label={WEEKDAY_LABELS[day]}
-                          aria-pressed={active}
-                          className={`flex size-7 items-center justify-center rounded-full text-xs font-medium transition-colors ${
-                            active
-                              ? "preset-filled-primary-500"
-                              : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
-                          }`}
-                        >
-                          {WEEKDAY_SHORT_LABELS[day]}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </Menu.Content>
-              </Menu.Positioner>
-            </Portal>
-          </Menu>
-        </>
-      )}
+        {isSearching && !parsedDuration && filteredShortcuts.length === 0 && (
+          <div role="status" className="px-3 py-2 text-sm text-base-content/60">
+            No matching options
+          </div>
+        )}
 
-      {currentRule.freq === "MONTHLY" && (
-        <>
-          <Menu.Separator />
-          <Menu typeahead={false} closeOnSelect={false}>
-            <Menu.TriggerItem value="monthday" className="justify-start gap-2 text-sm">
-              <Menu.ItemText>
-                {currentRule.nthWeekday.length > 0
-                  ? `On the ${currentRule.nthWeekday.map((nw) => `${ORDINAL_LABELS[nw.ordinal] ?? ""} ${WEEKDAY_LABELS[nw.weekday]}`).join(", ")}`
-                  : currentRule.bymonthday.length > 0
-                    ? `On day ${describeMonthDays(currentRule.bymonthday)}`
-                    : "On day..."}
-              </Menu.ItemText>
-              <Menu.ItemIndicator className="ml-auto">
-                <ChevronRight className="size-4" />
-              </Menu.ItemIndicator>
-            </Menu.TriggerItem>
-            <Portal>
-              <Menu.Positioner>
-                <Menu.Content className={Z_DETAIL}>
-                  <div className="text-surface-500 mb-1.5 text-xs">Day of month</div>
-                  <div className="grid grid-cols-7 gap-1">
-                    {DAY_NUMBERS.map((d) => {
-                      const hasLast =
-                        currentRule.bymonthday.includes(-1) && currentRule.nthWeekday.length === 0;
-                      const active =
-                        currentRule.bymonthday.includes(d) && currentRule.nthWeekday.length === 0;
-                      const isShortMonthDay = d >= 29;
-                      const lastDayHint = hasLast && d >= 28 && !active;
-                      return (
-                        <button
-                          key={d}
-                          type="button"
-                          onClick={() => toggleMonthDay(d)}
-                          aria-pressed={active}
-                          className={`flex size-7 items-center justify-center rounded text-xs font-medium transition-colors ${
-                            active
-                              ? "preset-filled-primary-500"
-                              : lastDayHint
-                                ? "preset-tonal-primary hover:preset-tonal-surface"
-                                : isShortMonthDay
-                                  ? "outline outline-1 outline-dashed outline-surface-300-700 hover:preset-tonal-surface"
-                                  : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
-                          }`}
-                        >
-                          {d}
-                        </button>
-                      );
-                    })}
-                    <div className="col-span-4">
+        {currentRule.freq === "WEEKLY" && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <span>
+                  {currentRule.byweekday.length > 0
+                    ? `On ${currentRule.byweekday.map((d) => WEEKDAY_SHORT_LABELS[d]).join(", ")}`
+                    : "On days..."}
+                </span>
+                <ChevronRight className="ml-auto size-4" aria-hidden="true" />
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="p-2">
+                <div className="flex items-center gap-1">
+                  {WEEKDAY_CODES.map((day) => {
+                    const active = currentRule.byweekday.includes(day);
+                    return (
                       <button
+                        key={day}
                         type="button"
-                        onClick={() => toggleMonthDay(-1)}
-                        aria-pressed={
-                          currentRule.bymonthday.includes(-1) && currentRule.nthWeekday.length === 0
-                        }
-                        className={`flex h-7 items-center rounded px-2 text-xs font-medium transition-colors ${
-                          currentRule.bymonthday.includes(-1) && currentRule.nthWeekday.length === 0
-                            ? "preset-filled-primary-500"
-                            : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
+                        onClick={() => toggleWeekday(day)}
+                        aria-label={WEEKDAY_LABELS[day]}
+                        aria-pressed={active}
+                        className={`flex size-7 items-center justify-center rounded-full text-xs font-medium transition-colors ${active ? CHIP_ON : CHIP_OFF}`}
+                      >
+                        {WEEKDAY_SHORT_LABELS[day]}
+                      </button>
+                    );
+                  })}
+                </div>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          </>
+        )}
+
+        {currentRule.freq === "MONTHLY" && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <span>
+                  {currentRule.nthWeekday.length > 0
+                    ? `On the ${currentRule.nthWeekday.map((nw) => `${ORDINAL_LABELS[nw.ordinal] ?? ""} ${WEEKDAY_LABELS[nw.weekday]}`).join(", ")}`
+                    : currentRule.bymonthday.length > 0
+                      ? `On day ${describeMonthDays(currentRule.bymonthday)}`
+                      : "On day..."}
+                </span>
+                <ChevronRight className="ml-auto size-4" aria-hidden="true" />
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="p-2">
+                <div className="mb-1.5 text-xs text-base-content/60">Day of month</div>
+                <div className="grid grid-cols-7 gap-1">
+                  {DAY_NUMBERS.map((d) => {
+                    const hasLast =
+                      currentRule.bymonthday.includes(-1) && currentRule.nthWeekday.length === 0;
+                    const active =
+                      currentRule.bymonthday.includes(d) && currentRule.nthWeekday.length === 0;
+                    const isShortMonthDay = d >= 29;
+                    const lastDayHint = hasLast && d >= 28 && !active;
+                    return (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => toggleMonthDay(d)}
+                        aria-pressed={active}
+                        className={`flex size-7 items-center justify-center rounded text-xs font-medium transition-colors ${
+                          active
+                            ? CHIP_ON
+                            : lastDayHint
+                              ? "bg-primary/20 text-base-content hover:bg-base-200"
+                              : isShortMonthDay
+                                ? "border border-dashed border-base-300 text-base-content hover:bg-base-200"
+                                : CHIP_OFF
                         }`}
                       >
-                        Last
+                        {d}
                       </button>
-                    </div>
+                    );
+                  })}
+                  <div className="col-span-4">
+                    <button
+                      type="button"
+                      onClick={() => toggleMonthDay(-1)}
+                      aria-pressed={
+                        currentRule.bymonthday.includes(-1) && currentRule.nthWeekday.length === 0
+                      }
+                      className={`flex h-7 items-center rounded px-2 text-xs font-medium transition-colors ${
+                        currentRule.bymonthday.includes(-1) && currentRule.nthWeekday.length === 0
+                          ? CHIP_ON
+                          : CHIP_OFF
+                      }`}
+                    >
+                      Last
+                    </button>
                   </div>
-                  <div className="text-surface-500 mt-1 text-xs">29–31 skipped in short months</div>
-                  <Menu.Separator />
-                  <div className="text-surface-500 mb-1.5 text-xs">Or on the Nth weekday</div>
-                  <div className="mb-1 flex items-center justify-between">
-                    {ORDINALS.map((ord) => {
-                      const active = currentRule.nthWeekday.some((nw) => nw.ordinal === ord);
-                      return (
-                        <button
-                          key={ord}
-                          type="button"
-                          onClick={() => {
-                            const firstEntry = currentRule.nthWeekday[0];
-                            const weekday: WeekdayCode = firstEntry ? firstEntry.weekday : "MO";
-                            toggleNthWeekday({ ordinal: ord, weekday });
-                          }}
-                          aria-label={`${ORDINAL_LABELS[ord]} week of month`}
-                          aria-pressed={active}
-                          className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
-                            active
-                              ? "preset-filled-primary-500"
-                              : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
-                          }`}
-                        >
-                          {ORDINAL_LABELS[ord]}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    {WEEKDAY_CODES.map((day) => {
-                      const active = currentRule.nthWeekday.some((nw) => nw.weekday === day);
-                      return (
-                        <button
-                          key={day}
-                          type="button"
-                          onClick={() => {
-                            const firstEntry = currentRule.nthWeekday[0];
-                            const ordinal = firstEntry ? firstEntry.ordinal : 1;
-                            toggleNthWeekday({ ordinal, weekday: day });
-                          }}
-                          aria-label={WEEKDAY_LABELS[day]}
-                          aria-pressed={active}
-                          className={`flex size-7 items-center justify-center rounded-full text-xs font-medium transition-colors ${
-                            active
-                              ? "preset-filled-primary-500"
-                              : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
-                          }`}
-                        >
-                          {WEEKDAY_SHORT_LABELS[day]}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </Menu.Content>
-              </Menu.Positioner>
-            </Portal>
-          </Menu>
-        </>
-      )}
+                </div>
+                <div className="mt-1 text-xs text-base-content/60">
+                  29–31 skipped in short months
+                </div>
+                <DropdownMenuSeparator />
+                <div className="mb-1.5 text-xs text-base-content/60">Or on the Nth weekday</div>
+                <div className="mb-1 flex items-center justify-between">
+                  {ORDINALS.map((ord) => {
+                    const active = currentRule.nthWeekday.some((nw) => nw.ordinal === ord);
+                    return (
+                      <button
+                        key={ord}
+                        type="button"
+                        onClick={() => {
+                          const firstEntry = currentRule.nthWeekday[0];
+                          const weekday: WeekdayCode = firstEntry ? firstEntry.weekday : "MO";
+                          toggleNthWeekday({ ordinal: ord, weekday });
+                        }}
+                        aria-label={`${ORDINAL_LABELS[ord]} week of month`}
+                        aria-pressed={active}
+                        className={`rounded px-2 py-1 text-xs font-medium transition-colors ${active ? CHIP_ON : CHIP_OFF}`}
+                      >
+                        {ORDINAL_LABELS[ord]}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="flex items-center justify-between">
+                  {WEEKDAY_CODES.map((day) => {
+                    const active = currentRule.nthWeekday.some((nw) => nw.weekday === day);
+                    return (
+                      <button
+                        key={day}
+                        type="button"
+                        onClick={() => {
+                          const firstEntry = currentRule.nthWeekday[0];
+                          const ordinal = firstEntry ? firstEntry.ordinal : 1;
+                          toggleNthWeekday({ ordinal, weekday: day });
+                        }}
+                        aria-label={WEEKDAY_LABELS[day]}
+                        aria-pressed={active}
+                        className={`flex size-7 items-center justify-center rounded-full text-xs font-medium transition-colors ${active ? CHIP_ON : CHIP_OFF}`}
+                      >
+                        {WEEKDAY_SHORT_LABELS[day]}
+                      </button>
+                    );
+                  })}
+                </div>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          </>
+        )}
 
-      {currentRule.freq === "YEARLY" && (
-        <>
-          <Menu.Separator />
-          <Menu typeahead={false} closeOnSelect={false}>
-            <Menu.TriggerItem value="months" className="justify-start gap-2 text-sm">
-              <Menu.ItemText>
-                {currentRule.bymonth.length > 0
-                  ? `In ${currentRule.bymonth.map((m) => MONTH_SHORT_LABELS[m - 1]).join(", ")}`
-                  : "In months..."}
-              </Menu.ItemText>
-              <Menu.ItemIndicator className="ml-auto">
-                <ChevronRight className="size-4" />
-              </Menu.ItemIndicator>
-            </Menu.TriggerItem>
-            <Portal>
-              <Menu.Positioner>
-                <Menu.Content className={Z_DETAIL}>
-                  <div className="grid grid-cols-6 gap-1">
-                    {MONTH_SHORT_LABELS.map((label, index) => {
-                      const month = index + 1;
-                      const active = currentRule.bymonth.includes(month);
-                      return (
-                        <button
-                          key={label}
-                          type="button"
-                          onClick={() => toggleYearlyMonth(index)}
-                          aria-label={MONTH_LABELS[index]}
-                          aria-pressed={active}
-                          className={`rounded px-1.5 py-1 text-xs font-medium transition-colors ${
-                            active
-                              ? "preset-filled-primary-500"
-                              : "preset-outlined-surface-200-800 hover:preset-tonal-surface"
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </Menu.Content>
-              </Menu.Positioner>
-            </Portal>
-          </Menu>
-        </>
-      )}
+        {currentRule.freq === "YEARLY" && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <span>
+                  {currentRule.bymonth.length > 0
+                    ? `In ${currentRule.bymonth.map((m) => MONTH_SHORT_LABELS[m - 1]).join(", ")}`
+                    : "In months..."}
+                </span>
+                <ChevronRight className="ml-auto size-4" aria-hidden="true" />
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="p-2">
+                <div className="grid grid-cols-6 gap-1">
+                  {MONTH_SHORT_LABELS.map((label, index) => {
+                    const month = index + 1;
+                    const active = currentRule.bymonth.includes(month);
+                    return (
+                      <button
+                        key={label}
+                        type="button"
+                        onClick={() => toggleYearlyMonth(index)}
+                        aria-label={MONTH_LABELS[index]}
+                        aria-pressed={active}
+                        className={`rounded px-1.5 py-1 text-xs font-medium transition-colors ${active ? CHIP_ON : CHIP_OFF}`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          </>
+        )}
 
-      {/* Until date */}
-      <Menu typeahead={false} closeOnSelect={false}>
-        <Menu.TriggerItem value="until" className="justify-start gap-2 text-sm">
-          <Menu.ItemText>
-            {currentRule.until ? `Until ${currentRule.until}` : "Until (no end date)"}
-          </Menu.ItemText>
-          <Menu.ItemIndicator className="ml-auto">
-            <ChevronRight className="size-4" />
-          </Menu.ItemIndicator>
-        </Menu.TriggerItem>
-        <Portal>
-          <Menu.Positioner>
-            <UntilDateSubMenu
-              className={Z_DETAIL}
-              currentUntil={currentRule.until}
-              currentRule={currentRule}
-              recurrenceType={recurrenceType}
-              onSave={onSave}
-            />
-          </Menu.Positioner>
-        </Portal>
-      </Menu>
-    </SearchableMenuContent>
+        <UntilDateSubMenu
+          currentUntil={currentRule.until}
+          currentRule={currentRule}
+          recurrenceType={recurrenceType}
+          onSave={onSave}
+          triggerContent={
+            <>
+              <span>
+                {currentRule.until ? `Until ${currentRule.until}` : "Until (no end date)"}
+              </span>
+              <ChevronRight className="ml-auto size-4" aria-hidden="true" />
+            </>
+          }
+        />
+      </SearchableSubMenuContent>
+    </DropdownMenuSub>
   );
 }
 
@@ -722,13 +695,13 @@ function UntilDateSubMenu({
   currentRule,
   recurrenceType,
   onSave,
-  className,
+  triggerContent,
 }: {
   currentUntil: string | null;
   currentRule: ParsedRule;
   recurrenceType: TaskRecurrenceType;
   onSave: (update: { recurrenceType: TaskRecurrenceType; recurrenceRule?: string | null }) => void;
-  className?: string;
+  triggerContent: ReactNode;
 }) {
   const search = useMenuSearch();
   const parsedDate = useMemo(() => parseDateInput(search.query), [search.query]);
@@ -747,56 +720,65 @@ function UntilDateSubMenu({
   ];
 
   return (
-    <SearchableMenuContent
-      inputProps={search.inputProps}
-      placeholder='e.g. "dec 2026", "in 6 months"'
-      className={className}
-    >
-      {currentUntil && (
-        <Menu.Item
-          value="clear-until"
-          className={`text-error-500 ${MENU_ITEM_CLASS}`}
-          onClick={() => selectUntil(null)}
-        >
-          <X className="size-4" aria-hidden="true" />
-          <Menu.ItemText>No end date</Menu.ItemText>
-        </Menu.Item>
-      )}
-
-      {search.query ? (
-        parsedDate ? (
-          <Menu.Item
-            value={parsedDate.value}
-            className={MENU_ITEM_CLASS}
-            onClick={() => selectUntil(parsedDate.value)}
+    <DropdownMenuSub {...search.menuProps}>
+      <DropdownMenuSubTrigger>{triggerContent}</DropdownMenuSubTrigger>
+      <SearchableSubMenuContent
+        search={search}
+        placeholder='e.g. "dec 2026", "in 6 months"'
+        inputLabel="Until"
+      >
+        {currentUntil && (
+          <DropdownMenuItem
+            className="text-error"
+            onSelect={(e) => {
+              e.preventDefault();
+              selectUntil(null);
+            }}
           >
-            <Calendar className="size-4" aria-hidden="true" />
-            <Menu.ItemText>{parsedDate.label}</Menu.ItemText>
-            <span className="text-surface-500 ml-auto text-xs">{parsedDate.value}</span>
-          </Menu.Item>
-        ) : (
-          <div role="status" className="text-surface-500 px-3 py-2 text-sm">
-            No matching dates
-          </div>
-        )
-      ) : (
-        shortcuts.map((shortcut) => {
-          const date = addDays(today, shortcut.offsetDays);
-          const isoDate = toISODate(date);
-          return (
-            <Menu.Item
-              key={shortcut.label}
-              value={isoDate}
-              className={MENU_ITEM_CLASS}
-              onClick={() => selectUntil(isoDate)}
+            <X className="size-4" aria-hidden="true" />
+            <span>No end date</span>
+          </DropdownMenuItem>
+        )}
+
+        {search.query ? (
+          parsedDate ? (
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                selectUntil(parsedDate.value);
+              }}
             >
-              <Menu.ItemText>{shortcut.label}</Menu.ItemText>
-              <span className="text-surface-500 ml-auto text-xs">{formatDateDisplay(date)}</span>
-            </Menu.Item>
-          );
-        })
-      )}
-    </SearchableMenuContent>
+              <Calendar className="size-4" aria-hidden="true" />
+              <span>{parsedDate.label}</span>
+              <span className="ml-auto text-xs text-base-content/60">{parsedDate.value}</span>
+            </DropdownMenuItem>
+          ) : (
+            <div role="status" className="px-3 py-2 text-sm text-base-content/60">
+              No matching dates
+            </div>
+          )
+        ) : (
+          shortcuts.map((shortcut) => {
+            const date = addDays(today, shortcut.offsetDays);
+            const isoDate = toISODate(date);
+            return (
+              <DropdownMenuItem
+                key={shortcut.label}
+                onSelect={(e) => {
+                  e.preventDefault();
+                  selectUntil(isoDate);
+                }}
+              >
+                <span>{shortcut.label}</span>
+                <span className="ml-auto text-xs text-base-content/60">
+                  {formatDateDisplay(date)}
+                </span>
+              </DropdownMenuItem>
+            );
+          })
+        )}
+      </SearchableSubMenuContent>
+    </DropdownMenuSub>
   );
 }
 
@@ -838,77 +820,66 @@ export function RecurrenceMenuField({
 
   return (
     <>
-      <Menu {...search.menuProps} closeOnSelect={false}>
+      <DropdownMenuRoot {...search.menuProps}>
         <FieldPill
           icon={<RefreshCw className="size-3.5" aria-hidden="true" />}
           label="Recurrence"
           value={displayValue}
         />
-        <Portal>
-          <Menu.Positioner>
-            <SearchableMenuContent
-              inputProps={search.inputProps}
-              placeholder="Search recurrence..."
-            >
-              {typeItems.length === 0 ? (
-                <div role="status" className="text-surface-500 px-3 py-2 text-sm">
-                  No matching types
-                </div>
-              ) : (
-                typeItems.map((item) =>
-                  item.hasSubmenu ? (
-                    <Menu key={item.value} typeahead={false} closeOnSelect={false}>
-                      <Menu.TriggerItem value={item.value} className="justify-start gap-2 text-sm">
-                        {recurrenceType === item.value ? (
-                          <Check className="size-4" aria-hidden="true" />
-                        ) : (
-                          <span className="size-4" />
-                        )}
-                        <Menu.ItemText>{item.label}</Menu.ItemText>
-                        <Menu.ItemIndicator className="ml-auto">
-                          <ChevronRight className="size-4" />
-                        </Menu.ItemIndicator>
-                      </Menu.TriggerItem>
-                      <Portal>
-                        <Menu.Positioner>
-                          <FreqSubMenu
-                            className={Z_SUBMENU}
-                            recurrenceType={item.value}
-                            currentRule={currentRule}
-                            onSave={handleSave}
-                          />
-                        </Menu.Positioner>
-                      </Portal>
-                    </Menu>
-                  ) : (
-                    <Menu.Item
-                      key={item.value}
-                      value={item.value}
-                      className={MENU_ITEM_CLASS}
-                      onClick={() => {
-                        const update: Parameters<typeof handleSave>[0] = {
-                          recurrenceType: item.value,
-                        };
-                        if (item.value === "one_off") update.recurrenceRule = null;
-                        handleSave(update);
-                      }}
-                    >
+        <SearchableMenuContent
+          search={search}
+          placeholder="Search recurrence..."
+          inputLabel="Search recurrence"
+        >
+          {typeItems.length === 0 ? (
+            <div role="status" className="px-3 py-2 text-sm text-base-content/60">
+              No matching types
+            </div>
+          ) : (
+            typeItems.map((item) =>
+              item.hasSubmenu ? (
+                <FreqSubMenu
+                  key={item.value}
+                  recurrenceType={item.value}
+                  currentRule={currentRule}
+                  onSave={handleSave}
+                  triggerContent={
+                    <>
                       {recurrenceType === item.value ? (
                         <Check className="size-4" aria-hidden="true" />
                       ) : (
                         <span className="size-4" />
                       )}
-                      <Menu.ItemText>{item.label}</Menu.ItemText>
-                    </Menu.Item>
-                  ),
-                )
-              )}
-            </SearchableMenuContent>
-          </Menu.Positioner>
-        </Portal>
-      </Menu>
+                      <span>{item.label}</span>
+                      <ChevronRight className="ml-auto size-4" aria-hidden="true" />
+                    </>
+                  }
+                />
+              ) : (
+                <DropdownMenuItem
+                  key={item.value}
+                  onSelect={() => {
+                    const update: Parameters<typeof handleSave>[0] = {
+                      recurrenceType: item.value,
+                    };
+                    if (item.value === "one_off") update.recurrenceRule = null;
+                    handleSave(update);
+                  }}
+                >
+                  {recurrenceType === item.value ? (
+                    <Check className="size-4" aria-hidden="true" />
+                  ) : (
+                    <span className="size-4" />
+                  )}
+                  <span>{item.label}</span>
+                </DropdownMenuItem>
+              ),
+            )
+          )}
+        </SearchableMenuContent>
+      </DropdownMenuRoot>
       {currentRule.parseError && (
-        <div className="text-warning-500 text-xs">Could not parse recurrence rule</div>
+        <div className="text-xs text-warning">Could not parse recurrence rule</div>
       )}
       {mutation.error && <ErrorAlert message={mutation.error.message} />}
     </>

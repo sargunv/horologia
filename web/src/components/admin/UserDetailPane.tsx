@@ -23,7 +23,7 @@ export function UserDetailPane({
       <button
         type="button"
         onClick={onBack}
-        className="btn-icon btn-icon-sm preset-outlined-surface-200-800 self-start lg:hidden"
+        className="btn btn-square btn-sm btn-soft self-start lg:hidden"
         aria-label="Back to user list"
       >
         <ArrowLeft className="size-4" aria-hidden="true" />

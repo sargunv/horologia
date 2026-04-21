@@ -11,7 +11,15 @@ const healthQueryOptions = queryOptions({
   queryFn: async () => {
     const res = await fetch("/healthz");
     if (!res.ok) return { status: "error" };
-    const raw: unknown = await res.json();
+    let raw: unknown;
+    try {
+      raw = await res.json();
+    } catch {
+      // Non-JSON body (e.g. plain `text/plain "ok"`) means the endpoint is
+      // reachable and 2xx — treat as healthy rather than falling through to
+      // "error".
+      return { status: "ok" };
+    }
     const parsed = v.safeParse(HealthSchema, raw);
     return parsed.success ? parsed.output : { status: "error" };
   },
@@ -23,11 +31,7 @@ const appCommit = import.meta.env.VITE_APP_COMMIT ?? "";
 
 function StatusBadge({ ok }: { ok: boolean }) {
   return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-base px-2 py-0.5 text-xs font-medium ${
-        ok ? "preset-filled-success-500" : "preset-filled-error-500"
-      }`}
-    >
+    <span className={`badge gap-1 ${ok ? "badge-success" : "badge-error"}`}>
       {ok ? (
         <Check className="size-3" aria-hidden="true" />
       ) : (
@@ -40,11 +44,7 @@ function StatusBadge({ ok }: { ok: boolean }) {
 
 function EnabledBadge({ enabled, label }: { enabled: boolean; label: string }) {
   return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-base px-2 py-0.5 text-xs font-medium ${
-        enabled ? "preset-filled-primary-500" : "preset-tonal-surface"
-      }`}
-    >
+    <span className={`badge ${enabled ? "badge-primary" : "badge-ghost"}`}>
       {enabled ? "Enabled" : "Disabled"}
       <span className="sr-only">: {label}</span>
     </span>
@@ -53,8 +53,8 @@ function EnabledBadge({ enabled, label }: { enabled: boolean; label: string }) {
 
 function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-4 border-b border-surface-200-800 py-3 last:border-b-0">
-      <span className="text-surface-600-400 w-32 shrink-0 text-sm">{label}</span>
+    <div className="flex items-center gap-4 border-b border-base-300 py-3 last:border-b-0">
+      <span className="text-base-content/70 w-32 shrink-0 text-sm">{label}</span>
       <div className="min-w-0 flex-1">{children}</div>
     </div>
   );
@@ -82,9 +82,9 @@ export function AboutSection() {
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
                 <EnabledBadge enabled label="OIDC authentication" />
-                <span className="text-surface-600-400 text-sm">via {authConfig.oidc.label}</span>
+                <span className="text-base-content/70 text-sm">via {authConfig.oidc.label}</span>
               </div>
-              <span className="text-surface-500 text-xs">
+              <span className="text-base-content/60 text-xs">
                 {authConfig.oidc.autoRedirect
                   ? "Users are automatically redirected to the identity provider."
                   : "Users choose between OIDC and password login."}
@@ -98,18 +98,20 @@ export function AboutSection() {
           <div className="flex flex-col gap-1 text-sm">
             <span className="font-medium">{appVersion}</span>
             {appCommit !== "" ? (
-              <span className="text-surface-500 font-mono text-xs">{appCommit.slice(0, 12)}</span>
+              <span className="text-base-content/60 font-mono text-xs">
+                {appCommit.slice(0, 12)}
+              </span>
             ) : null}
           </div>
         </InfoRow>
       </SettingsSection>
 
-      <div className="text-surface-500 flex items-center justify-center gap-1.5 py-4 text-xs">
+      <div className="text-base-content/60 flex items-center justify-center gap-1.5 py-4 text-xs">
         <a
           href="https://github.com/sargunv/horologia"
           target="_blank"
           rel="noopener noreferrer"
-          className="hover:text-surface-700-300 inline-flex items-center gap-1 transition-colors"
+          className="hover:text-base-content/80 inline-flex items-center gap-1 transition-colors"
         >
           Horologia
           <ExternalLink className="size-3" aria-hidden="true" />

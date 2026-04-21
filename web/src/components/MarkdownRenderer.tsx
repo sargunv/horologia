@@ -7,21 +7,29 @@ import remarkGfm from "remark-gfm";
 import remarkSupersub from "remark-supersub";
 
 const components: Components = {
-  h1: ({ children }) => <h1 className="h3">{children}</h1>,
-  h2: ({ children }) => <h2 className="h4">{children}</h2>,
-  h3: ({ children }) => <h3 className="h5">{children}</h3>,
-  h4: ({ children }) => <h4 className="h6">{children}</h4>,
-  h5: ({ children }) => <h5 className="h6">{children}</h5>,
+  h1: ({ children }) => <h1 className="text-xl font-semibold">{children}</h1>,
+  h2: ({ children }) => <h2 className="text-lg font-semibold">{children}</h2>,
+  h3: ({ children }) => <h3 className="text-base font-semibold">{children}</h3>,
+  h4: ({ children }) => <h4 className="text-sm font-bold">{children}</h4>,
+  h5: ({ children }) => <h5 className="text-sm font-bold">{children}</h5>,
   h6: ({ children }) => <h6 className="text-sm font-bold">{children}</h6>,
   a: ({ children, href, target, rel }) => (
-    <a className="anchor" href={href} target={target} rel={rel}>
+    <a className="text-primary hover:underline" href={href} target={target} rel={rel}>
       {children}
     </a>
   ),
-  blockquote: ({ children }) => <blockquote className="blockquote">{children}</blockquote>,
-  pre: ({ children }) => <pre className="pre">{children}</pre>,
-  code: ({ children, className }) => <code className={className ?? "code"}>{children}</code>,
-  hr: () => <hr className="hr" />,
+  blockquote: ({ children }) => (
+    <blockquote className="border-l-4 border-base-300 pl-4 italic text-base-content/80">
+      {children}
+    </blockquote>
+  ),
+  pre: ({ children }) => (
+    <pre className="bg-base-200 rounded-box p-3 overflow-x-auto text-sm">{children}</pre>
+  ),
+  code: ({ children, className }) => (
+    <code className={className ?? "bg-base-200 rounded px-1 py-0.5 text-sm"}>{children}</code>
+  ),
+  hr: () => <hr className="border-base-300" />,
   ul: ({ children, className }) => (
     <ul
       className={
@@ -54,9 +62,9 @@ const components: Components = {
     </div>
   ),
   th: ({ children }) => (
-    <th className="border border-surface-300-700 px-3 py-1.5 font-bold">{children}</th>
+    <th className="border border-base-300 px-3 py-1.5 font-bold">{children}</th>
   ),
-  td: ({ children }) => <td className="border border-surface-300-700 px-3 py-1.5">{children}</td>,
+  td: ({ children }) => <td className="border border-base-300 px-3 py-1.5">{children}</td>,
 };
 
 interface MarkdownRendererProps {

@@ -1,6 +1,7 @@
 import { createLink } from "@tanstack/react-router";
 import { ChevronDown, UserRound } from "lucide-react";
 import type { components } from "../api/schema.d.ts";
+import { Card } from "../ui/Card.tsx";
 
 type ActivityLogEntry = components["schemas"]["ActivityLogEntry"];
 type ActivityEntityType = components["schemas"]["ActivityEntityType"];
@@ -105,7 +106,7 @@ function EntityRef({
       <TaskLink
         to="/spaces/$spaceSlug/tasks/$taskId"
         params={{ spaceSlug, taskId: entityId }}
-        className="text-primary-500 font-mono hover:underline"
+        className="text-primary font-mono hover:underline"
       >
         {label}
       </TaskLink>
@@ -116,7 +117,7 @@ function EntityRef({
       <SpaceLink
         to="/spaces/$spaceSlug"
         params={{ spaceSlug: entityId }}
-        className="text-primary-500 font-mono hover:underline"
+        className="text-primary font-mono hover:underline"
       >
         {label}
       </SpaceLink>
@@ -130,20 +131,20 @@ function DetailRow({ field, from, to }: { field: string; from: string | null; to
   if (from === null && to !== null) {
     return (
       <li>
-        <span className="text-surface-600-400">set {label}: </span>
-        <span className="text-surface-950-50">{to}</span>
+        <span className="text-base-content/70">set {label}: </span>
+        <span className="text-base-content">{to}</span>
       </li>
     );
   }
   if (to === null) {
     return (
       <li>
-        <span className="text-surface-600-400">cleared {label}</span>
+        <span className="text-base-content/70">cleared {label}</span>
         {from !== null && (
           <>
-            <span className="text-surface-600-400"> (was </span>
-            <span className="text-surface-950-50">{from}</span>
-            <span className="text-surface-600-400">)</span>
+            <span className="text-base-content/70"> (was </span>
+            <span className="text-base-content">{from}</span>
+            <span className="text-base-content/70">)</span>
           </>
         )}
       </li>
@@ -151,10 +152,10 @@ function DetailRow({ field, from, to }: { field: string; from: string | null; to
   }
   return (
     <li>
-      <span className="text-surface-600-400">{label}: </span>
-      <span className="line-through text-surface-500">{from}</span>
-      <span className="text-surface-600-400"> → </span>
-      <span className="text-surface-950-50">{to}</span>
+      <span className="text-base-content/70">{label}: </span>
+      <span className="line-through text-base-content/60">{from}</span>
+      <span className="text-base-content/70"> → </span>
+      <span className="text-base-content">{to}</span>
     </li>
   );
 }
@@ -174,26 +175,30 @@ function ActivityEntry({
   return (
     <div className="flex gap-3 px-4 py-3">
       <div className="mt-0.5 shrink-0">
-        <span className="bg-surface-200-800 flex size-7 items-center justify-center rounded-full">
-          <UserRound className="text-surface-600-400 size-4" aria-hidden="true" />
+        <span className="bg-base-200 flex size-7 items-center justify-center rounded-full">
+          <UserRound className="text-base-content/70 size-4" aria-hidden="true" />
         </span>
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline gap-x-2">
-          <span className="text-surface-950-50 text-sm font-medium">{actor}</span>
-          <span className="text-surface-500 text-xs">{formatRelativeTime(entry.createdAt)}</span>
+          <span className="text-base-content text-sm font-medium">{actor}</span>
+          <span className="text-base-content/60 text-xs">
+            {formatRelativeTime(entry.createdAt)}
+          </span>
         </div>
-        <p className="text-surface-600-400 mt-0.5 text-sm">
+        <p className="text-base-content/70 mt-0.5 text-sm">
           {actionLabel}{" "}
           <EntityRef
             entityType={entry.entityType}
             entityId={entry.entityId}
             spaceSlug={entry.spaceSlug}
           />
-          {showSpace && <span className="text-surface-500 ml-1 text-xs">in {entry.spaceSlug}</span>}
+          {showSpace && (
+            <span className="text-base-content/60 ml-1 text-xs">in {entry.spaceSlug}</span>
+          )}
         </p>
         {entry.details.length > 0 && (
-          <ul className="text-surface-600-400 mt-1 list-none space-y-0.5 text-xs">
+          <ul className="text-base-content/70 mt-1 list-none space-y-0.5 text-xs">
             {entry.details.map((d) => (
               <DetailRow key={d.field} field={d.field} from={d.from} to={d.to} />
             ))}
@@ -215,21 +220,21 @@ export function ActivityFeed({
   showSpace,
 }: ActivityFeedProps) {
   if (entries.length === 0 && !hasNextPage) {
-    return <div className="text-surface-500 py-8 text-center text-sm">No activity yet.</div>;
+    return <div className="text-base-content/60 py-8 text-center text-sm">No activity yet.</div>;
   }
 
   return (
     <div>
-      <div className="card preset-outlined-surface-200-800 divide-surface-200-800 divide-y overflow-hidden">
+      <Card className="divide-base-300 divide-y overflow-hidden">
         {entries.map((entry) => (
           <ActivityEntry key={entry.id} entry={entry} memberMap={memberMap} showSpace={showSpace} />
         ))}
-      </div>
+      </Card>
 
       {hasNextPage && (
         <div className="mt-4 flex justify-center">
           <button
-            className="btn preset-outlined-surface-200-800 flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn btn-soft flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
             onClick={() => fetchNextPage()}
             disabled={isFetchingNextPage}
           >

@@ -1,11 +1,20 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { Dialog, Portal } from "@skeletonlabs/skeleton-react";
-import { Trash2, XIcon } from "lucide-react";
-import { useRef, useState } from "react";
+import { Trash2 } from "lucide-react";
+import { useState } from "react";
 import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
-import { DIALOG_ANIMATION } from "../../lib/dialog.ts";
+import { notifyStaleData } from "../../lib/toaster.ts";
+import {
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogRoot,
+  AlertDialogTrigger,
+} from "../../ui/AlertDialog.tsx";
 import { ErrorAlert } from "../space-settings/ErrorAlert.tsx";
 import { SettingsSection } from "../space-settings/SettingsSection.tsx";
 
@@ -23,7 +32,6 @@ export function UserDangerZoneCard({
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const cancelRef = useRef<HTMLButtonElement>(null);
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -37,16 +45,21 @@ export function UserDangerZoneCard({
         queryClient.clear();
         await navigate({ to: "/login" });
       } else {
-        await queryClient.invalidateQueries({ queryKey: ["users"] });
+        try {
+          await queryClient.invalidateQueries({ queryKey: ["users"] });
+        } catch (err) {
+          console.error("Cache invalidation failed after mutation:", err);
+          notifyStaleData();
+        }
         setOpen(false);
         onDeleted();
       }
     },
   });
 
-  function handleOpenChange(details: { open: boolean }) {
-    setOpen(details.open);
-    if (!details.open) deleteMutation.reset();
+  function handleOpenChange(next: boolean) {
+    setOpen(next);
+    if (!next) deleteMutation.reset();
   }
 
   return (
@@ -56,69 +69,49 @@ export function UserDangerZoneCard({
       description="Irreversible actions for this user."
     >
       <div className="flex items-center justify-between gap-4">
-        <p className="text-surface-600-400 text-sm">
+        <p className="text-sm text-base-content/70">
           Permanently delete this user and all of their data.
         </p>
-        <Dialog
-          role="alertdialog"
-          open={open}
-          onOpenChange={handleOpenChange}
-          initialFocusEl={() => cancelRef.current}
-        >
-          <Dialog.Trigger className="btn btn-sm preset-filled-error-500 shrink-0">
+        <AlertDialogRoot open={open} onOpenChange={handleOpenChange}>
+          <AlertDialogTrigger className="btn btn-error btn-sm shrink-0">
             Delete user
-          </Dialog.Trigger>
-          <Portal>
-            <Dialog.Backdrop className="fixed inset-0 z-50 bg-surface-50-950/50" />
-            <Dialog.Positioner className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <Dialog.Content
-                className={`card bg-surface-100-900 w-full max-w-md space-y-4 p-6 shadow-xl ${DIALOG_ANIMATION}`}
-              >
-                <header className="flex items-start justify-between gap-2">
-                  <Dialog.Title className="text-lg font-bold">Delete user</Dialog.Title>
-                  <Dialog.CloseTrigger
-                    className="btn-icon hover:preset-tonal"
-                    aria-label="Close dialog"
-                  >
-                    <XIcon className="size-4" aria-hidden="true" />
-                  </Dialog.CloseTrigger>
-                </header>
-                <Dialog.Description className="text-surface-600-400 text-sm">
-                  {isSelf ? (
-                    <>
-                      You are about to delete{" "}
-                      <strong className="text-surface-950-50">your own account</strong>. You will be
-                      signed out immediately and will not be able to log in again.
-                    </>
-                  ) : (
-                    <>
-                      Permanently delete{" "}
-                      <strong className="text-surface-950-50">{user.name}</strong> ({user.email}).
-                      Their tasks, memberships, and tokens will be removed. This cannot be undone.
-                    </>
-                  )}
-                </Dialog.Description>
-                {deleteMutation.error && <ErrorAlert message={deleteMutation.error.message} />}
-                <footer className="flex justify-end gap-2">
-                  <Dialog.CloseTrigger
-                    ref={cancelRef}
-                    className="btn preset-outlined-surface-200-800"
-                  >
-                    Cancel
-                  </Dialog.CloseTrigger>
-                  <button
-                    type="button"
-                    disabled={deleteMutation.isPending}
-                    onClick={() => deleteMutation.mutate()}
-                    className="btn preset-filled-error-500"
-                  >
-                    {deleteMutation.isPending ? "Deleting..." : "Delete user"}
-                  </button>
-                </footer>
-              </Dialog.Content>
-            </Dialog.Positioner>
-          </Portal>
-        </Dialog>
+          </AlertDialogTrigger>
+          <AlertDialogContent className="max-w-md space-y-4">
+            <AlertDialogHeader title="Delete user" />
+            <AlertDialogDescription>
+              {isSelf ? (
+                <>
+                  You are about to delete{" "}
+                  <strong className="text-base-content">your own account</strong>. You will be
+                  signed out immediately and will not be able to log in again.
+                </>
+              ) : (
+                <>
+                  Permanently delete <strong className="text-base-content">{user.name}</strong> (
+                  {user.email}). Their tasks, memberships, and tokens will be removed. This cannot
+                  be undone.
+                </>
+              )}
+            </AlertDialogDescription>
+            {deleteMutation.error && <ErrorAlert message={deleteMutation.error.message} />}
+            <AlertDialogFooter>
+              <AlertDialogCancel className="btn btn-soft">Cancel</AlertDialogCancel>
+              <AlertDialogAction asChild>
+                <button
+                  type="button"
+                  disabled={deleteMutation.isPending}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    deleteMutation.mutate();
+                  }}
+                  className="btn btn-error"
+                >
+                  {deleteMutation.isPending ? "Deleting..." : "Delete user"}
+                </button>
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogRoot>
       </div>
     </SettingsSection>
   );

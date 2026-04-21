@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { LoaderCircle, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { useDeferredValue, useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import type { components } from "../../api/schema.d.ts";
 import { taskSearchQueryOptions } from "../../lib/queries.ts";
@@ -12,7 +12,7 @@ function getErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
-export function TaskSearchCombobox({ className }: { className?: string }) {
+export function TaskSearchCombobox() {
   const navigate = useNavigate();
   const listboxId = useId();
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -93,21 +93,19 @@ export function TaskSearchCombobox({ className }: { className?: string }) {
   const showPanel = open && (query.length > 0 || isFetching || !!error);
 
   return (
-    <div ref={wrapperRef} className={className}>
-      <div className="relative">
-        <Search
-          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-surface-500"
-          aria-hidden="true"
-        />
+    <div ref={wrapperRef} className="relative">
+      <label className="input input-sm w-full">
+        <Search className="size-4 opacity-60" aria-hidden="true" />
         <input
-          type="text"
+          type="search"
           role="combobox"
+          aria-label="Search tasks"
           aria-expanded={showPanel}
           aria-controls={listboxId}
           aria-autocomplete="list"
           aria-activedescendant={
             activeIndex >= 0 && results[activeIndex]
-              ? `${listboxId}-${results[activeIndex].id}`
+              ? `${listboxId}-${results[activeIndex].spaceSlug}-${results[activeIndex].id}`
               : undefined
           }
           value={query}
@@ -118,55 +116,54 @@ export function TaskSearchCombobox({ className }: { className?: string }) {
           }}
           onKeyDown={handleKeyDown}
           placeholder="Search tasks…"
-          className="input preset-tonal-surface w-full pl-10 text-sm"
         />
-        {showPanel && (
-          <div
-            id={listboxId}
-            role="listbox"
-            className="card bg-surface-50-950 absolute inset-x-0 top-[calc(100%+0.5rem)] z-50 max-h-96 overflow-y-auto border border-surface-200-800 p-2 shadow-xl"
-          >
-            {deferredQuery.length === 0 ? (
-              <div className="px-3 py-2 text-sm text-surface-500">Type to search visible tasks</div>
-            ) : isFetching ? (
-              <div className="flex items-center gap-2 px-3 py-2 text-sm text-surface-500">
-                <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
-                Searching tasks…
-              </div>
-            ) : error ? (
-              <div className="px-3 py-2 text-sm text-error-500">
-                {getErrorMessage(error, "Task search failed")}
-              </div>
-            ) : results.length === 0 ? (
-              <div className="px-3 py-2 text-sm text-surface-500">No matching tasks</div>
-            ) : (
-              results.map((result, index) => (
-                <button
-                  key={`${result.spaceSlug}/${result.id}`}
-                  id={`${listboxId}-${result.id}`}
-                  type="button"
-                  role="option"
-                  aria-selected={activeIndex === index}
-                  className={`flex w-full flex-col items-start gap-1 rounded-base px-3 py-2 text-left transition-colors ${
-                    activeIndex === index ? "bg-surface-200-800" : "hover:bg-surface-100-900"
-                  }`}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onMouseEnter={() => setActiveIndex(index)}
-                  onClick={() => handleSelect(result)}
-                >
-                  <div className="flex w-full items-center gap-2">
-                    <span className="truncate text-sm font-medium">{result.title}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-surface-500">
-                    <span className="font-mono">{result.id}</span>
-                    <span>{result.status}</span>
-                  </div>
-                </button>
-              ))
-            )}
-          </div>
-        )}
-      </div>
+      </label>
+      {showPanel && (
+        <div
+          id={listboxId}
+          role="listbox"
+          className="absolute inset-x-0 top-[calc(100%+0.5rem)] z-50 max-h-96 overflow-y-auto rounded-box border border-base-300 bg-base-100 p-1 shadow-lg"
+        >
+          {deferredQuery.length === 0 ? (
+            <div className="px-3 py-2 text-sm text-base-content/60">
+              Type to search visible tasks
+            </div>
+          ) : isFetching ? (
+            <div className="flex items-center gap-2 px-3 py-2 text-sm text-base-content/60">
+              <span className="loading loading-spinner loading-xs" />
+              Searching tasks…
+            </div>
+          ) : error ? (
+            <div className="px-3 py-2 text-sm text-error">
+              {getErrorMessage(error, "Task search failed")}
+            </div>
+          ) : results.length === 0 ? (
+            <div className="px-3 py-2 text-sm text-base-content/60">No matching tasks</div>
+          ) : (
+            results.map((result, index) => (
+              <button
+                key={`${result.spaceSlug}/${result.id}`}
+                id={`${listboxId}-${result.spaceSlug}-${result.id}`}
+                type="button"
+                role="option"
+                aria-selected={activeIndex === index}
+                className={`flex w-full flex-col items-start gap-0.5 rounded-field px-2 py-1.5 text-left transition-colors ${
+                  activeIndex === index ? "bg-base-200" : "hover:bg-base-200"
+                }`}
+                onMouseDown={(event) => event.preventDefault()}
+                onMouseEnter={() => setActiveIndex(index)}
+                onClick={() => handleSelect(result)}
+              >
+                <span className="truncate text-sm font-medium">{result.title}</span>
+                <div className="flex items-center gap-2 text-xs text-base-content/60">
+                  <span className="font-mono">{result.id}</span>
+                  <span>{result.status}</span>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -53,11 +53,16 @@ export function useUserPatch(userId: string) {
       return data;
     },
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["users", userId] }),
-        queryClient.invalidateQueries({ queryKey: ["users"] }),
-        queryClient.invalidateQueries({ queryKey: ["currentUser"] }),
-      ]);
+      try {
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["users", userId] }),
+          queryClient.invalidateQueries({ queryKey: ["users"] }),
+          queryClient.invalidateQueries({ queryKey: ["currentUser"] }),
+        ]);
+      } catch (err) {
+        console.error("Cache invalidation failed after mutation:", err);
+        notifyStaleData();
+      }
     },
   });
 }

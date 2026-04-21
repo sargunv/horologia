@@ -1,4 +1,3 @@
-import { Portal, Tooltip } from "@skeletonlabs/skeleton-react";
 import { useQueries, useSuspenseInfiniteQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createLink } from "@tanstack/react-router";
 import { Activity, ChevronDown, ListChecks } from "lucide-react";
@@ -12,18 +11,8 @@ import {
   spaceTaskStatusesQueryOptions,
   userTasksInfiniteQueryOptions,
 } from "../../lib/queries.ts";
+import { TooltipContent, TooltipRoot, TooltipTrigger } from "../../ui/Tooltip.tsx";
 import { TaskRow } from "./TaskRow.tsx";
-
-/** Pick tooltip-relevant attrs (id, data-*, aria-*) from a button-typed attrs bag for use on anchor elements. */
-function tooltipAttrs(attrs: Record<string, unknown>): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(attrs)) {
-    if (k === "id" || k.startsWith("data-") || k.startsWith("aria-")) {
-      result[k] = v;
-    }
-  }
-  return result;
-}
 
 const ActivityLink = createLink("a");
 
@@ -92,32 +81,23 @@ export function MyTaskListPane() {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h2 className="h5 truncate">My Tasks</h2>
-        <Tooltip>
-          <Tooltip.Trigger
-            element={(attrs) => (
-              <ActivityLink
-                {...tooltipAttrs(attrs)}
-                to="/activity"
-                className="btn-icon btn-sm preset-tonal-surface"
-                aria-label="Activity"
-              >
-                <Activity className="size-4" aria-hidden="true" />
-              </ActivityLink>
-            )}
-          />
-          <Portal>
-            <Tooltip.Positioner>
-              <Tooltip.Content className="preset-filled-surface-800-200 rounded px-2 py-1 text-xs shadow">
-                Activity
-              </Tooltip.Content>
-            </Tooltip.Positioner>
-          </Portal>
-        </Tooltip>
+        <h2 className="truncate text-lg font-semibold">My Tasks</h2>
+        <TooltipRoot>
+          <TooltipTrigger asChild>
+            <ActivityLink
+              to="/activity"
+              className="btn btn-soft btn-square btn-sm"
+              aria-label="Activity"
+            >
+              <Activity className="size-4" aria-hidden="true" />
+            </ActivityLink>
+          </TooltipTrigger>
+          <TooltipContent>Activity</TooltipContent>
+        </TooltipRoot>
       </div>
 
       {tasks.length > 0 ? (
-        <div className="card preset-outlined-surface-200-800 divide-surface-200-800 overflow-hidden">
+        <div className="overflow-hidden rounded-box border border-base-300 divide-y divide-base-300">
           {tasks.map((task) => (
             <TaskRow
               key={`${task.spaceSlug}/${task.id}`}
@@ -131,11 +111,11 @@ export function MyTaskListPane() {
           ))}
         </div>
       ) : (
-        <div className="card preset-outlined-surface-200-800 flex flex-col items-center gap-3 p-12 text-center">
-          <ListChecks className="text-surface-400 size-12" aria-hidden="true" />
+        <div className="flex flex-col items-center gap-3 rounded-box border border-base-300 p-12 text-center">
+          <ListChecks className="size-12 text-base-content/40" aria-hidden="true" />
           <div>
             <p className="font-medium">No tasks assigned to you</p>
-            <p className="text-surface-600-400 mt-1 text-sm">
+            <p className="mt-1 text-sm text-base-content/70">
               Tasks assigned to you across all spaces will appear here.
             </p>
           </div>
@@ -145,7 +125,7 @@ export function MyTaskListPane() {
       {hasNextPage && (
         <div className="flex justify-center">
           <button
-            className="btn preset-outlined-surface-200-800 flex items-center gap-2"
+            className="btn btn-soft flex items-center gap-2"
             onClick={() => fetchNextPage()}
             disabled={isFetchingNextPage}
           >

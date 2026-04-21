@@ -1,4 +1,3 @@
-import { Dialog, Menu, Portal, TagsInput } from "@skeletonlabs/skeleton-react";
 import {
   useMutation,
   useQueryClient,
@@ -19,12 +18,11 @@ import {
   X,
 } from "lucide-react";
 import { type ReactNode, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getIcon } from "../../lib/level-icons.ts";
 import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
 import { useSpaceMemberMap } from "../../lib/hooks.ts";
+import { getIcon } from "../../lib/level-icons.ts";
 import { invalidateUserTaskLists, useTaskPatch } from "../../lib/mutations.ts";
-import { notifyStaleData } from "../../lib/toaster.ts";
 import {
   spaceEffortLevelsQueryOptions,
   spaceMembersQueryOptions,
@@ -33,10 +31,31 @@ import {
   spaceTaskStatusesQueryOptions,
   taskActivityInfiniteQueryOptions,
 } from "../../lib/queries.ts";
+import { notifyStaleData } from "../../lib/toaster.ts";
 import { useMenuSearch } from "../../lib/useMenuSearch.ts";
+import { toast } from "sonner";
+import {
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogRoot,
+} from "../../ui/AlertDialog.tsx";
+import {
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuRoot,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../../ui/DropdownMenu.tsx";
+import { TagsInput } from "../../ui/TagsInput.tsx";
 import { ActivityFeed } from "../ActivityFeed.tsx";
 import { FieldPill } from "../FieldPill.tsx";
-import { MENU_ITEM_CLASS, SearchableMenuContent } from "../SearchableMenuContent.tsx";
+import { SearchableMenuContent } from "../SearchableMenuContent.tsx";
 import { TaskDescriptionEditor } from "../TaskDescriptionEditor.tsx";
 import { ErrorAlert } from "../space-settings/ErrorAlert.tsx";
 import { DueDateMenuField } from "./DueDateMenuField.tsx";
@@ -61,7 +80,6 @@ function TaskActionBar({
 }) {
   const queryClient = useQueryClient();
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const cancelRef = useRef<HTMLButtonElement>(null);
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -71,10 +89,14 @@ function TaskActionBar({
       if (error) throw new Error(error.message ?? "Failed to delete task");
     },
     onSuccess: async () => {
-      queryClient.removeQueries({ queryKey: ["spaces", spaceSlug, "tasks", taskId] });
+      queryClient.removeQueries({
+        queryKey: ["spaces", spaceSlug, "tasks", taskId],
+      });
       try {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", "list"] }),
+          queryClient.invalidateQueries({
+            queryKey: ["spaces", spaceSlug, "tasks", "list"],
+          }),
           invalidateUserTaskLists(queryClient),
         ]);
       } catch (err) {
@@ -86,91 +108,76 @@ function TaskActionBar({
   });
 
   function handleCopyId() {
-    void navigator.clipboard.writeText(taskId).catch(() => {});
+    void navigator.clipboard.writeText(taskId).catch(() => toast.error("Failed to copy task ID"));
   }
 
   return (
     <nav aria-label="Breadcrumb" className="flex items-center gap-2">
       {breadcrumb}
 
-      <Menu>
-        <Menu.Trigger
-          className="btn-icon btn-sm preset-tonal-surface ml-auto"
+      <DropdownMenuRoot>
+        <DropdownMenuTrigger
+          className="btn btn-soft btn-square btn-sm ml-auto"
           aria-label="Task actions"
         >
           <Ellipsis className="size-3.5" />
-        </Menu.Trigger>
-        <Portal>
-          <Menu.Positioner>
-            <Menu.Content>
-              <Menu.Item value="copy-id" className={MENU_ITEM_CLASS} onClick={handleCopyId}>
-                <Copy className="size-4" aria-hidden="true" />
-                <Menu.ItemText>Copy task ID</Menu.ItemText>
-              </Menu.Item>
-              <Menu.Item
-                value="copy-url"
-                className={MENU_ITEM_CLASS}
-                onClick={() => {
-                  void navigator.clipboard.writeText(window.location.href).catch(() => {});
-                }}
-              >
-                <Copy className="size-4" aria-hidden="true" />
-                <Menu.ItemText>Copy URL</Menu.ItemText>
-              </Menu.Item>
-              <Menu.Separator />
-              <Menu.Item
-                value="delete"
-                className={`text-error-500 ${MENU_ITEM_CLASS}`}
-                onClick={() => setDeleteOpen(true)}
-              >
-                <Trash2 className="size-4" aria-hidden="true" />
-                <Menu.ItemText>Delete task</Menu.ItemText>
-              </Menu.Item>
-            </Menu.Content>
-          </Menu.Positioner>
-        </Portal>
-      </Menu>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onSelect={handleCopyId}>
+            <Copy className="size-4" aria-hidden="true" />
+            <span>Copy task ID</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() => {
+              void navigator.clipboard
+                .writeText(window.location.href)
+                .catch(() => toast.error("Failed to copy URL"));
+            }}
+          >
+            <Copy className="size-4" aria-hidden="true" />
+            <span>Copy URL</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem className="text-error" onSelect={() => setDeleteOpen(true)}>
+            <Trash2 className="size-4" aria-hidden="true" />
+            <span>Delete task</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenuRoot>
 
-      <Dialog
+      <AlertDialogRoot
         open={deleteOpen}
-        onOpenChange={(d) => {
-          setDeleteOpen(d.open);
-          if (!d.open) deleteMutation.reset();
+        onOpenChange={(next) => {
+          setDeleteOpen(next);
+          if (!next) deleteMutation.reset();
         }}
-        role="alertdialog"
-        initialFocusEl={() => cancelRef.current}
       >
-        <Portal>
-          <Dialog.Backdrop className="fixed inset-0 z-50 bg-surface-50-950/50" />
-          <Dialog.Positioner className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <Dialog.Content className="card bg-surface-100-900 w-full max-w-md space-y-4 p-6">
-              <Dialog.Title className="h4">Delete task</Dialog.Title>
-              <Dialog.Description className="text-surface-600-400 text-sm">
-                Are you sure you want to delete this task? This action cannot be undone.
-              </Dialog.Description>
-              <div role="alert" aria-live="assertive">
-                {deleteMutation.error && <ErrorAlert message={deleteMutation.error.message} />}
-              </div>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => deleteMutation.mutate()}
-                  disabled={deleteMutation.isPending}
-                  className="btn preset-filled-error-500 flex-1"
-                >
-                  {deleteMutation.isPending ? "Deleting..." : "Delete"}
-                </button>
-                <Dialog.CloseTrigger
-                  ref={cancelRef}
-                  className="btn preset-outlined-surface-200-800"
-                >
-                  Cancel
-                </Dialog.CloseTrigger>
-              </div>
-            </Dialog.Content>
-          </Dialog.Positioner>
-        </Portal>
-      </Dialog>
+        <AlertDialogContent className="max-w-md space-y-4">
+          <AlertDialogHeader title="Delete task" />
+          <AlertDialogDescription>
+            Are you sure you want to delete this task? This action cannot be undone.
+          </AlertDialogDescription>
+          <div role="alert" aria-live="assertive">
+            {deleteMutation.error && <ErrorAlert message={deleteMutation.error.message} />}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogAction asChild>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  deleteMutation.mutate();
+                }}
+                disabled={deleteMutation.isPending}
+                className="btn btn-error flex-1"
+              >
+                {deleteMutation.isPending ? "Deleting..." : "Delete"}
+              </button>
+            </AlertDialogAction>
+            <AlertDialogCancel className="btn btn-soft">Cancel</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialogRoot>
     </nav>
   );
 }
@@ -231,7 +238,7 @@ function EditableTitle({
               setEditing(false);
             }
           }}
-          className="h4 w-full border-b-2 border-primary-500 bg-transparent outline-none"
+          className="w-full border-b-2 border-primary bg-transparent text-xl font-semibold outline-none"
           maxLength={500}
           disabled={mutation.isPending}
         />
@@ -243,7 +250,7 @@ function EditableTitle({
   return (
     <div>
       <h1
-        className="h4 -mx-1 cursor-pointer rounded px-1 transition-colors hover:bg-surface-100-900"
+        className="-mx-1 cursor-pointer rounded px-1 text-xl font-semibold transition-colors hover:bg-base-200"
         onClick={enterEditing}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
@@ -282,7 +289,6 @@ function StatusField({
     [statuses, search.query],
   );
 
-  // Resolve icon for the currently selected status.
   const selectedStatus = useMemo(() => statuses.find((s) => s.name === value), [statuses, value]);
   let statusIcon: ReactNode = <CircleAlert className="size-3.5" aria-hidden="true" />;
   if (selectedStatus?.icon) {
@@ -292,43 +298,36 @@ function StatusField({
 
   return (
     <>
-      <Menu {...search.menuProps} closeOnSelect={false}>
+      <DropdownMenuRoot {...search.menuProps}>
         <FieldPill icon={statusIcon} label="Status" value={value} />
-        <Portal>
-          <Menu.Positioner>
-            <SearchableMenuContent inputProps={search.inputProps} placeholder="Search statuses...">
-              {filtered.length === 0 ? (
-                <div className="text-surface-500 px-3 py-2 text-sm">No matching statuses</div>
-              ) : (
-                filtered.map((status) => {
-                  const StatusIcon = status.icon ? getIcon(status.icon) : null;
-                  return (
-                    <Menu.OptionItem
-                      key={status.name}
-                      type="radio"
-                      checked={value === status.name}
-                      value={status.name}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          mutation.mutate({ status: status.name });
-                        }
-                      }}
-                      className={MENU_ITEM_CLASS}
-                    >
-                      <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
-                        <Check className="size-4" />
-                      </Menu.ItemIndicator>
-                      {StatusIcon && <StatusIcon className="size-4" aria-hidden="true" />}
-                      <Menu.ItemText>{status.name}</Menu.ItemText>
-                      <span className="text-surface-500 ml-auto text-xs">{status.category}</span>
-                    </Menu.OptionItem>
-                  );
-                })
-              )}
-            </SearchableMenuContent>
-          </Menu.Positioner>
-        </Portal>
-      </Menu>
+        <SearchableMenuContent
+          search={search}
+          placeholder="Search statuses..."
+          inputLabel="Search statuses"
+        >
+          {filtered.length === 0 ? (
+            <div className="px-3 py-2 text-sm text-base-content/60">No matching statuses</div>
+          ) : (
+            <DropdownMenuRadioGroup
+              value={value}
+              onValueChange={(v) => {
+                if (v) mutation.mutate({ status: v });
+              }}
+            >
+              {filtered.map((status) => {
+                const StatusIcon = status.icon ? getIcon(status.icon) : null;
+                return (
+                  <DropdownMenuRadioItem key={status.name} value={status.name}>
+                    {StatusIcon && <StatusIcon className="size-4" aria-hidden="true" />}
+                    <span>{status.name}</span>
+                    <span className="ml-auto text-xs text-base-content/60">{status.category}</span>
+                  </DropdownMenuRadioItem>
+                );
+              })}
+            </DropdownMenuRadioGroup>
+          )}
+        </SearchableMenuContent>
+      </DropdownMenuRoot>
       {mutation.error && <ErrorAlert message={mutation.error.message} />}
     </>
   );
@@ -351,7 +350,6 @@ function NullableMenuField({
   value: string | null;
   options: { name: string; icon: string }[];
   label: string;
-  /** Fallback icon shown when the selected level has no per-level icon. */
   defaultIcon: ReactNode;
 }) {
   const mutation = useTaskPatch(spaceSlug, taskId);
@@ -362,7 +360,6 @@ function NullableMenuField({
     [options, search.query],
   );
 
-  // Resolve the icon for the currently selected value.
   const selectedOption = useMemo(
     () => (value ? options.find((o) => o.name === value) : undefined),
     [options, value],
@@ -375,57 +372,46 @@ function NullableMenuField({
 
   return (
     <>
-      <Menu {...search.menuProps} closeOnSelect={false}>
+      <DropdownMenuRoot {...search.menuProps}>
         <FieldPill icon={pillIcon} label={label} value={value} />
-        <Portal>
-          <Menu.Positioner>
-            <SearchableMenuContent
-              inputProps={search.inputProps}
-              placeholder={`Search ${label.toLowerCase()}...`}
+        <SearchableMenuContent
+          search={search}
+          placeholder={`Search ${label.toLowerCase()}...`}
+          inputLabel={`Search ${label.toLowerCase()}`}
+        >
+          {value !== null && (
+            <DropdownMenuItem
+              className="text-error"
+              onSelect={() => {
+                mutation.mutate({ [field]: null });
+              }}
             >
-              {value !== null && (
-                <Menu.Item
-                  value="none"
-                  className={`text-error-500 ${MENU_ITEM_CLASS}`}
-                  onClick={() => {
-                    mutation.mutate({ [field]: null });
-                  }}
-                >
-                  <X className="size-4" aria-hidden="true" />
-                  <Menu.ItemText>None</Menu.ItemText>
-                </Menu.Item>
-              )}
-              {filtered.length === 0 ? (
-                <div className="text-surface-500 px-3 py-2 text-sm">No matching options</div>
-              ) : (
-                filtered.map((option) => {
-                  const OptionIcon = option.icon ? getIcon(option.icon) : null;
-                  return (
-                    <Menu.OptionItem
-                      key={option.name}
-                      type="radio"
-                      checked={value === option.name}
-                      value={option.name}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          mutation.mutate({ [field]: option.name });
-                        }
-                      }}
-                      className={MENU_ITEM_CLASS}
-                    >
-                      <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
-                        <Check className="size-4" />
-                      </Menu.ItemIndicator>
-                      {OptionIcon && <OptionIcon className="size-4" aria-hidden="true" />}
-                      <Menu.ItemText>{option.name}</Menu.ItemText>
-                    </Menu.OptionItem>
-                  );
-                })
-              )}
-            </SearchableMenuContent>
-          </Menu.Positioner>
-        </Portal>
-      </Menu>
+              <X className="size-4" aria-hidden="true" />
+              <span>None</span>
+            </DropdownMenuItem>
+          )}
+          {filtered.length === 0 ? (
+            <div className="px-3 py-2 text-sm text-base-content/60">No matching options</div>
+          ) : (
+            <DropdownMenuRadioGroup
+              value={value ?? ""}
+              onValueChange={(v) => {
+                if (v) mutation.mutate({ [field]: v });
+              }}
+            >
+              {filtered.map((option) => {
+                const OptionIcon = option.icon ? getIcon(option.icon) : null;
+                return (
+                  <DropdownMenuRadioItem key={option.name} value={option.name}>
+                    {OptionIcon && <OptionIcon className="size-4" aria-hidden="true" />}
+                    <span>{option.name}</span>
+                  </DropdownMenuRadioItem>
+                );
+              })}
+            </DropdownMenuRadioGroup>
+          )}
+        </SearchableMenuContent>
+      </DropdownMenuRoot>
       {mutation.error && <ErrorAlert message={mutation.error.message} />}
     </>
   );
@@ -475,51 +461,54 @@ function MemberMenuField({
     return draft.map((id) => memberMap.get(id)?.userName ?? id).join(", ");
   }, [draft, memberMap]);
 
-  const handleCheckedChange = useCallback((memberId: string, checked: boolean) => {
-    setDraft((prev) => (checked ? [...prev, memberId] : prev.filter((id) => id !== memberId)));
+  const handleToggle = useCallback((memberId: string) => {
+    setDraft((prev) =>
+      prev.includes(memberId) ? prev.filter((id) => id !== memberId) : [...prev, memberId],
+    );
   }, []);
 
   return (
     <>
-      <Menu
-        typeahead={false}
-        closeOnSelect={false}
-        onOpenChange={(details) => {
-          search.handleOpenChange(details);
-          const changed = draft.length !== value.length || draft.some((id, i) => id !== value[i]);
-          if (!details.open && changed) {
+      <DropdownMenuRoot
+        onOpenChange={(open) => {
+          search.menuProps.onOpenChange(open);
+          const changed = draft.length !== value.length || !draft.every((id) => value.includes(id));
+          if (!open && changed) {
             mutation.mutate({ [field]: draft });
           }
         }}
       >
         <FieldPill icon={icon} label={label} value={displayValue} />
-        <Portal>
-          <Menu.Positioner>
-            <SearchableMenuContent inputProps={search.inputProps} placeholder="Search members...">
-              {filtered.length === 0 ? (
-                <div className="text-surface-500 px-3 py-2 text-sm">No matching members</div>
-              ) : (
-                filtered.map((member) => (
-                  <Menu.OptionItem
-                    key={member.userId}
-                    type="checkbox"
-                    checked={draft.includes(member.userId)}
-                    value={member.userId}
-                    onCheckedChange={(checked) => handleCheckedChange(member.userId, checked)}
-                    className={MENU_ITEM_CLASS}
-                  >
-                    <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
-                      <Check className="size-4" />
-                    </Menu.ItemIndicator>
-                    <Menu.ItemText>{member.userName}</Menu.ItemText>
-                    <span className="text-surface-500 ml-auto text-xs">{member.userEmail}</span>
-                  </Menu.OptionItem>
-                ))
-              )}
-            </SearchableMenuContent>
-          </Menu.Positioner>
-        </Portal>
-      </Menu>
+        <SearchableMenuContent
+          search={search}
+          placeholder="Search members..."
+          inputLabel="Search members"
+        >
+          {filtered.length === 0 ? (
+            <div className="px-3 py-2 text-sm text-base-content/60">No matching members</div>
+          ) : (
+            filtered.map((member) => {
+              const isChecked = draft.includes(member.userId);
+              return (
+                <DropdownMenuItem
+                  key={member.userId}
+                  className="pl-7 relative"
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    handleToggle(member.userId);
+                  }}
+                >
+                  <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+                    {isChecked && <Check className="size-3.5" aria-hidden="true" />}
+                  </span>
+                  <span>{member.userName}</span>
+                  <span className="ml-auto text-xs text-base-content/60">{member.userEmail}</span>
+                </DropdownMenuItem>
+              );
+            })
+          )}
+        </SearchableMenuContent>
+      </DropdownMenuRoot>
       {mutation.error && <ErrorAlert message={mutation.error.message} />}
     </>
   );
@@ -541,36 +530,14 @@ function TagsField({
   return (
     <div className="flex flex-col gap-1">
       <TagsInput
+        label="Tags"
         value={value}
-        onValueChange={(e) => {
-          mutation.mutate({ tags: e.value });
+        onValueChange={(v) => {
+          mutation.mutate({ tags: v });
         }}
-        validate={(details) => {
-          const trimmed = details.inputValue.trim();
-          return trimmed.length > 0 && !value.includes(trimmed);
-        }}
-        blurBehavior="add"
+        placeholder={value.length === 0 ? "Add tags..." : ""}
         disabled={mutation.isPending}
-      >
-        <TagsInput.Control className="input preset-outlined-surface-200-800 flex flex-wrap items-center gap-1 py-1.5">
-          {value.map((tag, i) => (
-            <TagsInput.Item key={tag} index={i} value={tag}>
-              <TagsInput.ItemPreview className="preset-tonal-surface rounded-base flex items-center gap-1 px-2 py-0.5 text-xs">
-                <TagsInput.ItemText>{tag}</TagsInput.ItemText>
-                <TagsInput.ItemDeleteTrigger className="cursor-pointer opacity-60 hover:opacity-100">
-                  <X className="size-3" aria-hidden="true" />
-                </TagsInput.ItemDeleteTrigger>
-              </TagsInput.ItemPreview>
-              <TagsInput.ItemInput className="outline-none" />
-            </TagsInput.Item>
-          ))}
-          <TagsInput.Input
-            placeholder={value.length === 0 ? "Add tags..." : ""}
-            className="min-w-20 flex-1 bg-transparent text-sm outline-none"
-          />
-          <TagsInput.HiddenInput />
-        </TagsInput.Control>
-      </TagsInput>
+      />
       {mutation.error && <ErrorAlert message={mutation.error.message} />}
     </div>
   );
@@ -610,11 +577,8 @@ export function TaskDetailView({
 }: {
   spaceSlug: string;
   taskId: string;
-  /** Mobile back link (hidden on lg+), pre-rendered with typed router link */
   backLink: ReactNode;
-  /** Breadcrumb content (ol element), pre-rendered with typed router links */
   breadcrumb: ReactNode;
-  /** Called after successful task deletion (typically navigates away) */
   onDeleteSuccess: () => void;
 }) {
   const { data: task } = useSuspenseQuery(spaceTaskQueryOptions(spaceSlug, taskId));
@@ -706,13 +670,13 @@ export function TaskDetailView({
       <TaskDescriptionEditor spaceSlug={spaceSlug} taskId={taskId} value={task.description} />
 
       <div>
-        <h2 className="h5 mb-4 flex items-center gap-2">
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold">
           <Activity className="size-4" aria-hidden="true" />
           Activity
         </h2>
         <Suspense
           fallback={
-            <div className="text-surface-500 py-6 text-center text-sm">Loading activity…</div>
+            <div className="py-6 text-center text-sm text-base-content/60">Loading activity…</div>
           }
         >
           <TaskActivityFeed spaceSlug={spaceSlug} taskId={taskId} />

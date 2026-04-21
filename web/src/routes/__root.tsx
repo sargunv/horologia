@@ -7,6 +7,7 @@ import {
   useRouterState,
 } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { Card } from "../ui/Card.tsx";
 
 interface RouterContext {
   queryClient: QueryClient;
@@ -39,15 +40,15 @@ function RootLayout() {
 function NotFoundPage() {
   return (
     <div className="flex min-h-svh items-center justify-center p-4">
-      <div className="card preset-outlined-surface-200-800 flex w-full max-w-md flex-col items-center gap-4 p-8 text-center">
-        <h1 className="h3">Page not found</h1>
-        <p className="text-surface-600-400 text-sm">
+      <Card className="flex w-full max-w-md flex-col items-center gap-4 p-8 text-center">
+        <h1 className="text-xl font-semibold">Page not found</h1>
+        <p className="text-base-content/70 text-sm">
           The page you requested does not exist or is not available here.
         </p>
-        <Link to="/" className="btn preset-filled-primary-500">
+        <Link to="/" className="btn btn-primary">
           Go home
         </Link>
-      </div>
+      </Card>
     </div>
   );
 }

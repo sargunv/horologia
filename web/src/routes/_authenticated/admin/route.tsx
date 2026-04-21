@@ -6,8 +6,8 @@ import {
   useRouterState,
 } from "@tanstack/react-router";
 import { Shield } from "lucide-react";
-import { Tabs } from "@skeletonlabs/skeleton-react";
 import { currentUserQueryOptions, usersQueryOptions } from "../../../lib/queries.ts";
+import { TabsList, TabsRoot, TabsTrigger } from "../../../ui/Tabs.tsx";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   async beforeLoad({ context }) {
@@ -34,23 +34,22 @@ function AdminLayout() {
   return (
     <div className="p-6">
       <div className="mb-6 flex items-center gap-3">
-        <Shield className="text-surface-600-400 size-6" aria-hidden="true" />
-        <h1 className="h3 flex-1">Admin</h1>
+        <Shield className="size-6 text-base-content/70" aria-hidden="true" />
+        <h1 className="flex-1 text-2xl font-semibold">Admin</h1>
       </div>
 
-      <Tabs
+      <TabsRoot
         value={activeTab}
-        onValueChange={(details) => {
-          const route = TAB_ROUTES[details.value];
+        onValueChange={(value) => {
+          const route = TAB_ROUTES[value];
           if (route) void navigate({ to: route });
         }}
       >
-        <Tabs.List>
-          <Tabs.Trigger value="users">Users</Tabs.Trigger>
-          <Tabs.Trigger value="about">About</Tabs.Trigger>
-          <Tabs.Indicator />
-        </Tabs.List>
-      </Tabs>
+        <TabsList>
+          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="about">About</TabsTrigger>
+        </TabsList>
+      </TabsRoot>
 
       <div className="mt-6">
         <Outlet />

@@ -104,7 +104,7 @@ export function MarkdownEditor({
 
   return (
     <div className={className}>
-      <div className="rounded-base border border-surface-200-800 transition-colors focus-within:border-primary-500">
+      <div className="rounded-box border border-base-300 transition-colors focus-within:border-primary">
         <EditorContent editor={editor} className="prose-editor min-h-[6rem] px-3 py-2 text-sm" />
       </div>
     </div>

@@ -66,8 +66,8 @@ export function EditableField({
         }}
         className={
           editing
-            ? "input preset-outlined-surface-200-800 w-full"
-            : "w-full cursor-pointer rounded bg-transparent px-1 text-sm outline-none transition-colors hover:bg-surface-100-900"
+            ? "input w-full"
+            : "w-full cursor-pointer rounded bg-transparent px-1 text-sm outline-none transition-colors hover:bg-base-100"
         }
         maxLength={maxLength}
         disabled={mutation.isPending}
@@ -87,8 +87,8 @@ export function PropertyRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-start gap-4 border-b border-surface-200-800 py-3 last:border-b-0">
-      <span className="text-surface-600-400 flex w-28 shrink-0 items-center gap-2 pt-1 text-sm">
+    <div className="flex items-start gap-4 border-b border-base-300 py-3 last:border-b-0">
+      <span className="text-base-content/70 flex w-28 shrink-0 items-center gap-2 pt-1 text-sm">
         {icon}
         {label}
       </span>
