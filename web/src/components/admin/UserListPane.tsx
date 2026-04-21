@@ -1,5 +1,6 @@
 import { Plus } from "lucide-react";
 import type { components } from "../../api/schema.d.ts";
+import { Card } from "../../ui/Card.tsx";
 
 type User = components["schemas"]["User"];
 
@@ -16,7 +17,7 @@ export function UserListPane({
 }) {
   return (
     <div className="flex flex-col gap-3">
-      <div className="card preset-outlined-surface-200-800 divide-y divide-surface-200-800 overflow-hidden">
+      <Card className="divide-y divide-base-300 overflow-hidden">
         {users.map((user) => (
           <button
             key={user.id}
@@ -24,7 +25,7 @@ export function UserListPane({
             onClick={() => onSelect(user.id)}
             aria-pressed={selectedId === user.id}
             className={`flex w-full items-center gap-3 p-3 text-left transition-colors ${
-              selectedId === user.id ? "preset-filled-primary-500" : "hover:bg-surface-100-900"
+              selectedId === user.id ? "bg-primary text-primary-content" : "hover:bg-base-100"
             }`}
           >
             <div className="min-w-0 flex-1">
@@ -32,8 +33,8 @@ export function UserListPane({
                 <span className="truncate text-sm font-medium">{user.name}</span>
                 {user.isOwner && (
                   <span
-                    className={`rounded-base px-1.5 py-0.5 text-xs ${
-                      selectedId === user.id ? "bg-white/20" : "preset-filled-primary-500"
+                    className={`rounded-box px-1.5 py-0.5 text-xs ${
+                      selectedId === user.id ? "bg-white/20" : "bg-primary text-primary-content"
                     }`}
                   >
                     <span className="sr-only">Role: </span>Owner
@@ -45,16 +46,16 @@ export function UserListPane({
             </div>
           </button>
         ))}
-      </div>
+      </Card>
 
       <button
         type="button"
         onClick={() => onSelect("new")}
         aria-pressed={selectedId === "new"}
-        className={`flex w-full items-center justify-center gap-2 rounded-base border-2 border-dashed p-3 text-sm transition-colors ${
+        className={`flex w-full items-center justify-center gap-2 rounded-box border-2 border-dashed p-3 text-sm transition-colors ${
           selectedId === "new"
-            ? "border-primary-500 text-primary-500"
-            : "border-surface-300-700 text-surface-500 hover:border-surface-400-600 hover:text-surface-700-300"
+            ? "border-primary text-primary"
+            : "border-base-300 text-base-content/60 hover:border-base-content/40 hover:text-base-content/80"
         }`}
       >
         <Plus className="size-4" aria-hidden="true" />

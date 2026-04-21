@@ -21,6 +21,7 @@ import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
 import { STATUS_SUGGESTED_ICONS } from "../../lib/level-icons.ts";
 import { spaceTaskStatusesQueryOptions } from "../../lib/queries.ts";
+import { notifyStaleData } from "../../lib/toaster.ts";
 import { SortableNameRow } from "./OrderedNameListForm.tsx";
 import { ErrorAlert } from "./ErrorAlert.tsx";
 import { SettingsSection } from "./SettingsSection.tsx";
@@ -131,7 +132,12 @@ function TaskStatusesForm({
       setInitialItems((prev) => toItems(data.items, "initial", prev));
       setIntermediateItems((prev) => toItems(data.items, "intermediate", prev));
       setCompletionItems((prev) => toItems(data.items, "completion", prev));
-      await queryClient.invalidateQueries({ queryKey });
+      try {
+        await queryClient.invalidateQueries({ queryKey });
+      } catch (err) {
+        console.error("Cache invalidation failed after mutation:", err);
+        notifyStaleData();
+      }
     },
   });
 
@@ -333,7 +339,7 @@ function CategoryGroup({
     <div className="flex flex-col gap-2">
       <div>
         <h3 className="text-sm font-medium">{CATEGORY_LABELS[category]}</h3>
-        <p className="text-surface-600-400 text-xs">{CATEGORY_DESCRIPTIONS[category]}</p>
+        <p className="text-base-content/70 text-xs">{CATEGORY_DESCRIPTIONS[category]}</p>
       </div>
 
       <DndContext
@@ -370,7 +376,7 @@ function CategoryGroup({
           type="button"
           onClick={handleAdd}
           disabled={disabled}
-          className="btn btn-sm preset-outlined-surface-200-800 self-start text-xs"
+          className="btn btn-sm btn-soft self-start text-xs"
         >
           <Plus className="size-3.5" aria-hidden="true" />
           Add status

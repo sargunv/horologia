@@ -1,6 +1,6 @@
-import { Combobox, Portal, useListCollection } from "@skeletonlabs/skeleton-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, UserPlus, Users, X } from "lucide-react";
+import { Command } from "cmdk";
+import { Check, UserPlus, Users, X } from "lucide-react";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
@@ -9,7 +9,6 @@ import { notifyStaleData } from "../../lib/toaster.ts";
 import { ErrorAlert } from "./ErrorAlert.tsx";
 import { SettingsSection } from "./SettingsSection.tsx";
 
-type User = components["schemas"]["User"];
 type SpaceMember = components["schemas"]["SpaceMember"];
 type SpaceRole = components["schemas"]["SpaceRole"];
 
@@ -58,7 +57,7 @@ export function MembersSection({
       title="Members"
       description="Manage who has access to this space."
     >
-      <div className="flex flex-col divide-y divide-surface-200-800">
+      <div className="flex flex-col divide-y divide-base-300">
         {members.map((member) => (
           <MemberRow
             key={member.userId}
@@ -105,7 +104,9 @@ function MemberRow({
     },
     onSuccess: async () => {
       try {
-        await queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "members"] });
+        await queryClient.invalidateQueries({
+          queryKey: ["spaces", spaceSlug, "members"],
+        });
       } catch (err) {
         console.error("Cache invalidation failed after mutation:", err);
         notifyStaleData();
@@ -122,7 +123,9 @@ function MemberRow({
     },
     onSuccess: async () => {
       try {
-        await queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "members"] });
+        await queryClient.invalidateQueries({
+          queryKey: ["spaces", spaceSlug, "members"],
+        });
       } catch (err) {
         console.error("Cache invalidation failed after mutation:", err);
         notifyStaleData();
@@ -153,13 +156,13 @@ function MemberRow({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <span className="truncate text-sm font-medium">{member.userName}</span>
-            {isSelf && <span className="text-surface-500 text-xs">(you)</span>}
+            {isSelf && <span className="text-xs text-base-content/60">(you)</span>}
           </div>
-          <div className="text-surface-600-400 truncate text-xs">{member.userEmail}</div>
+          <div className="truncate text-xs text-base-content/70">{member.userEmail}</div>
         </div>
 
         {isAdmin ? (
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex shrink-0 items-center gap-2">
             <select
               aria-label={`Role for ${member.userName}`}
               value={member.role}
@@ -167,7 +170,7 @@ function MemberRow({
                 if (isSpaceRole(e.target.value)) handleRoleChange(e.target.value);
               }}
               disabled={pending}
-              className="select preset-outlined-surface-200-800 w-28"
+              className="select select-sm w-28"
             >
               <RoleOptions />
             </select>
@@ -179,7 +182,7 @@ function MemberRow({
                   type="button"
                   onClick={handleRemove}
                   disabled={removeMutation.isPending}
-                  className="btn btn-sm preset-filled-error-500 text-xs"
+                  className="btn btn-error btn-sm"
                 >
                   {removeMutation.isPending ? "Removing..." : "Confirm"}
                 </button>
@@ -187,7 +190,7 @@ function MemberRow({
                   type="button"
                   onClick={() => setConfirmingRemove(false)}
                   disabled={removeMutation.isPending}
-                  className="btn-icon btn-icon-sm preset-outlined-surface-200-800"
+                  className="btn btn-soft btn-square btn-sm"
                   aria-label="Cancel remove"
                 >
                   <X className="size-3.5" aria-hidden="true" />
@@ -202,14 +205,14 @@ function MemberRow({
                   setConfirmingRemove(true);
                 }}
                 disabled={pending}
-                className="btn btn-sm preset-outlined-surface-200-800 text-xs"
+                className="btn btn-soft btn-sm"
               >
                 Remove
               </button>
             )}
           </div>
         ) : (
-          <span className="text-surface-600-400 text-sm">{ROLE_LABELS[member.role]}</span>
+          <span className="text-sm text-base-content/70">{ROLE_LABELS[member.role]}</span>
         )}
       </div>
 
@@ -220,7 +223,7 @@ function MemberRow({
 
 function AddMemberForm({ spaceSlug, members }: { spaceSlug: string; members: SpaceMember[] }) {
   const queryClient = useQueryClient();
-  const [value, setValue] = useState<string[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState("");
   const [role, setRole] = useState<SpaceRole>("member");
 
@@ -243,12 +246,6 @@ function AddMemberForm({ spaceSlug, members }: { spaceSlug: string; members: Spa
     );
   }, [availableUsers, inputValue]);
 
-  const collection = useListCollection({
-    items: filteredUsers,
-    itemToValue: (user: User) => user.id,
-    itemToString: (user: User) => user.name,
-  });
-
   const addMutation = useMutation({
     mutationFn: async (body: { userId: string; role: SpaceRole }) => {
       const { error } = await apiClient.POST("/spaces/{spaceSlug}/members", {
@@ -258,11 +255,13 @@ function AddMemberForm({ spaceSlug, members }: { spaceSlug: string; members: Spa
       if (error) throw new Error(error.message ?? "Failed to add member");
     },
     onSuccess: async () => {
-      setValue([]);
+      setSelectedUserId(null);
       setInputValue("");
       setRole("member");
       try {
-        await queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "members"] });
+        await queryClient.invalidateQueries({
+          queryKey: ["spaces", spaceSlug, "members"],
+        });
       } catch (err) {
         console.error("Cache invalidation failed after mutation:", err);
         notifyStaleData();
@@ -272,30 +271,28 @@ function AddMemberForm({ spaceSlug, members }: { spaceSlug: string; members: Spa
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    const userId = value[0];
-    if (!userId) return;
-    addMutation.mutate({ userId, role });
+    if (!selectedUserId) return;
+    addMutation.mutate({ userId: selectedUserId, role });
   }
 
   return (
-    <div className="border-surface-200-800 flex flex-col gap-3 border-t pt-4">
-      <h3 className="text-surface-600-400 text-sm font-medium">Add member</h3>
-      <form onSubmit={handleSubmit}>
-        <Combobox
-          collection={collection}
-          value={value}
-          onValueChange={({ value: v }) => setValue(v)}
-          inputValue={inputValue}
-          onInputValueChange={({ inputValue: v }) => setInputValue(v)}
-          disabled={addMutation.isPending}
-          openOnClick
-          closeOnSelect
+    <div className="flex flex-col gap-3 border-t border-base-300 pt-4">
+      <h3 className="text-sm font-medium text-base-content/70">Add member</h3>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+        <Command
+          shouldFilter={false}
+          className="overflow-hidden rounded-box border border-base-300"
         >
-          <Combobox.Control className="input-group grid-cols-[1fr_auto_auto]">
-            <Combobox.Input
-              className="ig-input"
-              style={{ boxShadow: "none" }}
+          <div className="flex items-center gap-2 border-b border-base-300 p-2">
+            <Command.Input
+              value={inputValue}
+              onValueChange={(v) => {
+                setInputValue(v);
+                setSelectedUserId(null);
+              }}
+              aria-label="Search users to add"
               placeholder="Search by name or email..."
+              className="flex-1 bg-transparent px-1 text-sm outline-none placeholder:text-base-content/50"
             />
             <select
               aria-label="Role"
@@ -304,14 +301,14 @@ function AddMemberForm({ spaceSlug, members }: { spaceSlug: string; members: Spa
                 if (isSpaceRole(e.target.value)) setRole(e.target.value);
               }}
               disabled={addMutation.isPending}
-              className="ig-select"
+              className="select select-sm"
             >
               <RoleOptions />
             </select>
             <button
               type="submit"
-              disabled={addMutation.isPending || value.length === 0}
-              className="ig-btn preset-filled-primary-500"
+              disabled={addMutation.isPending || !selectedUserId}
+              className="btn btn-primary btn-sm"
             >
               {addMutation.isPending ? (
                 "Adding..."
@@ -322,41 +319,42 @@ function AddMemberForm({ spaceSlug, members }: { spaceSlug: string; members: Spa
                 </>
               )}
             </button>
-          </Combobox.Control>
-          <Portal>
-            <Combobox.Positioner>
-              <Combobox.Content className="max-h-60 overflow-y-auto">
-                {usersLoading ? (
-                  <div
-                    role="presentation"
-                    className="text-surface-500 flex items-center gap-2 px-3 py-2 text-sm"
-                  >
-                    <Loader2 className="size-4 animate-spin" />
-                    Loading users...
-                  </div>
-                ) : usersError ? (
-                  <div role="presentation" className="text-error-500 px-3 py-2 text-sm">
-                    <span role="alert">Failed to load users</span>
-                  </div>
-                ) : filteredUsers.length === 0 ? (
-                  <div role="presentation" className="text-surface-500 px-3 py-2 text-sm">
-                    {availableUsers.length === 0
-                      ? "All users are already members"
-                      : "No matching users"}
-                  </div>
-                ) : (
-                  filteredUsers.map((user) => (
-                    <Combobox.Item key={user.id} item={user}>
-                      <Combobox.ItemText>{user.name}</Combobox.ItemText>
-                      <span className="text-surface-500 ml-auto text-xs">{user.email}</span>
-                      <Combobox.ItemIndicator>✓</Combobox.ItemIndicator>
-                    </Combobox.Item>
-                  ))
-                )}
-              </Combobox.Content>
-            </Combobox.Positioner>
-          </Portal>
-        </Combobox>
+          </div>
+          <Command.List className="max-h-60 overflow-y-auto p-1">
+            {usersLoading ? (
+              <div className="flex items-center gap-2 px-3 py-2 text-sm text-base-content/60">
+                <span className="loading loading-spinner loading-xs" />
+                Loading users...
+              </div>
+            ) : usersError ? (
+              <div className="px-3 py-2 text-sm text-error" role="alert">
+                Failed to load users
+              </div>
+            ) : filteredUsers.length === 0 ? (
+              <Command.Empty className="px-3 py-2 text-sm text-base-content/60">
+                {availableUsers.length === 0
+                  ? "All users are already members"
+                  : "No matching users"}
+              </Command.Empty>
+            ) : (
+              filteredUsers.map((user) => (
+                <Command.Item
+                  key={user.id}
+                  value={user.id}
+                  onSelect={() => {
+                    setSelectedUserId(user.id);
+                    setInputValue(user.name);
+                  }}
+                  className="flex cursor-default select-none items-center gap-2 rounded-field px-2 py-1.5 text-sm outline-none data-[selected=true]:bg-base-200"
+                >
+                  <span className="flex-1">{user.name}</span>
+                  <span className="text-xs text-base-content/60">{user.email}</span>
+                  {selectedUserId === user.id && <Check className="size-3.5" aria-hidden="true" />}
+                </Command.Item>
+              ))
+            )}
+          </Command.List>
+        </Command>
       </form>
       <div aria-live="polite" role="status" className="sr-only">
         {usersLoading

@@ -53,7 +53,9 @@ function SpaceLayout() {
         detail={
           isTaskDetail ? (
             <Suspense
-              fallback={<div className="text-surface-500 p-6 text-center text-sm">Loading...</div>}
+              fallback={
+                <div className="text-base-content/60 p-6 text-center text-sm">Loading...</div>
+              }
             >
               <Outlet />
             </Suspense>
@@ -61,8 +63,8 @@ function SpaceLayout() {
         }
         emptyState={
           <>
-            <ListChecks className="text-surface-400 size-12" />
-            <span className="text-surface-500 text-sm">Select a task to view details</span>
+            <ListChecks className="text-base-content/40 size-12" />
+            <span className="text-base-content/60 text-sm">Select a task to view details</span>
           </>
         }
       />

@@ -74,7 +74,7 @@ function GeneralSettingsForm({ space }: { space: Pick<Space, "slug" | "name" | "
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <label className="flex flex-col gap-1">
-        <span className="text-surface-600-400 text-sm font-medium">Name</span>
+        <span className="text-base-content/70 text-sm font-medium">Name</span>
         <input
           type="text"
           required
@@ -83,7 +83,7 @@ function GeneralSettingsForm({ space }: { space: Pick<Space, "slug" | "name" | "
             updateMutation.reset();
             setName(e.target.value);
           }}
-          className="input preset-outlined-surface-200-800 w-full"
+          className="input w-full"
           placeholder="My Project"
           maxLength={200}
           disabled={updateMutation.isPending}
@@ -91,7 +91,7 @@ function GeneralSettingsForm({ space }: { space: Pick<Space, "slug" | "name" | "
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-surface-600-400 text-sm font-medium">Slug</span>
+        <span className="text-base-content/70 text-sm font-medium">Slug</span>
         <input
           type="text"
           required
@@ -100,19 +100,19 @@ function GeneralSettingsForm({ space }: { space: Pick<Space, "slug" | "name" | "
             updateMutation.reset();
             setSlug(e.target.value);
           }}
-          className="input preset-outlined-surface-200-800 w-full"
+          className="input w-full"
           placeholder="my-project"
           maxLength={100}
           disabled={updateMutation.isPending}
         />
-        <span className="text-surface-500 text-xs">
+        <span className="text-base-content/60 text-xs">
           Used in URLs. Changing this will update all links to this space.
         </span>
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-surface-600-400 text-sm font-medium">
-          Description <span className="text-surface-500 font-normal">(optional)</span>
+        <span className="text-base-content/70 text-sm font-medium">
+          Description <span className="text-base-content/60 font-normal">(optional)</span>
         </span>
         <textarea
           value={description}
@@ -120,7 +120,7 @@ function GeneralSettingsForm({ space }: { space: Pick<Space, "slug" | "name" | "
             updateMutation.reset();
             setDescription(e.target.value);
           }}
-          className="textarea preset-outlined-surface-200-800 w-full resize-none"
+          className="textarea w-full"
           placeholder="What is this space for?"
           rows={3}
           maxLength={1000}
@@ -134,7 +134,7 @@ function GeneralSettingsForm({ space }: { space: Pick<Space, "slug" | "name" | "
         <button
           type="submit"
           disabled={updateMutation.isPending || !hasChanges}
-          className="btn preset-filled-primary-500"
+          className="btn btn-primary"
         >
           {updateMutation.isPending ? "Saving..." : "Save changes"}
         </button>

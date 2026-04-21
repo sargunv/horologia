@@ -282,7 +282,7 @@ function SortableNameList({
           type="button"
           onClick={handleAdd}
           disabled={disabled}
-          className="btn btn-sm preset-outlined-surface-200-800 self-start text-xs"
+          className="btn btn-sm btn-soft self-start text-xs"
         >
           <Plus className="size-3.5" aria-hidden="true" />
           Add {itemLabel.toLowerCase()}
@@ -340,11 +340,11 @@ export function SortableNameRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-1 rounded-base ${isDragging ? "opacity-50" : ""}`}
+      className={`flex items-center gap-1 rounded-box ${isDragging ? "opacity-50" : ""}`}
     >
       <button
         type="button"
-        className={`btn-icon btn-icon-sm shrink-0 ${draggable ? "preset-tonal-surface cursor-grab" : "cursor-default opacity-50"}`}
+        className={`btn btn-square btn-sm shrink-0 ${draggable ? "bg-base-200 text-base-content cursor-grab" : "cursor-default opacity-50"}`}
         disabled={!draggable || disabled}
         aria-label={`Drag to reorder ${item.name || `${itemLabel.toLowerCase()} ${index + 1}`}`}
         {...(draggable && !disabled ? { ...attributes, ...listeners } : {})}
@@ -369,7 +369,7 @@ export function SortableNameRow({
           onChange={(e) => onRename(e.target.value)}
           onBlur={onEndEdit}
           onKeyDown={handleKeyDown}
-          className="input preset-outlined-surface-200-800 flex-1"
+          className="input flex-1"
           placeholder={`${itemLabel} name`}
           maxLength={100}
           required
@@ -382,11 +382,11 @@ export function SortableNameRow({
           type="button"
           onClick={onStartEdit}
           disabled={disabled}
-          className="flex flex-1 items-center gap-2 truncate rounded-base px-3 py-2 text-left text-sm hover:bg-surface-200-800"
+          className="flex flex-1 items-center gap-2 truncate rounded-box px-3 py-2 text-left text-sm hover:bg-base-200"
           aria-label={`Edit ${item.name || itemLabel.toLowerCase()}`}
         >
           <span className="flex-1 truncate">{item.name || `${itemLabel} name`}</span>
-          <Pencil className="text-surface-600-400 size-3.5 shrink-0" aria-hidden="true" />
+          <Pencil className="text-base-content/70 size-3.5 shrink-0" aria-hidden="true" />
         </button>
       )}
 
@@ -395,7 +395,7 @@ export function SortableNameRow({
           type="button"
           onClick={onRemove}
           disabled={disabled}
-          className="btn-icon btn-icon-sm preset-outlined-surface-200-800 shrink-0"
+          className="btn btn-square btn-sm btn-soft shrink-0"
           aria-label={`Remove ${item.name || itemLabel.toLowerCase()}`}
         >
           <Trash2 className="size-3.5" aria-hidden="true" />

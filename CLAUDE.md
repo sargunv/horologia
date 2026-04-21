@@ -46,7 +46,8 @@ PostgreSQL is managed by mise and started automatically by Tilt. Data is stored 
 
 - ./api - TypeSpec definition for API.
 - ./server - Golang backend service and API implementation.
-- ./web - React SPA served by the backend, built with Skeleton (React) design system.
+- ./web - React SPA served by the backend. Built on Tailwind v4 + daisyUI 5, with primitives in
+  `web/src/ui/` that wrap Radix UI (umbrella), cmdk, Ark UI (TagsInput only), and sonner.
 - ./cli - TODO: Golang CLI client
 
 ## Conventions
@@ -110,20 +111,51 @@ Both must be re-run when you add new TypeSpec types or new/changed SQL queries. 
 
 ## Web App Conventions
 
-- Use [Skeleton (React)](https://www.skeleton.dev/llms-react.txt) as the design system. Prefer
-  Skeleton components over custom implementations wherever possible.
-- Lean on Skeleton's built-in theming for all styling. Do not hand-roll colors, typography, or
-  spacing tokens.
-- Our concerns are layout, functionality, and correct use of Skeleton components — not bespoke
-  styling.
-- Use `/frontend-design` when building UI to ensure high quality.
-- Use `createLink()` from TanStack Router to wrap Skeleton components for client-side navigation. Do
-  not use Skeleton's `element` render prop for router integration — it's a power-user escape hatch
-  that doesn't forward children and is not needed for normal usage.
-- Read Skeleton's component docs before hand-rolling UI. Check whether a Skeleton component already
-  exists for the pattern (e.g. Navigation, AppBar) rather than building it from raw HTML + Tailwind.
+### Design system
+
+- The app's design system lives in `web/src/ui/`. Import UI primitives from there first; only drop
+  down to Radix / cmdk / Ark directly when the primitive doesn't cover the case, and if you do it
+  more than once, add a wrapper in `web/src/ui/`.
+- Primitives in use: `Dialog`, `DropdownMenu` (+ `DropdownMenuSub*`), `Tooltip`, `Tabs`, `Avatar`,
+  `TagsInput`, `Toaster`. Plus `surface.ts` (shared overlay classes `SURFACE`, `SURFACE_MOTION`,
+  `MENU_ITEM`) and `cx.ts` (tiny classname combiner).
+- Searchable menus: compose `DropdownMenuRoot` + `FieldPill` (trigger) +
+  `components/SearchableMenuContent.tsx` + `lib/useMenuSearch.ts`. See `TaskDetail.tsx` / the task
+  menu fields for the canonical pattern.
+- Mutation toasts: `notifyStaleData()` from `lib/toaster.ts` covers "mutation succeeded but cache
+  invalidation failed." For other toasts, import `toast` from `sonner` directly.
+
+### Styling
+
+- Lean on daisyUI's defaults (`btn`, `input`, `textarea`, `select`, `badge`, `alert`, `menu`,
+  `loading loading-spinner`, `avatar`, `card`). Don't reinvent what daisyUI already provides.
+- Use daisyUI semantic tokens for color (`bg-base-100/200/300`, `text-base-content`,
+  `text-base-content/70`, `bg-primary`, `bg-error`, etc.) — never hardcoded Tailwind colors.
+- Use daisyUI radius tokens: `rounded-box` for cards/dialogs/overlays, `rounded-field` for
+  buttons/inputs/menu-items, `rounded-selector` for chips/toggles.
+- daisyUI 5 ships borders on `input`/`textarea` by default — don't add `border border-base-300`
+  alongside. Same for focus rings (`outline` is handled by the `input` class).
+- daisyUI 5 input-with-icon pattern: wrap `<svg>` + `<input>` inside `<label class="input">`. See
+  `TaskSearchCombobox.tsx`.
+- Don't add a project-wide `:focus-visible` rule — daisyUI components ship their own and a global
+  override fights with them. Add focus outlines inline on the few custom-styled elements that need
+  them (sidebar links, etc.).
+- Use `/frontend-design` when building new UI. Prefer restraint: match the feel of existing pages
+  before reaching for bolder choices.
+
+### Router
+
+- Use `createLink()` from TanStack Router to attach client-side navigation to any component that
+  accepts anchor props. For plain anchors, `createLink("a")`. Wrap custom primitives by passing the
+  component as the argument, e.g. `createLink(DropdownMenuItem)`.
+
+### Mutations
+
 - Extract `useMutation` hooks into `lib/mutations.ts` only when reused across multiple components.
   One-off mutations with page-specific side effects belong inline in the component.
+- Wrap `queryClient.invalidateQueries()` inside `onSuccess` with a try/catch and call
+  `notifyStaleData()` on failure — a thrown invalidation turns a successful mutation into a
+  misleading error alert otherwise. See the hooks in `lib/mutations.ts` for the canonical shape.
 
 ## Manual Testing
 

@@ -41,13 +41,13 @@ function SpaceActivityPage() {
       <BackLink
         to="/spaces/$spaceSlug"
         params={{ spaceSlug }}
-        className="text-surface-600-400 hover:text-surface-950-50 mb-4 inline-flex items-center gap-1 text-sm transition-colors"
+        className="text-base-content/70 hover:text-base-content mb-4 inline-flex items-center gap-1 text-sm transition-colors"
       >
         <ArrowLeft className="size-4" aria-hidden="true" />
         Back to {space.name}
       </BackLink>
 
-      <h1 className="h3 mb-6">{space.name} — Activity</h1>
+      <h1 className="text-xl font-semibold mb-6">{space.name} — Activity</h1>
 
       <ActivityFeed
         entries={entries}

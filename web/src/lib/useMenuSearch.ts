@@ -15,63 +15,51 @@ export interface MenuSearchInputProps {
 }
 
 export interface MenuSearchResult {
-  /** Current search query */
   query: string;
-  /** Update the search query */
   setQuery: (query: string) => void;
-  /** Ref to the search input element */
   inputRef: RefObject<HTMLInputElement | null>;
-  /** Props to spread on the search <input> element */
   inputProps: MenuSearchInputProps;
-  /**
-   * Props to spread on the <Menu> root.
-   * Disables typeahead (so keystrokes go to the input) and
-   * handles focus/reset on open/close.
-   */
+  /** Props to spread on a Radix DropdownMenuRoot or DropdownMenuSub. */
   menuProps: {
-    typeahead: false;
-    onOpenChange: (details: { open: boolean }) => void;
+    onOpenChange: (open: boolean) => void;
   };
-  /**
-   * The onOpenChange handler, exposed separately for cases where
-   * the consumer needs to compose it with their own onOpenChange logic.
-   */
-  handleOpenChange: (details: { open: boolean }) => void;
 }
 
+const TYPEAHEAD_KEY_RE = /^[\S\s]$/u; // any single printable character
+
 /**
- * Hook for coordinating a search input inside a Skeleton Menu.
+ * Hook for coordinating a search input inside a Radix DropdownMenu.
  *
  * Manages:
  * - Search query state
- * - Auto-focus on the input when the menu opens
- * - Query reset when the menu closes
- * - ArrowDown from the input to the first menu item
+ * - Query reset when the enclosing menu closes (via `menuProps.onOpenChange`)
+ * - ArrowDown / Enter from the input → first menu item
+ * - Swallows printable single-character keys so Radix's typeahead doesn't
+ *   intercept text input; leaves navigation keys (Arrow*, Home, End, Tab,
+ *   Escape) alone so Radix's menu keyboard model still works.
  *
- * Does NOT manage filtering — consumers filter/transform items
- * based on `query` themselves. This keeps the hook flexible for
- * standard text filtering, custom parsing (dates), and async search.
+ * Focus is not managed explicitly — place the search input as the first
+ * tabbable inside the `DropdownMenu.Content` and Radix's FocusScope lands
+ * on it automatically when the menu opens.
+ *
+ * Does NOT manage filtering — consumers filter based on `query` themselves.
  */
 export function useMenuSearch(): MenuSearchResult {
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleOpenChange = useCallback((details: { open: boolean }) => {
-    if (details.open) {
-      requestAnimationFrame(() => {
-        inputRef.current?.focus();
-      });
-    } else {
-      setQuery("");
-    }
+  const handleOpenChange = useCallback((open: boolean) => {
+    if (!open) setQuery("");
   }, []);
 
   const handleKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {
-    // Prevent Space from being consumed by Menu's keyboard handler
-    if (e.key === " ") {
+    // Block Radix typeahead for printable characters so they reach the input
+    // instead of jumping focus to a menuitem whose label starts with that key.
+    if (TYPEAHEAD_KEY_RE.test(e.key)) {
       e.stopPropagation();
-      return;
     }
+
+    if (e.key !== "Enter" && e.key !== "ArrowDown") return;
 
     const menu = inputRef.current?.closest("[role='menu']");
     if (!menu) return;
@@ -86,18 +74,13 @@ export function useMenuSearch(): MenuSearchResult {
 
     if (e.key === "Enter") {
       e.preventDefault();
-      if (firstItem instanceof HTMLElement) {
-        firstItem.click();
-      }
+      if (firstItem instanceof HTMLElement) firstItem.click();
       return;
     }
 
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      if (firstItem instanceof HTMLElement) {
-        firstItem.focus();
-      }
-    }
+    // ArrowDown
+    e.preventDefault();
+    if (firstItem instanceof HTMLElement) firstItem.focus();
   }, []);
 
   const handleChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
@@ -114,10 +97,6 @@ export function useMenuSearch(): MenuSearchResult {
       onChange: handleChange,
       onKeyDown: handleKeyDown,
     },
-    menuProps: {
-      typeahead: false,
-      onOpenChange: handleOpenChange,
-    },
-    handleOpenChange,
+    menuProps: { onOpenChange: handleOpenChange },
   };
 }

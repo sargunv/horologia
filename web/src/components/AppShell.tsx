@@ -1,107 +1,132 @@
-import { Navigation, Toast } from "@skeletonlabs/skeleton-react";
 import { createLink } from "@tanstack/react-router";
-import { CircleUser, House, Layers, LayoutGrid, Plus, X } from "lucide-react";
-import { type ReactNode } from "react";
+import { CircleUser, House, Layers, LayoutGrid, Plus } from "lucide-react";
+import type { ReactNode } from "react";
 import type { components } from "../api/schema.d.ts";
-import { toaster } from "../lib/toaster.ts";
+import { Toaster } from "../ui/Toaster.tsx";
+import { TooltipProvider } from "../ui/Tooltip.tsx";
 import { TaskSearchCombobox } from "./task/TaskSearchCombobox.tsx";
 import { UserMenu } from "./UserMenu.tsx";
 
 type User = components["schemas"]["User"];
 type Space = components["schemas"]["Space"];
 
-const NavLink = createLink(Navigation.TriggerAnchor);
-const PlainLink = createLink("a");
+const NavAnchor = createLink("a");
+
+const SIDEBAR_LINK =
+  "group flex items-center gap-2.5 rounded-field px-2 py-1.5 text-sm " +
+  "text-base-content/70 border-l-2 border-transparent " +
+  "transition-colors duration-100 hover:bg-base-100 hover:text-base-content";
+
+const SIDEBAR_LINK_ACTIVE =
+  "bg-base-100 text-base-content font-medium " +
+  "border-l-primary " +
+  "shadow-[inset_0_0_0_1px_var(--color-base-300)]";
+
+const MOBILE_LINK =
+  "flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-xs font-medium text-base-content/70 hover:text-base-content";
+
+const MOBILE_LINK_ACTIVE = "text-primary";
+
+const SECTION_LABEL =
+  "px-2 pb-1.5 pt-0.5 text-3xs font-semibold uppercase tracking-caps text-base-content/70";
 
 function DesktopSidebar({ user, spaces }: { user: User; spaces: Space[] }) {
   return (
-    <Navigation
-      layout="sidebar"
-      className="hidden shrink-0 border-r border-surface-200-800 md:flex md:flex-col"
-    >
-      <Navigation.Header>
-        <NavLink to="/" className="flex items-center gap-2">
-          <span className="text-lg font-bold">Horologia</span>
-        </NavLink>
-      </Navigation.Header>
+    <aside className="hidden w-64 shrink-0 flex-col border-r border-base-300 bg-base-200 md:flex">
+      <header className="px-4 pt-4 pb-2">
+        <NavAnchor to="/" className="flex items-center gap-2">
+          <span className="text-lg font-bold tracking-tight">Horologia</span>
+        </NavAnchor>
+      </header>
 
-      <Navigation.Content className="flex-1">
-        <Navigation.Group>
-          <Navigation.Menu>
-            <TaskSearchCombobox className="w-full" />
-            <NavLink
-              to="/"
-              activeProps={{ className: "preset-filled-primary-500" }}
-              activeOptions={{ exact: true }}
-            >
-              <House className="size-5" />
-              <Navigation.TriggerText>Home</Navigation.TriggerText>
-            </NavLink>
-          </Navigation.Menu>
-        </Navigation.Group>
+      <div className="px-2 pt-2 pb-1">
+        <TaskSearchCombobox />
+      </div>
 
-        <Navigation.Group>
+      <div className="flex-1 space-y-3 overflow-y-auto px-2 py-2">
+        <div className="space-y-0.5">
+          <NavAnchor
+            to="/"
+            className={SIDEBAR_LINK}
+            activeProps={{ className: `${SIDEBAR_LINK} ${SIDEBAR_LINK_ACTIVE}` }}
+            activeOptions={{ exact: true }}
+          >
+            <House className="size-4" aria-hidden="true" />
+            <span className="flex-1 truncate">Home</span>
+          </NavAnchor>
+        </div>
+
+        <nav aria-label="Spaces" className="space-y-0.5">
           <div className="flex items-center justify-between">
-            <PlainLink to="/spaces" className="unstyled">
-              <Navigation.Label>Spaces</Navigation.Label>
-            </PlainLink>
-            <PlainLink
+            <NavAnchor to="/spaces" className={`${SECTION_LABEL} hover:text-base-content`}>
+              Spaces
+            </NavAnchor>
+            <NavAnchor
               to="/spaces/new"
-              className="text-surface-600-400 hover:text-surface-900-100 transition-colors"
+              className="rounded-field p-1 text-base-content/60 transition-colors hover:bg-base-100 hover:text-base-content"
               aria-label="Create space"
             >
-              <Plus className="size-4" />
-            </PlainLink>
+              <Plus className="size-3.5" aria-hidden="true" />
+            </NavAnchor>
           </div>
-          <Navigation.Menu>
+          <div className="space-y-0.5">
             {spaces.map((space) => (
-              <NavLink
+              <NavAnchor
                 key={space.slug}
                 to="/spaces/$spaceSlug"
                 params={{ spaceSlug: space.slug }}
-                activeProps={{ className: "preset-filled-primary-500" }}
+                className={SIDEBAR_LINK}
+                activeProps={{
+                  className: `${SIDEBAR_LINK} ${SIDEBAR_LINK_ACTIVE}`,
+                }}
               >
-                <LayoutGrid className="size-5" />
-                <Navigation.TriggerText>{space.name}</Navigation.TriggerText>
-              </NavLink>
+                <LayoutGrid className="size-4" aria-hidden="true" />
+                <span className="flex-1 truncate">{space.name}</span>
+              </NavAnchor>
             ))}
-            {spaces.length === 0 && <div className="text-surface-500 text-sm">No spaces yet</div>}
-          </Navigation.Menu>
-        </Navigation.Group>
-      </Navigation.Content>
+            {spaces.length === 0 && (
+              <div className="px-2 text-xs text-base-content/55">No spaces yet</div>
+            )}
+          </div>
+        </nav>
+      </div>
 
-      <Navigation.Footer>
+      <footer className="border-t border-base-300 p-3">
         <UserMenu user={user} />
-      </Navigation.Footer>
-    </Navigation>
+      </footer>
+    </aside>
   );
 }
 
 function MobileBar() {
   return (
-    <Navigation
-      layout="bar"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-surface-200-800 md:hidden"
-    >
-      <Navigation.Menu>
-        <NavLink
-          to="/"
-          activeProps={{ className: "text-primary-500" }}
-          activeOptions={{ exact: true }}
-        >
-          <House className="size-5" />
-          <Navigation.TriggerText>Home</Navigation.TriggerText>
-        </NavLink>
-        <NavLink to="/spaces" activeProps={{ className: "text-primary-500" }}>
-          <Layers className="size-5" />
-          <Navigation.TriggerText>Spaces</Navigation.TriggerText>
-        </NavLink>
-        <NavLink to="/settings" activeProps={{ className: "text-primary-500" }}>
-          <CircleUser className="size-5" />
-          <Navigation.TriggerText>Account</Navigation.TriggerText>
-        </NavLink>
-      </Navigation.Menu>
-    </Navigation>
+    <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-base-300 bg-base-100 md:hidden">
+      <NavAnchor
+        to="/"
+        className={MOBILE_LINK}
+        activeProps={{ className: `${MOBILE_LINK} ${MOBILE_LINK_ACTIVE}` }}
+        activeOptions={{ exact: true }}
+      >
+        <House className="size-5" />
+        <span>Home</span>
+      </NavAnchor>
+      <NavAnchor
+        to="/spaces"
+        className={MOBILE_LINK}
+        activeProps={{ className: `${MOBILE_LINK} ${MOBILE_LINK_ACTIVE}` }}
+      >
+        <Layers className="size-5" />
+        <span>Spaces</span>
+      </NavAnchor>
+      <NavAnchor
+        to="/settings"
+        className={MOBILE_LINK}
+        activeProps={{ className: `${MOBILE_LINK} ${MOBILE_LINK_ACTIVE}` }}
+      >
+        <CircleUser className="size-5" />
+        <span>Account</span>
+      </NavAnchor>
+    </nav>
   );
 }
 
@@ -115,39 +140,13 @@ export function AppShell({
   children: ReactNode;
 }) {
   return (
-    <div className="grid h-svh grid-cols-1 md:grid-cols-[auto_1fr]">
-      <DesktopSidebar user={user} spaces={spaces} />
-      <main className="overflow-y-auto pb-16 md:pb-0">{children}</main>
-      <MobileBar />
-      <Toast.Group toaster={toaster}>
-        {(toast) => (
-          <Toast
-            toast={toast}
-            className={`card flex items-start gap-3 p-4 shadow-xl ${
-              toast.type === "error"
-                ? "preset-filled-error-500"
-                : toast.type === "warning"
-                  ? "preset-tonal-warning"
-                  : "preset-filled-surface-200-800"
-            }`}
-          >
-            <div className="flex-1">
-              {toast.title && <Toast.Title className="font-semibold">{toast.title}</Toast.Title>}
-              {toast.description && (
-                <Toast.Description className="text-sm opacity-80">
-                  {toast.description}
-                </Toast.Description>
-              )}
-            </div>
-            <Toast.CloseTrigger
-              className="btn btn-icon btn-sm opacity-70 hover:opacity-100"
-              aria-label="Dismiss"
-            >
-              <X className="size-4" aria-hidden="true" />
-            </Toast.CloseTrigger>
-          </Toast>
-        )}
-      </Toast.Group>
-    </div>
+    <TooltipProvider delayDuration={300}>
+      <div className="flex h-svh bg-base-100 text-base-content">
+        <DesktopSidebar user={user} spaces={spaces} />
+        <main className="flex-1 overflow-y-auto pb-16 md:pb-0">{children}</main>
+        <MobileBar />
+        <Toaster />
+      </div>
+    </TooltipProvider>
   );
 }

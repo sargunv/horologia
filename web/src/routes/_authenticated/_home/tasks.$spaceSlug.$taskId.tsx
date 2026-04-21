@@ -35,7 +35,7 @@ function HomeTaskDetailPage() {
       backLink={
         <AnchorLink
           to="/"
-          className="text-surface-600-400 hover:text-surface-950-50 inline-flex items-center gap-1 text-sm transition-colors lg:hidden"
+          className="text-base-content/70 hover:text-base-content inline-flex items-center gap-1 text-sm transition-colors lg:hidden"
         >
           <ArrowLeft className="size-4" aria-hidden="true" />
           Back to My Tasks
@@ -44,11 +44,11 @@ function HomeTaskDetailPage() {
       breadcrumb={
         <ol className="flex min-w-0 items-center gap-1 text-sm">
           <li>
-            <AnchorLink to="/" className="text-surface-600-400 truncate hover:underline">
+            <AnchorLink to="/" className="text-base-content/70 truncate hover:underline">
               My Tasks
             </AnchorLink>
           </li>
-          <li className="text-surface-500" aria-hidden="true">
+          <li className="text-base-content/60" aria-hidden="true">
             <ChevronRight className="size-3" />
           </li>
           <li>

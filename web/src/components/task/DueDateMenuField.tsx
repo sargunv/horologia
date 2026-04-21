@@ -1,12 +1,20 @@
-import { Menu, Portal } from "@skeletonlabs/skeleton-react";
 import { Calendar, Check, ChevronRight, Clock, X } from "lucide-react";
-import { useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 import type { components } from "../../api/schema.d.ts";
-import { FieldPill } from "../FieldPill.tsx";
-import { MENU_ITEM_CLASS, SearchableMenuContent } from "../SearchableMenuContent.tsx";
 import { addDays, formatDateDisplay, parseDateInput, toISODate } from "../../lib/dates.ts";
-import { useMenuSearch } from "../../lib/useMenuSearch.ts";
 import { useTaskPatch } from "../../lib/mutations.ts";
+import { useMenuSearch } from "../../lib/useMenuSearch.ts";
+import {
+  DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuRoot,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+} from "../../ui/DropdownMenu.tsx";
+import { FieldPill } from "../FieldPill.tsx";
+import { SearchableMenuContent, SearchableSubMenuContent } from "../SearchableMenuContent.tsx";
 import { ErrorAlert } from "../space-settings/ErrorAlert.tsx";
 
 type Task = components["schemas"]["Task"];
@@ -14,14 +22,6 @@ type TaskOverdueAction = components["schemas"]["TaskOverdueAction"];
 type TaskOverdueActionRule = components["schemas"]["TaskOverdueActionRule"];
 type TaskRecurrenceType = components["schemas"]["TaskRecurrenceType"];
 type TaskStatus = components["schemas"]["TaskStatus"];
-
-// Zag.js reads z-index from Menu.Content's computed style and propagates
-// it to the positioner via --z-index. Apply z-index to Content (not
-// Positioner) so Zag picks it up. Child portals render before parent
-// portals in DOM, so deeper menus need higher z-index.
-const Z_SUBMENU = "z-10";
-const Z_DETAIL = "z-20";
-const Z_DEEP = "z-30";
 
 const BROWSER_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -90,18 +90,18 @@ function describeOverdueAction(rule: TaskOverdueActionRule): string {
   }
 }
 
-// ─── Status Picker Content ──────────────────────────────────────────────────
+// ─── Status Picker Submenu ──────────────────────────────────────────────────
 
-function StatusPickerContent({
+function StatusPickerSubMenu({
   statuses,
   currentStatus,
   onSelect,
-  className,
+  triggerContent,
 }: {
   statuses: TaskStatus[];
   currentStatus: string | undefined;
   onSelect: (status: string) => void;
-  className?: string;
+  triggerContent: ReactNode;
 }) {
   const search = useMenuSearch();
 
@@ -111,36 +111,34 @@ function StatusPickerContent({
   );
 
   return (
-    <SearchableMenuContent
-      inputProps={search.inputProps}
-      placeholder="Search statuses..."
-      className={className}
-    >
-      {filtered.length === 0 ? (
-        <div role="status" className="text-surface-500 px-3 py-2 text-sm">
-          No matching statuses
-        </div>
-      ) : (
-        filtered.map((status) => (
-          <Menu.OptionItem
-            key={status.name}
-            type="radio"
-            checked={currentStatus === status.name}
-            value={status.name}
-            onCheckedChange={(checked) => {
-              if (checked) onSelect(status.name);
+    <DropdownMenuSub {...search.menuProps}>
+      <DropdownMenuSubTrigger>{triggerContent}</DropdownMenuSubTrigger>
+      <SearchableSubMenuContent
+        search={search}
+        placeholder="Search statuses..."
+        inputLabel="Search statuses"
+      >
+        {filtered.length === 0 ? (
+          <div role="status" className="px-3 py-2 text-sm text-base-content/60">
+            No matching statuses
+          </div>
+        ) : (
+          <DropdownMenuRadioGroup
+            value={currentStatus ?? ""}
+            onValueChange={(v) => {
+              if (v) onSelect(v);
             }}
-            className={MENU_ITEM_CLASS}
           >
-            <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
-              <Check className="size-4" />
-            </Menu.ItemIndicator>
-            <Menu.ItemText>{status.name}</Menu.ItemText>
-            <span className="text-surface-500 ml-auto text-xs">{status.category}</span>
-          </Menu.OptionItem>
-        ))
-      )}
-    </SearchableMenuContent>
+            {filtered.map((status) => (
+              <DropdownMenuRadioItem key={status.name} value={status.name}>
+                <span>{status.name}</span>
+                <span className="ml-auto text-xs text-base-content/60">{status.category}</span>
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        )}
+      </SearchableSubMenuContent>
+    </DropdownMenuSub>
   );
 }
 
@@ -151,13 +149,13 @@ function WhenSubMenu({
   currentRule,
   statuses,
   onSave,
-  className,
+  triggerContent,
 }: {
   action: TaskOverdueAction;
   currentRule: TaskOverdueActionRule | null;
   statuses: TaskStatus[];
   onSave: (rule: TaskOverdueActionRule) => void;
-  className?: string;
+  triggerContent: ReactNode;
 }) {
   const search = useMenuSearch();
   const parsedDays = useMemo(() => parseDaysInput(search.query), [search.query]);
@@ -167,8 +165,7 @@ function WhenSubMenu({
   const currentStatus =
     currentRule?.action === "set_status" && currentRule.status
       ? currentRule.status
-      : // Spaces always have ≥2 statuses; this fallback is defensive only
-        (statuses[0]?.name ?? "");
+      : (statuses[0]?.name ?? "");
 
   function selectAfter(after: number | null) {
     const rule: TaskOverdueActionRule = { after, action };
@@ -186,82 +183,70 @@ function WhenSubMenu({
   const isSearching = search.query.length > 0;
 
   return (
-    <SearchableMenuContent
-      inputProps={search.inputProps}
-      placeholder='e.g. "3 days"'
-      className={className}
-    >
-      {/* Parsed days from search */}
-      {isSearching &&
-        parsedDays &&
-        !filteredShortcuts.some((s) => s.after === parsedDays.after) && (
-          <Menu.Item
-            value={`parsed-${parsedDays.after}`}
-            className={MENU_ITEM_CLASS}
-            onClick={() => selectAfter(parsedDays.after)}
+    <DropdownMenuSub {...search.menuProps}>
+      <DropdownMenuSubTrigger>{triggerContent}</DropdownMenuSubTrigger>
+      <SearchableSubMenuContent search={search} placeholder='e.g. "3 days"' inputLabel="When">
+        {isSearching &&
+          parsedDays &&
+          !filteredShortcuts.some((s) => s.after === parsedDays.after) && (
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                selectAfter(parsedDays.after);
+              }}
+            >
+              <span>{parsedDays.label}</span>
+            </DropdownMenuItem>
+          )}
+
+        {filteredShortcuts.map((option) => (
+          <DropdownMenuItem
+            key={option.label}
+            className="pl-7 relative"
+            onSelect={(e) => {
+              e.preventDefault();
+              selectAfter(option.after);
+            }}
           >
-            <Menu.ItemText>{parsedDays.label}</Menu.ItemText>
-          </Menu.Item>
+            <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+              {isCurrentAction && currentAfter === option.after && (
+                <Check className="size-3.5" aria-hidden="true" />
+              )}
+            </span>
+            <span>{option.label}</span>
+          </DropdownMenuItem>
+        ))}
+
+        {isSearching && !parsedDays && filteredShortcuts.length === 0 && (
+          <div role="status" className="px-3 py-2 text-sm text-base-content/60">
+            No matching options
+          </div>
         )}
 
-      {/* When shortcuts */}
-      {filteredShortcuts.map((option) => (
-        <Menu.OptionItem
-          key={option.label}
-          type="radio"
-          checked={isCurrentAction && currentAfter === option.after}
-          value={option.label}
-          onCheckedChange={(checked) => {
-            if (checked) selectAfter(option.after);
-          }}
-          className={MENU_ITEM_CLASS}
-        >
-          <Menu.ItemIndicator className="invisible data-[state=checked]:visible">
-            <Check className="size-4" />
-          </Menu.ItemIndicator>
-          <Menu.ItemText>{option.label}</Menu.ItemText>
-        </Menu.OptionItem>
-      ))}
-
-      {isSearching && !parsedDays && filteredShortcuts.length === 0 && (
-        <div role="status" className="text-surface-500 px-3 py-2 text-sm">
-          No matching options
-        </div>
-      )}
-
-      {/* Status picker for set_status */}
-      {action === "set_status" && (
-        <>
-          <Menu.Separator />
-          <Menu typeahead={false} closeOnSelect={false}>
-            <Menu.TriggerItem value="status-picker" className="justify-start gap-2 text-sm">
-              <Menu.ItemText>
-                {currentStatus ? `Status: ${currentStatus}` : "Pick status..."}
-              </Menu.ItemText>
-              <Menu.ItemIndicator className="ml-auto">
-                <ChevronRight className="size-4" />
-              </Menu.ItemIndicator>
-            </Menu.TriggerItem>
-            <Portal>
-              <Menu.Positioner>
-                <StatusPickerContent
-                  className={Z_DEEP}
-                  statuses={statuses}
-                  currentStatus={currentStatus}
-                  onSelect={(status) => {
-                    onSave({
-                      after: isCurrentAction ? currentAfter : null,
-                      action: "set_status",
-                      status,
-                    });
-                  }}
-                />
-              </Menu.Positioner>
-            </Portal>
-          </Menu>
-        </>
-      )}
-    </SearchableMenuContent>
+        {action === "set_status" && (
+          <>
+            <DropdownMenuSeparator />
+            <StatusPickerSubMenu
+              statuses={statuses}
+              currentStatus={currentStatus}
+              onSelect={(status) => {
+                onSave({
+                  after: isCurrentAction ? currentAfter : null,
+                  action: "set_status",
+                  status,
+                });
+              }}
+              triggerContent={
+                <>
+                  <span>{currentStatus ? `Status: ${currentStatus}` : "Pick status..."}</span>
+                  <ChevronRight className="ml-auto size-4" aria-hidden="true" />
+                </>
+              }
+            />
+          </>
+        )}
+      </SearchableSubMenuContent>
+    </DropdownMenuSub>
   );
 }
 
@@ -290,71 +275,60 @@ function OverdueActionSubMenu({
   }, [search.query, hasRecurrence]);
 
   return (
-    <Menu typeahead={false} closeOnSelect={false}>
-      <Menu.TriggerItem value="overdue-action" className="justify-start gap-2 text-sm">
+    <DropdownMenuSub {...search.menuProps}>
+      <DropdownMenuSubTrigger>
         <Clock className="size-4" aria-hidden="true" />
-        <Menu.ItemText>
+        <span>
           {overdueActionRule ? describeOverdueAction(overdueActionRule) : "When overdue..."}
-        </Menu.ItemText>
-        <Menu.ItemIndicator className="ml-auto">
-          <ChevronRight className="size-4" />
-        </Menu.ItemIndicator>
-      </Menu.TriggerItem>
-      <Portal>
-        <Menu.Positioner>
-          <SearchableMenuContent
-            inputProps={search.inputProps}
-            placeholder="Search actions..."
-            className={Z_SUBMENU}
+        </span>
+        <ChevronRight className="ml-auto size-4" aria-hidden="true" />
+      </DropdownMenuSubTrigger>
+      <SearchableSubMenuContent
+        search={search}
+        placeholder="Search actions..."
+        inputLabel="Search actions"
+      >
+        {overdueActionRule && (
+          <DropdownMenuItem
+            className="text-error"
+            onSelect={(e) => {
+              e.preventDefault();
+              onSave(null);
+            }}
           >
-            {/* Clear option */}
-            {overdueActionRule && (
-              <Menu.Item
-                value="none"
-                className={`text-error-500 ${MENU_ITEM_CLASS}`}
-                onClick={() => onSave(null)}
-              >
-                <X className="size-4" aria-hidden="true" />
-                <Menu.ItemText>None</Menu.ItemText>
-              </Menu.Item>
-            )}
+            <X className="size-4" aria-hidden="true" />
+            <span>None</span>
+          </DropdownMenuItem>
+        )}
 
-            {actionItems.length === 0 ? (
-              <div role="status" className="text-surface-500 px-3 py-2 text-sm">
-                No matching actions
-              </div>
-            ) : (
-              actionItems.map((item) => (
-                <Menu key={item.value} typeahead={false} closeOnSelect={false}>
-                  <Menu.TriggerItem value={item.value} className="justify-start gap-2 text-sm">
-                    {overdueActionRule?.action === item.value ? (
-                      <Check className="size-4" aria-hidden="true" />
-                    ) : (
-                      <span className="size-4" />
-                    )}
-                    <Menu.ItemText>{item.label}</Menu.ItemText>
-                    <Menu.ItemIndicator className="ml-auto">
-                      <ChevronRight className="size-4" />
-                    </Menu.ItemIndicator>
-                  </Menu.TriggerItem>
-                  <Portal>
-                    <Menu.Positioner>
-                      <WhenSubMenu
-                        className={Z_DETAIL}
-                        action={item.value}
-                        currentRule={overdueActionRule}
-                        statuses={statuses}
-                        onSave={onSave}
-                      />
-                    </Menu.Positioner>
-                  </Portal>
-                </Menu>
-              ))
-            )}
-          </SearchableMenuContent>
-        </Menu.Positioner>
-      </Portal>
-    </Menu>
+        {actionItems.length === 0 ? (
+          <div role="status" className="px-3 py-2 text-sm text-base-content/60">
+            No matching actions
+          </div>
+        ) : (
+          actionItems.map((item) => (
+            <WhenSubMenu
+              key={item.value}
+              action={item.value}
+              currentRule={overdueActionRule}
+              statuses={statuses}
+              onSave={onSave}
+              triggerContent={
+                <>
+                  {overdueActionRule?.action === item.value ? (
+                    <Check className="size-4" aria-hidden="true" />
+                  ) : (
+                    <span className="size-4" />
+                  )}
+                  <span>{item.label}</span>
+                  <ChevronRight className="ml-auto size-4" aria-hidden="true" />
+                </>
+              }
+            />
+          ))
+        )}
+      </SearchableSubMenuContent>
+    </DropdownMenuSub>
   );
 }
 
@@ -397,83 +371,69 @@ export function DueDateMenuField({
 
   return (
     <>
-      <Menu {...search.menuProps} closeOnSelect={false}>
+      <DropdownMenuRoot {...search.menuProps}>
         <FieldPill
           icon={<Calendar className="size-3.5" aria-hidden="true" />}
           label="Due date"
           value={displayValue}
         />
-        <Portal>
-          <Menu.Positioner>
-            <SearchableMenuContent
-              inputProps={search.inputProps}
-              placeholder='e.g. "tomorrow", "next friday"'
+        <SearchableMenuContent
+          search={search}
+          placeholder='e.g. "tomorrow", "next friday"'
+          inputLabel="Search due date"
+        >
+          {due && (
+            <DropdownMenuItem
+              className="text-error"
+              onSelect={() => {
+                mutation.mutate({ due: null });
+              }}
             >
-              {due && (
-                <Menu.Item
-                  value="clear"
-                  className={`text-error-500 ${MENU_ITEM_CLASS}`}
-                  onClick={() => {
-                    mutation.mutate({ due: null });
-                  }}
-                >
-                  <X className="size-4" aria-hidden="true" />
-                  <Menu.ItemText>Clear due date</Menu.ItemText>
-                </Menu.Item>
-              )}
+              <X className="size-4" aria-hidden="true" />
+              <span>Clear due date</span>
+            </DropdownMenuItem>
+          )}
 
-              {search.query ? (
-                parsedDate ? (
-                  <Menu.Item
-                    value={parsedDate.value}
-                    className={MENU_ITEM_CLASS}
-                    onClick={() => selectDate(parsedDate.value)}
-                  >
-                    <Calendar className="size-4" aria-hidden="true" />
-                    <Menu.ItemText>{parsedDate.label}</Menu.ItemText>
-                    <span className="text-surface-500 ml-auto text-xs">{parsedDate.value}</span>
-                  </Menu.Item>
-                ) : (
-                  <div role="status" className="text-surface-500 px-3 py-2 text-sm">
-                    No matching dates
-                  </div>
-                )
-              ) : (
-                DATE_SHORTCUTS.map((shortcut) => {
-                  const date = addDays(today, shortcut.offsetDays);
-                  const isoDate = toISODate(date);
-                  return (
-                    <Menu.Item
-                      key={shortcut.label}
-                      value={isoDate}
-                      className={MENU_ITEM_CLASS}
-                      onClick={() => selectDate(isoDate)}
-                    >
-                      <Menu.ItemText>{shortcut.label}</Menu.ItemText>
-                      <span className="text-surface-500 ml-auto text-xs">
-                        {formatDateDisplay(date)}
-                      </span>
-                    </Menu.Item>
-                  );
-                })
-              )}
+          {search.query ? (
+            parsedDate ? (
+              <DropdownMenuItem onSelect={() => selectDate(parsedDate.value)}>
+                <Calendar className="size-4" aria-hidden="true" />
+                <span>{parsedDate.label}</span>
+                <span className="ml-auto text-xs text-base-content/60">{parsedDate.value}</span>
+              </DropdownMenuItem>
+            ) : (
+              <div role="status" className="px-3 py-2 text-sm text-base-content/60">
+                No matching dates
+              </div>
+            )
+          ) : (
+            DATE_SHORTCUTS.map((shortcut) => {
+              const date = addDays(today, shortcut.offsetDays);
+              const isoDate = toISODate(date);
+              return (
+                <DropdownMenuItem key={shortcut.label} onSelect={() => selectDate(isoDate)}>
+                  <span>{shortcut.label}</span>
+                  <span className="ml-auto text-xs text-base-content/60">
+                    {formatDateDisplay(date)}
+                  </span>
+                </DropdownMenuItem>
+              );
+            })
+          )}
 
-              {/* Overdue action submenu — only when a due date is set */}
-              {due && (
-                <>
-                  <Menu.Separator />
-                  <OverdueActionSubMenu
-                    overdueActionRule={overdueActionRule}
-                    hasRecurrence={hasRecurrence}
-                    statuses={statuses}
-                    onSave={handleOverdueSave}
-                  />
-                </>
-              )}
-            </SearchableMenuContent>
-          </Menu.Positioner>
-        </Portal>
-      </Menu>
+          {due && (
+            <>
+              <DropdownMenuSeparator />
+              <OverdueActionSubMenu
+                overdueActionRule={overdueActionRule}
+                hasRecurrence={hasRecurrence}
+                statuses={statuses}
+                onSave={handleOverdueSave}
+              />
+            </>
+          )}
+        </SearchableMenuContent>
+      </DropdownMenuRoot>
       {mutation.error && <ErrorAlert message={mutation.error.message} />}
     </>
   );

@@ -58,7 +58,7 @@ function CreateTaskPage() {
       <BackLink
         to="/spaces/$spaceSlug"
         params={{ spaceSlug }}
-        className="text-surface-600-400 hover:text-surface-950-50 inline-flex items-center gap-1 text-sm transition-colors lg:hidden"
+        className="text-base-content/70 hover:text-base-content inline-flex items-center gap-1 text-sm transition-colors lg:hidden"
       >
         <ArrowLeft className="size-4" aria-hidden="true" />
         Back
@@ -69,28 +69,28 @@ function CreateTaskPage() {
           <BreadcrumbLink
             to="/spaces/$spaceSlug"
             params={{ spaceSlug }}
-            className="text-surface-600-400 truncate hover:underline"
+            className="text-base-content/70 truncate hover:underline"
           >
             {space.name}
           </BreadcrumbLink>
         </li>
-        <li className="text-surface-500" aria-hidden="true">
+        <li className="text-base-content/60" aria-hidden="true">
           <ChevronRight className="size-3" />
         </li>
         <li className="shrink-0">New task</li>
       </ol>
 
-      <h2 className="h4">Create task</h2>
+      <h2 className="text-lg font-semibold">Create task</h2>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1">
-          <span className="text-surface-600-400 text-sm font-medium">Title</span>
+          <span className="text-base-content/70 text-sm font-medium">Title</span>
           <input
             type="text"
             required
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="input preset-outlined-surface-200-800 w-full"
+            className="input w-full"
             placeholder="What needs to be done?"
             maxLength={500}
             autoFocus
@@ -106,7 +106,7 @@ function CreateTaskPage() {
           <button
             type="submit"
             disabled={createMutation.isPending || !title.trim()}
-            className="btn preset-filled-primary-500"
+            className="btn btn-primary"
           >
             {createMutation.isPending ? "Creating..." : "Create task"}
           </button>

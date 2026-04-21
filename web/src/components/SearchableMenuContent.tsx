@@ -1,45 +1,87 @@
-import { Menu } from "@skeletonlabs/skeleton-react";
-import type { ReactNode } from "react";
-import type { MenuSearchInputProps } from "../lib/useMenuSearch.ts";
+import type { ComponentProps, ReactNode } from "react";
+import type { MenuSearchResult } from "../lib/useMenuSearch.ts";
+import {
+  DropdownMenuContent,
+  DropdownMenuSeparator,
+  DropdownMenuSubContent,
+} from "../ui/DropdownMenu.tsx";
+
+type TopContentProps = {
+  search: MenuSearchResult;
+  placeholder?: string;
+  inputLabel?: string;
+  children: ReactNode;
+} & Omit<ComponentProps<typeof DropdownMenuContent>, "children">;
 
 /**
- * Default className for Menu.Item / Menu.OptionItem inside searchable menus.
- * Overrides Skeleton's justify-content: space-between with justify-start.
- */
-export const MENU_ITEM_CLASS = "justify-start gap-2 text-sm";
-
-/**
- * A Menu.Content wrapper that includes a search input at the top,
- * followed by a separator and a scrollable area for menu items.
+ * Wraps `DropdownMenuContent` with a search input + separator. Pass the
+ * `useMenuSearch()` result; the input is the first tabbable so Radix's
+ * FocusScope lands on it automatically when the menu opens.
+ *
+ * The caller must spread `search.menuProps` onto the enclosing
+ * `DropdownMenuRoot` so the query resets on close.
  */
 export function SearchableMenuContent({
-  inputProps,
+  search,
   placeholder = "Search...",
+  inputLabel,
   children,
-  className,
-}: {
-  /** Input props from useMenuSearch().inputProps */
-  inputProps: MenuSearchInputProps;
-  /** Placeholder text for the search input */
+  ...rest
+}: TopContentProps) {
+  return (
+    <DropdownMenuContent {...rest}>
+      <SearchInput search={search} placeholder={placeholder} inputLabel={inputLabel} />
+      <DropdownMenuSeparator />
+      {children}
+    </DropdownMenuContent>
+  );
+}
+
+type SubContentProps = {
+  search: MenuSearchResult;
   placeholder?: string;
-  /** Menu items to render in the scrollable area */
+  inputLabel?: string;
   children: ReactNode;
-  /** Additional CSS classes for Menu.Content */
-  className?: string | undefined;
+} & Omit<ComponentProps<typeof DropdownMenuSubContent>, "children">;
+
+/**
+ * Sub-menu variant. Also spread `search.menuProps` onto the enclosing
+ * `DropdownMenuSub` so the query resets when the sub-menu closes.
+ */
+export function SearchableSubMenuContent({
+  search,
+  placeholder = "Search...",
+  inputLabel,
+  children,
+  ...rest
+}: SubContentProps) {
+  return (
+    <DropdownMenuSubContent {...rest}>
+      <SearchInput search={search} placeholder={placeholder} inputLabel={inputLabel} />
+      <DropdownMenuSeparator />
+      {children}
+    </DropdownMenuSubContent>
+  );
+}
+
+function SearchInput({
+  search,
+  placeholder,
+  inputLabel,
+}: {
+  search: MenuSearchResult;
+  placeholder: string;
+  inputLabel: string | undefined;
 }) {
   return (
-    <Menu.Content className={className}>
-      <div role="none">
-        <input
-          {...inputProps}
-          type="text"
-          placeholder={placeholder}
-          aria-label={placeholder}
-          className="w-full bg-transparent text-sm outline-none placeholder:text-surface-500"
-        />
-      </div>
-      <Menu.Separator />
-      {children}
-    </Menu.Content>
+    <div role="none" className="px-2 pt-1.5 pb-1">
+      <input
+        {...search.inputProps}
+        type="text"
+        placeholder={placeholder}
+        aria-label={inputLabel ?? placeholder}
+        className="w-full bg-transparent text-sm outline-none placeholder:text-base-content/50"
+      />
+    </div>
   );
 }

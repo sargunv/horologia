@@ -6,6 +6,7 @@ import { appClient, getApiErrorMessage } from "../api/client.ts";
 import type { components } from "../api/schema.d.ts";
 import { navigateToTarget } from "../lib/navigation.ts";
 import { linkPendingQueryOptions } from "../lib/queries.ts";
+import { Card } from "../ui/Card.tsx";
 
 export const Route = createFileRoute("/link-account")({
   component: LinkAccountPage,
@@ -58,14 +59,14 @@ function LinkAccountPage() {
     <div className="flex min-h-svh items-center justify-center p-4">
       <div className="flex w-full max-w-sm flex-col gap-4">
         <div className="flex flex-col items-center gap-1">
-          <h1 className="h1">Horologia</h1>
-          <p className="text-surface-600-400 text-sm">Confirm account linking</p>
+          <h1 className="text-3xl font-bold tracking-tight">Horologia</h1>
+          <p className="text-base-content/70 text-sm">Confirm account linking</p>
         </div>
 
-        <div className="card preset-outlined-surface-200-800 flex flex-col gap-6 p-6">
+        <Card className="flex flex-col gap-6 p-6">
           {isLoading ? (
             <div className="flex items-center justify-center py-4">
-              <span className="text-surface-500 text-sm">Loading...</span>
+              <span className="text-base-content/60 text-sm">Loading...</span>
             </div>
           ) : (
             <>
@@ -76,13 +77,13 @@ function LinkAccountPage() {
 
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <label className="flex flex-col gap-1">
-                  <span className="text-surface-600-400 text-sm font-medium">Password</span>
+                  <span className="text-base-content/70 text-sm font-medium">Password</span>
                   <input
                     type="password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="input preset-outlined-surface-200-800 w-full"
+                    className="input w-full"
                     placeholder="Enter your password"
                     autoComplete="current-password"
                     disabled={linkMutation.isPending}
@@ -90,7 +91,7 @@ function LinkAccountPage() {
                 </label>
 
                 {linkMutation.error && (
-                  <div className="preset-filled-error-500 flex items-center gap-2 rounded-base px-3 py-2 text-sm">
+                  <div role="alert" className="alert alert-error alert-soft text-sm">
                     <CircleAlert className="size-4 shrink-0" />
                     {linkMutation.error.message}
                   </div>
@@ -99,7 +100,7 @@ function LinkAccountPage() {
                 <button
                   type="submit"
                   disabled={linkMutation.isPending}
-                  className="btn preset-filled-primary-500 w-full"
+                  className="btn btn-primary w-full"
                 >
                   {linkMutation.isPending ? "Linking..." : "Link account"}
                 </button>
@@ -108,14 +109,14 @@ function LinkAccountPage() {
               <button
                 type="button"
                 onClick={() => void navigate({ to: "/login" })}
-                className="btn preset-outlined-surface-200-800 w-full"
+                className="btn btn-soft w-full"
                 disabled={linkMutation.isPending}
               >
                 Cancel
               </button>
             </>
           )}
-        </div>
+        </Card>
       </div>
     </div>
   );

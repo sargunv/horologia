@@ -3,8 +3,6 @@ import { useNavigate } from "@tanstack/react-router";
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import { apiClient } from "../../api/client.ts";
-import type { components } from "../../api/schema.d.ts";
-import { notifyStaleData } from "../../lib/toaster.ts";
 import {
   AlertDialogAction,
   AlertDialogCancel,
@@ -18,95 +16,87 @@ import {
 import { ErrorAlert } from "../space-settings/ErrorAlert.tsx";
 import { SettingsSection } from "../space-settings/SettingsSection.tsx";
 
-type User = components["schemas"]["User"];
-
-export function UserDangerZoneCard({
-  user,
-  isSelf,
-  onDeleted,
-}: {
-  user: User;
-  isSelf: boolean;
-  onDeleted: () => void;
-}) {
+export function DangerZoneCard({ userId, email }: { userId: string; email: string }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [confirmation, setConfirmation] = useState("");
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
       const { error } = await apiClient.DELETE("/users/{userId}", {
-        params: { path: { userId: user.id } },
+        params: { path: { userId } },
       });
-      if (error) throw new Error(error.message ?? "Failed to delete user");
+      if (error) throw new Error(error.message ?? "Failed to delete account");
     },
     onSuccess: async () => {
-      if (isSelf) {
-        queryClient.clear();
-        await navigate({ to: "/login" });
-      } else {
-        try {
-          await queryClient.invalidateQueries({ queryKey: ["users"] });
-        } catch (err) {
-          console.error("Cache invalidation failed after mutation:", err);
-          notifyStaleData();
-        }
-        setOpen(false);
-        onDeleted();
-      }
+      queryClient.clear();
+      await navigate({ to: "/login" });
     },
   });
 
+  const confirmationMatches = confirmation.toLowerCase() === email.toLowerCase();
+
   function handleOpenChange(next: boolean) {
     setOpen(next);
-    if (!next) deleteMutation.reset();
+    if (!next) {
+      deleteMutation.reset();
+      setConfirmation("");
+    }
   }
 
   return (
     <SettingsSection
       icon={<Trash2 className="size-5" aria-hidden="true" />}
       title="Danger zone"
-      description="Irreversible actions for this user."
+      description="Irreversible actions for your account."
     >
       <div className="flex items-center justify-between gap-4">
         <p className="text-sm text-base-content/70">
-          Permanently delete this user and all of their data.
+          Permanently delete your account and all associated data.
         </p>
         <AlertDialogRoot open={open} onOpenChange={handleOpenChange}>
           <AlertDialogTrigger className="btn btn-error btn-sm shrink-0">
-            Delete user
+            Delete account
           </AlertDialogTrigger>
           <AlertDialogContent className="max-w-md space-y-4">
-            <AlertDialogHeader title="Delete user" />
+            <AlertDialogHeader title="Delete account" />
             <AlertDialogDescription>
-              {isSelf ? (
-                <>
-                  You are about to delete{" "}
-                  <strong className="text-base-content">your own account</strong>. You will be
-                  signed out immediately and will not be able to log in again.
-                </>
-              ) : (
-                <>
-                  Permanently delete <strong className="text-base-content">{user.name}</strong> (
-                  {user.email}). Their tasks, memberships, and tokens will be removed. This cannot
-                  be undone.
-                </>
-              )}
+              This will permanently delete your account, including your memberships, assignments,
+              and tokens. You will be signed out immediately and will not be able to log in again.
             </AlertDialogDescription>
+            <div>
+              <label
+                htmlFor="delete-confirmation"
+                className="mb-1 block text-sm text-base-content/70"
+              >
+                Type <strong className="text-base-content">{email}</strong> to confirm
+              </label>
+              <input
+                id="delete-confirmation"
+                type="text"
+                value={confirmation}
+                onChange={(e) => setConfirmation(e.target.value)}
+                className="input w-full"
+                placeholder={email}
+                autoComplete="off"
+              />
+            </div>
             {deleteMutation.error && <ErrorAlert message={deleteMutation.error.message} />}
             <AlertDialogFooter>
               <AlertDialogCancel className="btn btn-soft">Cancel</AlertDialogCancel>
               <AlertDialogAction asChild>
                 <button
                   type="button"
-                  disabled={deleteMutation.isPending}
+                  disabled={!confirmationMatches || deleteMutation.isPending}
                   onClick={(e) => {
                     e.preventDefault();
+                    deleteMutation.reset();
                     deleteMutation.mutate();
                   }}
                   className="btn btn-error"
                 >
-                  {deleteMutation.isPending ? "Deleting..." : "Delete user"}
+                  {deleteMutation.isPending ? "Deleting..." : "Delete account"}
                 </button>
               </AlertDialogAction>
             </AlertDialogFooter>

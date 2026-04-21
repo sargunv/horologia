@@ -39,7 +39,7 @@ function OwnerToggle({ user, isSelf }: { user: User; isSelf: boolean }) {
         <span className="text-sm">{user.isOwner ? "Yes" : "No"}</span>
       </label>
       {isSelf && !user.isOwner && (
-        <span className="text-warning-500 text-xs">You will lose admin access</span>
+        <span className="text-warning text-xs">You will lose admin access</span>
       )}
       {mutation.error && <ErrorAlert message={mutation.error.message} />}
     </div>
