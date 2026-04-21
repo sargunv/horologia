@@ -15,7 +15,12 @@ import io.ktor.http.Url
 // constructed once at app start; constructing a second instance mutates shared state.
 class AppContainer(baseUrl: String, getToken: () -> String?) {
   init {
-    Api.baseUrl = Url(baseUrl)
+    Api.baseUrl =
+      try {
+        Url(baseUrl)
+      } catch (e: IllegalArgumentException) {
+        throw IllegalArgumentException("Invalid Horologia base URL: '$baseUrl'", e)
+      }
     Api.setAuthProvider(Auth.BearerAuth { getToken()?.let { token -> AuthItem.Bearer(token) } })
   }
 
