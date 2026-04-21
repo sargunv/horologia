@@ -9,11 +9,11 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
 
-interface ProfileGateway {
+internal interface ProfileGateway {
   suspend fun fetchMe(): FetchProfileResult
 }
 
-sealed interface FetchProfileResult {
+internal sealed interface FetchProfileResult {
   data class Ok(val displayName: String) : FetchProfileResult
 
   data object AuthFailure : FetchProfileResult
@@ -25,7 +25,8 @@ sealed interface FetchProfileResult {
 
 private val authFailureCodes = setOf(401, 403)
 
-class LiveProfileGateway(private val requestTimeout: Duration = 15.seconds) : ProfileGateway {
+internal class LiveProfileGateway(private val requestTimeout: Duration = 15.seconds) :
+  ProfileGateway {
   override suspend fun fetchMe(): FetchProfileResult =
     try {
       withTimeout(requestTimeout) {

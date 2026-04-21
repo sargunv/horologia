@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class ProfileViewModel(private val gateway: ProfileGateway) : ViewModel() {
+class ProfileViewModel internal constructor(private val gateway: ProfileGateway) : ViewModel() {
   private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
   val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
