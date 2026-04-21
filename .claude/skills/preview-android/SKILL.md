@@ -201,9 +201,9 @@ the need.
 - Cleartext HTTP to arbitrary hosts is blocked on API 28+. The project's
   `network_security_config.xml` permits `10.0.2.2` and `localhost` only; if you need a different dev
   host, add it there (and file a follow-up to drop the exception once TLS lands).
-- `INTERNET` permission must be in `AndroidManifest.xml` — without it Ktor surfaces an
-  `IOCallException` with `message=null`, which the ProfileGateway maps to a generic "Network error"
-  state. If you see that and the server is reachable, check the manifest first.
+- `INTERNET` permission must be in `AndroidManifest.xml` — without it HTTP clients surface opaque
+  connection failures with no useful message. If a generic "Network error" appears and the server is
+  reachable from the host, check the manifest first.
 - `am start` before `force-stop` will merge into an existing task; if the app looks "stuck" on old
   state, `force-stop` first.
 - The `horologia` AVD uses `arm64-v8a` on Apple Silicon hosts for hardware acceleration. On x86_64
@@ -212,8 +212,8 @@ the need.
 
 ## When this isn't enough
 
-- Driving taps/gestures: `adb shell input tap <x> <y>` is crude but works for scripted smoke tests.
-  For anything richer, reach for Espresso or Maestro and flag the need.
+- Multi-step flows with retries or flakiness tolerance: reach for Espresso or Maestro (see the
+  "Drive interaction" section) and flag the need.
 - Installing on a physical device: plug it in with USB debugging enabled, `"$ADB" devices` should
   show it, and the same `install`/`launch`/`screencap` commands work. Mention to the user that a
   physical device is being targeted.
