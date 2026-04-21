@@ -28,6 +28,16 @@ Mobile bootstrap/setup uses package-scoped tasks as well:
 - `mise run //mobile:setup` — install Android SDK components into the mise-managed SDK root
 - `mise run //mobile:android:assembleDebug` — build the Android target in `:compose-app`
 - `mise run //mobile:desktop:run` — run the desktop target in `:compose-app`
+- `mise run //mobile:ios:gen` — generate `iosApp/iosApp.xcodeproj` from `iosApp/project.yml` via
+  xcodegen (provisioned automatically by `mise install`)
+- `mise run //mobile:ios:xcframework` — assemble `HorologiaCore.xcframework` for iOS device +
+  simulator
+- `mise run //mobile:ios:build` — build the iosApp for the iOS simulator (depends on `ios:gen`)
+- `mise run //mobile:ios:open` — open the Xcode project (depends on `ios:gen`)
+
+For a working iOS run, edit `mobile/iosApp/Config.xcconfig` locally to set `HOROLOGIA_DEV_TOKEN`
+(obtain a token from a running dev server via `POST /api/auth/tokens`). The committed default is
+blank, which leaves the app in its Error state.
 
 To run any tool managed by mise, use `mise x -- [COMMAND]`
 
@@ -48,6 +58,9 @@ PostgreSQL is managed by mise and started automatically by Tilt. Data is stored 
 - ./server - Golang backend service and API implementation.
 - ./web - React SPA served by the backend. Built on Tailwind v4 + daisyUI 5, with primitives in
   `web/src/ui/` that wrap Radix UI (umbrella), cmdk, Ark UI (TagsInput only), and sonner.
+- ./mobile - Kotlin Multiplatform app. `:core` is the shared KMP library (ViewModel + generated
+  OpenAPI client); `:compose-app` is the Compose UI for Android + desktop; `iosApp/` is the SwiftUI
+  iOS app (Xcode project generated from `project.yml` via xcodegen).
 - ./cli - TODO: Golang CLI client
 
 ## Conventions
