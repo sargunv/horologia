@@ -6,10 +6,7 @@ import SwiftUI
 struct HorologiaApp: App {
   // TODO: Replace dev-mode bearer token with real auth flow:
   //   POST /app/auth/login → cookie session → POST /api/auth/tokens (bearer token).
-  @StateObject private var storeOwner = IosViewModelStoreOwner()
-
-  private let appContainer: AppContainer
-  private let profileViewModel: ProfileViewModel
+  private let container: AppContainer
 
   init() {
     let infoDictionary = Bundle.main.infoDictionary
@@ -20,20 +17,21 @@ struct HorologiaApp: App {
       (infoDictionary?["HorologiaDevToken"] as? String).flatMap { $0.isEmpty ? nil : $0 }
 
     ApiBootstrapKt.configureHorologiaApi(baseUrl: baseUrl, getToken: { devToken })
-    let container = AppContainer()
-    self.appContainer = container
-
-    let owner = IosViewModelStoreOwner()
-    self._storeOwner = StateObject(wrappedValue: owner)
-    self.profileViewModel = owner.viewModel(
-      ProfileViewModel.self,
-      factory: container.profileViewModelFactory
-    )
+    self.container = AppContainer()
   }
 
   var body: some Scene {
     WindowGroup {
-      ContentView(viewModel: profileViewModel)
+      NavigationStack {
+        ProfileView()
+          .navigationDestination(for: Route.self) { route in
+            switch route {
+            case .spaces:
+              SpacesView()
+            }
+          }
+      }
+      .environment(\.appContainer, container)
     }
   }
 }

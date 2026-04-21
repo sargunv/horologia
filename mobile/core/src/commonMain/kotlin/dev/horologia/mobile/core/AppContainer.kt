@@ -6,6 +6,9 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import dev.horologia.mobile.core.feature.profile.LiveProfileGateway
 import dev.horologia.mobile.core.feature.profile.ProfileGateway
 import dev.horologia.mobile.core.feature.profile.ProfileViewModel
+import dev.horologia.mobile.core.feature.spaces.LiveSpacesGateway
+import dev.horologia.mobile.core.feature.spaces.SpacesGateway
+import dev.horologia.mobile.core.feature.spaces.SpacesViewModel
 
 /**
  * Holds the gateways and ViewModel factories that back each screen. Requires
@@ -16,8 +19,13 @@ import dev.horologia.mobile.core.feature.profile.ProfileViewModel
  */
 class AppContainer {
   private val profileGateway: ProfileGateway = LiveProfileGateway()
+  private val spacesGateway: SpacesGateway = LiveSpacesGateway()
 
   val profileViewModelFactory: ViewModelProvider.Factory = viewModelFactory {
     initializer { ProfileViewModel(profileGateway) }
+  }
+
+  val spacesViewModelFactory: ViewModelProvider.Factory = viewModelFactory {
+    initializer { SpacesViewModel(spacesGateway) }
   }
 }

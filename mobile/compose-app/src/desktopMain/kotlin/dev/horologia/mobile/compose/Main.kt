@@ -4,7 +4,6 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import dev.horologia.mobile.core.AppContainer
 import dev.horologia.mobile.core.configureHorologiaApi
-import dev.horologia.mobile.core.feature.profile.ProfileViewModel
 
 fun main() {
   // TODO: Replace dev-mode bearer token with real auth flow:
@@ -15,10 +14,6 @@ fun main() {
   val appContainer = AppContainer()
 
   application {
-    Window(onCloseRequest = ::exitApplication, title = "Horologia") {
-      val viewModel =
-        rememberViewModel(ProfileViewModel::class, appContainer.profileViewModelFactory)
-      ProfileScreen(viewModel)
-    }
+    Window(onCloseRequest = ::exitApplication, title = "Horologia") { HorologiaApp(appContainer) }
   }
 }

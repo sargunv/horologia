@@ -2,10 +2,21 @@ import HorologiaCore
 import SwiftUI
 
 @MainActor
-struct ContentView: View {
-  let viewModel: ProfileViewModel
-
+struct ProfileView: View {
+  @Environment(\.appContainer) private var container
+  @StateObject private var storeOwner = IosViewModelStoreOwner()
   @State private var uiState: ProfileUiState = ProfileUiStateLoading.shared
+
+  /// `IosViewModelStoreOwner.viewModel(_:factory:)` resolves through the underlying
+  /// `ViewModelStore`, which caches by model class — every call with the same type
+  /// returns the same instance for the lifetime of `storeOwner`. That's what lets us
+  /// compute this fresh on each `body` evaluation without spawning new ViewModels.
+  private var viewModel: ProfileViewModel {
+    storeOwner.viewModel(
+      ProfileViewModel.self,
+      factory: container!.profileViewModelFactory
+    )
+  }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 16) {
@@ -27,7 +38,7 @@ struct ContentView: View {
       case .error(let error):
         Text(error.message)
           .font(.body)
-          .foregroundStyle(Color(uiColor: .systemRed))
+          .foregroundStyle(Color.red)
           .accessibilityAddTraits(.updatesFrequently)
         if error.retryable {
           Button("Retry") {
@@ -36,6 +47,10 @@ struct ContentView: View {
           .buttonStyle(.borderedProminent)
         }
       }
+
+      NavigationLink("View spaces", value: Route.spaces)
+        .buttonStyle(.borderedProminent)
+        .padding(.top, 8)
     }
     .padding(24)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
