@@ -1,4 +1,4 @@
-package dev.horologia.mobile.core.screen.profile
+package dev.horologia.mobile.core.feature.profile
 
 sealed interface ProfileUiState {
   data object Loading : ProfileUiState

@@ -20,8 +20,8 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import dev.horologia.mobile.core.screen.profile.ProfileUiState
-import dev.horologia.mobile.core.screen.profile.ProfileViewModel
+import dev.horologia.mobile.core.feature.profile.ProfileUiState
+import dev.horologia.mobile.core.feature.profile.ProfileViewModel
 
 @Composable
 fun ProfileScreen(viewModel: ProfileViewModel) {

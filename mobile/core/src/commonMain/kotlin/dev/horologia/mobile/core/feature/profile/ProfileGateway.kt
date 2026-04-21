@@ -1,4 +1,4 @@
-package dev.horologia.mobile.core.screen.profile
+package dev.horologia.mobile.core.feature.profile
 
 import com.kroegerama.openapi.kmp.gen.companion.HttpCallException
 import com.kroegerama.openapi.kmp.gen.companion.IOCallException

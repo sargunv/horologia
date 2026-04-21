@@ -4,9 +4,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.kroegerama.openapi.kmp.gen.companion.AuthItem
-import dev.horologia.mobile.core.screen.profile.LiveProfileGateway
-import dev.horologia.mobile.core.screen.profile.ProfileGateway
-import dev.horologia.mobile.core.screen.profile.ProfileViewModel
+import dev.horologia.mobile.core.feature.profile.LiveProfileGateway
+import dev.horologia.mobile.core.feature.profile.ProfileGateway
+import dev.horologia.mobile.core.feature.profile.ProfileViewModel
 import dev.horologia.mobile.generated.Api
 import dev.horologia.mobile.generated.Auth
 import io.ktor.http.Url

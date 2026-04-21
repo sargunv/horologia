@@ -1,4 +1,4 @@
-package dev.horologia.mobile.core.screen.profile
+package dev.horologia.mobile.core.feature.profile
 
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest

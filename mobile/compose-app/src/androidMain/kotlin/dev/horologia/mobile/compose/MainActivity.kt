@@ -5,7 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.horologia.mobile.core.AppContainer
-import dev.horologia.mobile.core.screen.profile.ProfileViewModel
+import dev.horologia.mobile.core.feature.profile.ProfileViewModel
 
 class MainActivity : ComponentActivity() {
   // TODO: Replace dev-mode bearer token with real auth flow:
