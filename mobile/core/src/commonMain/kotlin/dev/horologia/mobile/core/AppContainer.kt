@@ -3,27 +3,18 @@ package dev.horologia.mobile.core
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.kroegerama.openapi.kmp.gen.companion.AuthItem
 import dev.horologia.mobile.core.feature.profile.LiveProfileGateway
 import dev.horologia.mobile.core.feature.profile.ProfileGateway
 import dev.horologia.mobile.core.feature.profile.ProfileViewModel
-import dev.horologia.mobile.generated.Api
-import dev.horologia.mobile.generated.Auth
-import io.ktor.http.Url
 
-// SINGLETON — the generated `Api` is a process-wide object. `AppContainer` must be
-// constructed once at app start; constructing a second instance mutates shared state.
-class AppContainer(baseUrl: String, getToken: () -> String?) {
-  init {
-    Api.baseUrl =
-      try {
-        Url(baseUrl)
-      } catch (e: IllegalArgumentException) {
-        throw IllegalArgumentException("Invalid Horologia base URL: '$baseUrl'", e)
-      }
-    Api.setAuthProvider(Auth.BearerAuth { getToken()?.let { token -> AuthItem.Bearer(token) } })
-  }
-
+/**
+ * Holds the gateways and ViewModel factories that back each screen. Requires
+ * [configureHorologiaApi] to have been called first, so the generated `Api` singleton is wired with
+ * a base URL and an auth provider.
+ *
+ * New features add their gateway + factory here as additional properties.
+ */
+class AppContainer {
   private val profileGateway: ProfileGateway = LiveProfileGateway()
 
   val profileViewModelFactory: ViewModelProvider.Factory = viewModelFactory {

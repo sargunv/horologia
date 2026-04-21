@@ -19,10 +19,8 @@ struct HorologiaApp: App {
     let devToken =
       (infoDictionary?["HorologiaDevToken"] as? String).flatMap { $0.isEmpty ? nil : $0 }
 
-    let container = AppContainer(
-      baseUrl: baseUrl,
-      getToken: { devToken }
-    )
+    ApiBootstrapKt.configureHorologiaApi(baseUrl: baseUrl, getToken: { devToken })
+    let container = AppContainer()
     self.appContainer = container
 
     let owner = IosViewModelStoreOwner()
