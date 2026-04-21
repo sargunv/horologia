@@ -30,6 +30,9 @@ class ProfileViewModel(private val gateway: ProfileGateway) : ViewModel() {
 
           is FetchProfileResult.Retryable ->
             ProfileUiState.Error(message = result.message, retryable = true)
+
+          is FetchProfileResult.Permanent ->
+            ProfileUiState.Error(message = result.message, retryable = false)
         }
     }
   }

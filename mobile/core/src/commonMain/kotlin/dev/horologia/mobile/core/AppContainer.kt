@@ -19,7 +19,7 @@ class AppContainer(baseUrl: String, getToken: () -> String?) {
     Api.setAuthProvider(Auth.BearerAuth { getToken()?.let { token -> AuthItem.Bearer(token) } })
   }
 
-  val profileGateway: ProfileGateway = LiveProfileGateway()
+  private val profileGateway: ProfileGateway = LiveProfileGateway()
 
   val profileViewModelFactory: ViewModelProvider.Factory = viewModelFactory {
     initializer { ProfileViewModel(profileGateway) }
