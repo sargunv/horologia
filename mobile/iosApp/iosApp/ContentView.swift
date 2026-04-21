@@ -22,15 +22,18 @@ struct ContentView: View {
         ProgressView()
           .progressViewStyle(.circular)
           .padding(.top, 8)
+          .accessibilityLabel("Loading profile")
 
       case .success(let success):
         Text("Signed in as \(success.displayName)")
           .font(.title3)
+          .accessibilityAddTraits(.updatesFrequently)
 
       case .error(let error):
         Text(error.message)
           .font(.body)
-          .foregroundStyle(.red)
+          .foregroundStyle(Color(uiColor: .systemRed))
+          .accessibilityAddTraits(.updatesFrequently)
         if error.retryable {
           Button("Retry") {
             viewModel.refresh()
@@ -44,6 +47,14 @@ struct ContentView: View {
     .task {
       for await newState in viewModel.uiState {
         uiState = newState
+        switch onEnum(of: newState) {
+        case .success(let success):
+          AccessibilityNotification.Announcement("Signed in as \(success.displayName)").post()
+        case .error(let error):
+          AccessibilityNotification.Announcement(error.message).post()
+        case .loading:
+          break
+        }
       }
     }
   }

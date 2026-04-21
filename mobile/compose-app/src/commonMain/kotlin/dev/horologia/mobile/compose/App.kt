@@ -14,6 +14,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.horologia.mobile.core.screen.profile.ProfileUiState
@@ -38,13 +42,17 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
 
         when (val current = state) {
           is ProfileUiState.Loading ->
-            CircularProgressIndicator(modifier = Modifier.padding(top = 24.dp))
+            CircularProgressIndicator(
+              modifier =
+                Modifier.padding(top = 24.dp).semantics { contentDescription = "Loading profile" }
+            )
 
           is ProfileUiState.Success ->
             Text(
               text = "Signed in as ${current.displayName}",
               style = MaterialTheme.typography.titleMedium,
-              modifier = Modifier.padding(top = 24.dp),
+              modifier =
+                Modifier.padding(top = 24.dp).semantics { liveRegion = LiveRegionMode.Polite },
             )
 
           is ProfileUiState.Error -> {
@@ -52,7 +60,8 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
               text = current.message,
               style = MaterialTheme.typography.bodyLarge,
               color = MaterialTheme.colorScheme.error,
-              modifier = Modifier.padding(top = 24.dp),
+              modifier =
+                Modifier.padding(top = 24.dp).semantics { liveRegion = LiveRegionMode.Polite },
             )
             if (current.retryable) {
               Button(onClick = viewModel::refresh, modifier = Modifier.padding(top = 12.dp)) {
