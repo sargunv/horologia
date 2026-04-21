@@ -13,9 +13,7 @@ CLI-only workflow for driving the iOS simulator end-to-end. Use this whenever yo
 - Xcode installed (`xcrun simctl list` works).
 - `mise run //mobile:ios:gen` has been run at least once — the `.xcodeproj` is generated from
   `mobile/iosApp/project.yml` and gitignored.
-- The dev backend is reachable at the URL baked into `Config.xcconfig` (or inject a different
-  `HOROLOGIA_BASE_URL` via the xcodebuild env if the loop you care about requires a non-default
-  host).
+- The dev backend is reachable at whatever URL the build is configured for.
 
 ## The loop
 
@@ -99,13 +97,6 @@ CLI-only workflow for driving the iOS simulator end-to-end. Use this whenever yo
   ```bash
   /usr/libexec/PlistBuddy -c 'Print :HorologiaBaseUrl' "$APP/Info.plist"
   ```
-
-- **Pass a runtime override for a one-off test** without editing `Config.xcconfig`:
-  ```bash
-  HOROLOGIA_DEV_TOKEN=... HOROLOGIA_BASE_URL=... \
-    xcodebuild ... build
-  ```
-  The values flow through `project.yml`'s `info.properties` into the generated `Info.plist`.
 
 - **Open the project in Xcode** instead (for the GUI debugger / SwiftUI previews):
   ```bash

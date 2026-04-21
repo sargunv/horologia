@@ -49,20 +49,18 @@ proof (a screenshot) or runtime evidence (logcat) that an Android change works.
    "$ADB" devices   # confirm `emulator-5554 device`
    ```
 
-2. **Build and install.** Rebuilding with env-var overrides is the normal way to point the app at a
-   specific backend / token without editing committed source:
+2. **Build and install.**
+
+   ```bash
+   mise run //mobile:android:installDebug
+   ```
+
+   Or step-by-step if you need the intermediate APK path:
 
    ```bash
    cd mobile
-   HOROLOGIA_DEV_TOKEN=... HOROLOGIA_BASE_URL=http://10.0.2.2:8080/api/ \
-     mise x -- ./gradlew :compose-app:assembleDebug
+   mise x -- ./gradlew :compose-app:assembleDebug
    "$ADB" install -r compose-app/build/outputs/apk/debug/compose-app-debug.apk
-   ```
-
-   Or use the shortcut task (respects whatever env you set):
-
-   ```bash
-   HOROLOGIA_DEV_TOKEN=... mise run //mobile:android:installDebug
    ```
 
 3. **Launch.** `am start` prints the intent it resolved:
@@ -75,7 +73,7 @@ proof (a screenshot) or runtime evidence (logcat) that an Android change works.
    Or the combined task:
 
    ```bash
-   HOROLOGIA_DEV_TOKEN=... mise run //mobile:android:run
+   mise run //mobile:android:run
    ```
 
 4. **Screenshot.** `exec-out screencap -p` pipes a PNG directly to stdout — no on-device temp file
