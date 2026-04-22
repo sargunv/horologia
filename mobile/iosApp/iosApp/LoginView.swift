@@ -16,6 +16,8 @@ struct LoginView: View {
     probe: ProbeStateEmpty.shared,
     banner: nil
   )
+  @State private var lastAnnouncedBanner: String?
+  @FocusState private var urlFieldFocused: Bool
 
   let initialServerUrl: String?
   let initialBanner: String?
@@ -46,6 +48,7 @@ struct LoginView: View {
         compactBody
       }
     }
+    .onAppear { urlFieldFocused = true }
     .task {
       if let url = initialServerUrl, !url.isEmpty {
         viewModel.seedInitialUrl(url: url)
@@ -55,9 +58,25 @@ struct LoginView: View {
       }
       for await newState in viewModel.uiState {
         uiState = newState
+        announceBannerIfNeeded(state: newState)
         if newState is LoginUiStateComplete {
           onComplete()
         }
+      }
+    }
+  }
+
+  private func announceBannerIfNeeded(state: LoginUiState) {
+    let currentBanner: String?
+    if let picker = state as? LoginUiStateServerPicker {
+      currentBanner = picker.banner
+    } else {
+      currentBanner = nil
+    }
+    if currentBanner != lastAnnouncedBanner {
+      lastAnnouncedBanner = currentBanner
+      if let message = currentBanner {
+        AccessibilityNotification.Announcement(message).post()
       }
     }
   }
@@ -106,7 +125,7 @@ struct LoginView: View {
     case .serverPicker(let picker):
       serverPickerBody(picker: picker)
     case .launchingBrowser(let state):
-      statusBody(title: "Opening secure sign-in…", detail: state.input)
+      statusBody(title: "Opening sign-in…", detail: state.input)
     case .finishing(let state):
       statusBody(title: "Finishing sign-in…", detail: state.input)
     case .complete:
@@ -117,20 +136,40 @@ struct LoginView: View {
   private func serverPickerBody(picker: LoginUiStateServerPicker) -> some View {
     VStack(alignment: .leading, spacing: 12) {
       if let banner = picker.banner {
-        Text(banner)
-          .font(.body)
-          .foregroundStyle(Color.red)
+        HStack(alignment: .top, spacing: 8) {
+          Image(systemName: "exclamationmark.triangle.fill")
+            .foregroundStyle(Color.red)
+            .accessibilityHidden(true)
+          Text(banner)
+            .font(.body)
+            .foregroundStyle(Color.red)
+            .accessibilityAddTraits(.isStaticText)
+          Spacer(minLength: 8)
+          Button {
+            viewModel.dismissBanner()
+          } label: {
+            Image(systemName: "xmark")
+          }
+          .accessibilityLabel("Dismiss banner")
+        }
       }
       TextField(
-        "tasks.example.com",
+        "",
         text: Binding(
           get: { picker.input },
           set: { viewModel.onUrlChanged(input: $0) }
-        )
+        ),
+        prompt: Text("tasks.example.com")
       )
+      .accessibilityLabel("Server URL")
       .textInputAutocapitalization(.never)
       .autocorrectionDisabled(true)
       .keyboardType(.URL)
+      .submitLabel(.go)
+      .onSubmit {
+        if picker.probe is ProbeStateValid { viewModel.onSubmit() }
+      }
+      .focused($urlFieldFocused)
       .textFieldStyle(.roundedBorder)
 
       probeSupportingText(picker.probe)
@@ -138,6 +177,7 @@ struct LoginView: View {
       if picker.probe is ProbeStateProbing {
         ProgressView()
           .progressViewStyle(.linear)
+          .accessibilityLabel("Checking server")
       }
 
       Button(action: { viewModel.onSubmit() }) {
@@ -164,13 +204,19 @@ struct LoginView: View {
         .font(.caption)
         .foregroundStyle(.secondary)
     case .invalidUnreachable(let unreachable):
-      Text("Can't reach \(unreachable.host).")
-        .font(.caption)
-        .foregroundStyle(Color.red)
+      HStack(spacing: 4) {
+        Image(systemName: "exclamationmark.triangle.fill").accessibilityHidden(true)
+        Text("Can't reach \(unreachable.host).")
+      }
+      .font(.caption)
+      .foregroundStyle(Color.red)
     case .invalidWrongServer:
-      Text("Not a Horologia server.")
-        .font(.caption)
-        .foregroundStyle(Color.red)
+      HStack(spacing: 4) {
+        Image(systemName: "exclamationmark.triangle.fill").accessibilityHidden(true)
+        Text("Not a Horologia server.")
+      }
+      .font(.caption)
+      .foregroundStyle(Color.red)
     }
   }
 
@@ -185,6 +231,7 @@ struct LoginView: View {
       }
       ProgressView()
         .progressViewStyle(.linear)
+        .accessibilityLabel(title)
     }
   }
 }

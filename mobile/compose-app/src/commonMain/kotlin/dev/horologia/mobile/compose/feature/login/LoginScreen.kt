@@ -3,6 +3,7 @@ package dev.horologia.mobile.compose.feature.login
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,8 +11,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -19,9 +24,19 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -64,12 +79,14 @@ fun LoginScreen(
         state = state,
         onUrlChanged = viewModel::onUrlChanged,
         onSubmit = viewModel::onSubmit,
+        onDismissBanner = viewModel::dismissBanner,
       )
     } else {
       CompactLoginLayout(
         state = state,
         onUrlChanged = viewModel::onUrlChanged,
         onSubmit = viewModel::onSubmit,
+        onDismissBanner = viewModel::dismissBanner,
       )
     }
   }
@@ -80,6 +97,7 @@ private fun CompactLoginLayout(
   state: LoginUiState,
   onUrlChanged: (String) -> Unit,
   onSubmit: () -> Unit,
+  onDismissBanner: () -> Unit,
 ) {
   Column(
     modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -88,7 +106,12 @@ private fun CompactLoginLayout(
   ) {
     LoginHeadline()
     Spacer(Modifier.height(24.dp))
-    LoginBody(state = state, onUrlChanged = onUrlChanged, onSubmit = onSubmit)
+    LoginBody(
+      state = state,
+      onUrlChanged = onUrlChanged,
+      onSubmit = onSubmit,
+      onDismissBanner = onDismissBanner,
+    )
   }
 }
 
@@ -97,6 +120,7 @@ private fun ExpandedLoginLayout(
   state: LoginUiState,
   onUrlChanged: (String) -> Unit,
   onSubmit: () -> Unit,
+  onDismissBanner: () -> Unit,
 ) {
   Column(
     modifier = Modifier.fillMaxSize().padding(32.dp),
@@ -110,7 +134,12 @@ private fun ExpandedLoginLayout(
       Column(modifier = Modifier.padding(32.dp)) {
         LoginHeadline()
         Spacer(Modifier.height(24.dp))
-        LoginBody(state = state, onUrlChanged = onUrlChanged, onSubmit = onSubmit)
+        LoginBody(
+          state = state,
+          onUrlChanged = onUrlChanged,
+          onSubmit = onSubmit,
+          onDismissBanner = onDismissBanner,
+        )
       }
     }
   }
@@ -132,12 +161,21 @@ private fun LoginHeadline() {
 }
 
 @Composable
-private fun LoginBody(state: LoginUiState, onUrlChanged: (String) -> Unit, onSubmit: () -> Unit) {
+private fun LoginBody(
+  state: LoginUiState,
+  onUrlChanged: (String) -> Unit,
+  onSubmit: () -> Unit,
+  onDismissBanner: () -> Unit,
+) {
   when (state) {
     is LoginUiState.ServerPicker ->
-      ServerPickerBody(state = state, onUrlChanged = onUrlChanged, onSubmit = onSubmit)
-    is LoginUiState.LaunchingBrowser ->
-      StatusBody(title = "Opening secure sign-in…", detail = state.input)
+      ServerPickerBody(
+        state = state,
+        onUrlChanged = onUrlChanged,
+        onSubmit = onSubmit,
+        onDismissBanner = onDismissBanner,
+      )
+    is LoginUiState.LaunchingBrowser -> StatusBody(title = "Opening sign-in…", detail = state.input)
     is LoginUiState.Finishing -> StatusBody(title = "Finishing sign-in…", detail = state.input)
     is LoginUiState.Complete -> StatusBody(title = "Signed in.", detail = null)
   }
@@ -148,16 +186,30 @@ private fun ServerPickerBody(
   state: LoginUiState.ServerPicker,
   onUrlChanged: (String) -> Unit,
   onSubmit: () -> Unit,
+  onDismissBanner: () -> Unit,
 ) {
   val banner = state.banner
   if (banner != null) {
-    Text(
-      banner,
-      style = MaterialTheme.typography.bodyMedium,
-      color = MaterialTheme.colorScheme.error,
-      modifier = Modifier.padding(bottom = 12.dp),
-    )
+    Row(
+      modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      Text(
+        banner,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.error,
+        modifier = Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Assertive },
+      )
+      IconButton(
+        onClick = onDismissBanner,
+        modifier = Modifier.semantics { contentDescription = "Dismiss" },
+      ) {
+        Text("×", style = MaterialTheme.typography.titleLarge)
+      }
+    }
   }
+  val focusRequester = remember { FocusRequester() }
+  LaunchedEffect(Unit) { focusRequester.requestFocus() }
   OutlinedTextField(
     value = state.input,
     onValueChange = onUrlChanged,
@@ -167,10 +219,23 @@ private fun ServerPickerBody(
     isError =
       state.probe is ProbeState.InvalidUnreachable || state.probe is ProbeState.InvalidWrongServer,
     supportingText = { ProbeSupportingText(probe = state.probe) },
-    modifier = Modifier.fillMaxWidth(),
+    keyboardOptions =
+      KeyboardOptions(
+        keyboardType = KeyboardType.Uri,
+        autoCorrectEnabled = false,
+        capitalization = KeyboardCapitalization.None,
+        imeAction = ImeAction.Go,
+      ),
+    keyboardActions = KeyboardActions(onGo = { if (state.probe is ProbeState.Valid) onSubmit() }),
+    modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
   )
   if (state.probe is ProbeState.Probing) {
-    LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
+    LinearProgressIndicator(
+      modifier =
+        Modifier.fillMaxWidth().padding(top = 12.dp).semantics {
+          contentDescription = "Checking server"
+        }
+    )
   }
   Spacer(Modifier.height(16.dp))
   Button(
@@ -208,5 +273,15 @@ private fun StatusBody(title: String, detail: String?) {
     )
   }
   Spacer(Modifier.height(16.dp))
-  LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+  LinearProgressIndicator(
+    modifier = Modifier.fillMaxWidth().semantics { contentDescription = title }
+  )
+}
+
+@Suppress("unused")
+@Composable
+private fun CheckingServerProgress() {
+  CircularProgressIndicator(
+    modifier = Modifier.semantics { contentDescription = "Checking server" }
+  )
 }
