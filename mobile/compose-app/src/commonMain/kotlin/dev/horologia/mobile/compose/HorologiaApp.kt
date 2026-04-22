@@ -3,6 +3,7 @@ package dev.horologia.mobile.compose
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -22,7 +23,6 @@ import dev.horologia.mobile.compose.feature.login.LoginScreen
 import dev.horologia.mobile.compose.nav.LoginRoute
 import dev.horologia.mobile.compose.nav.ProfileRoute
 import dev.horologia.mobile.compose.nav.SpacesRoute
-import dev.horologia.mobile.compose.theme.HorologiaTheme
 import dev.horologia.mobile.core.AppContainer
 import dev.horologia.mobile.core.configureHorologiaApi
 import dev.horologia.mobile.core.ensureApiPath
@@ -52,7 +52,9 @@ fun HorologiaApp(appContainer: AppContainer) {
   }
 
   CompositionLocalProvider(LocalAppContainer provides appContainer) {
-    HorologiaTheme {
+    // TODO: Upgrade to MaterialExpressiveTheme when Compose Multiplatform ships the API
+    // (tracked: https://github.com/JetBrains/compose-multiplatform/releases).
+    MaterialTheme {
       Surface {
         val current = resolved
         if (current == null) {
