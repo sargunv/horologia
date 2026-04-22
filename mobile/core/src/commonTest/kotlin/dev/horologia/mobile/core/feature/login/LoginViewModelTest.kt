@@ -55,7 +55,10 @@ class LoginViewModelTest {
 
     // After the debounce + probe, Valid.
     testScheduler.advanceUntilIdle()
-    assertEquals(ProbeState.Valid, (vm.uiState.value as LoginUiState.ServerPicker).probe)
+    assertTrue(
+      (vm.uiState.value as LoginUiState.ServerPicker).probe is ProbeState.Valid,
+      "expected Valid, got ${(vm.uiState.value as LoginUiState.ServerPicker).probe}",
+    )
     assertEquals(1, gateway.probeCalls)
   }
 
@@ -442,7 +445,7 @@ class LoginViewModelTest {
     val state = vm.uiState.value
     assertTrue(state is LoginUiState.ServerPicker, "got $state")
     assertEquals("tasks.example.com", state.input)
-    assertEquals(ProbeState.Valid, state.probe)
+    assertTrue(state.probe is ProbeState.Valid, "expected Valid, got ${state.probe}")
     assertEquals(1, gateway.probeCalls)
   }
 

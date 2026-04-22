@@ -37,7 +37,12 @@ sealed interface ProbeState {
 
   data object Probing : ProbeState
 
-  data object Valid : ProbeState
+  /**
+   * The probe succeeded. [resolvedUrl] is the URL that actually answered — may differ from the raw
+   * input when the scheme was auto-detected (e.g. user typed `localhost:8080`, probe fell back to
+   * `http://localhost:8080`). `onSubmit` uses this exact URL for the OAuth trip.
+   */
+  data class Valid(val resolvedUrl: String) : ProbeState
 
   data class InvalidUnreachable(val host: String) : ProbeState
 

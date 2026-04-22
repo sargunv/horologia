@@ -21,6 +21,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -80,6 +81,7 @@ fun LoginScreen(
         onUrlChanged = viewModel::onUrlChanged,
         onSubmit = viewModel::onSubmit,
         onDismissBanner = viewModel::dismissBanner,
+        onCancelSignIn = viewModel::cancelSignIn,
       )
     } else {
       CompactLoginLayout(
@@ -87,6 +89,7 @@ fun LoginScreen(
         onUrlChanged = viewModel::onUrlChanged,
         onSubmit = viewModel::onSubmit,
         onDismissBanner = viewModel::dismissBanner,
+        onCancelSignIn = viewModel::cancelSignIn,
       )
     }
   }
@@ -98,6 +101,7 @@ private fun CompactLoginLayout(
   onUrlChanged: (String) -> Unit,
   onSubmit: () -> Unit,
   onDismissBanner: () -> Unit,
+  onCancelSignIn: () -> Unit,
 ) {
   Column(
     modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -111,6 +115,7 @@ private fun CompactLoginLayout(
       onUrlChanged = onUrlChanged,
       onSubmit = onSubmit,
       onDismissBanner = onDismissBanner,
+      onCancelSignIn = onCancelSignIn,
     )
   }
 }
@@ -121,6 +126,7 @@ private fun ExpandedLoginLayout(
   onUrlChanged: (String) -> Unit,
   onSubmit: () -> Unit,
   onDismissBanner: () -> Unit,
+  onCancelSignIn: () -> Unit,
 ) {
   Column(
     modifier = Modifier.fillMaxSize().padding(32.dp),
@@ -139,6 +145,7 @@ private fun ExpandedLoginLayout(
           onUrlChanged = onUrlChanged,
           onSubmit = onSubmit,
           onDismissBanner = onDismissBanner,
+          onCancelSignIn = onCancelSignIn,
         )
       }
     }
@@ -166,6 +173,7 @@ private fun LoginBody(
   onUrlChanged: (String) -> Unit,
   onSubmit: () -> Unit,
   onDismissBanner: () -> Unit,
+  onCancelSignIn: () -> Unit,
 ) {
   when (state) {
     is LoginUiState.ServerPicker ->
@@ -175,9 +183,11 @@ private fun LoginBody(
         onSubmit = onSubmit,
         onDismissBanner = onDismissBanner,
       )
-    is LoginUiState.LaunchingBrowser -> StatusBody(title = "Opening sign-in…", detail = state.input)
-    is LoginUiState.Finishing -> StatusBody(title = "Finishing sign-in…", detail = state.input)
-    is LoginUiState.Complete -> StatusBody(title = "Signed in.", detail = null)
+    is LoginUiState.LaunchingBrowser ->
+      StatusBody(title = "Opening sign-in…", detail = state.input, onCancel = onCancelSignIn)
+    is LoginUiState.Finishing ->
+      StatusBody(title = "Finishing sign-in…", detail = state.input, onCancel = onCancelSignIn)
+    is LoginUiState.Complete -> StatusBody(title = "Signed in.", detail = null, onCancel = null)
   }
 }
 
@@ -229,14 +239,6 @@ private fun ServerPickerBody(
     keyboardActions = KeyboardActions(onGo = { if (state.probe is ProbeState.Valid) onSubmit() }),
     modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
   )
-  if (state.probe is ProbeState.Probing) {
-    LinearProgressIndicator(
-      modifier =
-        Modifier.fillMaxWidth().padding(top = 12.dp).semantics {
-          contentDescription = "Checking server"
-        }
-    )
-  }
   Spacer(Modifier.height(16.dp))
   Button(
     onClick = onSubmit,
@@ -254,7 +256,7 @@ private fun ProbeSupportingText(probe: ProbeState) {
       ProbeState.Empty -> null
       ProbeState.Typing -> null
       ProbeState.Probing -> "Checking server…"
-      ProbeState.Valid -> "Horologia server detected."
+      is ProbeState.Valid -> "Horologia server detected."
       is ProbeState.InvalidUnreachable -> "Can't reach ${probe.host}."
       ProbeState.InvalidWrongServer -> "Not a Horologia server."
     }
@@ -262,7 +264,7 @@ private fun ProbeSupportingText(probe: ProbeState) {
 }
 
 @Composable
-private fun StatusBody(title: String, detail: String?) {
+private fun StatusBody(title: String, detail: String?, onCancel: (() -> Unit)?) {
   Text(title, style = MaterialTheme.typography.titleMedium)
   if (detail != null) {
     Spacer(Modifier.height(8.dp))
@@ -276,6 +278,13 @@ private fun StatusBody(title: String, detail: String?) {
   LinearProgressIndicator(
     modifier = Modifier.fillMaxWidth().semantics { contentDescription = title }
   )
+  if (onCancel != null) {
+    Spacer(Modifier.height(12.dp))
+    // Desktop has no reliable "user closed the browser tab" signal, so this is the primary
+    // escape hatch there. On Android/iOS this backstops the native cancel paths (Custom Tabs
+    // back gesture, ASWebAuthenticationSession dismissal).
+    TextButton(onClick = onCancel) { Text("Cancel") }
+  }
 }
 
 @Suppress("unused")

@@ -125,11 +125,19 @@ struct LoginView: View {
     case .serverPicker(let picker):
       serverPickerBody(picker: picker)
     case .launchingBrowser(let state):
-      statusBody(title: "Opening sign-in…", detail: state.input)
+      statusBody(
+        title: "Opening sign-in…",
+        detail: state.input,
+        onCancel: { viewModel.cancelSignIn() }
+      )
     case .finishing(let state):
-      statusBody(title: "Finishing sign-in…", detail: state.input)
+      statusBody(
+        title: "Finishing sign-in…",
+        detail: state.input,
+        onCancel: { viewModel.cancelSignIn() }
+      )
     case .complete:
-      statusBody(title: "Signed in.", detail: nil)
+      statusBody(title: "Signed in.", detail: nil, onCancel: nil)
     }
   }
 
@@ -174,12 +182,6 @@ struct LoginView: View {
 
       probeSupportingText(picker.probe)
 
-      if picker.probe is ProbeStateProbing {
-        ProgressView()
-          .progressViewStyle(.linear)
-          .accessibilityLabel("Checking server")
-      }
-
       Button(action: { viewModel.onSubmit() }) {
         Text("Continue")
           .frame(maxWidth: .infinity)
@@ -220,7 +222,11 @@ struct LoginView: View {
     }
   }
 
-  private func statusBody(title: String, detail: String?) -> some View {
+  private func statusBody(
+    title: String,
+    detail: String?,
+    onCancel: (() -> Void)?
+  ) -> some View {
     VStack(alignment: .leading, spacing: 12) {
       Text(title)
         .font(.title3)
@@ -232,6 +238,12 @@ struct LoginView: View {
       ProgressView()
         .progressViewStyle(.linear)
         .accessibilityLabel(title)
+      if let onCancel = onCancel {
+        // ASWebAuthenticationSession already signals dismissal via canceledLogin, so this is
+        // a redundant escape hatch on iOS — useful when the sheet is stuck or the user changed
+        // their mind mid-flow.
+        Button("Cancel", action: onCancel).buttonStyle(.bordered)
+      }
     }
   }
 }

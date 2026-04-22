@@ -1,5 +1,6 @@
 package dev.horologia.mobile.core.feature.login
 
+import dev.horologia.mobile.core.platform.platformLog
 import dev.horologia.mobile.core.session.ServerPrefs
 import dev.horologia.mobile.core.session.SessionHolder
 import dev.horologia.mobile.core.session.StoredSession
@@ -44,7 +45,24 @@ internal constructor(
   private val loginGateway: LoginGateway,
   private val nowMillis: () -> Long = { Clock.System.now().toEpochMilliseconds() },
 ) {
-  suspend fun decideBootDestination(): BootDestination {
+  suspend fun decideBootDestination(): BootDestination =
+    try {
+      decideBootDestinationInner()
+    } catch (ce: CancellationException) {
+      throw ce
+    } catch (t: Throwable) {
+      // On Kotlin/Native the SKIE-generated Swift bridge for a suspend fn turns any escaping
+      // non-CancellationException into a process abort via the default uncaught-exception hook
+      // (the Swift `catch` never sees it). Swallow to Unconfigured — cold launch lands on the
+      // server picker where the user can retry, instead of the app crashing on open.
+      platformLog(
+        "BootRouter",
+        "decideBootDestination failed: ${t::class.simpleName}: ${t.message}; defaulting to Unconfigured",
+      )
+      BootDestination.Unconfigured
+    }
+
+  private suspend fun decideBootDestinationInner(): BootDestination {
     val savedUrl = serverPrefs.loadServerUrl() ?: return BootDestination.Unconfigured
     val host =
       runCatching { Url(savedUrl).host }.getOrNull()?.takeIf { it.isNotEmpty() }
@@ -91,7 +109,11 @@ internal constructor(
           )
         } catch (ce: CancellationException) {
           throw ce
-        } catch (_: Throwable) {
+        } catch (t: Throwable) {
+          platformLog(
+            "BootRouter",
+            "sessionHolder.install after refresh failed: ${t::class.simpleName}: ${t.message}",
+          )
           // Persist failed; session stays in memory with pre-refresh tokens.
         }
         BootDestination.SignedIn(savedUrl = savedUrl, host = host)

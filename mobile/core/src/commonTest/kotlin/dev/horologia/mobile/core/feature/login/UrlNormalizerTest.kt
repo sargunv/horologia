@@ -2,66 +2,81 @@ package dev.horologia.mobile.core.feature.login
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 
 class UrlNormalizerTest {
+  // A bare host becomes two candidates: https-first, http-fallback. Probing tries them in order.
   @Test
-  fun bareHostDefaultsToHttps() {
-    assertEquals("https://tasks.example.com", UrlNormalizer.normalize("tasks.example.com"))
+  fun bareHostProducesHttpsAndHttpCandidates() {
+    assertEquals(
+      listOf("https://tasks.example.com", "http://tasks.example.com"),
+      UrlNormalizer.candidates("tasks.example.com"),
+    )
   }
 
   @Test
-  fun explicitHttpIsPreserved() {
-    assertEquals("http://localhost:8080", UrlNormalizer.normalize("http://localhost:8080"))
+  fun explicitHttpIsPreservedAndSingleCandidate() {
+    assertEquals(listOf("http://localhost:8080"), UrlNormalizer.candidates("http://localhost:8080"))
   }
 
   @Test
-  fun explicitHttpsIsPreserved() {
-    assertEquals("https://tasks.example.com", UrlNormalizer.normalize("https://tasks.example.com"))
+  fun explicitHttpsIsPreservedAndSingleCandidate() {
+    assertEquals(
+      listOf("https://tasks.example.com"),
+      UrlNormalizer.candidates("https://tasks.example.com"),
+    )
   }
 
   @Test
   fun whitespaceIsTrimmed() {
-    assertEquals("https://tasks.example.com", UrlNormalizer.normalize("  tasks.example.com  "))
+    assertEquals(
+      listOf("https://tasks.example.com", "http://tasks.example.com"),
+      UrlNormalizer.candidates("  tasks.example.com  "),
+    )
   }
 
   @Test
   fun trailingSlashOnHostOnlyIsStripped() {
-    assertEquals("https://tasks.example.com", UrlNormalizer.normalize("https://tasks.example.com/"))
+    assertEquals(
+      listOf("https://tasks.example.com"),
+      UrlNormalizer.candidates("https://tasks.example.com/"),
+    )
   }
 
   @Test
   fun pathIsPreservedVerbatim() {
     assertEquals(
-      "https://tasks.example.com/api/",
-      UrlNormalizer.normalize("https://tasks.example.com/api/"),
+      listOf("https://tasks.example.com/api/"),
+      UrlNormalizer.candidates("https://tasks.example.com/api/"),
     )
   }
 
   @Test
-  fun emptyReturnsNull() {
-    assertNull(UrlNormalizer.normalize(""))
-    assertNull(UrlNormalizer.normalize("   "))
+  fun emptyReturnsEmptyList() {
+    assertEquals(emptyList(), UrlNormalizer.candidates(""))
+    assertEquals(emptyList(), UrlNormalizer.candidates("   "))
   }
 
   @Test
   fun hostWithPortIsPreserved() {
     assertEquals(
-      "https://tasks.example.com:8443",
-      UrlNormalizer.normalize("tasks.example.com:8443"),
+      listOf("https://tasks.example.com:8443", "http://tasks.example.com:8443"),
+      UrlNormalizer.candidates("tasks.example.com:8443"),
     )
   }
 
   @Test
   fun bareIpv4IsAccepted() {
-    assertEquals("https://192.168.1.10", UrlNormalizer.normalize("192.168.1.10"))
+    assertEquals(
+      listOf("https://192.168.1.10", "http://192.168.1.10"),
+      UrlNormalizer.candidates("192.168.1.10"),
+    )
   }
 
   @Test
   fun userinfoIsPreserved() {
     assertEquals(
-      "https://user:pass@tasks.example.com",
-      UrlNormalizer.normalize("https://user:pass@tasks.example.com"),
+      listOf("https://user:pass@tasks.example.com"),
+      UrlNormalizer.candidates("https://user:pass@tasks.example.com"),
     )
   }
 
@@ -69,6 +84,9 @@ class UrlNormalizerTest {
   fun uppercaseSchemeIsPreserved() {
     // Ktor lower-cases the scheme during parse, but our normalizer returns the
     // verbatim input once it parses — so the stored URL retains the caller's shape.
-    assertEquals("HTTPS://tasks.example.com", UrlNormalizer.normalize("HTTPS://tasks.example.com"))
+    assertEquals(
+      listOf("HTTPS://tasks.example.com"),
+      UrlNormalizer.candidates("HTTPS://tasks.example.com"),
+    )
   }
 }
