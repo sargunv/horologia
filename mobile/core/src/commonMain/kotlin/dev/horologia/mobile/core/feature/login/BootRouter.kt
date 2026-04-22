@@ -6,6 +6,7 @@ import dev.horologia.mobile.core.session.StoredSession
 import io.ktor.http.Url
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
+import kotlinx.coroutines.CancellationException
 
 /**
  * Where the app should land on cold launch, per design spec § H.
@@ -72,15 +73,27 @@ internal constructor(
       )
     return when (result) {
       is TokenResult.Ok -> {
-        sessionHolder.install(
-          host = host,
-          session =
-            StoredSession(
-              accessToken = result.accessToken,
-              refreshToken = result.refreshToken ?: stored.refreshToken,
-              accessTokenExpiresAtMillis = result.accessTokenExpiresAtMillis,
-            ),
-        )
+        // If the server rotated the refresh token, the old one is consumed server-side the
+        // moment Ok arrives. A failed persist here (Keychain locked, disk full, etc.) would
+        // strand the user with a valid-in-memory but unsaveable session; next cold launch
+        // would retry refresh with the already-consumed old token and hard-fail. Swallow the
+        // write error and fall through to optimistic SignedIn with the OLD in-memory session;
+        // the first API call's 401 will re-trigger a full sign-out through the normal path.
+        try {
+          sessionHolder.install(
+            host = host,
+            session =
+              StoredSession(
+                accessToken = result.accessToken,
+                refreshToken = result.refreshToken ?: stored.refreshToken,
+                accessTokenExpiresAtMillis = result.accessTokenExpiresAtMillis,
+              ),
+          )
+        } catch (ce: CancellationException) {
+          throw ce
+        } catch (_: Throwable) {
+          // Persist failed; session stays in memory with pre-refresh tokens.
+        }
         BootDestination.SignedIn(savedUrl = savedUrl, host = host)
       }
       is TokenResult.AuthFailure,
