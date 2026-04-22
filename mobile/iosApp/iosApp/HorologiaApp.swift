@@ -1,6 +1,15 @@
 import HorologiaCore
 import SwiftUI
 
+// SKIE-generated Kotlin classes aren't marked Sendable by default, but `BootRouter` and
+// `AppContainer` only hold immutable fields (gateways, stores, a SessionHolder that does its
+// own synchronization). Passing them from a main-actor-isolated context into a `.task { }`
+// continuation is safe; tell Swift 6 strict concurrency explicitly.
+extension BootRouter: @unchecked @retroactive Sendable {}
+
+extension AppContainer: @unchecked @retroactive Sendable {}
+
+
 @main
 @MainActor
 struct HorologiaApp: App {
