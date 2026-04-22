@@ -52,8 +52,6 @@ fun HorologiaApp(appContainer: AppContainer) {
   }
 
   CompositionLocalProvider(LocalAppContainer provides appContainer) {
-    // TODO: Upgrade to MaterialExpressiveTheme when Compose Multiplatform ships the API
-    // (tracked: https://github.com/JetBrains/compose-multiplatform/releases).
     MaterialTheme {
       Surface {
         val current = resolved

@@ -3,6 +3,7 @@ options:
   bundleIdPrefix: dev.horologia.mobile
   deploymentTarget:
     iOS: "26.0"
+    macOS: "26.0"
   createIntermediateGroups: true
 configs:
   Debug: debug
@@ -14,7 +15,10 @@ settings:
 targets:
   iosApp:
     type: application
-    platform: iOS
+    supportedDestinations: [iOS, iPadOS, macOS]
+    configFiles:
+      Debug: Developer.xcconfig
+      Release: Developer.xcconfig
     sources:
       - iosApp
     info:
@@ -44,9 +48,8 @@ targets:
         # Automatic signing with a real team ID — the simulator's keychain won't accept an
         # ad-hoc-signed app (`ProcessProductPackaging` writes an empty .xcent without a team,
         # so the keychain-access-group entitlement is stripped at codesign time).
-        # TODO(multi-dev): hoist to a gitignored .xcconfig or per-user override so collaborators
-        # can plug in their own team without editing this file.
-        DEVELOPMENT_TEAM: LQ33A6CSK4
+        # DEVELOPMENT_TEAM is supplied per-developer via the gitignored
+        # `Developer.xcconfig` (seeded from `Developer.xcconfig.example` by `ios:gen`).
         CODE_SIGN_STYLE: Automatic
     preBuildScripts:
       - name: Build HorologiaCore framework for Xcode

@@ -33,6 +33,7 @@ mobile/local.properties
 mobile/iosApp/*.xcodeproj/
 mobile/iosApp/*.xcworkspace/
 mobile/iosApp/iosApp/Info.plist
+mobile/iosApp/Developer.xcconfig
 
 # typespec
 tsp-output/

@@ -9,7 +9,9 @@ import SwiftUI
 @MainActor
 struct LoginView: View {
   @Environment(\.appContainer) private var container
+  #if os(iOS)
   @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+  #endif
   @StateObject private var storeOwner = IosViewModelStoreOwner()
   @State private var uiState: LoginUiState = LoginUiStateServerPicker(
     input: "",
@@ -40,9 +42,17 @@ struct LoginView: View {
     )
   }
 
+  private var isRegularWidth: Bool {
+    #if os(iOS)
+    return horizontalSizeClass == .regular
+    #else
+    return true
+    #endif
+  }
+
   var body: some View {
     Group {
-      if horizontalSizeClass == .regular {
+      if isRegularWidth {
         expandedBody
       } else {
         compactBody
@@ -170,10 +180,12 @@ struct LoginView: View {
         prompt: Text("tasks.example.com")
       )
       .accessibilityLabel("Server URL")
-      .textInputAutocapitalization(.never)
       .autocorrectionDisabled(true)
+      #if os(iOS)
+      .textInputAutocapitalization(.never)
       .keyboardType(.URL)
       .submitLabel(.go)
+      #endif
       .onSubmit {
         if picker.probe is ProbeStateValid { viewModel.onSubmit() }
       }

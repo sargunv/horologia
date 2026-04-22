@@ -69,10 +69,11 @@ internal constructor(
         ?: return BootDestination.ServerOnly(savedUrl = savedUrl)
     val stored =
       sessionHolder.load(host = host) ?: return BootDestination.ServerOnly(savedUrl = savedUrl)
+    val signedIn = BootDestination.SignedIn(savedUrl = savedUrl, host = host)
 
     val needsRefresh = nowMillis() >= stored.accessTokenExpiresAtMillis - REFRESH_LEEWAY_MILLIS
     if (!needsRefresh) {
-      return BootDestination.SignedIn(savedUrl = savedUrl, host = host)
+      return signedIn
     }
 
     val refresh = stored.refreshToken
@@ -81,8 +82,7 @@ internal constructor(
       return BootDestination.SignedOutAfterRefresh(savedUrl = savedUrl)
     }
 
-    // The token endpoint is rooted at the server host (`/oauth/token`), not under `/api/`, so
-    // we pass the unprefixed saved URL the same way `LoginViewModel` does during sign-in.
+    // The gateway appends `/oauth/token` to the raw saved URL — no `/api/` prefix.
     val result =
       loginGateway.refreshAccessToken(
         baseUrl = savedUrl,
@@ -116,19 +116,19 @@ internal constructor(
           )
           // Persist failed; session stays in memory with pre-refresh tokens.
         }
-        BootDestination.SignedIn(savedUrl = savedUrl, host = host)
+        signedIn
       }
       is TokenResult.AuthFailure,
       is TokenResult.Permanent -> {
         sessionHolder.clear(host = host)
         BootDestination.SignedOutAfterRefresh(savedUrl = savedUrl)
       }
-      is TokenResult.Retryable -> BootDestination.SignedIn(savedUrl = savedUrl, host = host)
+      is TokenResult.Retryable -> signedIn
     }
   }
 
   internal companion object {
-    internal const val REFRESH_LEEWAY_MILLIS: Long = 60_000L
-    internal const val REFRESH_CLIENT_ID: String = "horologia-mobile"
+    const val REFRESH_LEEWAY_MILLIS: Long = 60_000L
+    const val REFRESH_CLIENT_ID: String = "horologia-mobile"
   }
 }

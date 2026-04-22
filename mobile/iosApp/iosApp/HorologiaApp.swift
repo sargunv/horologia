@@ -1,5 +1,6 @@
 import HorologiaCore
 import SwiftUI
+import os
 
 // SKIE-generated Kotlin classes aren't marked Sendable by default, but `BootRouter` and
 // `AppContainer` only hold immutable fields (gateways, stores, a SessionHolder that does its
@@ -40,6 +41,9 @@ struct HorologiaApp: App {
       RootView(container: container, resolvedRoot: $resolvedRoot)
         .environment(\.appContainer, container)
     }
+    #if os(macOS)
+    .defaultSize(width: 1100, height: 760)
+    #endif
   }
 }
 
@@ -56,6 +60,8 @@ enum StartRoot: Equatable {
 
 @MainActor
 private struct RootView: View {
+  static let log = Logger(subsystem: "dev.horologia.mobile", category: "boot")
+
   let container: AppContainer
   @Binding var resolvedRoot: ResolvedRoot?
 
@@ -98,8 +104,7 @@ private struct RootView: View {
         let (root, url, banner) = Self.interpret(destination: destination)
         resolvedRoot = ResolvedRoot(start: root, initialServerUrl: url, initialBanner: banner)
       } catch {
-        // Decode failure: treat as Unconfigured and surface to devs via print().
-        print("HorologiaApp: decideBootDestination failed: \(error); defaulting to Unconfigured")
+        Self.log.error("decideBootDestination failed: \(error, privacy: .public); defaulting to Unconfigured")
         resolvedRoot = ResolvedRoot(start: .login, initialServerUrl: nil, initialBanner: nil)
       }
     }

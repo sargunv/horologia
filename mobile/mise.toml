@@ -80,7 +80,14 @@ run = "./gradlew :compose-app:run"
 
 [tasks."ios:gen"]
 description = "Generate the iosApp Xcode project from project.yml"
-run = "cd iosApp && xcodegen"
+run = """
+cd iosApp
+if [ ! -f Developer.xcconfig ]; then
+  cp Developer.xcconfig.example Developer.xcconfig
+  echo "Created iosApp/Developer.xcconfig from template — fill in DEVELOPMENT_TEAM before building."
+fi
+xcodegen
+"""
 
 [tasks."ios:xcframework"]
 description = "Assemble the HorologiaCore XCFramework for iOS"
@@ -127,6 +134,26 @@ xcrun simctl launch booted "$BUNDLE_ID"
 description = "Open the iosApp Xcode project"
 depends = ["ios:gen"]
 run = "open iosApp/iosApp.xcodeproj"
+
+[tasks."macos:build"]
+description = "Build the iosApp as a native macOS app"
+depends = ["ios:gen"]
+# First-time build needs `-allowProvisioningUpdates` so Xcode can register this
+# Mac with your developer account. If it still fails, open the project in Xcode
+# once and click "Try Again" in Signing & Capabilities.
+run = "xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -destination 'platform=macOS,arch=arm64' -configuration Debug -allowProvisioningUpdates build"
+
+[tasks."macos:run"]
+description = "Build and launch the iosApp as a native macOS app"
+depends = ["macos:build"]
+run = """
+APP=$(ls -dt ~/Library/Developer/Xcode/DerivedData/iosApp-*/Build/Products/Debug/iosApp.app 2>/dev/null | head -1)
+if [ -z "$APP" ]; then
+  echo "iosApp.app not found in DerivedData; the macOS build must have failed." >&2
+  exit 1
+fi
+open "$APP"
+"""
 
 [tasks.check]
 description = "Run host-safe shared mobile checks"

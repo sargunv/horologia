@@ -186,7 +186,9 @@ kotlin {
   jvm("desktop") { compilerOptions { jvmTarget = JvmTarget.JVM_17 } }
 
   val xcf = XCFramework("HorologiaCore")
-  listOf(iosArm64(), iosSimulatorArm64(), iosX64()).forEach { target ->
+  // macosX64 is omitted: `openapi-kmp-gen:companion` doesn't publish a macos_x64 artifact.
+  // Apple Silicon has been the only supported dev/ship arch since 2020; we require it.
+  listOf(iosArm64(), iosSimulatorArm64(), iosX64(), macosArm64()).forEach { target ->
     target.binaries.framework {
       baseName = "HorologiaCore"
       isStatic = true
@@ -224,7 +226,7 @@ kotlin {
         implementation(libs.ktor.client.okhttp)
       }
     }
-    iosMain.dependencies { implementation(libs.ktor.client.darwin) }
+    appleMain.dependencies { implementation(libs.ktor.client.darwin) }
   }
 }
 

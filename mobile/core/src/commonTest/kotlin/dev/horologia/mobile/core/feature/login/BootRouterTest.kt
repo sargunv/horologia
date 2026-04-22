@@ -46,7 +46,7 @@ class BootRouterTest {
         refreshToken = "RT",
         accessTokenExpiresAtMillis = 10_000_000L,
       )
-    val gateway = CountingGateway()
+    val gateway = NeverCalledGateway()
     val router =
       BootRouter(
         serverPrefs = FakeServerPrefs(url = "https://tasks.example.com"),
@@ -213,7 +213,7 @@ class BootRouterTest {
     val now = 1_000_000L
     store.entries["tasks.example.com"] =
       StoredSession(accessToken = "AT", refreshToken = null, accessTokenExpiresAtMillis = now - 1L)
-    val gateway = CountingGateway()
+    val gateway = NeverCalledGateway()
     val router =
       BootRouter(
         serverPrefs = FakeServerPrefs(url = "https://tasks.example.com"),
@@ -238,7 +238,7 @@ class BootRouterTest {
         refreshToken = "RT",
         accessTokenExpiresAtMillis = now + 10 * 60_000L,
       )
-    val gateway = CountingGateway()
+    val gateway = NeverCalledGateway()
     val router =
       BootRouter(
         serverPrefs = FakeServerPrefs(url = "https://tasks.example.com"),
@@ -253,33 +253,14 @@ class BootRouterTest {
 
   private fun holder(): SessionHolder = SessionHolder(store = FakeSessionStore())
 
-  private class NeverCalledGateway : LoginGateway {
-    override suspend fun probeServer(baseUrl: String): ProbeResult =
-      error("probeServer should not be called")
+  private class NeverCalledGateway :
+    CountingGateway(refreshReturn = { neverCalled("refreshAccessToken") })
 
-    override suspend fun exchangeCode(
-      baseUrl: String,
-      code: String,
-      codeVerifier: String,
-      redirectUri: String,
-      clientId: String,
-    ): TokenResult = error("exchangeCode should not be called")
-
-    override suspend fun refreshAccessToken(
-      baseUrl: String,
-      refreshToken: String,
-      clientId: String,
-    ): TokenResult = error("refreshAccessToken should not be called")
-  }
-
-  private class CountingGateway(
-    val refreshReturn: suspend () -> TokenResult = { TokenResult.AuthFailure }
-  ) : LoginGateway {
+  private open class CountingGateway(val refreshReturn: suspend () -> TokenResult) : LoginGateway {
     var refreshCalls: Int = 0
       private set
 
-    override suspend fun probeServer(baseUrl: String): ProbeResult =
-      error("probeServer should not be called")
+    override suspend fun probeServer(baseUrl: String): ProbeResult = neverCalled("probeServer")
 
     override suspend fun exchangeCode(
       baseUrl: String,
@@ -287,7 +268,7 @@ class BootRouterTest {
       codeVerifier: String,
       redirectUri: String,
       clientId: String,
-    ): TokenResult = error("exchangeCode should not be called")
+    ): TokenResult = neverCalled("exchangeCode")
 
     override suspend fun refreshAccessToken(
       baseUrl: String,
@@ -299,3 +280,5 @@ class BootRouterTest {
     }
   }
 }
+
+private fun neverCalled(name: String): Nothing = error("$name should not be called")
