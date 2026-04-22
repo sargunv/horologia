@@ -1457,6 +1457,42 @@ _Accumulated across all phases._
   - phase: review
   - reason: REJECTED — user chose to leave fail-closed behavior. Keychain/SharedPrefs write failures
     surface as a banner and block the flow.
+- F-A — Stale session-holder state on refresh throw
+  - severity: P3
+  - phase: refine (second-round correctness)
+  - context: `sessionHolder.load(host)` populates `_session` before refresh runs; if the refresh
+    install/clear path throws, memory is left stale. Practically mitigated because
+    `LiveLoginGateway.postToken` swallows `Throwable` into `Retryable`. Follow-up: add error-state
+    rendering in `HorologiaApp.LaunchedEffect` instead of spinning forever when
+    `decideBootDestination` throws.
+- F-C — BootRouter URL-construction comment mischaracterizes call shape
+  - severity: P3
+  - phase: refine (second-round correctness)
+  - context: Comment at `BootRouter.kt:65-66` suggests `LoginViewModel` picks between prefixed and
+    unprefixed URL variants; actually both call sites pass the raw saved URL and the gateway appends
+    `/oauth/token`. Minor docstring clarity fix.
+- F-S1 — Redundant `internal` modifiers inside internal companion object
+  - severity: P3
+  - phase: refine (second-round simplification)
+  - context: `BootRouter.kt:95-98` has `internal` on each const inside an already-`internal`
+    companion object. Drop the per-member annotations.
+- F-S2 — Inline `MaterialTheme` TODO comment quality
+  - severity: P3
+  - phase: refine (second-round simplification)
+  - context: Comment above `MaterialTheme { }` in `HorologiaApp.kt` is a weaker echo of the deleted
+    `HorologiaTheme` KDoc. Either tighten to stand alone or drop entirely (workpad already records
+    the context).
+- F-S3 / F-S4 — Test-fake default surprises in `BootRouterTest`
+  - severity: P3
+  - phase: refine (second-round simplification)
+  - context: `CountingGateway` defaults `refreshReturn` to `AuthFailure`; `NeverCalledGateway`
+    duplicates `probeServer`/`exchangeCode` stubs. Merge into one `RefreshOnlyGateway` base or make
+    `refreshReturn` required so defaults can't hide test intent.
+- F-S5 — `BootDestination.SignedIn(savedUrl, host)` constructed at three call sites
+  - severity: P3
+  - phase: refine (second-round simplification)
+  - context: Minor dedup opportunity; extract a `val signedIn = ...` at the top of
+    `decideBootDestination`'s stored-session branch.
 
 ---
 
@@ -1482,5 +1518,11 @@ _Accumulated across all phases._
   under Pre-existing failures. Branch NOT pushed per pipeline convention.
 - review: done — 2026-04-21 — 15 reviewers, 49 findings (9 P1, ~30 P2, ~10 P3). Top finding
   [CORROBORATED-6]: BootRouter silent refresh unwired. AC coverage 27/27 pass.
-- refine:
+- refine: done — 2026-04-21 — mobile/login-flow at 3da68d9. 37 auto-fixes (`9293746`..`a7a7150`) + 4
+  triaged fixes F-1/F-13/F-14/F-38/F-45 (`992fe1f`..`43ba029`) + workpad triage record (`5c4e872`) +
+  1 second-round correctness fix F-B (`3da68d9`). Second review round: 0 P0/P1 regressions, 8 P3
+  polish findings recorded as deferred items (F-A, F-C, F-S1..F-S5). Tests 34 → 86 green.
+  `mise run
+  //mobile:test` clean; all compile targets clean; `mise run //mobile:ios:gen` clean.
+  F-19 rejected, F-37 + F-46 deferred.
 - pr:
