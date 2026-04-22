@@ -52,11 +52,17 @@ internal class AppContainerCore(
   val browserLauncher: BrowserLauncher,
 ) {
   val sessionHolder: SessionHolder = SessionHolder(store = sessionStore)
-  val bootRouter: BootRouter = BootRouter(serverPrefs = serverPrefs, sessionHolder = sessionHolder)
 
   private val profileGateway: ProfileGateway = LiveProfileGateway()
   private val spacesGateway: SpacesGateway = LiveSpacesGateway()
   private val loginGateway: LoginGateway = LiveLoginGateway()
+
+  val bootRouter: BootRouter =
+    BootRouter(
+      serverPrefs = serverPrefs,
+      sessionHolder = sessionHolder,
+      loginGateway = loginGateway,
+    )
 
   val profileViewModelFactory: ViewModelProvider.Factory = viewModelFactory {
     initializer { ProfileViewModel(profileGateway) }

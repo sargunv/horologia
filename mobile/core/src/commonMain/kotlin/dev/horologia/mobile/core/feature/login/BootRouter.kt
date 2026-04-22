@@ -4,7 +4,10 @@ import dev.horologia.mobile.core.session.ServerPrefs
 import dev.horologia.mobile.core.session.ServerPrefsAdapter
 import dev.horologia.mobile.core.session.ServerPrefsReader
 import dev.horologia.mobile.core.session.SessionHolder
+import dev.horologia.mobile.core.session.StoredSession
 import io.ktor.http.Url
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 /**
  * Where the app should land on cold launch, per design spec § H.
@@ -28,27 +31,83 @@ sealed interface BootDestination {
 }
 
 /**
- * Decide where to land on first-frame. Synchronous-fast: the only I/O is the two local-disk reads
- * (server prefs + keychain). Silent refresh is explicitly deferred to the caller — the architect
- * phase chose "optimistic render + background refresh" so the first-frame time never waits on
- * network.
+ * Decide where to land on first-frame. One disk read + an optional single refresh-token round-trip
+ * when the stored access token is expired or within [REFRESH_LEEWAY_MILLIS] of expiring. A
+ * transient failure during that refresh does NOT block cold launch — we return
+ * [BootDestination.SignedIn] with the near-expired token and let the first API call surface the 401
+ * through the existing classifier.
  */
+@OptIn(ExperimentalTime::class)
 class BootRouter
 internal constructor(
   private val serverPrefs: ServerPrefsReader,
   private val sessionHolder: SessionHolder,
+  private val loginGateway: LoginGateway,
+  private val nowMillis: () -> Long = { Clock.System.now().toEpochMilliseconds() },
 ) {
-  constructor(
+  internal constructor(
     serverPrefs: ServerPrefs,
     sessionHolder: SessionHolder,
-  ) : this(serverPrefs = ServerPrefsAdapter(prefs = serverPrefs), sessionHolder = sessionHolder)
+    loginGateway: LoginGateway,
+    nowMillis: () -> Long = { Clock.System.now().toEpochMilliseconds() },
+  ) : this(
+    serverPrefs = ServerPrefsAdapter(prefs = serverPrefs),
+    sessionHolder = sessionHolder,
+    loginGateway = loginGateway,
+    nowMillis = nowMillis,
+  )
 
   suspend fun decideBootDestination(): BootDestination {
     val savedUrl = serverPrefs.loadServerUrl() ?: return BootDestination.Unconfigured
     val host =
       runCatching { Url(savedUrl).host }.getOrNull()?.takeIf { it.isNotEmpty() }
         ?: return BootDestination.ServerOnly(savedUrl = savedUrl)
-    sessionHolder.load(host = host) ?: return BootDestination.ServerOnly(savedUrl = savedUrl)
-    return BootDestination.SignedIn(savedUrl = savedUrl, host = host)
+    val stored =
+      sessionHolder.load(host = host) ?: return BootDestination.ServerOnly(savedUrl = savedUrl)
+
+    val needsRefresh = nowMillis() >= stored.accessTokenExpiresAtMillis - REFRESH_LEEWAY_MILLIS
+    if (!needsRefresh) {
+      return BootDestination.SignedIn(savedUrl = savedUrl, host = host)
+    }
+
+    val refresh = stored.refreshToken
+    if (refresh == null) {
+      sessionHolder.clear(host = host)
+      return BootDestination.SignedOutAfterRefresh(savedUrl = savedUrl)
+    }
+
+    // The token endpoint is rooted at the server host (`/oauth/token`), not under `/api/`, so
+    // we pass the unprefixed saved URL the same way `LoginViewModel` does during sign-in.
+    val result =
+      loginGateway.refreshAccessToken(
+        baseUrl = savedUrl,
+        refreshToken = refresh,
+        clientId = REFRESH_CLIENT_ID,
+      )
+    return when (result) {
+      is TokenResult.Ok -> {
+        sessionHolder.install(
+          host = host,
+          session =
+            StoredSession(
+              accessToken = result.accessToken,
+              refreshToken = result.refreshToken ?: stored.refreshToken,
+              accessTokenExpiresAtMillis = result.accessTokenExpiresAtMillis,
+            ),
+        )
+        BootDestination.SignedIn(savedUrl = savedUrl, host = host)
+      }
+      is TokenResult.AuthFailure,
+      is TokenResult.Permanent -> {
+        sessionHolder.clear(host = host)
+        BootDestination.SignedOutAfterRefresh(savedUrl = savedUrl)
+      }
+      is TokenResult.Retryable -> BootDestination.SignedIn(savedUrl = savedUrl, host = host)
+    }
+  }
+
+  internal companion object {
+    internal const val REFRESH_LEEWAY_MILLIS: Long = 60_000L
+    internal const val REFRESH_CLIENT_ID: String = "horologia-mobile"
   }
 }

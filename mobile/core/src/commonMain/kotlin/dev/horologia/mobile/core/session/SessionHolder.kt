@@ -63,6 +63,14 @@ class SessionHolder internal constructor(private val persister: SessionPersister
     persister.clear(host = current.host)
     _session.value = null
   }
+
+  /** Clear the stored session for a specific host without requiring it be currently active. */
+  suspend fun clear(host: String) {
+    persister.clear(host = host)
+    if (_session.value?.host == host) {
+      _session.value = null
+    }
+  }
 }
 
 data class ActiveSession(val host: String, val session: StoredSession)
