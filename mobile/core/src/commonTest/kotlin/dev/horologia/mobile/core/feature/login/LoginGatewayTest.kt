@@ -37,18 +37,35 @@ class LoginGatewayTest {
   }
 
   @Test
-  fun probeServer_validAuthConfigIsOk() = runBlocking {
+  fun probeServer_validOauthMetadataIsOk() = runBlocking {
     val gateway =
       LiveLoginGateway(
         httpClientFactory = {
           clientWith(
             HttpStatusCode.OK,
-            """{"oidc":{"enabled":false,"label":"","autoRedirect":false},"password":{"enabled":true}}""",
+            """{"issuer":"https://tasks.example.com","authorization_endpoint":"https://tasks.example.com/oauth/authorize","token_endpoint":"https://tasks.example.com/oauth/token","code_challenge_methods_supported":["S256"]}""",
           )
         }
       )
     val result = gateway.probeServer(baseUrl = "https://tasks.example.com")
     assertEquals(ProbeResult.Ok, result, "got $result")
+  }
+
+  @Test
+  fun probeServer_serverWithoutS256IsWrongServer() = runBlocking {
+    val gateway =
+      LiveLoginGateway(
+        httpClientFactory = {
+          clientWith(
+            HttpStatusCode.OK,
+            """{"issuer":"https://tasks.example.com","authorization_endpoint":"https://tasks.example.com/oauth/authorize","token_endpoint":"https://tasks.example.com/oauth/token","code_challenge_methods_supported":["plain"]}""",
+          )
+        }
+      )
+    assertEquals(
+      ProbeResult.WrongServer,
+      gateway.probeServer(baseUrl = "https://tasks.example.com"),
+    )
   }
 
   @Test

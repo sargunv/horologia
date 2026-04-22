@@ -68,21 +68,27 @@ internal sealed interface TokenResult {
   data class Permanent(val message: String) : TokenResult
 }
 
-/** Shape expected from `GET /app/auth/config`; mirrors the generated `AuthConfig`. */
+/**
+ * RFC 8414 OAuth 2.0 Authorization Server Metadata. Served at
+ * `/.well-known/oauth-authorization-server` by Horologia's server. We probe this endpoint (not
+ * `/app/auth/config`) because:
+ *
+ * - Routes under `/app/` are same-origin-gated to the first-party web client; a headless HTTP
+ *   client without an `Origin` header gets 403.
+ * - `/.well-known/oauth-authorization-server` is the standards-mandated discovery endpoint for any
+ *   OAuth 2.0 client. It's mounted at the server root, unauthenticated, and rejects nothing.
+ * - A successful decode (issuer + authorization_endpoint + token_endpoint + `S256` in
+ *   `code_challenge_methods_supported`) confirms "this is a Horologia server AND supports the PKCE
+ *   mode we need" — stronger than `AuthConfig`, which only told us about password/OIDC UX.
+ */
 @Serializable
-private data class AuthConfigShape(
-  @SerialName("oidc") val oidc: OidcSection,
-  @SerialName("password") val password: PasswordSection,
+private data class OAuthServerMetadataShape(
+  @SerialName("issuer") val issuer: String,
+  @SerialName("authorization_endpoint") val authorizationEndpoint: String,
+  @SerialName("token_endpoint") val tokenEndpoint: String,
+  @SerialName("code_challenge_methods_supported")
+  val codeChallengeMethodsSupported: List<String> = emptyList(),
 )
-
-@Serializable
-private data class OidcSection(
-  @SerialName("enabled") val enabled: Boolean,
-  @SerialName("label") val label: String,
-  @SerialName("autoRedirect") val autoRedirect: Boolean,
-)
-
-@Serializable private data class PasswordSection(@SerialName("enabled") val enabled: Boolean)
 
 @Serializable
 private data class TokenResponseShape(
@@ -104,14 +110,21 @@ internal class LiveLoginGateway(
     val client = httpClientFactory()
     return try {
       withTimeout(probeTimeout) {
-        val probeUrl = appendPath(baseUrl = baseUrl, path = "/app/auth/config")
+        val probeUrl =
+          appendPath(baseUrl = baseUrl, path = "/.well-known/oauth-authorization-server")
         val response: HttpResponse = client.get(probeUrl)
         if (response.status != HttpStatusCode.OK) {
           return@withTimeout ProbeResult.WrongServer
         }
         try {
-          response.body<AuthConfigShape>()
-          ProbeResult.Ok
+          val metadata = response.body<OAuthServerMetadataShape>()
+          // Require the exact PKCE mode we'll use. A server that advertises authorization_code
+          // but not S256 is not a Horologia server we can talk to.
+          if ("S256" !in metadata.codeChallengeMethodsSupported) {
+            ProbeResult.WrongServer
+          } else {
+            ProbeResult.Ok
+          }
         } catch (_: JsonConvertException) {
           ProbeResult.WrongServer
         }
