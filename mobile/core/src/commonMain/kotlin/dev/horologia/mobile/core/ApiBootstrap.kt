@@ -6,8 +6,15 @@ import dev.horologia.mobile.generated.Auth
 import io.ktor.http.Url
 
 /**
- * Configure the generated Horologia API singleton. **Call exactly once** at app start, before
- * constructing an `AppContainer` — this mutates process-wide state on the generated `Api` object.
+ * Configure the generated Horologia API singleton. Safe to call multiple times: Ktor 3.4.2's
+ * `DefaultRequest.Plugin.install` rebuilds the request builder per outbound call, so mutating
+ * `Api.baseUrl` and re-installing the auth provider takes effect on the next request. The mobile
+ * login flow uses that property — ServerPicker calls `configureHorologiaApi` whenever the user
+ * picks a server, and cold-launch routing calls it again during bootstrap.
+ *
+ * [getToken] is evaluated on every outbound request, so installing it once against a
+ * [dev.horologia.mobile.core.session.SessionHolder] is sufficient — the holder reflects the current
+ * session, and a sign-out that clears it automatically drops bearers from subsequent requests.
  *
  * @throws IllegalArgumentException if [baseUrl] is not a valid URL.
  */
