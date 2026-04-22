@@ -1,0 +1,19 @@
+[tasks.build]
+description = "Build CLI binary"
+sources = ["**/*.go", "go.mod", "go.sum"]
+outputs = ["horo"]
+run = "go build -o horo ."
+
+[tasks.test]
+description = "Run tests"
+sources = ["**/*.go", "go.mod", "go.sum"]
+run = "go test ./..."
+
+[tasks.run]
+description = "Run the CLI"
+depends = ["build"]
+run = "./horo"
+
+[tasks.release-snapshot]
+description = "Build cross-platform release snapshots with GoReleaser"
+run = "cd ../.. && mise run release:snapshot"

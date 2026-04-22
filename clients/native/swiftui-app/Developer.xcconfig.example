@@ -1,0 +1,7 @@
+// Per-developer signing overrides. Copy this file to `Developer.xcconfig`
+// (gitignored) and fill in your own Apple Developer Team ID.
+//
+// `mise run //clients/native:ios:gen` auto-creates Developer.xcconfig from this
+// template on first run if it doesn't already exist.
+
+DEVELOPMENT_TEAM =

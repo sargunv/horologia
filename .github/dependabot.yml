@@ -16,7 +16,7 @@ updates:
         patterns: ["*"]
 
   - package-ecosystem: gomod
-    directory: /cli
+    directory: /clients/cli
     schedule:
       interval: weekly
     cooldown:
@@ -46,7 +46,7 @@ updates:
         patterns: ["*"]
 
   - package-ecosystem: gradle
-    directory: /mobile
+    directory: /clients/native
     schedule:
       interval: weekly
     cooldown:

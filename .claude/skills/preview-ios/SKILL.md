@@ -11,8 +11,8 @@ CLI-only workflow for driving the iOS simulator end-to-end. Use this whenever yo
 ## Prerequisites
 
 - Xcode installed (`xcrun simctl list` works).
-- `mise run //mobile:ios:gen` has been run at least once — the `.xcodeproj` is generated from
-  `mobile/iosApp/project.yml` and gitignored.
+- `mise run //clients/native:ios:gen` has been run at least once — the `.xcodeproj` is generated
+  from `clients/native/swiftui-app/project.yml` and gitignored.
 - The dev backend is reachable at whatever URL the build is configured for.
 
 ## The loop
@@ -41,7 +41,7 @@ CLI-only workflow for driving the iOS simulator end-to-end. Use this whenever yo
    predictable spot so you don't have to hunt through DerivedData:
 
    ```bash
-   cd mobile/iosApp
+   cd clients/native/swiftui-app
    xcodebuild \
      -project iosApp.xcodeproj \
      -scheme iosApp \
@@ -54,12 +54,12 @@ CLI-only workflow for driving the iOS simulator end-to-end. Use this whenever yo
    ```
 
    The artifact lands at
-   `mobile/iosApp/build/xcode/Build/Products/Debug-iphonesimulator/iosApp.app`.
+   `clients/native/swiftui-app/build/xcode/Build/Products/Debug-iphonesimulator/iosApp.app`.
 
 4. **Install + launch**. `install` is idempotent (overwrites). `launch` prints the new PID:
 
    ```bash
-   APP=mobile/iosApp/build/xcode/Build/Products/Debug-iphonesimulator/iosApp.app
+   APP=clients/native/swiftui-app/build/xcode/Build/Products/Debug-iphonesimulator/iosApp.app
    xcrun simctl install "$DEVICE_UDID" "$APP"
    xcrun simctl launch "$DEVICE_UDID" dev.horologia.mobile.iosApp
    ```
@@ -100,7 +100,7 @@ CLI-only workflow for driving the iOS simulator end-to-end. Use this whenever yo
 
 - **Open the project in Xcode** instead (for the GUI debugger / SwiftUI previews):
   ```bash
-  mise run //mobile:ios:open
+  mise run //clients/native:ios:open
   ```
 
 ## Tips for reliable automation

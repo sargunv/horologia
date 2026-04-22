@@ -10,8 +10,8 @@ proof (a screenshot) or runtime evidence (logcat) that an Android change works.
 
 ## Prerequisites
 
-- `mise run //mobile:setup` has been run at least once. That installs the SDK, the emulator binary,
-  the system image, and creates the `horologia` AVD.
+- `mise run //clients/native:setup` has been run at least once. That installs the SDK, the emulator
+  binary, the system image, and creates the `horologia` AVD.
 - The mise `android-sdk` plugin exposes only `cmdline-tools` on `PATH`, so `emulator` and `adb` are
   NOT on `PATH`. Use full paths via `$ANDROID_HOME`:
 
@@ -52,7 +52,7 @@ proof (a screenshot) or runtime evidence (logcat) that an Android change works.
 2. **Build and install.**
 
    ```bash
-   mise run //mobile:android:installDebug
+   mise run //clients/native:android:installDebug
    ```
 
    Or step-by-step if you need the intermediate APK path:
@@ -73,7 +73,7 @@ proof (a screenshot) or runtime evidence (logcat) that an Android change works.
    Or the combined task:
 
    ```bash
-   mise run //mobile:android:run
+   mise run //clients/native:android:run
    ```
 
 4. **Screenshot.** `exec-out screencap -p` pipes a PNG directly to stdout — no on-device temp file
@@ -170,7 +170,8 @@ the need.
   "$ADB" shell ping -c 1 -W 2 10.0.2.2
   ```
 
-  If that fails, the emulator network is broken — `kill` the emulator and rerun `//mobile:setup`.
+  If that fails, the emulator network is broken — `kill` the emulator and rerun
+  `//clients/native:setup`.
 
 - **Use `adb reverse` to expose host ports as emulator-localhost** (an alternative to `10.0.2.2`
   when you can't change the baked URL):
@@ -207,8 +208,8 @@ the need.
 - `am start` before `force-stop` will merge into an existing task; if the app looks "stuck" on old
   state, `force-stop` first.
 - The `horologia` AVD uses `arm64-v8a` on Apple Silicon hosts for hardware acceleration. On x86_64
-  hosts, `//mobile:setup` still installs arm64 — override by passing `--device` and the matching
-  `system-images;...;x86_64` to `avdmanager create avd` manually.
+  hosts, `//clients/native:setup` still installs arm64 — override by passing `--device` and the
+  matching `system-images;...;x86_64` to `avdmanager create avd` manually.
 
 ## When this isn't enough
 
