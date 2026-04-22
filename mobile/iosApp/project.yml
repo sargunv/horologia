@@ -27,6 +27,7 @@ targets:
           - UIInterfaceOrientationPortrait
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true
+        # Mirrors BrowserLauncher.ios.kt REDIRECT_URI.
         CFBundleURLTypes:
           - CFBundleURLName: dev.horologia.mobile.oauth
             CFBundleURLSchemes:

@@ -20,6 +20,9 @@ actual class BrowserLauncher {
   companion object {
     private const val REDIRECT_URI = "horologia://oauth"
 
+    // Kotlin/Native single-threaded-state model makes atomicity guarantees stronger
+    // than JVM; no `@Volatile` equivalent exists on the native target. Reads/writes
+    // from the single main-thread caller are safe.
     private var installedLauncher: IosBrowserLauncher? = null
 
     fun install(launcher: IosBrowserLauncher) {
