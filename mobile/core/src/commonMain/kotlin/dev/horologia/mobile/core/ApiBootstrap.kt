@@ -27,3 +27,14 @@ fun configureHorologiaApi(baseUrl: String, getToken: () -> String?) {
     }
   Api.setAuthProvider(Auth.BearerAuth { getToken()?.let { token -> AuthItem.Bearer(token) } })
 }
+
+/**
+ * Maps a Horologia server root URL to the Ktor client base URL it needs (host -> host/api/). Called
+ * by platform entry points (Android/desktop/iOS) and `LoginViewModel.reconfigureApi`, which means
+ * the invariant lives in exactly one place. If [baseUrl] already ends in `/api` or contains
+ * `/api/`, only a trailing slash is appended.
+ */
+fun ensureApiPath(baseUrl: String): String {
+  val trimmed = baseUrl.trimEnd('/')
+  return if (trimmed.endsWith("/api") || trimmed.contains("/api/")) "$trimmed/" else "$trimmed/api/"
+}

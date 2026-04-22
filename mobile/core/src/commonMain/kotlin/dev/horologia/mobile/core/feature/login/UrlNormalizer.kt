@@ -27,7 +27,7 @@ object UrlNormalizer {
       }
 
     return try {
-      Url(withoutTrailingSlash).toString()
+      Url(withoutTrailingSlash)
       withoutTrailingSlash
     } catch (_: IllegalArgumentException) {
       null

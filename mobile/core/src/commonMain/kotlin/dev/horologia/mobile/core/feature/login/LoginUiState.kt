@@ -5,7 +5,7 @@ package dev.horologia.mobile.core.feature.login
  *
  * - [ServerPicker] — URL field + probe state + optional banner for returning-from-failure copy.
  * - [LaunchingBrowser] — the `LoginViewModel` has built the authorize URL and handed control to
- *   [dev.horologia.mobile.core.platform.BrowserLauncher]. Screens render a "Opening secure sign-in"
+ *   [dev.horologia.mobile.core.platform.BrowserLauncher]. Screens render an "Opening sign-in"
  *   scrim; no user input is useful here except cancel.
  * - [Finishing] — token exchanged, tokens persisted, minimum dwell enforced per § E of the spec.
  * - [Complete] — terminal; the host should navigate to Profile.
@@ -28,7 +28,7 @@ sealed interface LoginUiState {
  * text + Continue-enablement with zero guesswork.
  *
  * [InvalidUnreachable] carries the host so copy can say "Can't reach tasks.example.com."
- * [InvalidWrongServer] has no payload — copy is always the verbatim "Not a Horologia server."
+ * [InvalidWrongServer] has no payload — copy is always "Not a Horologia server."
  */
 sealed interface ProbeState {
   data object Empty : ProbeState

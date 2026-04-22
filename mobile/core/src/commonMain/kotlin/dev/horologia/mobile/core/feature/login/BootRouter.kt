@@ -12,7 +12,7 @@ import io.ktor.http.Url
  * - [Unconfigured] — no saved server, no tokens. Render empty ServerPicker.
  * - [ServerOnly] — server saved but no valid session; ServerPicker with URL pre-filled so the user
  *   can try again.
- * - [Signed In] — hydrate tokens into [SessionHolder] and jump straight to Profile; the background
+ * - [SignedIn] — hydrate tokens into [SessionHolder] and jump straight to Profile; the background
  *   silent-refresh is handled by the caller (see R14 optimistic render).
  * - [SignedOutAfterRefresh] — tokens existed but refresh failed. ServerPicker with the URL
  *   pre-filled and a "Signed out." banner.
@@ -48,9 +48,7 @@ internal constructor(
     val host =
       runCatching { Url(savedUrl).host }.getOrNull()?.takeIf { it.isNotEmpty() }
         ?: return BootDestination.ServerOnly(savedUrl = savedUrl)
-    val stored =
-      sessionHolder.load(host = host) ?: return BootDestination.ServerOnly(savedUrl = savedUrl)
-    @Suppress("UNUSED_VARIABLE") val _unused = stored
+    sessionHolder.load(host = host) ?: return BootDestination.ServerOnly(savedUrl = savedUrl)
     return BootDestination.SignedIn(savedUrl = savedUrl, host = host)
   }
 }

@@ -35,9 +35,8 @@ Mobile bootstrap/setup uses package-scoped tasks as well:
 - `mise run //mobile:ios:build` — build the iosApp for the iOS simulator (depends on `ios:gen`)
 - `mise run //mobile:ios:open` — open the Xcode project (depends on `ios:gen`)
 
-For a working iOS run, edit `mobile/iosApp/Config.xcconfig` locally to set `HOROLOGIA_DEV_TOKEN`
-(obtain a token from a running dev server via `POST /api/auth/tokens`). The committed default is
-blank, which leaves the app in its Error state.
+The app launches into the sign-in flow; create a local dev account via `POST /app/auth/login`
+against the running dev server and sign in through the app's server picker.
 
 To run any tool managed by mise, use `mise x -- [COMMAND]`
 
