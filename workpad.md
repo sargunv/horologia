@@ -1442,6 +1442,21 @@ _Accumulated across all phases._
   - context: Per the existing deferred item above — `runTest` + Ktor `withTimeout` can't be
     reconciled without injecting a `CoroutineContext` into `LiveLoginGateway`. Keep `runBlocking`
     - short real-time timeouts in the new gateway tests until the injection change lands.
+- F-37 — Long-lived HttpClient in LiveLoginGateway
+  - severity: P2
+  - phase: review
+  - context: Login is low-frequency; per-call HttpClient construction cost is acceptable until other
+    `:core` features consume the same Ktor direct-call pattern. Revisit when a second caller lands.
+- F-46 — Consolidate @OptIn(ExperimentalTime) surface
+  - severity: P3
+  - phase: review
+  - context: Human accepted either outcome; left as-is. Experimental opt-in is a conventional Kotlin
+    idiom and doesn't materially harm readability.
+- F-19 — Memory-only session fallback on SessionStore.write failure
+  - severity: P2
+  - phase: review
+  - reason: REJECTED — user chose to leave fail-closed behavior. Keychain/SharedPrefs write failures
+    surface as a banner and block the flow.
 
 ---
 
