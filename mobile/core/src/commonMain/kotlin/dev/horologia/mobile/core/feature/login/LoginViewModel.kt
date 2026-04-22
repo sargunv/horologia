@@ -3,8 +3,12 @@ package dev.horologia.mobile.core.feature.login
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.horologia.mobile.core.platform.BrowserCancelledException
+import dev.horologia.mobile.core.platform.BrowserDriver
 import dev.horologia.mobile.core.platform.BrowserLauncher
+import dev.horologia.mobile.core.platform.BrowserLauncherDriver
 import dev.horologia.mobile.core.session.ServerPrefs
+import dev.horologia.mobile.core.session.ServerPrefsAdapter
+import dev.horologia.mobile.core.session.ServerPrefsReader
 import dev.horologia.mobile.core.session.SessionHolder
 import dev.horologia.mobile.core.session.StoredSession
 import io.ktor.http.Url
@@ -31,14 +35,32 @@ import kotlinx.coroutines.launch
 class LoginViewModel
 internal constructor(
   private val gateway: LoginGateway,
-  private val browserLauncher: BrowserLauncher,
-  private val serverPrefs: ServerPrefs,
+  private val browser: BrowserDriver,
+  private val serverPrefs: ServerPrefsReader,
   private val sessionHolder: SessionHolder,
   private val clientId: String = DEFAULT_CLIENT_ID,
   private val debounceMillis: Long = DEFAULT_DEBOUNCE_MILLIS,
   private val finishingMinDwellMillis: Long = DEFAULT_FINISHING_MIN_DWELL_MILLIS,
   private val nowMillis: () -> Long = { Clock.System.now().toEpochMilliseconds() },
 ) : ViewModel() {
+  internal constructor(
+    gateway: LoginGateway,
+    browserLauncher: BrowserLauncher,
+    serverPrefs: ServerPrefs,
+    sessionHolder: SessionHolder,
+    clientId: String = DEFAULT_CLIENT_ID,
+    debounceMillis: Long = DEFAULT_DEBOUNCE_MILLIS,
+    finishingMinDwellMillis: Long = DEFAULT_FINISHING_MIN_DWELL_MILLIS,
+  ) : this(
+    gateway = gateway,
+    browser = BrowserLauncherDriver(launcher = browserLauncher),
+    serverPrefs = ServerPrefsAdapter(prefs = serverPrefs),
+    sessionHolder = sessionHolder,
+    clientId = clientId,
+    debounceMillis = debounceMillis,
+    finishingMinDwellMillis = finishingMinDwellMillis,
+  )
+
   private val _uiState =
     MutableStateFlow<LoginUiState>(LoginUiState.ServerPicker(input = "", probe = ProbeState.Empty))
   val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
@@ -132,7 +154,7 @@ internal constructor(
         pendingVerifier = verifier
         pendingState = state
 
-        val redirectUri = browserLauncher.redirectUri()
+        val redirectUri = browser.redirectUri()
         val authUrl =
           authorizeUrl(
             baseUrl = normalized,
@@ -145,7 +167,7 @@ internal constructor(
         _uiState.value = LoginUiState.LaunchingBrowser(input = current.input)
         val callbackUrl =
           try {
-            browserLauncher.launchAndAwait(authorizeUrl = authUrl)
+            browser.launchAndAwait(authorizeUrl = authUrl)
           } catch (_: BrowserCancelledException) {
             resetToPicker(current = current, banner = "Sign-in cancelled.")
             return@launch

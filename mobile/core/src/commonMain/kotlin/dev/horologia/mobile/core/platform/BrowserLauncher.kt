@@ -28,3 +28,17 @@ expect class BrowserLauncher {
  * `Sign-in cancelled.` banner.
  */
 class BrowserCancelledException : RuntimeException("OAuth sign-in cancelled by user")
+
+/** Internal seam for tests: the expect-class [BrowserLauncher] isn't fake-able from commonTest. */
+internal interface BrowserDriver {
+  fun redirectUri(): String
+
+  suspend fun launchAndAwait(authorizeUrl: String): String
+}
+
+internal class BrowserLauncherDriver(private val launcher: BrowserLauncher) : BrowserDriver {
+  override fun redirectUri(): String = launcher.redirectUri()
+
+  override suspend fun launchAndAwait(authorizeUrl: String): String =
+    launcher.launchAndAwait(authorizeUrl = authorizeUrl)
+}

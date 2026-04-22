@@ -1,6 +1,8 @@
 package dev.horologia.mobile.core.feature.login
 
 import dev.horologia.mobile.core.session.ServerPrefs
+import dev.horologia.mobile.core.session.ServerPrefsAdapter
+import dev.horologia.mobile.core.session.ServerPrefsReader
 import dev.horologia.mobile.core.session.SessionHolder
 import io.ktor.http.Url
 
@@ -31,7 +33,16 @@ sealed interface BootDestination {
  * phase chose "optimistic render + background refresh" so the first-frame time never waits on
  * network.
  */
-class BootRouter(private val serverPrefs: ServerPrefs, private val sessionHolder: SessionHolder) {
+class BootRouter
+internal constructor(
+  private val serverPrefs: ServerPrefsReader,
+  private val sessionHolder: SessionHolder,
+) {
+  constructor(
+    serverPrefs: ServerPrefs,
+    sessionHolder: SessionHolder,
+  ) : this(serverPrefs = ServerPrefsAdapter(prefs = serverPrefs), sessionHolder = sessionHolder)
+
   suspend fun decideBootDestination(): BootDestination {
     val savedUrl = serverPrefs.loadServerUrl() ?: return BootDestination.Unconfigured
     val host =
