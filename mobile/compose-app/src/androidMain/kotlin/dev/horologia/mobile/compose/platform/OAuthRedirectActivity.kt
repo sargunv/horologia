@@ -72,4 +72,12 @@ object OAuthResultChannel {
       pending = null
     }
   }
+
+  /**
+   * True when a deferred is armed and still awaiting a result. [OAuthTrampolineActivity] uses this
+   * from its `onResume` to distinguish "user returned via successful deep-link" (channel already
+   * completed by [OAuthRedirectActivity]) from "user closed Custom Tabs without signing in"
+   * (channel still pending — treat as cancel).
+   */
+  fun isPending(): Boolean = synchronized(lock) { pending?.let { !it.isCompleted } == true }
 }

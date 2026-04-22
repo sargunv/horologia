@@ -1,8 +1,6 @@
 package dev.horologia.mobile.compose.platform
 
 import android.content.Context
-import android.net.Uri
-import androidx.browser.customtabs.CustomTabsIntent
 import dev.horologia.mobile.core.platform.AndroidBrowserLauncherBridge
 import dev.horologia.mobile.core.platform.BrowserCancelledException
 import kotlin.time.Duration.Companion.minutes
@@ -22,9 +20,16 @@ import kotlinx.coroutines.withTimeout
 class AndroidBrowserLauncherImpl(private val context: Context) : AndroidBrowserLauncherBridge {
   override suspend fun launchAndAwait(authorizeUrl: String, redirectUri: String): String {
     val pending = OAuthResultChannel.arm()
-    val intent = CustomTabsIntent.Builder().build()
-    intent.intent.flags = intent.intent.flags or android.content.Intent.FLAG_ACTIVITY_NEW_TASK
-    intent.launchUrl(context.applicationContext, Uri.parse(authorizeUrl))
+    // Route through the trampoline Activity rather than firing Custom Tabs directly. The
+    // trampoline detects "user closed the tab without signing in" via its own lifecycle —
+    // Custom Tabs itself reports nothing on dismissal, so without this the VM would hang on
+    // the 5-minute timeout below every time a user backed out of the browser.
+    context.applicationContext.startActivity(
+      OAuthTrampolineActivity.newIntent(
+        context = context.applicationContext,
+        authorizeUrl = authorizeUrl,
+      )
+    )
     return try {
       withTimeout(5.minutes) { pending.await() }
     } catch (_: TimeoutCancellationException) {
