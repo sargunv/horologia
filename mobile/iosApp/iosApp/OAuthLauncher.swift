@@ -36,8 +36,15 @@ final class OAuthLauncher: NSObject, IosBrowserLauncherBridge,
 
         let session = ASWebAuthenticationSession(url: authURL, callbackURLScheme: scheme) {
           [weak self] callbackURL, error in
+          // The completion fires on an arbitrary queue, but `currentSession` is @MainActor.
+          // `Task { @MainActor in … }` would be idiomatic but Swift 6's parser reads the inner
+          // braces as an extra trailing closure on the enclosing `withTaskCancellationHandler`;
+          // `DispatchQueue.main.async` + `MainActor.assumeIsolated` achieves the same static
+          // isolation guarantee without the parser ambiguity.
           defer {
-            DispatchQueue.main.async { [weak self] in self?.currentSession = nil }
+            DispatchQueue.main.async {
+              MainActor.assumeIsolated { self?.clearCurrentSession(cancel: false) }
+            }
           }
           if let error = error {
             let nsError = error as NSError
@@ -74,13 +81,22 @@ final class OAuthLauncher: NSObject, IosBrowserLauncherBridge,
         }
       }
     }, onCancel: { [weak self] in
-      // onCancel is @Sendable; hop to the main actor via GCD to cancel the session since
-      // `currentSession` is @MainActor-isolated and the cancellation handler isn't.
+      // onCancel is non-isolated `@Sendable`; hop to the main actor to touch `currentSession`.
+      // See the matching comment above for why this goes through GCD + `assumeIsolated`
+      // instead of `Task { @MainActor in … }` (Swift 6 trailing-closure parser ambiguity).
       DispatchQueue.main.async {
-        self?.currentSession?.cancel()
-        self?.currentSession = nil
+        MainActor.assumeIsolated { self?.clearCurrentSession(cancel: true) }
       }
     })
+  }
+
+  /// Drop the current session reference, optionally calling `.cancel()` first. The completion
+  /// handler path just clears the reference (the session's already done); the onCancel path
+  /// also cancels so `ASWebAuthenticationSession` tears down the sheet if it's still up.
+  @MainActor
+  private func clearCurrentSession(cancel: Bool) {
+    if cancel { currentSession?.cancel() }
+    currentSession = nil
   }
 
   func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
@@ -103,23 +119,38 @@ final class OAuthLauncher: NSObject, IosBrowserLauncherBridge,
     return ASPresentationAnchor()
   }
 
-  private static var errorDomain: String {
-    IosBrowserLauncherBridgeCompanion.shared.ErrorDomain
+  /// Swift-idiomatic outcomes for the browser bridge. The Kotlin side of [IosBrowserLauncher]
+  /// checks the resulting NSError's domain+code to decide which typed exception to re-throw —
+  /// see [OAuthLauncherError.toNSError] for the mapping. Keep the enum + bridge in one place so
+  /// the integer codes aren't scattered across call sites.
+  private enum OAuthLauncherError: Error {
+    case cancelled(message: String = "Sign-in cancelled.")
+    case failed(message: String)
+
+    func toNSError() -> NSError {
+      let companion = IosBrowserLauncherBridgeCompanion.shared
+      switch self {
+      case .cancelled(let message):
+        return NSError(
+          domain: companion.ErrorDomain,
+          code: Int(companion.CancelledCode),
+          userInfo: [NSLocalizedDescriptionKey: message]
+        )
+      case .failed(let message):
+        return NSError(
+          domain: companion.ErrorDomain,
+          code: Int(companion.FailedCode),
+          userInfo: [NSLocalizedDescriptionKey: message]
+        )
+      }
+    }
   }
 
   private static func cancelledError() -> NSError {
-    NSError(
-      domain: errorDomain,
-      code: Int(IosBrowserLauncherBridgeCompanion.shared.CancelledCode),
-      userInfo: [NSLocalizedDescriptionKey: "Sign-in cancelled."]
-    )
+    OAuthLauncherError.cancelled().toNSError()
   }
 
   private static func failedError(_ message: String) -> NSError {
-    NSError(
-      domain: errorDomain,
-      code: Int(IosBrowserLauncherBridgeCompanion.shared.FailedCode),
-      userInfo: [NSLocalizedDescriptionKey: message]
-    )
+    OAuthLauncherError.failed(message: message).toNSError()
   }
 }
