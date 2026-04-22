@@ -43,6 +43,10 @@ export default defineConfig({
     },
   },
   server: {
+    // Bind to all interfaces so the Android emulator can reach the dev server via
+    // 10.0.2.2 (its NAT alias for the host). Without this Vite listens on IPv6 loopback
+    // only and the emulator fails with ECONNREFUSED on the OAuth-consent redirect.
+    host: true,
     port: Number(webPort),
     strictPort: true,
     proxy: {
