@@ -4,19 +4,19 @@ go 1.26.1
 
 require (
 	github.com/fergusstrange/embedded-postgres v1.34.0
-	github.com/jackc/pgx/v5 v5.8.0
+	github.com/jackc/pgx/v5 v5.9.2
 	github.com/knadh/koanf/providers/env v1.1.0
 	github.com/knadh/koanf/v2 v2.3.4
 	github.com/mark3labs/mcp-go v0.48.0
 	github.com/ogen-go/ogen v1.20.3
 	github.com/pressly/goose/v3 v3.27.0
 	github.com/sargunv/horologia/api v0.0.0
-	github.com/spf13/cobra v1.9.1
+	github.com/spf13/cobra v1.10.2
 	github.com/sqlc-dev/sqlc v1.30.0
 	github.com/teambition/rrule-go v1.8.2
-	github.com/zitadel/oidc/v3 v3.45.5
-	golang.org/x/crypto v0.49.0
-	golang.org/x/text v0.35.0
+	github.com/zitadel/oidc/v3 v3.47.4
+	golang.org/x/crypto v0.50.0
+	golang.org/x/text v0.36.0
 )
 
 require (
@@ -73,7 +73,7 @@ require (
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/spf13/cast v1.7.1 // indirect
-	github.com/spf13/pflag v1.0.7 // indirect
+	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/stoewer/go-strcase v1.2.0 // indirect
 	github.com/tetratelabs/wazero v1.9.0 // indirect
 	github.com/wasilibs/go-pgquery v0.0.0-20250409022910-10ac41983c07 // indirect
@@ -91,9 +91,9 @@ require (
 	go.uber.org/zap v1.27.1 // indirect
 	golang.org/x/exp v0.0.0-20260218203240-3dfff04db8fa // indirect
 	golang.org/x/net v0.52.0 // indirect
-	golang.org/x/oauth2 v0.35.0 // indirect
+	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.42.0 // indirect
+	golang.org/x/sys v0.43.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20251202230838-ff82c1b0f217 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260217215200-42d3e9bedb6d // indirect
 	google.golang.org/grpc v1.79.3 // indirect
