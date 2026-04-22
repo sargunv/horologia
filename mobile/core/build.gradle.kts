@@ -199,6 +199,10 @@ kotlin {
       dependencies {
         implementation(libs.androidx.compose.runtime.annotation)
         implementation(libs.kotlinx.coroutines.core)
+        implementation(libs.kotlinx.serialization.json)
+        implementation(libs.ktor.client.content.negotiation)
+        implementation(libs.ktor.client.core)
+        implementation(libs.ktor.serialization.kotlinx.json)
         implementation(libs.openapi.kmpgen.companion)
         api(libs.androidx.lifecycle.viewmodel)
       }
@@ -206,8 +210,19 @@ kotlin {
     commonTest.dependencies {
       implementation(kotlin("test"))
       implementation(libs.kotlinx.coroutines.test)
+      implementation(libs.ktor.client.mock)
     }
-    val desktopMain by getting { dependencies { implementation(libs.kotlinx.coroutines.swing) } }
+    androidMain.dependencies {
+      implementation(libs.androidx.security.crypto)
+      implementation(libs.ktor.client.okhttp)
+    }
+    val desktopMain by getting {
+      dependencies {
+        implementation(libs.kotlinx.coroutines.swing)
+        implementation(libs.ktor.client.okhttp)
+      }
+    }
+    iosMain.dependencies { implementation(libs.ktor.client.darwin) }
   }
 }
 
