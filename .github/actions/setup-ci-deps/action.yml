@@ -26,7 +26,7 @@ runs:
         path: |
           ~/.gradle/caches
           ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('mobile/**/*.gradle.kts', 'mobile/gradle.properties', 'mobile/gradle/libs.versions.toml', 'mobile/gradle/wrapper/gradle-wrapper.properties') }}
+        key: ${{ runner.os }}-gradle-${{ hashFiles('clients/native/**/*.gradle.kts', 'clients/native/gradle.properties', 'clients/native/gradle/libs.versions.toml', 'clients/native/gradle/wrapper/gradle-wrapper.properties') }}
         restore-keys: |
           ${{ runner.os }}-gradle-
 

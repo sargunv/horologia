@@ -1,7 +1,7 @@
 packages:
   - api
   - api/emitters/typespec-mcp-go
-  - web
+  - clients/web
 onlyBuiltDependencies:
   - esbuild
 minimumReleaseAge: 4320

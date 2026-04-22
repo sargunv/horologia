@@ -9,14 +9,14 @@ Tiltfile
 
 # Build artifacts (rebuilt inside Docker)
 node_modules/
-web/dist/
+clients/web/dist/
 api/tsp-output/
 server/horologia-server
 server/dev-oidc
 server/internal/api/gen/
 server/internal/database/gen/
-web/src/api/schema.d.ts
-web/src/routeTree.gen.ts
+clients/web/src/api/schema.d.ts
+clients/web/src/routeTree.gen.ts
 
 # Tooling caches
 .dprint/

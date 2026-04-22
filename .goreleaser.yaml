@@ -13,7 +13,7 @@ before:
 
 builds:
   - id: horologia-cli
-    dir: cli
+    dir: clients/cli
     main: .
     binary: horo
     env: [CGO_ENABLED=0]
@@ -22,8 +22,8 @@ builds:
     ldflags:
       - >-
         -s -w
-        -X github.com/sargunv/horologia/cli/internal/cmd.version={{ .Version }}
-        -X github.com/sargunv/horologia/cli/internal/cmd.commit={{ .Commit }}
+        -X github.com/sargunv/horologia/clients/cli/internal/cmd.version={{ .Version }}
+        -X github.com/sargunv/horologia/clients/cli/internal/cmd.commit={{ .Commit }}
 
   - id: horologia-server
     dir: server

@@ -96,8 +96,8 @@ local_resource(
 
 local_resource(
     "web",
-    cmd="mise run //web:generate",
-    serve_cmd="cd web && pnpm exec vp dev",
+    cmd="mise run //clients/web:generate",
+    serve_cmd="cd clients/web && pnpm exec vp dev",
     serve_env={
         "SERVER_PORT": str(SERVER_PORT),
         "WEB_PORT": str(WEB_PORT),

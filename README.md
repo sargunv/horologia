@@ -25,6 +25,8 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
 
 ## License
 
-The client components (cli/, mobile/) are licensed under the [MIT](LICENSE-MIT) license.
+The client components (`clients/cli/`, `clients/native/`) are licensed under the [MIT](LICENSE-MIT)
+license.
 
-The server components (server/, web/) are licensed under the [AGPL-3.0](LICENSE-AGPL-3.0) license.
+The server components (`server/`, `clients/web/`) are licensed under the
+[AGPL-3.0](LICENSE-AGPL-3.0) license.

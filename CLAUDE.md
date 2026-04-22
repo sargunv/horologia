@@ -23,17 +23,19 @@ tasks. Key commands:
 Package-scoped tasks use a `//` prefix, e.g. `mise run //server:generate`,
 `mise run //server:build`, `mise run //server:test`.
 
-Mobile bootstrap/setup uses package-scoped tasks as well:
+Native-client bootstrap/setup uses package-scoped tasks as well:
 
-- `mise run //mobile:setup` — install Android SDK components into the mise-managed SDK root
-- `mise run //mobile:android:assembleDebug` — build the Android target in `:compose-app`
-- `mise run //mobile:desktop:run` — run the desktop target in `:compose-app`
-- `mise run //mobile:ios:gen` — generate `iosApp/iosApp.xcodeproj` from `iosApp/project.yml` via
-  xcodegen (provisioned automatically by `mise install`)
-- `mise run //mobile:ios:xcframework` — assemble `HorologiaCore.xcframework` for iOS device +
-  simulator
-- `mise run //mobile:ios:build` — build the iosApp for the iOS simulator (depends on `ios:gen`)
-- `mise run //mobile:ios:open` — open the Xcode project (depends on `ios:gen`)
+- `mise run //clients/native:setup` — install Android SDK components into the mise-managed SDK root
+- `mise run //clients/native:android:assembleDebug` — build the Android target in `:compose-app`
+- `mise run //clients/native:desktop:run` — run the desktop target in `:compose-app`
+- `mise run //clients/native:ios:gen` — generate the Xcode project from `swiftui-app/project.yml`
+  via xcodegen (provisioned automatically by `mise install`)
+- `mise run //clients/native:ios:xcframework` — assemble `HorologiaCore.xcframework` for iOS +
+  simulator + macOS
+- `mise run //clients/native:ios:build` — build for the iOS simulator (depends on `ios:gen`)
+- `mise run //clients/native:ios:open` — open the Xcode project (depends on `ios:gen`)
+- `mise run //clients/native:macos:build` — build as a native macOS app (depends on `ios:gen`)
+- `mise run //clients/native:macos:run` — build + launch the macOS app
 
 The app launches into the sign-in flow; create a local dev account via `POST /app/auth/login`
 against the running dev server and sign in through the app's server picker.
@@ -53,14 +55,15 @@ PostgreSQL is managed by mise and started automatically by Tilt. Data is stored 
 
 ## Packages
 
-- ./api - TypeSpec definition for API.
-- ./server - Golang backend service and API implementation.
-- ./web - React SPA served by the backend. Built on Tailwind v4 + daisyUI 5, with primitives in
-  `web/src/ui/` that wrap Radix UI (umbrella), cmdk, Ark UI (TagsInput only), and sonner.
-- ./mobile - Kotlin Multiplatform app. `:core` is the shared KMP library (ViewModel + generated
-  OpenAPI client); `:compose-app` is the Compose UI for Android + desktop; `iosApp/` is the SwiftUI
-  iOS app (Xcode project generated from `project.yml` via xcodegen).
-- ./cli - TODO: Golang CLI client
+- ./api — TypeSpec definition for the API.
+- ./server — Go backend service and API implementation.
+- ./clients/web — React SPA served by the backend. Built on Tailwind v4 + daisyUI 5, with primitives
+  in `clients/web/src/ui/` that wrap Radix UI (umbrella), cmdk, Ark UI (TagsInput only), and sonner.
+- ./clients/cli — Go CLI client (binary: `horo`).
+- ./clients/native — Kotlin Multiplatform monorepo. `:core` is the shared KMP library (ViewModel +
+  generated OpenAPI client); `:compose-app` is the Compose UI for Android + desktop (Linux / Windows
+  / Mac dev); `swiftui-app/` is the SwiftUI app for iOS, iPadOS, and macOS (Xcode project generated
+  from `project.yml` via xcodegen).
 
 ## Conventions
 
@@ -125,9 +128,9 @@ Both must be re-run when you add new TypeSpec types or new/changed SQL queries. 
 
 ### Design system
 
-- The app's design system lives in `web/src/ui/`. Import UI primitives from there first; only drop
-  down to Radix / cmdk / Ark directly when the primitive doesn't cover the case, and if you do it
-  more than once, add a wrapper in `web/src/ui/`.
+- The app's design system lives in `clients/web/src/ui/`. Import UI primitives from there first;
+  only drop down to Radix / cmdk / Ark directly when the primitive doesn't cover the case, and if
+  you do it more than once, add a wrapper in `clients/web/src/ui/`.
 - Primitives in use: `Dialog`, `DropdownMenu` (+ `DropdownMenuSub*`), `Tooltip`, `Tabs`, `Avatar`,
   `TagsInput`, `Toaster`. Plus `surface.ts` (shared overlay classes `SURFACE`, `SURFACE_MOTION`,
   `MENU_ITEM`) and `cx.ts` (tiny classname combiner).
