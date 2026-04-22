@@ -24,10 +24,18 @@ expect class BrowserLauncher {
 }
 
 /**
- * Raised when the user cancels the OAuth flow in the system browser. LoginViewModel maps this to a
- * `Sign-in cancelled.` banner.
+ * Raised when the user cancels the OAuth flow in the system browser, or when the flow times out
+ * without a callback (e.g. user abandoned Custom Tabs, closed the desktop browser tab).
+ * LoginViewModel maps this to a `Sign-in cancelled.` banner.
  */
-class BrowserCancelledException : RuntimeException("OAuth sign-in cancelled by user")
+class BrowserCancelledException(message: String = "OAuth sign-in cancelled by user") :
+  RuntimeException(message)
+
+/**
+ * Raised when the platform browser launcher can't actually run the flow (e.g. desktop loopback port
+ * collision, missing Custom Tabs handler). LoginViewModel surfaces the [message] in the banner.
+ */
+class BrowserFailedException(message: String) : RuntimeException(message)
 
 /** Internal seam for tests: the expect-class [BrowserLauncher] isn't fake-able from commonTest. */
 internal interface BrowserDriver {
