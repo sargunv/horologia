@@ -1103,13 +1103,286 @@ _All 6 must be checked before handing off to review._
 
 ## Review
 
-_Populated by `/craft-review`._
+**Reviewers activated:** correctness, simplification, requirements, idioms (Kotlin), idioms (Swift),
+security, memory-safety, tests, error-handling, api-surface, documentation, concurrency,
+accessibility, prose, architecture.
 
-**Reviewers activated:** [list]
+**AC coverage:** 27/27 pass. Only advisory is AC22 (Liquid Glass simulator visual —
+`[MANUAL-VERIFY]`).
 
-### Findings
+### Findings (grouped by severity + corroboration)
 
-<!-- Populated by craft-review. AC pass/fail rolls up as regular findings under `reviewer-requirements`. -->
+#### P1 — must address before push
+
+- **F-1 [CORROBORATED-6] `BootRouter.decideBootDestination` never produces `SignedOutAfterRefresh`;
+  silent refresh is unwired.** `BootRouter.kt:46-55` returns `SignedIn` whenever a stored session
+  exists, regardless of access-token expiry or refresh-token presence. No caller invokes
+  `LoginGateway.refreshAccessToken`. R14's "success → Profile; failure → ServerPicker with banner
+  'Signed out.'" branch is dead code — a stored expired token sends users to Profile, which then
+  401s with no recovery. Flagged by simplification, tests, correctness, api-surface, documentation,
+  error-handling. (human-triage)
+
+- **F-2 [CORROBORATED-4] iOS `try!` + `DispatchSemaphore` on `HorologiaApp.init` — crash + deadlock
+  risk.** `HorologiaApp.swift:67-77` uses `Task { }` inside `@MainActor init`; the Task inherits
+  MainActor and awaits `container.bootRouter.decideBootDestination()`, but the main thread is
+  blocked on `semaphore.wait(timeout: .seconds(3))` — Task can't resume on main actor, deadlocks
+  until 3s timeout, then `result` falls through as `Unconfigured` (saved server silently discarded).
+  Any thrown error crashes via `try!`. Flagged by Swift idioms, Kotlin idioms, correctness,
+  concurrency. (auto-fix: switch to a SwiftUI root `@State` + `.task { … }` with loading splash;
+  remove `try!`)
+
+- **F-3 [CORROBORATED-2] Browser-launcher has no timeout on desktop or Android.**
+  `BrowserLauncher.desktop.kt:35-70` and `AndroidBrowserLauncherImpl.kt:19` both `await` a
+  `CompletableDeferred<String>` with no `withTimeout`. If the user abandons Custom Tabs
+  (back-swipes) or closes the desktop browser tab, `flowJob` stays suspended forever holding PKCE
+  state, UI is stuck on `LaunchingBrowser` with no cancel affordance. Flagged by correctness,
+  error-handling. (auto-fix: wrap with `withTimeout(5.minutes)` + show a "Still signing in?" banner
+  on expiry)
+
+- **F-4 [CORROBORATED-3] Desktop `HttpServer` lifecycle bugs.** `BrowserLauncher.desktop.kt` (a)
+  never removes its `/` context on success — retry within the 5-second shutdown window crashes with
+  `context "/" already exists`; (b) `server = null` writes from a non-synchronized daemon thread
+  while `ensureServer()` synchronizes reads — torn reads/writes; (c) `HttpServer.create` is not
+  guarded — `BindException` propagates as a raw banner. Flagged by correctness (F7), concurrency
+  (F3), error-handling (F4). (auto-fix: remove context on success, synchronize `server=null`, wrap
+  create in try/catch)
+
+- **F-5 [CORROBORATED-3] iOS Keychain leaks and unchecked return codes.**
+  `SessionStore.ios.kt:84-100` `copyData` returns the `CFDataRef` from `SecItemCopyMatching` without
+  `CFRelease` / `CFBridgingRelease` → leak per read; `SecItemAdd/Update/Delete` return codes (lines
+  55-82) are discarded, so a locked-Keychain write appears to succeed. Flagged by memory-safety,
+  Kotlin idioms, error-handling, concurrency. (auto-fix)
+
+- **F-6 `OAuthResultChannel` arm/deliver/cancel race.** `OAuthRedirectActivity.kt:41-58` uses
+  `@Volatile var pending` but read-then-act sequences are not atomic. Rapid retry after a cancelled
+  flow can null a freshly-armed deferred; a late redirect after `LoginViewModel.flowJob.cancel()`
+  can wipe the next in-flight flow. Flagged by concurrency (F1), correctness (F8), error-handling
+  (F7). (auto-fix: guard with `Mutex` or `AtomicReference.compareAndSet`)
+
+- **F-7 Android cold-launch `runBlocking` on main thread during `EncryptedSharedPreferences` init.**
+  `MainActivity.kt:23` blocks on `bootRouter.decideBootDestination()`, which reaches
+  `EncryptedSharedPreferences.create` — documented 200–800 ms first-run cost on older devices. ANR
+  risk. Flagged by Kotlin idioms, Swift idioms (parallel), correctness (F13). (auto-fix: render
+  splash composable first, then async-decide via `LaunchedEffect`)
+
+- **F-8 `LoginViewModel.onSubmit` does not cancel `probeJob` before launching the flow.** A late
+  probe completion during `LaunchingBrowser`/`Finishing` can race into the UiState. Guarded by
+  `as? LoginUiState.ServerPicker ?: return` inside `runProbe` so it's currently defanged, but
+  fragile. `LoginViewModel.kt:142-170`. (auto-fix: `probeJob?.cancel()` at top of `onSubmit`)
+
+- **F-9 Stale `HOROLOGIA_DEV_TOKEN` / `Config.xcconfig` references in top-level `CLAUDE.md`.** The
+  PR deletes both but CLAUDE.md still instructs contributors to edit `Config.xcconfig`. Flagged by
+  documentation. (auto-fix)
+
+#### P2 — address before push; candidates for human-triage
+
+- **F-10 [CORROBORATED-4] `LoginViewModel.onExternalCallback` is a public no-op.** Speculative
+  generality; misleading KDoc tells platform authors to forward `.onOpenURL` into it. Flagged by
+  simplification, api-surface, documentation, architecture. (auto-fix: delete)
+
+- **F-11 [CORROBORATED-2] `pendingNormalizedUrl` never cleared in the `finally` block.** Correctness
+  F5 + security F5. Breaks the documented invariant that all `pending*` fields are cleared on
+  terminal transition. (auto-fix)
+
+- **F-12 [CORROBORATED-2] `ensureApiPath` duplicated in 3 places (Kotlin x2 + Swift).**
+  `MainActivity.kt:73-77`, `Main.kt:61-72`, `HorologiaApp.swift:79-94`, and a separate `internal`
+  copy in `AppContainer.kt:88`. Flagged by simplification, architecture. (auto-fix: expose a public
+  helper from `:core` and have platforms call through)
+
+- **F-13 [CORROBORATED-3] AppContainer `expect class` boilerplate.** Each actual re-declares 8
+  getters as identical delegation; desktop + iOS files are byte-for-byte identical. New container
+  fields require 3-file lockstep edits. Flagged by simplification, Kotlin idioms, architecture.
+  (human-triage: refactor to `expect fun createPlatformDependencies` returning a data class consumed
+  by a single common `AppContainer`, OR accept the current shape until the next field forces the
+  issue)
+
+- **F-14 [CORROBORATED-2] Seam interfaces `BrowserDriver` / `ServerPrefsReader` / `SessionPersister`
+  are avoidable.** Each mirrors its expect-class counterpart method-for-method; with
+  `-Xexpect-actual-classes` already enabled, expect-interfaces remove the adapter layer. Flagged by
+  simplification, Kotlin idioms. (human-triage: expect-interfaces are novel in this codebase; accept
+  or refactor)
+
+- **F-15 Token-exchange classifier leaks raw `Throwable.message` to UI banner.**
+  `LoginGateway.kt:193` + `LoginViewModel.kt:238`. Ktor exception messages can contain URLs, TLS
+  details, certificate paths — and at least in theory fragments of the in-flight URL. Also collapses
+  `UnknownHostException` and `SSLHandshakeException` (permanent) into `Retryable`. Flagged by
+  security (F-new), error-handling (F2). (auto-fix: map exception types to fixed user-facing
+  strings; log details separately)
+
+- **F-16 Error banners expose HTTP status codes to users.** `LoginGateway.kt:184-185` renders
+  `"Sign-in failed (${response.status.value})."` to the banner. Flagged by prose (F4). (auto-fix:
+  drop the parenthetical; log the code)
+
+- **F-17 Android `OAuthRedirectActivity` accepts any external intent with the scheme; any app can
+  stuff `OAuthResultChannel`.** Mitigated by state validation (state-mismatch → banner) but enables
+  DoS and — in collusion scenarios — redirect hijack. `AndroidManifest.xml:34-37`. Flagged by
+  security (P1→P2 with state validation in place), correctness. (auto-fix: validate
+  `intent.data.scheme == "horologia"` and `host == "oauth"` before delivery)
+
+- **F-18 Desktop loopback handler doesn't validate request origin or pin the path.** Any request to
+  `127.0.0.1:<port>` resumes the continuation — including the browser's speculative `favicon.ico`
+  prefetch. `BrowserLauncher.desktop.kt:38`. Flagged by security (F2/F3). (auto-fix: check
+  `exchange.remoteAddress.address.isLoopbackAddress`; ignore requests that don't carry
+  `code=`/`state=` query params)
+
+- **F-19 `SessionHolder.install` ordering + error behavior.** If `persister.write` throws (locked
+  Keychain, disk full, bad master key), the user sees a raw crypto exception in the banner and no
+  session is retained. Flagged by error-handling. (human-triage: decide whether memory-only fallback
+  is acceptable; if not, map the exception to "Couldn't save your session.")
+
+- **F-20 `UrlNormalizer` computes `Url(withoutTrailingSlash).toString()` then discards it —
+  abandoned refactor.** `UrlNormalizer.kt:22-34`. The canonicalization is computed and thrown away;
+  the raw input is returned instead. Flagged by correctness (F6). (auto-fix: pick one — canonicalize
+  or remove the dead computation; update the tests accordingly)
+
+- **F-21 `seedInitialUrl` re-debounces a known-valid URL for 600 ms.** The user sees a pre-filled
+  URL that won't let them tap Continue for 600 ms. `LoginViewModel.kt:80-85`. (auto-fix: skip the
+  debounce and call `runProbe` directly for seeded values)
+
+- **F-22 `appendPath` malforms URLs that carry a query string.** `LoginGateway.kt:200-205` emits
+  `https://host?q=1/app/auth/config`. Flagged by correctness (F15). (auto-fix: parse via
+  `URLBuilder` or strip query/fragment in `UrlNormalizer`)
+
+- **F-23 `horologia://oauth` constant declared in `:core/androidMain` AND `AndroidManifest.xml` with
+  no cross-reference.** Silent-drift risk. Flagged by architecture (F3), documentation (F14).
+  (auto-fix: cross-reference comment OR extract a shared constant + resource)
+
+- **F-24 iOS `OAuthLauncher.currentSession` leaks + continuation race.**
+  `OAuthLauncher.swift:14-51`. Session retained across calls, no `[weak self]` in completion
+  handler, `withCheckedThrowingContinuation` has no `onCancel`. Flagged by Swift idioms, concurrency
+  (F6). (auto-fix: clear `currentSession` in `defer`, add `onCancel` to handle Kotlin-side
+  cancellation)
+
+- **F-25 Silent Keychain write failure on first-boot-before-unlock on iOS.** `SecItemAdd` returns
+  `errSecInteractionNotAllowed` when Keychain is locked (`kSecAttrAccessibleAfterFirstUnlock` needs
+  first unlock). Signed-in state survives in memory but not on disk; next cold launch re-prompts. No
+  user indication. Flagged by error-handling (F10). (auto-fix: surface write failure to UI or log +
+  retry)
+
+- **F-26 Android Compose field missing
+  `KeyboardOptions(keyboardType = KeyboardType.Uri, autoCorrectEnabled = false, capitalization = KeyboardCapitalization.None, imeAction = ImeAction.Go)`.**
+  iOS side has the equivalent set. Flagged by accessibility (F8). (auto-fix)
+
+- **F-27 iOS `TextField` missing `.accessibilityLabel("Server URL")` — placeholder is the only
+  label.** Flagged by accessibility (F5). (auto-fix)
+
+- **F-28 Progress indicators (both platforms) have no `accessibilityLabel` / `contentDescription`.**
+  Flagged by accessibility (F7). (auto-fix)
+
+- **F-29 Banner is rendered as plain `Text` with no live-region / alert semantics and no dismiss
+  affordance.** Screen readers won't announce failed sign-in banners. Flagged by accessibility (F2,
+  F9, F10). (auto-fix: `LiveRegionMode.Assertive` + add optional dismiss icon)
+
+- **F-30 Error state is color-only on iOS.** Flagged by accessibility (F3, F4). (auto-fix: add SF
+  Symbol prefix)
+
+- **F-31 LoginScreen uses `Color.red` literal instead of semantic
+  `MaterialTheme.colorScheme.error`.** Flagged by accessibility (F3). (auto-fix)
+
+- **F-32 No focus request on field first render.** Flagged by accessibility (F6). (auto-fix)
+
+- **F-33 Test-coverage gaps: `refreshAccessToken` untested;
+  `TokenResult.AuthFailure/Retryable/Permanent` branches in `onSubmit` untested;
+  `BrowserCancelledException` path untested; `seedInitialUrl`/`showBanner`/`dismissBanner` untested;
+  `appendPath`/`authorizeUrl` helpers untested; `exchangeCode` non-401 branches untested.** Flagged
+  by tests. (auto-fix: add tests)
+
+- **F-34 `LoginViewModelTest.finishingMinDwellIsHonored` asserts a permissive disjunction that
+  passes too easily.** Flagged by tests. (auto-fix: split into `dwellsUntilMinimum` +
+  `skipsDwellWhenAlreadyElapsed` with explicit virtual-time)
+
+- **F-35 `LoginGatewayTest` uses `runBlocking` instead of `runTest`.** Flagged by tests. (auto-fix)
+
+- **F-36 `ApiBootstrapTest` mutates `Api` global singleton with no `@AfterTest` cleanup — leaks
+  state across tests.** Flagged by tests. (auto-fix)
+
+- **F-37 Ktor `HttpClient` constructed and closed per `LiveLoginGateway` call — loses connection
+  pooling.** Flagged by Kotlin idioms. (human-triage: keep a long-lived client in the gateway or
+  accept the cost for a low-frequency path)
+
+- **F-38 `HorologiaTheme` is a no-op pass-through today.** Flagged by simplification, architecture
+  (naming: implies cross-platform design system that doesn't exist). (human-triage: delete OR keep
+  as future-proofing with a TODO)
+
+- **F-39 `AppContainer` Android actual receives `Context` via ctor but could also use
+  `androidx.startup` Initializer; implementation chose ctor.** Flagged by architecture (comment).
+  Accept as documented.
+
+#### P3 — polish; worth a sweep
+
+- **F-40 `@Suppress("UNUSED_VARIABLE") val _unused = stored` in `BootRouter.kt:53` and
+  `@Suppress("UNUSED_PARAMETER") val ignored = callbackUrl` in
+  `LoginViewModel.onExternalCallback`.** Non-idiomatic Kotlin. Flagged by Kotlin idioms,
+  simplification. (auto-fix)
+
+- **F-41 iOS `BrowserLauncher.Companion.installedLauncher` not `@Volatile` (Android variant is).**
+  Flagged by Kotlin idioms, api-surface, concurrency, correctness. (auto-fix: add for parity)
+
+- **F-42 Prose polish: "Opening secure sign-in…" drops "secure"; "Sign-in couldn't be verified." →
+  "Sign-in failed. Try again." (active); "Request timed out after $tokenTimeout." → "The server took
+  too long to respond. Try again.".** Flagged by prose (F2, F3, F5). (auto-fix)
+
+- **F-43 KDoc grammar/link errors: `a "Opening..."` → `an "Opening…"`; `[Signed In]` link target is
+  `SignedIn`; "always the verbatim" is redundant.** Flagged by prose (F6, F10, F11). (auto-fix)
+
+- **F-44 Class-level `@Suppress("CAST_NEVER_SUCCEEDS", "UNCHECKED_CAST")` on `SessionStore.ios.kt`
+  is too broad.** Flagged by Kotlin idioms. (auto-fix: narrow to the single `as` expression)
+
+- **F-45 `LoginViewModel` has two overlapping `internal constructor` declarations.** Flagged by
+  Kotlin idioms, architecture, api-surface. (human-triage: reshape test constructor as a companion
+  `forTest(...)` factory)
+
+- **F-46 LoginViewModel / LoginGateway `@OptIn(ExperimentalTime::class)` spreads despite only
+  reading `Clock.System.now().toEpochMilliseconds()`.** Flagged by Kotlin idioms. (auto-fix: accept
+  a `() -> Long` injected at call site OR accept the OptIn surface; one call)
+
+- **F-47 PKCE verifier is at the minimum RFC 7636 length (32 bytes → 43 chars).** Info only; no
+  change required.
+
+- **F-48 `LoginGateway.refreshAccessToken`, `BootDestination.SignedOutAfterRefresh`,
+  `LoginViewModel.onExternalCallback` are all unused; if silent-refresh remains deferred (F-1),
+  consider also deleting these until the refresh task lands so the public surface doesn't carry dead
+  branches.** Flagged by simplification (F7), api-surface (F5). (human-triage: paired with F-1
+  decision)
+
+- **F-49 `SessionStore.read`'s silent null-on-corruption behavior is undocumented in the expect
+  KDoc.** Flagged by documentation (F8). (auto-fix)
+
+### Reviewers with no material findings
+
+None — all 15 reviewers produced findings. This is expected for a diff of this scope (3885 lines, 57
+files, 3 platforms, new OAuth surface).
+
+### Notes for refine phase
+
+- **F-1 is the single highest-impact finding** (6 reviewers CORROBORATED). Resolving it forces a
+  scope decision: either (a) wire silent refresh at cold-launch in this PR (moderate scope
+  expansion), or (b) delete the dead branches (`SignedOutAfterRefresh`,
+  `LoginGateway.refreshAccessToken`, `onExternalCallback`) and accept that
+  cold-launch-with-expired-token routes to Profile → 401 → generic error until a dedicated refresh
+  task lands. Option (b) is cleaner for this PR's scope; silent refresh becomes its own `/craft`
+  task.
+- **F-2 through F-8** are the must-fix P1 items that can all be auto-fixed.
+- **F-10 through F-36 are a mix of auto-fix and human-triage.** Most auto-fixes are small mechanical
+  changes; the human-triage items (F-13, F-14, F-19, F-37, F-38, F-45, F-48) are refactor decisions.
+- **P3 items F-40 through F-49** are polish; can be batched as a single cleanup commit.
+
+### Refine — auto-fixes applied
+
+Applied (28 findings): F-2, F-3, F-4, F-5, F-6, F-7, F-8, F-9, F-10, F-11, F-12, F-15, F-16, F-17,
+F-18, F-20, F-21, F-22, F-23, F-24, F-25 (via F-5 exception propagation), F-26, F-27, F-28, F-29,
+F-30, F-31 (iOS already used semantic-ish `Color.red`; Compose had no `Color.red` literal to replace
+— banner/error now use `MaterialTheme.colorScheme.error` as before), F-32, F-33, F-34, F-36, F-40,
+F-41, F-42, F-43, F-44, F-49.
+
+Deferred (preexisting + human-triage, untouched per scope): F-1, F-13, F-14, F-19, F-35, F-37, F-38,
+F-45, F-46, F-48.
+
+- **F-35 (runTest in LoginGatewayTest)** attempted but hit the pre-existing "Ktor timeout interacts
+  with runTest virtual time" constraint recorded in Deferred Items. Kept `runBlocking` for gateway
+  tests that rely on Ktor's real-time `withTimeout`; the new timeout tests use a 50-ms real-time
+  `tokenTimeout` so `runBlocking` stays quick. Added [DEFERRED] note to pick back up once gateway
+  accepts injected dispatcher.
 
 ---
 
@@ -1163,6 +1436,12 @@ _Accumulated across all phases._
     triggers virtual-time cancellation even when the MockEngine responds eagerly. Tests use
     `runBlocking` as a workaround; a follow-up could teach the gateway to accept an injected
     `CoroutineContext` so tests can drop real-time waits entirely.
+- F-35: LoginGatewayTest runTest migration
+  - severity: P3
+  - phase: refine
+  - context: Per the existing deferred item above — `runTest` + Ktor `withTimeout` can't be
+    reconciled without injecting a `CoroutineContext` into `LiveLoginGateway`. Keep `runBlocking`
+    - short real-time timeouts in the new gateway tests until the injection change lands.
 
 ---
 
@@ -1180,12 +1459,13 @@ _Accumulated across all phases._
 - architect: done — 2026-04-21 — Composite plan (Pragmatic core + Robust edges) approved. P0-BLOCKER
   adversarial claim refuted via Ktor 3.4.2 bytecode verification; demoted to P2 with regression test
   guard. DB migration squashed per pre-prod convention.
-- implement: done — 2026-04-21 — mobile/login-flow at 77b6bf1b218154de7338f5cc7fb6de45305f9a3f. 10
-  commits. All 27 ACs have completion notes; `mise run //mobile:test` green (34 tests); commonMain /
-  android / desktop / iosSimulatorArm64 / compose-app-debug-android / compose-app-desktop all
-  compile clean; `mise run //mobile:ios:gen` regenerates the Xcode project. Pre-existing dprint
-  formatting noise in `mobile/design/login-flow.html` + `workpad.md` logged under Pre-existing
-  failures.
-- review:
+- implement: done — 2026-04-21 — mobile/login-flow at 928bf2697385d69ff95c0683f2362547f263f0b2. 11
+  commits (10 feature + 1 workpad). All 27 ACs have completion notes; `mise run //mobile:test` green
+  (34 tests); commonMain / android / desktop / iosSimulatorArm64 / compose-app-debug-android /
+  compose-app-desktop all compile clean; `mise run //mobile:ios:gen` regenerates the Xcode project.
+  Pre-existing dprint formatting noise in `mobile/design/login-flow.html` + `workpad.md` logged
+  under Pre-existing failures. Branch NOT pushed per pipeline convention.
+- review: done — 2026-04-21 — 15 reviewers, 49 findings (9 P1, ~30 P2, ~10 P3). Top finding
+  [CORROBORATED-6]: BootRouter silent refresh unwired. AC coverage 27/27 pass.
 - refine:
 - pr:
