@@ -27,6 +27,7 @@
       android:taskAffinity=""
       android:theme="@android:style/Theme.NoDisplay"
     >
+      <!-- scheme + host mirror BrowserLauncher.android.kt REDIRECT_URI. If either changes, update the other. -->
       <intent-filter android:autoVerify="false">
         <action android:name="android.intent.action.VIEW" />
         <category android:name="android.intent.category.DEFAULT" />

@@ -3,6 +3,7 @@ package dev.horologia.mobile.compose.platform
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 
 /**
@@ -29,30 +30,46 @@ class OAuthRedirectActivity : Activity() {
 
   private fun handleIntent(intent: Intent?) {
     val data = intent?.data ?: return
+    // Drop any intent that doesn't match the registered `horologia://oauth` deep-link.
+    // Prevents a malicious sibling app from stuffing the OAuth state machine with crafted
+    // intents that happen to target this Activity via a different scheme/host.
+    if (data.scheme != "horologia" || data.host != "oauth") return
     OAuthResultChannel.deliver(uri = data.toString())
   }
 }
 
 /**
- * Process-wide single-shot channel the Custom Tabs launcher awaits. Unit tests aren't relevant here
- * (Activity scope), and Custom Tabs guarantees only one flow is in-flight at a time — so a single
- * `CompletableDeferred<String>` is sufficient.
+ * Process-wide single-shot channel the Custom Tabs launcher awaits. Access is protected by an
+ * intrinsic lock so rapid arm/deliver/cancel interleavings can't drop a freshly-armed deferred or
+ * deliver to a cancelled one. `arm()` cancels any prior pending deferred before replacing it.
  */
 object OAuthResultChannel {
-  @Volatile private var pending: CompletableDeferred<String>? = null
+  private val lock = Any()
+  private var pending: CompletableDeferred<String>? = null
 
   fun arm(): CompletableDeferred<String> {
     val fresh = CompletableDeferred<String>()
-    pending = fresh
+    synchronized(lock) {
+      pending?.let { if (!it.isCompleted) it.cancel(CancellationException("rearmed")) }
+      pending = fresh
+    }
     return fresh
   }
 
   fun deliver(uri: String) {
-    pending?.let { if (!it.isCompleted) it.complete(uri) }
+    synchronized(lock) {
+      val current = pending
+      if (current != null && !current.isCompleted) {
+        current.complete(uri)
+      }
+      pending = null
+    }
   }
 
   fun cancel() {
-    pending?.let { if (!it.isCompleted) it.cancel() }
-    pending = null
+    synchronized(lock) {
+      pending?.let { if (!it.isCompleted) it.cancel() }
+      pending = null
+    }
   }
 }
