@@ -3,12 +3,14 @@ package dev.horologia.mobile.core.session
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.alloc
+import kotlinx.cinterop.autoreleasepool
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.value
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import platform.CoreFoundation.CFDictionaryRef
+import platform.CoreFoundation.CFRelease
 import platform.CoreFoundation.CFTypeRefVar
 import platform.Foundation.NSData
 import platform.Foundation.NSDictionary
@@ -22,6 +24,7 @@ import platform.Security.SecItemAdd
 import platform.Security.SecItemCopyMatching
 import platform.Security.SecItemDelete
 import platform.Security.SecItemUpdate
+import platform.Security.errSecDuplicateItem
 import platform.Security.errSecItemNotFound
 import platform.Security.errSecSuccess
 import platform.Security.kSecAttrAccessible
@@ -40,12 +43,13 @@ import platform.Security.kSecValueData
  * Accessibility is `kSecAttrAccessibleAfterFirstUnlock` so the token survives reboot + first unlock
  * without leaking to a locked device.
  */
+internal class SessionStoreException(message: String) : RuntimeException(message)
+
 @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
-@Suppress("UNCHECKED_CAST", "CAST_NEVER_SUCCEEDS")
 actual class SessionStore {
-  actual suspend fun read(host: String): StoredSession? {
-    val raw = copyData(host = host) ?: return null
-    return try {
+  actual suspend fun read(host: String): StoredSession? = autoreleasepool {
+    val raw = copyData(host = host) ?: return@autoreleasepool null
+    try {
       json.decodeFromString<StoredSession>(nsDataToString(raw))
     } catch (_: Throwable) {
       null
@@ -53,63 +57,81 @@ actual class SessionStore {
   }
 
   actual suspend fun write(host: String, session: StoredSession) {
-    val payload = stringToNSData(json.encodeToString(session))
-    if (copyData(host = host) != null) {
-      val query = NSMutableDictionary()
-      query.setObject(kSecClassGenericPassword!!, forKey = kSecClass!! as NSString)
-      query.setObject(SERVICE, forKey = kSecAttrService!! as NSString)
-      query.setObject(host, forKey = kSecAttrAccount!! as NSString)
-      val updates = NSMutableDictionary()
-      updates.setObject(payload, forKey = kSecValueData!! as NSString)
-      SecItemUpdate(query.asCFDict(), updates.asCFDict())
-    } else {
+    autoreleasepool {
+      val payload = stringToNSData(json.encodeToString(session))
+      // Try an add first; on duplicate, fall back to update.
       val add = NSMutableDictionary()
+      @Suppress("CAST_NEVER_SUCCEEDS")
       add.setObject(kSecClassGenericPassword!!, forKey = kSecClass!! as NSString)
+      @Suppress("CAST_NEVER_SUCCEEDS")
       add.setObject(SERVICE, forKey = kSecAttrService!! as NSString)
-      add.setObject(host, forKey = kSecAttrAccount!! as NSString)
+      @Suppress("CAST_NEVER_SUCCEEDS") add.setObject(host, forKey = kSecAttrAccount!! as NSString)
+      @Suppress("CAST_NEVER_SUCCEEDS")
       add.setObject(kSecAttrAccessibleAfterFirstUnlock!!, forKey = kSecAttrAccessible!! as NSString)
-      add.setObject(payload, forKey = kSecValueData!! as NSString)
-      SecItemAdd(add.asCFDict(), null)
+      @Suppress("CAST_NEVER_SUCCEEDS") add.setObject(payload, forKey = kSecValueData!! as NSString)
+      val addStatus = SecItemAdd(add.asCFDict(), null)
+      if (addStatus == errSecSuccess) return@autoreleasepool
+      if (addStatus == errSecDuplicateItem) {
+        val query = NSMutableDictionary()
+        @Suppress("CAST_NEVER_SUCCEEDS")
+        query.setObject(kSecClassGenericPassword!!, forKey = kSecClass!! as NSString)
+        @Suppress("CAST_NEVER_SUCCEEDS")
+        query.setObject(SERVICE, forKey = kSecAttrService!! as NSString)
+        @Suppress("CAST_NEVER_SUCCEEDS")
+        query.setObject(host, forKey = kSecAttrAccount!! as NSString)
+        val updates = NSMutableDictionary()
+        @Suppress("CAST_NEVER_SUCCEEDS")
+        updates.setObject(payload, forKey = kSecValueData!! as NSString)
+        val updateStatus = SecItemUpdate(query.asCFDict(), updates.asCFDict())
+        if (updateStatus == errSecSuccess) return@autoreleasepool
+        throw SessionStoreException("Couldn't save your session to the keychain.")
+      }
+      throw SessionStoreException("Couldn't save your session to the keychain.")
     }
   }
 
   actual suspend fun clear(host: String) {
-    val query = NSMutableDictionary()
-    query.setObject(kSecClassGenericPassword!!, forKey = kSecClass!! as NSString)
-    query.setObject(SERVICE, forKey = kSecAttrService!! as NSString)
-    query.setObject(host, forKey = kSecAttrAccount!! as NSString)
-    SecItemDelete(query.asCFDict())
-  }
-
-  private fun copyData(host: String): NSData? {
-    memScoped {
+    autoreleasepool {
       val query = NSMutableDictionary()
+      @Suppress("CAST_NEVER_SUCCEEDS")
       query.setObject(kSecClassGenericPassword!!, forKey = kSecClass!! as NSString)
+      @Suppress("CAST_NEVER_SUCCEEDS")
       query.setObject(SERVICE, forKey = kSecAttrService!! as NSString)
-      query.setObject(host, forKey = kSecAttrAccount!! as NSString)
-      query.setObject(kSecMatchLimitOne!!, forKey = kSecMatchLimit!! as NSString)
-      query.setObject(NSNumber(bool = true), forKey = kSecReturnData!! as NSString)
-      val dataOut = alloc<CFTypeRefVar>()
-      val status = SecItemCopyMatching(query.asCFDict(), dataOut.ptr)
-      if (status == errSecItemNotFound) return null
-      if (status != errSecSuccess) return null
-      val ptr = dataOut.value ?: return null
-      @Suppress("UNCHECKED_CAST")
-      return ptr.asNSData()
+      @Suppress("CAST_NEVER_SUCCEEDS") query.setObject(host, forKey = kSecAttrAccount!! as NSString)
+      val status = SecItemDelete(query.asCFDict())
+      if (status == errSecSuccess || status == errSecItemNotFound) return@autoreleasepool
+      throw SessionStoreException("Couldn't clear the keychain item.")
     }
   }
 
-  private fun NSDictionary.asCFDict(): CFDictionaryRef? {
-    // NSDictionary <-> CFDictionaryRef is toll-free bridged; Kotlin/Native
-    // surfaces the dual type — an unchecked cast crosses the boundary.
-    @Suppress("UNCHECKED_CAST")
-    return this as CFDictionaryRef
+  private fun copyData(host: String): NSData? = autoreleasepool {
+    memScoped {
+      val query = NSMutableDictionary()
+      @Suppress("CAST_NEVER_SUCCEEDS")
+      query.setObject(kSecClassGenericPassword!!, forKey = kSecClass!! as NSString)
+      @Suppress("CAST_NEVER_SUCCEEDS")
+      query.setObject(SERVICE, forKey = kSecAttrService!! as NSString)
+      @Suppress("CAST_NEVER_SUCCEEDS") query.setObject(host, forKey = kSecAttrAccount!! as NSString)
+      @Suppress("CAST_NEVER_SUCCEEDS")
+      query.setObject(kSecMatchLimitOne!!, forKey = kSecMatchLimit!! as NSString)
+      @Suppress("CAST_NEVER_SUCCEEDS")
+      query.setObject(NSNumber(bool = true), forKey = kSecReturnData!! as NSString)
+      val dataOut = alloc<CFTypeRefVar>()
+      val status = SecItemCopyMatching(query.asCFDict(), dataOut.ptr)
+      if (status == errSecItemNotFound) return@memScoped null
+      if (status != errSecSuccess) return@memScoped null
+      val raw = dataOut.value ?: return@memScoped null
+      // NSData <-> CFDataRef are toll-free bridged. We retain the Obj-C / Kotlin
+      // reference via objcObjectAsNSData, then CFRelease the +1 retain we got
+      // from SecItemCopyMatching so it doesn't leak.
+      val nsData: NSData? = objcObjectAsNSData(raw)
+      CFRelease(raw)
+      nsData
+    }
   }
 
-  private fun kotlinx.cinterop.CPointer<*>.asNSData(): NSData? {
-    @Suppress("UNCHECKED_CAST")
-    return objcObjectAsNSData(this)
-  }
+  @Suppress("UNCHECKED_CAST")
+  private fun NSDictionary.asCFDict(): CFDictionaryRef? = this as CFDictionaryRef
 
   private fun stringToNSData(raw: String): NSData {
     val nsString = NSString.create(string = raw)
@@ -117,6 +139,7 @@ actual class SessionStore {
       ?: error("Failed to UTF-8 encode session JSON")
   }
 
+  @Suppress("CAST_NEVER_SUCCEEDS")
   private fun nsDataToString(data: NSData): String =
     (NSString.create(data = data, encoding = NSUTF8StringEncoding) as? String)
       ?: error("Failed to UTF-8 decode keychain payload")
