@@ -4,9 +4,17 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import dev.horologia.mobile.core.AppContainer
 import dev.horologia.mobile.core.configureHorologiaApi
+import dev.horologia.mobile.core.platform.DesktopBrowserLauncher
+import dev.horologia.mobile.core.session.DesktopServerPrefs
+import dev.horologia.mobile.core.session.DesktopSessionStore
 
 fun main() {
-  val appContainer = AppContainer()
+  val appContainer =
+    AppContainer(
+      sessionStore = DesktopSessionStore(),
+      serverPrefs = DesktopServerPrefs(),
+      browserLauncher = DesktopBrowserLauncher(),
+    )
 
   // Configure the Api singleton with a placeholder so any call before the boot router
   // resolves doesn't NPE on a missing base URL. `HorologiaApp` re-configures with the

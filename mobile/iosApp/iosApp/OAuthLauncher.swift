@@ -2,16 +2,16 @@ import AuthenticationServices
 import HorologiaCore
 import SwiftUI
 
-/// Swift-side implementation of the Kotlin `IosBrowserLauncher` contract.
+/// Swift-side implementation of the Kotlin `IosBrowserLauncherBridge` contract.
 /// Uses `ASWebAuthenticationSession` for the outbound + inbound browser trip;
 /// the session's completion handler fires with either the callback URL
 /// (on success) or an NSError (on user cancellation / browser failure).
 ///
-/// Installed into `BrowserLauncher.Companion.shared` at app-init time so the
-/// Kotlin login VM can call `BrowserLauncher().launchAndAwait(authorizeUrl:)`
-/// without knowing anything about `ASWebAuthenticationSession`.
+/// Handed to the Kotlin `IosBrowserLauncher` at construction so the Kotlin login
+/// VM can call `launchAndAwait(authorizeUrl:)` without knowing anything about
+/// `ASWebAuthenticationSession`.
 @MainActor
-final class OAuthLauncher: NSObject, IosBrowserLauncher,
+final class OAuthLauncher: NSObject, IosBrowserLauncherBridge,
   ASWebAuthenticationPresentationContextProviding
 {
   private var currentSession: ASWebAuthenticationSession?

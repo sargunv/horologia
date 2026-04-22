@@ -1,8 +1,6 @@
 package dev.horologia.mobile.core.feature.login
 
 import dev.horologia.mobile.core.session.ServerPrefs
-import dev.horologia.mobile.core.session.ServerPrefsAdapter
-import dev.horologia.mobile.core.session.ServerPrefsReader
 import dev.horologia.mobile.core.session.SessionHolder
 import dev.horologia.mobile.core.session.StoredSession
 import io.ktor.http.Url
@@ -40,23 +38,11 @@ sealed interface BootDestination {
 @OptIn(ExperimentalTime::class)
 class BootRouter
 internal constructor(
-  private val serverPrefs: ServerPrefsReader,
+  private val serverPrefs: ServerPrefs,
   private val sessionHolder: SessionHolder,
   private val loginGateway: LoginGateway,
   private val nowMillis: () -> Long = { Clock.System.now().toEpochMilliseconds() },
 ) {
-  internal constructor(
-    serverPrefs: ServerPrefs,
-    sessionHolder: SessionHolder,
-    loginGateway: LoginGateway,
-    nowMillis: () -> Long = { Clock.System.now().toEpochMilliseconds() },
-  ) : this(
-    serverPrefs = ServerPrefsAdapter(prefs = serverPrefs),
-    sessionHolder = sessionHolder,
-    loginGateway = loginGateway,
-    nowMillis = nowMillis,
-  )
-
   suspend fun decideBootDestination(): BootDestination {
     val savedUrl = serverPrefs.loadServerUrl() ?: return BootDestination.Unconfigured
     val host =

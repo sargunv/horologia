@@ -21,32 +21,14 @@ import dev.horologia.mobile.core.session.SessionStore
 /**
  * Holds the gateways and ViewModel factories that back each screen.
  *
- * Android's constructor takes a `Context` (see the platform actual) because
- * `EncryptedSharedPreferences` and the Custom-Tabs launcher both need one; desktop and iOS actuals
- * are parameterless. All three share the same post-construct property layout so that `commonMain`
- * consumers — `HorologiaApp`, `MainActivity` — can program against one API.
+ * Each platform entry point constructs the concrete [SessionStore] / [ServerPrefs] /
+ * [BrowserLauncher] and hands them in here — the factory graph itself stays in `commonMain`.
  *
  * Construction order is: `configureHorologiaApi(baseUrl) { sessionHolder.currentAccessToken() }`
  * followed by `AppContainer(...)`. Because `configureHorologiaApi` is safe to re-call (see its doc
  * comment), the login flow re-invokes it once the user picks a server.
  */
-expect class AppContainer {
-  val sessionStore: SessionStore
-  val serverPrefs: ServerPrefs
-  val sessionHolder: SessionHolder
-  val browserLauncher: BrowserLauncher
-  val bootRouter: BootRouter
-  val profileViewModelFactory: ViewModelProvider.Factory
-  val spacesViewModelFactory: ViewModelProvider.Factory
-  val loginViewModelFactory: ViewModelProvider.Factory
-}
-
-/**
- * Shared wiring for the factories + gateways. Platforms build their own [SessionStore] /
- * [ServerPrefs] / [BrowserLauncher] and pass them in here. This indirection keeps the factory graph
- * in commonMain instead of duplicating it across every actual.
- */
-internal class AppContainerCore(
+class AppContainer(
   val sessionStore: SessionStore,
   val serverPrefs: ServerPrefs,
   val browserLauncher: BrowserLauncher,
@@ -76,7 +58,7 @@ internal class AppContainerCore(
     initializer {
       LoginViewModel(
         gateway = loginGateway,
-        browserLauncher = browserLauncher,
+        browser = browserLauncher,
         serverPrefs = serverPrefs,
         sessionHolder = sessionHolder,
         reconfigureApi = { baseUrl ->

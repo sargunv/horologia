@@ -4,10 +4,12 @@ package dev.horologia.mobile.core.platform
  * Platform browser handoff for the OAuth authorize → callback round-trip.
  *
  * Implementations:
- * - iOS: `ASWebAuthenticationSession` (Swift-side; Kotlin delegates via [IosBrowserLauncher]).
- * - Android: Custom Tabs + `OAuthRedirectActivity` (Kotlin delegates via [AndroidBrowserLauncher]).
+ * - iOS: `ASWebAuthenticationSession` (Swift-side; Kotlin delegates via
+ *   `IosBrowserLauncher` + [IosBrowserLauncherBridge]).
+ * - Android: Custom Tabs + `OAuthRedirectActivity` (Kotlin delegates via
+ *   `AndroidBrowserLauncher` + [AndroidBrowserLauncherBridge]).
  * - Desktop: `com.sun.net.httpserver.HttpServer` on a random loopback port +
- *   `java.awt.Desktop.browse()`.
+ *   `java.awt.Desktop.browse()` (see `DesktopBrowserLauncher`).
  *
  * [redirectUri] is stable per-platform except on desktop, where the port is known only after the
  * loopback listener binds; the desktop actual binds lazily on first call so that `redirectUri()`
@@ -17,7 +19,7 @@ package dev.horologia.mobile.core.platform
  * [redirectUri], at which point it resolves to the raw callback URL string (so the caller can parse
  * `code` / `state` / `error`). Throws [BrowserCancelledException] if the user aborts the flow.
  */
-expect class BrowserLauncher {
+interface BrowserLauncher {
   fun redirectUri(): String
 
   suspend fun launchAndAwait(authorizeUrl: String): String
@@ -36,17 +38,3 @@ class BrowserCancelledException(message: String = "OAuth sign-in cancelled by us
  * collision, missing Custom Tabs handler). LoginViewModel surfaces the [message] in the banner.
  */
 class BrowserFailedException(message: String) : RuntimeException(message)
-
-/** Internal seam for tests: the expect-class [BrowserLauncher] isn't fake-able from commonTest. */
-internal interface BrowserDriver {
-  fun redirectUri(): String
-
-  suspend fun launchAndAwait(authorizeUrl: String): String
-}
-
-internal class BrowserLauncherDriver(private val launcher: BrowserLauncher) : BrowserDriver {
-  override fun redirectUri(): String = launcher.redirectUri()
-
-  override suspend fun launchAndAwait(authorizeUrl: String): String =
-    launcher.launchAndAwait(authorizeUrl = authorizeUrl)
-}

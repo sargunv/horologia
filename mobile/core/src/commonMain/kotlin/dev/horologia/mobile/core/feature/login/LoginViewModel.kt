@@ -3,13 +3,9 @@ package dev.horologia.mobile.core.feature.login
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.horologia.mobile.core.platform.BrowserCancelledException
-import dev.horologia.mobile.core.platform.BrowserDriver
 import dev.horologia.mobile.core.platform.BrowserFailedException
 import dev.horologia.mobile.core.platform.BrowserLauncher
-import dev.horologia.mobile.core.platform.BrowserLauncherDriver
 import dev.horologia.mobile.core.session.ServerPrefs
-import dev.horologia.mobile.core.session.ServerPrefsAdapter
-import dev.horologia.mobile.core.session.ServerPrefsReader
 import dev.horologia.mobile.core.session.SessionHolder
 import dev.horologia.mobile.core.session.StoredSession
 import io.ktor.http.Url
@@ -26,8 +22,7 @@ import kotlinx.coroutines.launch
 /**
  * Whole-flow owner for the login surface: server-picker debounced probe, PKCE + state generation,
  * browser handoff, token exchange, min-dwell finishing state. Mirrors `feature/profile`'s single-VM
- * template byte-for-byte on structure (StateFlow<UiState>, cancel-safe Job fields, internal
- * constructor).
+ * template byte-for-byte on structure (StateFlow<UiState>, cancel-safe Job fields).
  *
  * PKCE verifier and OAuth state are VM-private fields, cleared in every terminal path (success,
  * cancellation, state mismatch, exception) — per R6 they must never hit disk.
@@ -36,8 +31,8 @@ import kotlinx.coroutines.launch
 class LoginViewModel
 internal constructor(
   private val gateway: LoginGateway,
-  private val browser: BrowserDriver,
-  private val serverPrefs: ServerPrefsReader,
+  private val browser: BrowserLauncher,
+  private val serverPrefs: ServerPrefs,
   private val sessionHolder: SessionHolder,
   private val clientId: String = DEFAULT_CLIENT_ID,
   private val debounceMillis: Long = DEFAULT_DEBOUNCE_MILLIS,
@@ -45,26 +40,6 @@ internal constructor(
   private val nowMillis: () -> Long = { Clock.System.now().toEpochMilliseconds() },
   private val reconfigureApi: (String) -> Unit = {},
 ) : ViewModel() {
-  internal constructor(
-    gateway: LoginGateway,
-    browserLauncher: BrowserLauncher,
-    serverPrefs: ServerPrefs,
-    sessionHolder: SessionHolder,
-    reconfigureApi: (String) -> Unit = {},
-    clientId: String = DEFAULT_CLIENT_ID,
-    debounceMillis: Long = DEFAULT_DEBOUNCE_MILLIS,
-    finishingMinDwellMillis: Long = DEFAULT_FINISHING_MIN_DWELL_MILLIS,
-  ) : this(
-    gateway = gateway,
-    browser = BrowserLauncherDriver(launcher = browserLauncher),
-    serverPrefs = ServerPrefsAdapter(prefs = serverPrefs),
-    sessionHolder = sessionHolder,
-    clientId = clientId,
-    debounceMillis = debounceMillis,
-    finishingMinDwellMillis = finishingMinDwellMillis,
-    reconfigureApi = reconfigureApi,
-  )
-
   private val _uiState =
     MutableStateFlow<LoginUiState>(LoginUiState.ServerPicker(input = "", probe = ProbeState.Empty))
   val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()

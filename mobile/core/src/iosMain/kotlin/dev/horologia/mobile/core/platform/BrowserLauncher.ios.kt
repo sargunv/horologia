@@ -1,32 +1,21 @@
 package dev.horologia.mobile.core.platform
 
 /**
- * iOS thin wrapper around `IosBrowserLauncher` (implemented Swift-side via
- * `ASWebAuthenticationSession`). SwiftUI installs the launcher at app init before any screen
- * attempts to use it.
+ * iOS [BrowserLauncher] — delegates the outbound `ASWebAuthenticationSession` trip to the
+ * [IosBrowserLauncherBridge] that SwiftUI supplies at construction (the concrete Swift-side
+ * `OAuthLauncher`).
+ *
+ * The installer-global pattern used earlier was removed in favour of constructor injection: the
+ * bridge ships with the AppContainer directly, so there's no `install()` side-channel and the
+ * contract is enforced by the type system.
  */
-actual class BrowserLauncher {
-  actual fun redirectUri(): String = REDIRECT_URI
+class IosBrowserLauncher(private val bridge: IosBrowserLauncherBridge) : BrowserLauncher {
+  override fun redirectUri(): String = REDIRECT_URI
 
-  actual suspend fun launchAndAwait(authorizeUrl: String): String {
-    val installed =
-      requireNotNull(installedLauncher) {
-        "IosBrowserLauncher has not been installed; HorologiaApp.init must call" +
-          " BrowserLauncher.install() before the login flow runs."
-      }
-    return installed.launchAndAwait(authorizeUrl = authorizeUrl, redirectUri = REDIRECT_URI)
-  }
+  override suspend fun launchAndAwait(authorizeUrl: String): String =
+    bridge.launchAndAwait(authorizeUrl = authorizeUrl, redirectUri = REDIRECT_URI)
 
-  companion object {
-    private const val REDIRECT_URI = "horologia://oauth"
-
-    // Kotlin/Native single-threaded-state model makes atomicity guarantees stronger
-    // than JVM; no `@Volatile` equivalent exists on the native target. Reads/writes
-    // from the single main-thread caller are safe.
-    private var installedLauncher: IosBrowserLauncher? = null
-
-    fun install(launcher: IosBrowserLauncher) {
-      installedLauncher = launcher
-    }
+  private companion object {
+    const val REDIRECT_URI = "horologia://oauth"
   }
 }

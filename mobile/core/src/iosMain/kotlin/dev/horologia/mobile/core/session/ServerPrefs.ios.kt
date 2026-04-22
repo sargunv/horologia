@@ -2,16 +2,16 @@ package dev.horologia.mobile.core.session
 
 import platform.Foundation.NSUserDefaults
 
-actual class ServerPrefs {
+class IosServerPrefs : ServerPrefs {
   private val defaults: NSUserDefaults = NSUserDefaults.standardUserDefaults
 
-  actual suspend fun loadServerUrl(): String? = defaults.stringForKey(KEY_URL)
+  override suspend fun loadServerUrl(): String? = defaults.stringForKey(KEY_URL)
 
-  actual suspend fun saveServerUrl(url: String) {
+  override suspend fun saveServerUrl(url: String) {
     defaults.setObject(value = url, forKey = KEY_URL)
   }
 
-  actual suspend fun clearServerUrl() {
+  override suspend fun clearServerUrl() {
     defaults.removeObjectForKey(KEY_URL)
   }
 

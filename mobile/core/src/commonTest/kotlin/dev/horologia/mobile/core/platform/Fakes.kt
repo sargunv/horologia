@@ -1,10 +1,10 @@
 package dev.horologia.mobile.core.platform
 
-import dev.horologia.mobile.core.session.ServerPrefsReader
-import dev.horologia.mobile.core.session.SessionPersister
+import dev.horologia.mobile.core.session.ServerPrefs
+import dev.horologia.mobile.core.session.SessionStore
 import dev.horologia.mobile.core.session.StoredSession
 
-class FakeServerPrefs(var url: String? = null) : ServerPrefsReader {
+class FakeServerPrefs(var url: String? = null) : ServerPrefs {
   override suspend fun loadServerUrl(): String? = url
 
   override suspend fun saveServerUrl(url: String) {
@@ -16,7 +16,7 @@ class FakeServerPrefs(var url: String? = null) : ServerPrefsReader {
   }
 }
 
-class FakeSessionPersister : SessionPersister {
+class FakeSessionStore : SessionStore {
   val entries = mutableMapOf<String, StoredSession>()
 
   override suspend fun read(host: String): StoredSession? = entries[host]
@@ -30,10 +30,10 @@ class FakeSessionPersister : SessionPersister {
   }
 }
 
-class FakeBrowserDriver(
+class FakeBrowserLauncher(
   val redirectUriValue: String = "horologia://oauth",
   var launch: (suspend (String) -> String) = { "$redirectUriValue?state=STATE&code=CODE" },
-) : BrowserDriver {
+) : BrowserLauncher {
   var lastAuthorizeUrl: String? = null
 
   override fun redirectUri(): String = redirectUriValue

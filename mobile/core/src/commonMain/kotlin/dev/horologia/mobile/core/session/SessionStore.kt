@@ -5,12 +5,12 @@ package dev.horologia.mobile.core.session
  *
  * Keyed on the server's host (scheme/port stripped) so that switching between two Horologia servers
  * without signing out of the first stays legal. Backed by the OS secure store on each platform:
- * - Android: `EncryptedSharedPreferences`
- * - iOS: Keychain (`kSecAttrAccessibleAfterFirstUnlock`)
+ * - Android: `EncryptedSharedPreferences` (see `AndroidSessionStore`).
+ * - iOS: Keychain (`kSecAttrAccessibleAfterFirstUnlock`; see `IosSessionStore`).
  * - Desktop: AES-GCM-encrypted file at the platform user-data dir with a sibling random-key file
- *   (mode 0600).
+ *   (mode 0600; see `DesktopSessionStore`).
  */
-expect class SessionStore {
+interface SessionStore {
   /**
    * Returns `null` if no session is stored for the host, OR if the stored payload is unreadable
    * (corrupt, wrong key, deserialization failure). Callers should treat both cases as "no session".

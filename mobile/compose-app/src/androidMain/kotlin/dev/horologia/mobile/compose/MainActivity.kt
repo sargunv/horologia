@@ -6,15 +6,22 @@ import androidx.activity.compose.setContent
 import dev.horologia.mobile.compose.platform.AndroidBrowserLauncherImpl
 import dev.horologia.mobile.core.AppContainer
 import dev.horologia.mobile.core.configureHorologiaApi
-import dev.horologia.mobile.core.platform.BrowserLauncher
+import dev.horologia.mobile.core.platform.AndroidBrowserLauncher
+import dev.horologia.mobile.core.session.AndroidServerPrefs
+import dev.horologia.mobile.core.session.AndroidSessionStore
 
 class MainActivity : ComponentActivity() {
-  private val appContainer by lazy { AppContainer(context = applicationContext) }
+  private val appContainer by lazy {
+    AppContainer(
+      sessionStore = AndroidSessionStore(context = applicationContext),
+      serverPrefs = AndroidServerPrefs(context = applicationContext),
+      browserLauncher =
+        AndroidBrowserLauncher(bridge = AndroidBrowserLauncherImpl(context = applicationContext)),
+    )
+  }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-
-    BrowserLauncher.install(launcher = AndroidBrowserLauncherImpl(context = applicationContext))
 
     // Configure the Api singleton with a placeholder so any call before the boot router
     // resolves doesn't NPE on a missing base URL. `HorologiaApp` re-configures with the

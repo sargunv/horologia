@@ -1,7 +1,7 @@
 package dev.horologia.mobile.core.feature.login
 
 import dev.horologia.mobile.core.platform.FakeServerPrefs
-import dev.horologia.mobile.core.platform.FakeSessionPersister
+import dev.horologia.mobile.core.platform.FakeSessionStore
 import dev.horologia.mobile.core.session.SessionHolder
 import dev.horologia.mobile.core.session.StoredSession
 import kotlin.test.Test
@@ -39,8 +39,8 @@ class BootRouterTest {
 
   @Test
   fun savedUrlAndTokensReturnsSignedIn() = runTest {
-    val persister = FakeSessionPersister()
-    persister.entries["tasks.example.com"] =
+    val store = FakeSessionStore()
+    store.entries["tasks.example.com"] =
       StoredSession(
         accessToken = "AT",
         refreshToken = "RT",
@@ -50,7 +50,7 @@ class BootRouterTest {
     val router =
       BootRouter(
         serverPrefs = FakeServerPrefs(url = "https://tasks.example.com"),
-        sessionHolder = SessionHolder(persister = persister),
+        sessionHolder = SessionHolder(store = store),
         loginGateway = gateway,
         nowMillis = { 0L },
       )
@@ -75,16 +75,16 @@ class BootRouterTest {
 
   @Test
   fun refreshedSessionWithinExpiryWindowReturnsSignedIn() = runTest {
-    val persister = FakeSessionPersister()
+    val store = FakeSessionStore()
     val now = 1_000_000L
     // Within the 60s leeway — expires 10s from now.
-    persister.entries["tasks.example.com"] =
+    store.entries["tasks.example.com"] =
       StoredSession(
         accessToken = "AT-old",
         refreshToken = "RT-old",
         accessTokenExpiresAtMillis = now + 10_000L,
       )
-    val holder = SessionHolder(persister = persister)
+    val holder = SessionHolder(store = store)
     val gateway =
       CountingGateway(
         refreshReturn = {
@@ -105,16 +105,16 @@ class BootRouterTest {
     val result = router.decideBootDestination()
     assertTrue(result is BootDestination.SignedIn, "got $result")
     assertEquals(1, gateway.refreshCalls)
-    val stored = persister.entries["tasks.example.com"]!!
+    val stored = store.entries["tasks.example.com"]!!
     assertEquals("AT-new", stored.accessToken)
     assertEquals("RT-new", stored.refreshToken)
   }
 
   @Test
   fun refreshKeepsOldRefreshTokenWhenServerOmitsIt() = runTest {
-    val persister = FakeSessionPersister()
+    val store = FakeSessionStore()
     val now = 1_000_000L
-    persister.entries["tasks.example.com"] =
+    store.entries["tasks.example.com"] =
       StoredSession(
         accessToken = "AT-old",
         refreshToken = "RT-old",
@@ -133,59 +133,59 @@ class BootRouterTest {
     val router =
       BootRouter(
         serverPrefs = FakeServerPrefs(url = "https://tasks.example.com"),
-        sessionHolder = SessionHolder(persister = persister),
+        sessionHolder = SessionHolder(store = store),
         loginGateway = gateway,
         nowMillis = { now },
       )
     val result = router.decideBootDestination()
     assertTrue(result is BootDestination.SignedIn, "got $result")
-    assertEquals("RT-old", persister.entries["tasks.example.com"]!!.refreshToken)
+    assertEquals("RT-old", store.entries["tasks.example.com"]!!.refreshToken)
   }
 
   @Test
   fun refreshAuthFailureReturnsSignedOutAfterRefresh() = runTest {
-    val persister = FakeSessionPersister()
+    val store = FakeSessionStore()
     val now = 1_000_000L
-    persister.entries["tasks.example.com"] =
+    store.entries["tasks.example.com"] =
       StoredSession(accessToken = "AT", refreshToken = "RT", accessTokenExpiresAtMillis = now - 1L)
     val gateway = CountingGateway(refreshReturn = { TokenResult.AuthFailure })
     val router =
       BootRouter(
         serverPrefs = FakeServerPrefs(url = "https://tasks.example.com"),
-        sessionHolder = SessionHolder(persister = persister),
+        sessionHolder = SessionHolder(store = store),
         loginGateway = gateway,
         nowMillis = { now },
       )
     val result = router.decideBootDestination()
     assertTrue(result is BootDestination.SignedOutAfterRefresh, "got $result")
     assertEquals("https://tasks.example.com", result.savedUrl)
-    assertNull(persister.entries["tasks.example.com"])
+    assertNull(store.entries["tasks.example.com"])
   }
 
   @Test
   fun refreshPermanentReturnsSignedOutAfterRefresh() = runTest {
-    val persister = FakeSessionPersister()
+    val store = FakeSessionStore()
     val now = 1_000_000L
-    persister.entries["tasks.example.com"] =
+    store.entries["tasks.example.com"] =
       StoredSession(accessToken = "AT", refreshToken = "RT", accessTokenExpiresAtMillis = now - 1L)
     val gateway = CountingGateway(refreshReturn = { TokenResult.Permanent("nope") })
     val router =
       BootRouter(
         serverPrefs = FakeServerPrefs(url = "https://tasks.example.com"),
-        sessionHolder = SessionHolder(persister = persister),
+        sessionHolder = SessionHolder(store = store),
         loginGateway = gateway,
         nowMillis = { now },
       )
     val result = router.decideBootDestination()
     assertTrue(result is BootDestination.SignedOutAfterRefresh, "got $result")
-    assertNull(persister.entries["tasks.example.com"])
+    assertNull(store.entries["tasks.example.com"])
   }
 
   @Test
   fun refreshRetryableReturnsSignedInOptimistic() = runTest {
-    val persister = FakeSessionPersister()
+    val store = FakeSessionStore()
     val now = 1_000_000L
-    persister.entries["tasks.example.com"] =
+    store.entries["tasks.example.com"] =
       StoredSession(
         accessToken = "AT-old",
         refreshToken = "RT-old",
@@ -195,44 +195,44 @@ class BootRouterTest {
     val router =
       BootRouter(
         serverPrefs = FakeServerPrefs(url = "https://tasks.example.com"),
-        sessionHolder = SessionHolder(persister = persister),
+        sessionHolder = SessionHolder(store = store),
         loginGateway = gateway,
         nowMillis = { now },
       )
     val result = router.decideBootDestination()
     assertTrue(result is BootDestination.SignedIn, "got $result")
     // Stored session untouched — first real API call will 401 and surface through the classifier.
-    val stored = persister.entries["tasks.example.com"]!!
+    val stored = store.entries["tasks.example.com"]!!
     assertEquals("AT-old", stored.accessToken)
     assertEquals("RT-old", stored.refreshToken)
   }
 
   @Test
   fun noRefreshTokenWithExpiredAccessReturnsSignedOutAfterRefresh() = runTest {
-    val persister = FakeSessionPersister()
+    val store = FakeSessionStore()
     val now = 1_000_000L
-    persister.entries["tasks.example.com"] =
+    store.entries["tasks.example.com"] =
       StoredSession(accessToken = "AT", refreshToken = null, accessTokenExpiresAtMillis = now - 1L)
     val gateway = CountingGateway()
     val router =
       BootRouter(
         serverPrefs = FakeServerPrefs(url = "https://tasks.example.com"),
-        sessionHolder = SessionHolder(persister = persister),
+        sessionHolder = SessionHolder(store = store),
         loginGateway = gateway,
         nowMillis = { now },
       )
     val result = router.decideBootDestination()
     assertTrue(result is BootDestination.SignedOutAfterRefresh, "got $result")
     assertEquals(0, gateway.refreshCalls)
-    assertNull(persister.entries["tasks.example.com"])
+    assertNull(store.entries["tasks.example.com"])
   }
 
   @Test
   fun freshAccessTokenSkipsRefreshCall() = runTest {
-    val persister = FakeSessionPersister()
+    val store = FakeSessionStore()
     val now = 1_000_000L
     // 10 minutes of headroom, well outside the 60s leeway.
-    persister.entries["tasks.example.com"] =
+    store.entries["tasks.example.com"] =
       StoredSession(
         accessToken = "AT",
         refreshToken = "RT",
@@ -242,7 +242,7 @@ class BootRouterTest {
     val router =
       BootRouter(
         serverPrefs = FakeServerPrefs(url = "https://tasks.example.com"),
-        sessionHolder = SessionHolder(persister = persister),
+        sessionHolder = SessionHolder(store = store),
         loginGateway = gateway,
         nowMillis = { now },
       )
@@ -251,7 +251,7 @@ class BootRouterTest {
     assertEquals(0, gateway.refreshCalls)
   }
 
-  private fun holder(): SessionHolder = SessionHolder(persister = FakeSessionPersister())
+  private fun holder(): SessionHolder = SessionHolder(store = FakeSessionStore())
 
   private class NeverCalledGateway : LoginGateway {
     override suspend fun probeServer(baseUrl: String): ProbeResult =

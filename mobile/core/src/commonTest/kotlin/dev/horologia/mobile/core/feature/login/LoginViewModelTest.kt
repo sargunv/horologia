@@ -1,8 +1,8 @@
 package dev.horologia.mobile.core.feature.login
 
-import dev.horologia.mobile.core.platform.FakeBrowserDriver
+import dev.horologia.mobile.core.platform.FakeBrowserLauncher
 import dev.horologia.mobile.core.platform.FakeServerPrefs
-import dev.horologia.mobile.core.platform.FakeSessionPersister
+import dev.horologia.mobile.core.platform.FakeSessionStore
 import dev.horologia.mobile.core.session.SessionHolder
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -123,7 +123,7 @@ class LoginViewModelTest {
           )
         },
       )
-    val browser = FakeBrowserDriver(launch = { "horologia://oauth?state=STATE&code=CODE" })
+    val browser = FakeBrowserLauncher(launch = { "horologia://oauth?state=STATE&code=CODE" })
     var fakeNow = 0L
     val vm = buildVm(gateway = gateway, browser = browser, nowMillis = { fakeNow })
 
@@ -151,7 +151,7 @@ class LoginViewModelTest {
   @Test
   fun stateMismatchReturnsToServerPickerWithBanner() = runTest {
     val gateway = FakeLoginGateway(probeReturn = { ProbeResult.Ok })
-    val browser = FakeBrowserDriver(launch = { "horologia://oauth?state=HOSTILE&code=CODE" })
+    val browser = FakeBrowserLauncher(launch = { "horologia://oauth?state=HOSTILE&code=CODE" })
     val vm = buildVm(gateway = gateway, browser = browser)
 
     vm.onUrlChanged("tasks.example.com")
@@ -181,7 +181,7 @@ class LoginViewModelTest {
           )
         },
       )
-    val browser = FakeBrowserDriver()
+    val browser = FakeBrowserLauncher()
     var now = 0L
     val vm =
       buildVm(
@@ -226,7 +226,7 @@ class LoginViewModelTest {
   private fun buildDwellHarness(
     dwellMillis: Long,
     exchangeCost: Long,
-  ): Triple<LoginViewModel, FakeBrowserDriver, () -> Long> {
+  ): Triple<LoginViewModel, FakeBrowserLauncher, () -> Long> {
     val gateway =
       FakeLoginGateway(
         probeReturn = { ProbeResult.Ok },
@@ -238,7 +238,7 @@ class LoginViewModelTest {
           )
         },
       )
-    val browser = FakeBrowserDriver()
+    val browser = FakeBrowserLauncher()
     var now = 1_000L
     val vm =
       buildVm(
@@ -260,7 +260,7 @@ class LoginViewModelTest {
     val gate = CompletableDeferred<TokenResult>()
     val gateway =
       FakeLoginGateway(probeReturn = { ProbeResult.Ok }, exchangeReturn = { gate.await() })
-    val browser = FakeBrowserDriver()
+    val browser = FakeBrowserLauncher()
     val vm = buildVm(gateway = gateway, browser = browser)
     vm.onUrlChanged("tasks.example.com")
     testScheduler.advanceUntilIdle()
@@ -332,8 +332,8 @@ class LoginViewModelTest {
     assertEquals("Unexpected response. Try again.", state.banner)
   }
 
-  private fun echoingBrowser(): FakeBrowserDriver =
-    FakeBrowserDriver(
+  private fun echoingBrowser(): FakeBrowserLauncher =
+    FakeBrowserLauncher(
       launch = { url ->
         val s = url.substringAfter("state=").substringBefore('&')
         "horologia://oauth?state=$s&code=CODE"
@@ -343,7 +343,7 @@ class LoginViewModelTest {
   @Test
   fun callbackUrlUnparseableResetsToPicker() = runTest {
     val gateway = FakeLoginGateway(probeReturn = { ProbeResult.Ok })
-    val browser = FakeBrowserDriver(launch = { "@@@ not a url" })
+    val browser = FakeBrowserLauncher(launch = { "@@@ not a url" })
     val vm = buildVm(gateway = gateway, browser = browser)
     vm.onUrlChanged("tasks.example.com")
     testScheduler.advanceUntilIdle()
@@ -359,7 +359,7 @@ class LoginViewModelTest {
     val gateway = FakeLoginGateway(probeReturn = { ProbeResult.Ok })
     // Echo state so the state match passes, then add error=access_denied.
     val browser =
-      FakeBrowserDriver(
+      FakeBrowserLauncher(
         launch = { url ->
           val s = url.substringAfter("state=").substringBefore('&')
           "horologia://oauth?state=$s&error=access_denied"
@@ -379,7 +379,7 @@ class LoginViewModelTest {
   fun callbackErrorOtherShowsFailedBanner() = runTest {
     val gateway = FakeLoginGateway(probeReturn = { ProbeResult.Ok })
     val browser =
-      FakeBrowserDriver(
+      FakeBrowserLauncher(
         launch = { url ->
           val s = url.substringAfter("state=").substringBefore('&')
           "horologia://oauth?state=$s&error=server_error"
@@ -399,7 +399,7 @@ class LoginViewModelTest {
   fun callbackMissingCodeShowsFailedBanner() = runTest {
     val gateway = FakeLoginGateway(probeReturn = { ProbeResult.Ok })
     val browser =
-      FakeBrowserDriver(
+      FakeBrowserLauncher(
         launch = { url ->
           val s = url.substringAfter("state=").substringBefore('&')
           "horologia://oauth?state=$s"
@@ -419,7 +419,7 @@ class LoginViewModelTest {
   fun browserCancelledResetsToPickerWithCancelledBanner() = runTest {
     val gateway = FakeLoginGateway(probeReturn = { ProbeResult.Ok })
     val browser =
-      FakeBrowserDriver(
+      FakeBrowserLauncher(
         launch = { throw dev.horologia.mobile.core.platform.BrowserCancelledException() }
       )
     val vm = buildVm(gateway = gateway, browser = browser)
@@ -463,7 +463,7 @@ class LoginViewModelTest {
   fun seedInitialUrlNoopWhenNotServerPicker() = runTest {
     // Drive the VM into LaunchingBrowser via onSubmit, then try to seed.
     val gateway = FakeLoginGateway(probeReturn = { ProbeResult.Ok })
-    val browser = FakeBrowserDriver(launch = { CompletableDeferred<String>().await() })
+    val browser = FakeBrowserLauncher(launch = { CompletableDeferred<String>().await() })
     val vm = buildVm(gateway = gateway, browser = browser)
     vm.onUrlChanged("tasks.example.com")
     testScheduler.advanceUntilIdle()
@@ -499,7 +499,7 @@ class LoginViewModelTest {
 
   private fun buildVm(
     gateway: LoginGateway = FakeLoginGateway(probeReturn = { ProbeResult.Ok }),
-    browser: FakeBrowserDriver = FakeBrowserDriver(),
+    browser: FakeBrowserLauncher = FakeBrowserLauncher(),
     nowMillis: () -> Long = { 0L },
     debounceMillis: Long = 600L,
     finishingMinDwellMillis: Long = 300L,
@@ -508,7 +508,7 @@ class LoginViewModelTest {
       gateway = gateway,
       browser = browser,
       serverPrefs = FakeServerPrefs(),
-      sessionHolder = SessionHolder(persister = FakeSessionPersister()),
+      sessionHolder = SessionHolder(store = FakeSessionStore()),
       debounceMillis = debounceMillis,
       finishingMinDwellMillis = finishingMinDwellMillis,
       nowMillis = nowMillis,

@@ -14,7 +14,7 @@ import kotlinx.serialization.json.Json
  * the artifact is flagged deprecated but still ships and is the pragmatic choice for this task. A
  * direct-Keystore replacement is tracked under "Deferred Items" in workpad.md.
  */
-actual class SessionStore(context: Context) {
+class AndroidSessionStore(context: Context) : SessionStore {
   private val prefs = run {
     val appContext = context.applicationContext
     val masterKey =
@@ -30,7 +30,7 @@ actual class SessionStore(context: Context) {
     )
   }
 
-  actual suspend fun read(host: String): StoredSession? {
+  override suspend fun read(host: String): StoredSession? {
     val raw = prefs.getString(host, null) ?: return null
     return try {
       json.decodeFromString<StoredSession>(raw)
@@ -39,11 +39,11 @@ actual class SessionStore(context: Context) {
     }
   }
 
-  actual suspend fun write(host: String, session: StoredSession) {
+  override suspend fun write(host: String, session: StoredSession) {
     prefs.edit().putString(host, json.encodeToString(session)).apply()
   }
 
-  actual suspend fun clear(host: String) {
+  override suspend fun clear(host: String) {
     prefs.edit().remove(host).apply()
   }
 

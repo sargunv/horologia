@@ -23,20 +23,20 @@ import kotlinx.serialization.json.Json
  * - `key.bin` — 32 random bytes, the AES-256 key
  * - `sessions.json` — encrypted JSON Map<host, StoredSession>
  */
-actual class SessionStore {
+class DesktopSessionStore : SessionStore {
   private val dir: Path = userDataDir().also { Files.createDirectories(it) }
   private val keyFile: Path = dir.resolve("key.bin")
   private val dataFile: Path = dir.resolve("sessions.json")
 
-  actual suspend fun read(host: String): StoredSession? = loadMap()[host]
+  override suspend fun read(host: String): StoredSession? = loadMap()[host]
 
-  actual suspend fun write(host: String, session: StoredSession) {
+  override suspend fun write(host: String, session: StoredSession) {
     val map = loadMap().toMutableMap()
     map[host] = session
     writeMap(map = map)
   }
 
-  actual suspend fun clear(host: String) {
+  override suspend fun clear(host: String) {
     val map = loadMap().toMutableMap()
     if (map.remove(host) != null) {
       writeMap(map = map)

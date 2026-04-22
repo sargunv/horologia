@@ -8,27 +8,10 @@ package dev.horologia.mobile.core.session
  * `java.util.prefs.Preferences`) — no encryption required because the URL is public-knowledge. PKCE
  * verifiers and OAuth `state` never land here.
  */
-expect class ServerPrefs {
+interface ServerPrefs {
   suspend fun loadServerUrl(): String?
 
   suspend fun saveServerUrl(url: String)
 
   suspend fun clearServerUrl()
-}
-
-/** Internal seam for tests: the expect-class [ServerPrefs] isn't fake-able from commonTest. */
-internal interface ServerPrefsReader {
-  suspend fun loadServerUrl(): String?
-
-  suspend fun saveServerUrl(url: String)
-
-  suspend fun clearServerUrl()
-}
-
-internal class ServerPrefsAdapter(private val prefs: ServerPrefs) : ServerPrefsReader {
-  override suspend fun loadServerUrl(): String? = prefs.loadServerUrl()
-
-  override suspend fun saveServerUrl(url: String) = prefs.saveServerUrl(url = url)
-
-  override suspend fun clearServerUrl() = prefs.clearServerUrl()
 }

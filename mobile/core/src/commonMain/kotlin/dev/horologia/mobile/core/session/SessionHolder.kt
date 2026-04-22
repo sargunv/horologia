@@ -17,34 +17,14 @@ import kotlinx.coroutines.flow.asStateFlow
  * [session] exposes the current value as a StateFlow so UI observers (profile, sign-out trigger)
  * can react if a sibling flow (silent refresh, explicit sign-out) swaps it.
  */
-/** Internal seam for tests: the expect-class [SessionStore] isn't fake-able from commonTest. */
-internal interface SessionPersister {
-  suspend fun read(host: String): StoredSession?
-
-  suspend fun write(host: String, session: StoredSession)
-
-  suspend fun clear(host: String)
-}
-
-internal class SessionStorePersister(private val store: SessionStore) : SessionPersister {
-  override suspend fun read(host: String): StoredSession? = store.read(host = host)
-
-  override suspend fun write(host: String, session: StoredSession) =
-    store.write(host = host, session = session)
-
-  override suspend fun clear(host: String) = store.clear(host = host)
-}
-
-class SessionHolder internal constructor(private val persister: SessionPersister) {
-  constructor(store: SessionStore) : this(persister = SessionStorePersister(store = store))
-
+class SessionHolder(private val store: SessionStore) {
   private val _session = MutableStateFlow<ActiveSession?>(null)
   val session: StateFlow<ActiveSession?> = _session.asStateFlow()
 
   fun currentAccessToken(): String? = _session.value?.session?.accessToken
 
   suspend fun install(host: String, session: StoredSession) {
-    persister.write(host = host, session = session)
+    store.write(host = host, session = session)
     _session.value = ActiveSession(host = host, session = session)
   }
 
@@ -53,20 +33,20 @@ class SessionHolder internal constructor(private val persister: SessionPersister
    * cold-launch routing can decide what to do next.
    */
   suspend fun load(host: String): StoredSession? {
-    val stored = persister.read(host = host) ?: return null
+    val stored = store.read(host = host) ?: return null
     _session.value = ActiveSession(host = host, session = stored)
     return stored
   }
 
   suspend fun clear() {
     val current = _session.value ?: return
-    persister.clear(host = current.host)
+    store.clear(host = current.host)
     _session.value = null
   }
 
   /** Clear the stored session for a specific host without requiring it be currently active. */
   suspend fun clear(host: String) {
-    persister.clear(host = host)
+    store.clear(host = host)
     if (_session.value?.host == host) {
       _session.value = null
     }

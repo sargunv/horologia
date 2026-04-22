@@ -1,29 +1,20 @@
 package dev.horologia.mobile.core.platform
 
 /**
- * Android thin wrapper around `AndroidBrowserLauncher` (which lives in `:compose-app/androidMain`
- * because Custom Tabs needs an Activity). The installer pattern keeps `:core` free of direct
- * `androidx.browser` or `android.app.Activity` dependencies.
+ * Android [BrowserLauncher] — delegates the outbound Custom Tabs trip to the
+ * [AndroidBrowserLauncherBridge] that `:compose-app/MainActivity` supplies at construction.
+ *
+ * The installer-global pattern used earlier was removed in favour of constructor injection: the
+ * bridge ships with the AppContainer directly, so there's no `install()` side-channel and the
+ * contract is enforced by the type system.
  */
-actual class BrowserLauncher {
-  actual fun redirectUri(): String = REDIRECT_URI
+class AndroidBrowserLauncher(private val bridge: AndroidBrowserLauncherBridge) : BrowserLauncher {
+  override fun redirectUri(): String = REDIRECT_URI
 
-  actual suspend fun launchAndAwait(authorizeUrl: String): String {
-    val installed =
-      requireNotNull(installedLauncher) {
-        "AndroidBrowserLauncher has not been installed; :compose-app/MainActivity must call" +
-          " BrowserLauncher.install() before the login flow runs."
-      }
-    return installed.launchAndAwait(authorizeUrl = authorizeUrl, redirectUri = REDIRECT_URI)
-  }
+  override suspend fun launchAndAwait(authorizeUrl: String): String =
+    bridge.launchAndAwait(authorizeUrl = authorizeUrl, redirectUri = REDIRECT_URI)
 
-  companion object {
-    private const val REDIRECT_URI = "horologia://oauth"
-
-    @Volatile private var installedLauncher: AndroidBrowserLauncher? = null
-
-    fun install(launcher: AndroidBrowserLauncher) {
-      installedLauncher = launcher
-    }
+  private companion object {
+    const val REDIRECT_URI = "horologia://oauth"
   }
 }

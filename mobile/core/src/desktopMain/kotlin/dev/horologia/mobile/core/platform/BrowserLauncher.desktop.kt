@@ -23,11 +23,11 @@ import kotlinx.coroutines.withTimeout
  * stuck. The listener is shut down 5 seconds after a valid callback so the browser tab's "You may
  * close this tab" response has time to render.
  */
-actual class BrowserLauncher {
+class DesktopBrowserLauncher : BrowserLauncher {
   @Volatile private var server: HttpServer? = null
   @Volatile private var shuttingDown: Boolean = false
 
-  actual fun redirectUri(): String =
+  override fun redirectUri(): String =
     "http://${ensureServer().address.hostString}:${ensureServer().address.port}/"
 
   @Synchronized
@@ -52,7 +52,7 @@ actual class BrowserLauncher {
     return fresh
   }
 
-  actual suspend fun launchAndAwait(authorizeUrl: String): String {
+  override suspend fun launchAndAwait(authorizeUrl: String): String {
     val srv = ensureServer()
     return try {
         withTimeout(5.minutes) {

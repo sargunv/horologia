@@ -8,10 +8,11 @@ struct HorologiaApp: App {
   @State private var resolvedRoot: ResolvedRoot?
 
   init() {
-    let container = AppContainer()
-
-    // Swift-side OAuthLauncher must be installed before any screen calls the VM.
-    BrowserLauncherCompanion.shared.install(launcher: OAuthLauncher())
+    let container = AppContainer(
+      sessionStore: IosSessionStore(),
+      serverPrefs: IosServerPrefs(),
+      browserLauncher: IosBrowserLauncher(bridge: OAuthLauncher())
+    )
 
     // Configure the Api singleton with a placeholder so any call before routing
     // resolves doesn't NPE on a missing base URL. `RootView` re-configures with

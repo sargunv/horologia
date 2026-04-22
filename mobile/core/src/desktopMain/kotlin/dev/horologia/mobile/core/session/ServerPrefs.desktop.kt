@@ -7,17 +7,17 @@ import java.util.prefs.Preferences
  * backing store is platform-dependent (macOS plist, Windows registry, Linux .java/.userPrefs XML)
  * but we don't care — Preferences abstracts that away and it's already on the JDK, no extra dep.
  */
-actual class ServerPrefs {
+class DesktopServerPrefs : ServerPrefs {
   private val node: Preferences = Preferences.userRoot().node(NODE_PATH)
 
-  actual suspend fun loadServerUrl(): String? = node.get(KEY_URL, null)
+  override suspend fun loadServerUrl(): String? = node.get(KEY_URL, null)
 
-  actual suspend fun saveServerUrl(url: String) {
+  override suspend fun saveServerUrl(url: String) {
     node.put(KEY_URL, url)
     node.flush()
   }
 
-  actual suspend fun clearServerUrl() {
+  override suspend fun clearServerUrl() {
     node.remove(KEY_URL)
     node.flush()
   }

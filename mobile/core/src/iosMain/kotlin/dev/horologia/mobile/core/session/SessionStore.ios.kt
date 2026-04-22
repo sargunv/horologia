@@ -46,8 +46,8 @@ import platform.Security.kSecValueData
 internal class SessionStoreException(message: String) : RuntimeException(message)
 
 @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
-actual class SessionStore {
-  actual suspend fun read(host: String): StoredSession? = autoreleasepool {
+class IosSessionStore : SessionStore {
+  override suspend fun read(host: String): StoredSession? = autoreleasepool {
     val raw = copyData(host = host) ?: return@autoreleasepool null
     try {
       json.decodeFromString<StoredSession>(nsDataToString(raw))
@@ -56,7 +56,7 @@ actual class SessionStore {
     }
   }
 
-  actual suspend fun write(host: String, session: StoredSession) {
+  override suspend fun write(host: String, session: StoredSession) {
     autoreleasepool {
       val payload = stringToNSData(json.encodeToString(session))
       // Try an add first; on duplicate, fall back to update.
@@ -90,7 +90,7 @@ actual class SessionStore {
     }
   }
 
-  actual suspend fun clear(host: String) {
+  override suspend fun clear(host: String) {
     autoreleasepool {
       val query = NSMutableDictionary()
       @Suppress("CAST_NEVER_SUCCEEDS")
