@@ -161,11 +161,72 @@ class LoginViewModelTest {
 
     val state = vm.uiState.value
     assertTrue(state is LoginUiState.ServerPicker, "got $state")
-    assertEquals("Sign-in couldn't be verified.", state.banner)
+    assertEquals("Sign-in failed. Try again.", state.banner)
   }
 
   @Test
-  fun finishingMinDwellIsHonored() = runTest {
+  fun finishing_dwellsUntilMinimum() = runTest {
+    // Seed a harness that gates the token exchange on a deferred, so we can observe the
+    // Finishing state mid-dwell without the drain running through to Complete.
+    val release = CompletableDeferred<Unit>()
+    val gateway =
+      FakeLoginGateway(
+        probeReturn = { ProbeResult.Ok },
+        exchangeReturn = {
+          release.await()
+          TokenResult.Ok(
+            accessToken = "AT",
+            refreshToken = "RT",
+            accessTokenExpiresAtMillis = 10_000L,
+          )
+        },
+      )
+    val browser = FakeBrowserDriver()
+    var now = 0L
+    val vm =
+      buildVm(
+        gateway = gateway,
+        browser = browser,
+        nowMillis = { now },
+        finishingMinDwellMillis = 300L,
+      )
+    browser.launch = { authorizeUrl ->
+      val state = authorizeUrl.substringAfter("state=").substringBefore('&')
+      "horologia://oauth?state=$state&code=CODE"
+    }
+    vm.onUrlChanged("tasks.example.com")
+    testScheduler.advanceUntilIdle()
+    vm.onSubmit()
+    testScheduler.advanceUntilIdle()
+    // The VM parked inside gateway.exchangeCode; advance `now` to simulate the exchange
+    // taking 50 ms, then release — VM will see 50 ms elapsed and need to dwell 250 ms.
+    now = 50L
+    release.complete(Unit)
+    testScheduler.advanceTimeBy(200L)
+    testScheduler.runCurrent()
+    assertTrue(
+      vm.uiState.value is LoginUiState.Finishing,
+      "expected Finishing, got ${vm.uiState.value}",
+    )
+  }
+
+  @Test
+  fun finishing_completesExactlyAtDwellBoundary() = runTest {
+    val (vm, _, _) = buildDwellHarness(dwellMillis = 300L, exchangeCost = 50L)
+
+    vm.onUrlChanged("tasks.example.com")
+    testScheduler.advanceUntilIdle()
+    vm.onSubmit()
+    testScheduler.advanceUntilIdle()
+    // The VM's `delay(remaining)` is driven by the test-scheduler's virtual time; after
+    // draining it we should land on Complete.
+    assertEquals(LoginUiState.Complete, vm.uiState.value)
+  }
+
+  private fun buildDwellHarness(
+    dwellMillis: Long,
+    exchangeCost: Long,
+  ): Triple<LoginViewModel, FakeBrowserDriver, () -> Long> {
     val gateway =
       FakeLoginGateway(
         probeReturn = { ProbeResult.Ok },
@@ -178,39 +239,20 @@ class LoginViewModelTest {
         },
       )
     val browser = FakeBrowserDriver()
-    val tick = 1_000L
-    var now = tick
+    var now = 1_000L
     val vm =
       buildVm(
         gateway = gateway,
         browser = browser,
         nowMillis = { now },
-        finishingMinDwellMillis = 300L,
+        finishingMinDwellMillis = dwellMillis,
       )
-
-    vm.onUrlChanged("tasks.example.com")
-    testScheduler.advanceUntilIdle()
-
-    // Browser launches quickly but we set `now` to simulate a 50ms token exchange,
-    // forcing the VM to `delay(250)` to fill the dwell quota.
     browser.launch = { authorizeUrl ->
       val state = authorizeUrl.substringAfter("state=").substringBefore('&')
-      now += 50L
+      now += exchangeCost
       "horologia://oauth?state=$state&code=CODE"
     }
-    vm.onSubmit()
-
-    // Let the VM reach Finishing.
-    testScheduler.advanceTimeBy(100L)
-    testScheduler.runCurrent()
-    assertTrue(
-      vm.uiState.value is LoginUiState.Finishing ||
-        vm.uiState.value is LoginUiState.LaunchingBrowser,
-      "expected Finishing or LaunchingBrowser, got ${vm.uiState.value}",
-    )
-
-    testScheduler.advanceUntilIdle()
-    assertEquals(LoginUiState.Complete, vm.uiState.value)
+    return Triple(vm, browser, { now })
   }
 
   @Test
@@ -234,6 +276,225 @@ class LoginViewModelTest {
     )
     testScheduler.advanceUntilIdle()
     assertTrue(vm.uiState.value is LoginUiState.ServerPicker)
+  }
+
+  @Test
+  fun tokenExchangeAuthFailureShowsBanner() = runTest {
+    val gateway =
+      FakeLoginGateway(
+        probeReturn = { ProbeResult.Ok },
+        exchangeReturn = { TokenResult.AuthFailure },
+      )
+    val browser = echoingBrowser()
+    val vm = buildVm(gateway = gateway, browser = browser)
+    vm.onUrlChanged("tasks.example.com")
+    testScheduler.advanceUntilIdle()
+    vm.onSubmit()
+    testScheduler.advanceUntilIdle()
+    val state = vm.uiState.value
+    assertTrue(state is LoginUiState.ServerPicker, "got $state")
+    assertEquals("Sign-in failed.", state.banner)
+  }
+
+  @Test
+  fun tokenExchangeRetryableSurfacesMessage() = runTest {
+    val gateway =
+      FakeLoginGateway(
+        probeReturn = { ProbeResult.Ok },
+        exchangeReturn = { TokenResult.Retryable("Network error. Try again.") },
+      )
+    val browser = echoingBrowser()
+    val vm = buildVm(gateway = gateway, browser = browser)
+    vm.onUrlChanged("tasks.example.com")
+    testScheduler.advanceUntilIdle()
+    vm.onSubmit()
+    testScheduler.advanceUntilIdle()
+    val state = vm.uiState.value
+    assertTrue(state is LoginUiState.ServerPicker, "got $state")
+    assertEquals("Network error. Try again.", state.banner)
+  }
+
+  @Test
+  fun tokenExchangePermanentSurfacesMessage() = runTest {
+    val gateway =
+      FakeLoginGateway(
+        probeReturn = { ProbeResult.Ok },
+        exchangeReturn = { TokenResult.Permanent("Unexpected response. Try again.") },
+      )
+    val browser = echoingBrowser()
+    val vm = buildVm(gateway = gateway, browser = browser)
+    vm.onUrlChanged("tasks.example.com")
+    testScheduler.advanceUntilIdle()
+    vm.onSubmit()
+    testScheduler.advanceUntilIdle()
+    val state = vm.uiState.value
+    assertTrue(state is LoginUiState.ServerPicker, "got $state")
+    assertEquals("Unexpected response. Try again.", state.banner)
+  }
+
+  private fun echoingBrowser(): FakeBrowserDriver =
+    FakeBrowserDriver(
+      launch = { url ->
+        val s = url.substringAfter("state=").substringBefore('&')
+        "horologia://oauth?state=$s&code=CODE"
+      }
+    )
+
+  @Test
+  fun callbackUrlUnparseableResetsToPicker() = runTest {
+    val gateway = FakeLoginGateway(probeReturn = { ProbeResult.Ok })
+    val browser = FakeBrowserDriver(launch = { "@@@ not a url" })
+    val vm = buildVm(gateway = gateway, browser = browser)
+    vm.onUrlChanged("tasks.example.com")
+    testScheduler.advanceUntilIdle()
+    vm.onSubmit()
+    testScheduler.advanceUntilIdle()
+    val state = vm.uiState.value
+    assertTrue(state is LoginUiState.ServerPicker, "got $state")
+    assertEquals("Sign-in failed. Try again.", state.banner)
+  }
+
+  @Test
+  fun callbackErrorAccessDeniedShowsCancelledBanner() = runTest {
+    val gateway = FakeLoginGateway(probeReturn = { ProbeResult.Ok })
+    // Echo state so the state match passes, then add error=access_denied.
+    val browser =
+      FakeBrowserDriver(
+        launch = { url ->
+          val s = url.substringAfter("state=").substringBefore('&')
+          "horologia://oauth?state=$s&error=access_denied"
+        }
+      )
+    val vm = buildVm(gateway = gateway, browser = browser)
+    vm.onUrlChanged("tasks.example.com")
+    testScheduler.advanceUntilIdle()
+    vm.onSubmit()
+    testScheduler.advanceUntilIdle()
+    val state = vm.uiState.value
+    assertTrue(state is LoginUiState.ServerPicker, "got $state")
+    assertEquals("Sign-in cancelled.", state.banner)
+  }
+
+  @Test
+  fun callbackErrorOtherShowsFailedBanner() = runTest {
+    val gateway = FakeLoginGateway(probeReturn = { ProbeResult.Ok })
+    val browser =
+      FakeBrowserDriver(
+        launch = { url ->
+          val s = url.substringAfter("state=").substringBefore('&')
+          "horologia://oauth?state=$s&error=server_error"
+        }
+      )
+    val vm = buildVm(gateway = gateway, browser = browser)
+    vm.onUrlChanged("tasks.example.com")
+    testScheduler.advanceUntilIdle()
+    vm.onSubmit()
+    testScheduler.advanceUntilIdle()
+    val state = vm.uiState.value
+    assertTrue(state is LoginUiState.ServerPicker, "got $state")
+    assertEquals("Sign-in failed.", state.banner)
+  }
+
+  @Test
+  fun callbackMissingCodeShowsFailedBanner() = runTest {
+    val gateway = FakeLoginGateway(probeReturn = { ProbeResult.Ok })
+    val browser =
+      FakeBrowserDriver(
+        launch = { url ->
+          val s = url.substringAfter("state=").substringBefore('&')
+          "horologia://oauth?state=$s"
+        }
+      )
+    val vm = buildVm(gateway = gateway, browser = browser)
+    vm.onUrlChanged("tasks.example.com")
+    testScheduler.advanceUntilIdle()
+    vm.onSubmit()
+    testScheduler.advanceUntilIdle()
+    val state = vm.uiState.value
+    assertTrue(state is LoginUiState.ServerPicker, "got $state")
+    assertEquals("Sign-in failed.", state.banner)
+  }
+
+  @Test
+  fun browserCancelledResetsToPickerWithCancelledBanner() = runTest {
+    val gateway = FakeLoginGateway(probeReturn = { ProbeResult.Ok })
+    val browser =
+      FakeBrowserDriver(
+        launch = { throw dev.horologia.mobile.core.platform.BrowserCancelledException() }
+      )
+    val vm = buildVm(gateway = gateway, browser = browser)
+    vm.onUrlChanged("tasks.example.com")
+    testScheduler.advanceUntilIdle()
+    vm.onSubmit()
+    testScheduler.advanceUntilIdle()
+    val state = vm.uiState.value
+    assertTrue(state is LoginUiState.ServerPicker, "got $state")
+    assertEquals("OAuth sign-in cancelled by user", state.banner)
+  }
+
+  @Test
+  fun seedInitialUrlPrefillsAndProbes() = runTest {
+    val gateway = FakeLoginGateway(probeReturn = { ProbeResult.Ok })
+    val vm = buildVm(gateway = gateway)
+    vm.seedInitialUrl(url = "tasks.example.com")
+    // Seeded probe bypasses debounce; drain the launched job.
+    testScheduler.advanceUntilIdle()
+    val state = vm.uiState.value
+    assertTrue(state is LoginUiState.ServerPicker, "got $state")
+    assertEquals("tasks.example.com", state.input)
+    assertEquals(ProbeState.Valid, state.probe)
+    assertEquals(1, gateway.probeCalls)
+  }
+
+  @Test
+  fun seedInitialUrlNoopWhenInputAlreadyPresent() = runTest {
+    val gateway = FakeLoginGateway(probeReturn = { ProbeResult.Ok })
+    val vm = buildVm(gateway = gateway)
+    vm.onUrlChanged("first.example.com")
+    testScheduler.advanceUntilIdle()
+    vm.seedInitialUrl(url = "second.example.com")
+    testScheduler.advanceUntilIdle()
+    val state = vm.uiState.value
+    assertTrue(state is LoginUiState.ServerPicker, "got $state")
+    assertEquals("first.example.com", state.input)
+  }
+
+  @Test
+  fun seedInitialUrlNoopWhenNotServerPicker() = runTest {
+    // Drive the VM into LaunchingBrowser via onSubmit, then try to seed.
+    val gateway = FakeLoginGateway(probeReturn = { ProbeResult.Ok })
+    val browser = FakeBrowserDriver(launch = { CompletableDeferred<String>().await() })
+    val vm = buildVm(gateway = gateway, browser = browser)
+    vm.onUrlChanged("tasks.example.com")
+    testScheduler.advanceUntilIdle()
+    vm.onSubmit()
+    testScheduler.advanceTimeBy(100L)
+    testScheduler.runCurrent()
+    assertTrue(vm.uiState.value is LoginUiState.LaunchingBrowser)
+    vm.seedInitialUrl(url = "other.example.com")
+    testScheduler.runCurrent()
+    assertTrue(vm.uiState.value is LoginUiState.LaunchingBrowser)
+  }
+
+  @Test
+  fun showBannerAttachesToCurrentServerPicker() = runTest {
+    val vm = buildVm()
+    vm.onUrlChanged("tasks.example.com")
+    testScheduler.advanceUntilIdle()
+    vm.showBanner(message = "Signed out.")
+    val state = vm.uiState.value
+    assertTrue(state is LoginUiState.ServerPicker, "got $state")
+    assertEquals("Signed out.", state.banner)
+  }
+
+  @Test
+  fun dismissBannerClearsBanner() = runTest {
+    val vm = buildVm()
+    vm.showBanner(message = "Signed out.")
+    vm.dismissBanner()
+    val state = vm.uiState.value
+    assertTrue(state is LoginUiState.ServerPicker, "got $state")
+    assertEquals(null, state.banner)
   }
 
   private fun buildVm(

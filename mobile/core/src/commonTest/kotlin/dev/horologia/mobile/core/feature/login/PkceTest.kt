@@ -36,4 +36,23 @@ class PkceTest {
     val sampled = buildSet { repeat(32) { add(Pkce.generateCodeVerifier()) } }
     assertTrue(sampled.size > 1, "Verifier is not random across invocations")
   }
+
+  @Test
+  fun codeChallengeIsDeterministic() {
+    val verifier = Pkce.generateCodeVerifier()
+    assertEquals(Pkce.codeChallengeS256(verifier), Pkce.codeChallengeS256(verifier))
+  }
+
+  @Test
+  fun codeChallengePropertyCheck() {
+    val verifiers = buildSet { repeat(256) { add(Pkce.generateCodeVerifier()) } }
+    assertEquals(256, verifiers.size, "verifier RNG produced duplicates")
+    val challenges = verifiers.map { Pkce.codeChallengeS256(verifier = it) }
+    assertTrue(challenges.all { it.length == 43 }, "all challenges must be 43 chars")
+    assertEquals(
+      challenges.size,
+      challenges.toSet().size,
+      "unique verifiers must produce unique challenges",
+    )
+  }
 }

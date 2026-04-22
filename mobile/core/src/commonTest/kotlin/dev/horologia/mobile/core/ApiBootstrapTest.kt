@@ -1,7 +1,10 @@
 package dev.horologia.mobile.core
 
 import dev.horologia.mobile.generated.Api
+import dev.horologia.mobile.generated.Auth
 import io.ktor.http.Url
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -18,6 +21,20 @@ import kotlin.test.assertEquals
  * value.
  */
 class ApiBootstrapTest {
+  private val defaultBaseUrl = Api.servers.first()
+
+  @BeforeTest
+  fun setUp() {
+    Api.baseUrl = defaultBaseUrl
+    Api.setAuthProvider(Auth.BearerAuth { null })
+  }
+
+  @AfterTest
+  fun tearDown() {
+    Api.baseUrl = defaultBaseUrl
+    Api.setAuthProvider(Auth.BearerAuth { null })
+  }
+
   @Test
   fun configureHorologiaApi_rebasesOnRecall() {
     configureHorologiaApi(baseUrl = "https://first.example.com/api/", getToken = { null })
@@ -25,5 +42,21 @@ class ApiBootstrapTest {
 
     configureHorologiaApi(baseUrl = "https://second.example.com/api/", getToken = { null })
     assertEquals(Url("https://second.example.com/api/"), Api.baseUrl)
+  }
+
+  @Test
+  fun ensureApiPath_appendsApiSegment() {
+    assertEquals("https://tasks.example.com/api/", ensureApiPath("https://tasks.example.com"))
+    assertEquals("https://tasks.example.com/api/", ensureApiPath("https://tasks.example.com/"))
+  }
+
+  @Test
+  fun ensureApiPath_preservesExistingApiSegment() {
+    assertEquals("https://tasks.example.com/api/", ensureApiPath("https://tasks.example.com/api"))
+    assertEquals("https://tasks.example.com/api/", ensureApiPath("https://tasks.example.com/api/"))
+    assertEquals(
+      "https://tasks.example.com/api/v2/",
+      ensureApiPath("https://tasks.example.com/api/v2"),
+    )
   }
 }
