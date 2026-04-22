@@ -1,0 +1,190 @@
+import HorologiaCore
+import SwiftUI
+
+/// Server-picker + browser-handoff + finishing composite. Mirrors
+/// `LoginScreen.kt` on Compose side. Compact (`.compact`) layout fills the
+/// viewport; Regular uses a centered glass card. iOS 26's `.glassEffect()` and
+/// `GlassEffectContainer` supply the Liquid Glass treatment on the card and
+/// primary button (R22).
+@MainActor
+struct LoginView: View {
+  @Environment(\.appContainer) private var container
+  @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+  @StateObject private var storeOwner = IosViewModelStoreOwner()
+  @State private var uiState: LoginUiState = LoginUiStateServerPicker(
+    input: "",
+    probe: ProbeStateEmpty.shared,
+    banner: nil
+  )
+
+  let initialServerUrl: String?
+  let initialBanner: String?
+  let onComplete: () -> Void
+
+  init(
+    initialServerUrl: String? = nil,
+    initialBanner: String? = nil,
+    onComplete: @escaping () -> Void
+  ) {
+    self.initialServerUrl = initialServerUrl
+    self.initialBanner = initialBanner
+    self.onComplete = onComplete
+  }
+
+  private var viewModel: LoginViewModel {
+    storeOwner.viewModel(
+      LoginViewModel.self,
+      factory: container!.loginViewModelFactory
+    )
+  }
+
+  var body: some View {
+    Group {
+      if horizontalSizeClass == .regular {
+        expandedBody
+      } else {
+        compactBody
+      }
+    }
+    .task {
+      if let url = initialServerUrl, !url.isEmpty {
+        viewModel.seedInitialUrl(url: url)
+      }
+      if let banner = initialBanner, !banner.isEmpty {
+        viewModel.showBanner(message: banner)
+      }
+      for await newState in viewModel.uiState {
+        uiState = newState
+        if newState is LoginUiStateComplete {
+          onComplete()
+        }
+      }
+    }
+  }
+
+  private var compactBody: some View {
+    VStack(alignment: .leading, spacing: 16) {
+      headline
+      content
+      Spacer()
+    }
+    .padding(24)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+  }
+
+  private var expandedBody: some View {
+    VStack {
+      Spacer()
+      GlassEffectContainer {
+        VStack(alignment: .leading, spacing: 16) {
+          headline
+          content
+        }
+        .padding(32)
+        .frame(maxWidth: 480)
+        .glassEffect(in: .rect(cornerRadius: 28))
+      }
+      Spacer()
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .padding(32)
+  }
+
+  private var headline: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      Text("Connect to Horologia")
+        .font(.largeTitle.weight(.bold))
+      Text("Paste your server URL to sign in.")
+        .font(.body)
+        .foregroundStyle(.secondary)
+    }
+  }
+
+  @ViewBuilder
+  private var content: some View {
+    switch onEnum(of: uiState) {
+    case .serverPicker(let picker):
+      serverPickerBody(picker: picker)
+    case .launchingBrowser(let state):
+      statusBody(title: "Opening secure sign-in…", detail: state.input)
+    case .finishing(let state):
+      statusBody(title: "Finishing sign-in…", detail: state.input)
+    case .complete:
+      statusBody(title: "Signed in.", detail: nil)
+    }
+  }
+
+  private func serverPickerBody(picker: LoginUiStateServerPicker) -> some View {
+    VStack(alignment: .leading, spacing: 12) {
+      if let banner = picker.banner {
+        Text(banner)
+          .font(.body)
+          .foregroundStyle(Color.red)
+      }
+      TextField(
+        "tasks.example.com",
+        text: Binding(
+          get: { picker.input },
+          set: { viewModel.onUrlChanged(input: $0) }
+        )
+      )
+      .textInputAutocapitalization(.never)
+      .autocorrectionDisabled(true)
+      .keyboardType(.URL)
+      .textFieldStyle(.roundedBorder)
+
+      probeSupportingText(picker.probe)
+
+      if picker.probe is ProbeStateProbing {
+        ProgressView()
+          .progressViewStyle(.linear)
+      }
+
+      Button(action: { viewModel.onSubmit() }) {
+        Text("Continue")
+          .frame(maxWidth: .infinity)
+      }
+      .buttonStyle(.borderedProminent)
+      .disabled(!(picker.probe is ProbeStateValid))
+      .glassEffect(in: .capsule)
+    }
+  }
+
+  @ViewBuilder
+  private func probeSupportingText(_ probe: ProbeState) -> some View {
+    switch onEnum(of: probe) {
+    case .empty, .typing:
+      EmptyView()
+    case .probing:
+      Text("Checking server…")
+        .font(.caption)
+        .foregroundStyle(.secondary)
+    case .valid:
+      Text("Horologia server detected.")
+        .font(.caption)
+        .foregroundStyle(.secondary)
+    case .invalidUnreachable(let unreachable):
+      Text("Can't reach \(unreachable.host).")
+        .font(.caption)
+        .foregroundStyle(Color.red)
+    case .invalidWrongServer:
+      Text("Not a Horologia server.")
+        .font(.caption)
+        .foregroundStyle(Color.red)
+    }
+  }
+
+  private func statusBody(title: String, detail: String?) -> some View {
+    VStack(alignment: .leading, spacing: 12) {
+      Text(title)
+        .font(.title3)
+      if let detail = detail {
+        Text(detail)
+          .font(.body)
+          .foregroundStyle(.secondary)
+      }
+      ProgressView()
+        .progressViewStyle(.linear)
+    }
+  }
+}

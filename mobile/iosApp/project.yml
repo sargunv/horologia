@@ -2,7 +2,7 @@ name: iosApp
 options:
   bundleIdPrefix: dev.horologia.mobile
   deploymentTarget:
-    iOS: "17.0"
+    iOS: "26.0"
   createIntermediateGroups: true
 configs:
   Debug: debug
@@ -11,11 +11,6 @@ settings:
   base:
     SWIFT_VERSION: "6.0"
     ENABLE_USER_SCRIPT_SANDBOXING: NO
-configFiles:
-  # Debug-only: the committed Config.xcconfig holds a (blank) dev bearer
-  # token; Release must NOT pick it up, to prevent accidentally baking a
-  # local token into a shipped IPA if someone fills it in for testing.
-  Debug: Config.xcconfig
 targets:
   iosApp:
     type: application
@@ -31,9 +26,11 @@ targets:
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         NSAppTransportSecurity:
-          NSAllowsLocalNetworking: true
-        HorologiaBaseUrl: $(HOROLOGIA_BASE_URL)
-        HorologiaDevToken: $(HOROLOGIA_DEV_TOKEN)
+          NSAllowsArbitraryLoads: true
+        CFBundleURLTypes:
+          - CFBundleURLName: dev.horologia.mobile.oauth
+            CFBundleURLSchemes:
+              - horologia
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.horologia.mobile.iosApp
