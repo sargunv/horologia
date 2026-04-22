@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.horologia.mobile.core.platform.BrowserCancelledException
 import dev.horologia.mobile.core.platform.BrowserDriver
+import dev.horologia.mobile.core.platform.BrowserFailedException
 import dev.horologia.mobile.core.platform.BrowserLauncher
 import dev.horologia.mobile.core.platform.BrowserLauncherDriver
 import dev.horologia.mobile.core.session.ServerPrefs
@@ -80,8 +81,9 @@ internal constructor(
   fun seedInitialUrl(url: String) {
     val current = _uiState.value as? LoginUiState.ServerPicker ?: return
     if (current.input.isNotEmpty()) return
-    _uiState.value = current.copy(input = url, probe = ProbeState.Typing)
-    debounceAndProbe(url = url)
+    _uiState.value = current.copy(input = url, probe = ProbeState.Probing)
+    probeJob?.cancel()
+    probeJob = viewModelScope.launch { runProbe(url = url) }
   }
 
   /** Called after a cold-launch refresh failure. */
@@ -145,6 +147,7 @@ internal constructor(
     if (current.probe !is ProbeState.Valid) return
     val normalized = UrlNormalizer.normalize(current.input) ?: return
 
+    probeJob?.cancel()
     flowJob?.cancel()
     flowJob = viewModelScope.launch {
       try {
@@ -171,20 +174,23 @@ internal constructor(
         val callbackUrl =
           try {
             browser.launchAndAwait(authorizeUrl = authUrl)
-          } catch (_: BrowserCancelledException) {
-            resetToPicker(current = current, banner = "Sign-in cancelled.")
+          } catch (e: BrowserCancelledException) {
+            resetToPicker(current = current, banner = e.message ?: "Sign-in cancelled.")
+            return@launch
+          } catch (e: BrowserFailedException) {
+            resetToPicker(current = current, banner = e.message ?: "Sign-in failed. Try again.")
             return@launch
           }
 
         val parsed = runCatching { Url(callbackUrl) }.getOrNull()
         if (parsed == null) {
-          resetToPicker(current = current, banner = "Sign-in couldn't be verified.")
+          resetToPicker(current = current, banner = "Sign-in failed. Try again.")
           return@launch
         }
         val params = parsed.parameters
         val returnedState = params["state"]
         if (returnedState != state) {
-          resetToPicker(current = current, banner = "Sign-in couldn't be verified.")
+          resetToPicker(current = current, banner = "Sign-in failed. Try again.")
           return@launch
         }
         val errorParam = params["error"]
@@ -239,19 +245,9 @@ internal constructor(
       } finally {
         pendingVerifier = null
         pendingState = null
+        pendingNormalizedUrl = null
       }
     }
-  }
-
-  /** Callback from the OS-URL handler (iOS `.onOpenURL`, Android redirect activity). */
-  fun onExternalCallback(callbackUrl: String) {
-    // Currently the browser launcher handles its own callback wait; this hook
-    // exists so platform layers that cannot complete the wait themselves
-    // (e.g. if iOS ever drops `ASWebAuthenticationSession`) can forward.
-    // On today's platforms the channel is internal to BrowserLauncher.
-    // No-op by default. Kept in the public surface so platform code has
-    // a single, documented entry point that won't change shape later.
-    @Suppress("UNUSED_PARAMETER") val ignored = callbackUrl
   }
 
   fun dismissBanner() {

@@ -180,28 +180,47 @@ internal class LiveLoginGateway(
           }
           response.status == HttpStatusCode.Unauthorized ||
             response.status == HttpStatusCode.Forbidden -> TokenResult.AuthFailure
-          response.status.value in 400..499 ->
-            TokenResult.Permanent("Sign-in failed (${response.status.value}).")
-          else -> TokenResult.Retryable("Server error (${response.status.value}).")
+          response.status.value in 400..499 -> TokenResult.Permanent("Sign-in failed. Try again.")
+          else -> TokenResult.Retryable("Server error. Try again.")
         }
       }
     } catch (_: TimeoutCancellationException) {
-      TokenResult.Retryable("Request timed out after $tokenTimeout.")
+      TokenResult.Retryable("The server took too long to respond. Try again.")
     } catch (e: CancellationException) {
       throw e
     } catch (t: Throwable) {
-      TokenResult.Retryable(t.message ?: "Network error during token exchange.")
+      // Map exception types to fixed user-facing strings. Upstream Ktor exception
+      // messages can leak TLS / URL / certificate detail, so we never forward them
+      // to the UI banner — full details are logged here for developer debugging.
+      println("LoginGateway.postToken failed: $t")
+      classifyTokenException(t)
     } finally {
       client.close()
     }
   }
 }
 
-/** Build `<baseUrl>/<path>` without doubling up slashes or clobbering a trailing path segment. */
+/**
+ * Build `<baseUrl>/<path>` by structurally appending to the URL's encoded path, preserving any
+ * existing query string / fragment. Uses [URLBuilder] rather than naive string concatenation so
+ * base URLs carrying a `?q=…` suffix don't end up with the path wedged mid-query.
+ */
 internal fun appendPath(baseUrl: String, path: String): String {
-  val trimmedBase = baseUrl.trimEnd('/')
-  val trimmedPath = path.trimStart('/')
-  return "$trimmedBase/$trimmedPath"
+  val parsed =
+    try {
+      Url(baseUrl)
+    } catch (_: IllegalArgumentException) {
+      // Fall back to the dumb concatenation when the base isn't a full URL
+      // (e.g. "tasks.example.com" pre-normalize): preserves existing callsite shape.
+      val trimmedBase = baseUrl.trimEnd('/')
+      val trimmedPath = path.trimStart('/')
+      return "$trimmedBase/$trimmedPath"
+    }
+  val builder = URLBuilder(parsed)
+  val existingSegments = parsed.segments.filter { it.isNotEmpty() }
+  val newSegments = path.split('/').filter { it.isNotEmpty() }
+  builder.pathSegments = existingSegments + newSegments
+  return builder.buildString()
 }
 
 /**
@@ -233,4 +252,28 @@ internal fun authorizeUrl(
 internal fun defaultHttpClient(): HttpClient = HttpClient {
   expectSuccess = false
   install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+}
+
+/**
+ * Map a Throwable from `postToken` to a banner-ready [TokenResult]. Raw messages never reach the
+ * UI; type-name sniffing keeps the classifier commonMain-compatible without pulling in
+ * `javax.net.ssl` (JVM-only) or similar platform-specific exception APIs.
+ */
+internal fun classifyTokenException(t: Throwable): TokenResult {
+  if (t is JsonConvertException) {
+    return TokenResult.Permanent("The server sent an unexpected response. Try again.")
+  }
+  val typeName = t::class.simpleName.orEmpty()
+  val message = t.message.orEmpty()
+  return when {
+    typeName.contains("UnknownHostException") -> TokenResult.Permanent("Can't reach the server.")
+    typeName.contains("SSL") || typeName.contains("Tls") || typeName.contains("Certificate") ->
+      TokenResult.Permanent("The server's certificate isn't trusted.")
+    typeName.contains("IOException") ||
+      typeName.contains("Connect") ||
+      typeName.contains("Socket") ||
+      message.contains("connection", ignoreCase = true) ->
+      TokenResult.Retryable("Network error. Try again.")
+    else -> TokenResult.Retryable("Sign-in failed. Try again.")
+  }
 }
