@@ -1,14 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Allow cleartext HTTP to the Android emulator's loopback host (10.0.2.2 maps
-  to the development machine's localhost). Remove once a real auth flow ships
-  and the app talks to a TLS-terminated server.
-
-  TODO: remove alongside POST /app/auth/login → POST /api/auth/tokens migration.
+  The app accepts arbitrary user-supplied server URLs (any scheme, any host)
+  per design-spec § C. Cleartext is permitted globally so a user can point the
+  app at a self-hosted HTTP Horologia server behind their LAN.
 -->
 <network-security-config>
-  <domain-config cleartextTrafficPermitted="true">
-    <domain includeSubdomains="true">10.0.2.2</domain>
-    <domain includeSubdomains="true">localhost</domain>
-  </domain-config>
+  <base-config cleartextTrafficPermitted="true" />
 </network-security-config>

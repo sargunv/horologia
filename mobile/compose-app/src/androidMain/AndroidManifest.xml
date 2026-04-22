@@ -20,5 +20,31 @@
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
     </activity>
+    <activity
+      android:name=".platform.OAuthTrampolineActivity"
+      android:exported="false"
+      android:launchMode="singleTask"
+      android:noHistory="true"
+      android:taskAffinity=""
+      android:theme="@android:style/Theme.NoDisplay"
+    />
+    <activity
+      android:name=".platform.OAuthRedirectActivity"
+      android:exported="true"
+      android:launchMode="singleTask"
+      android:taskAffinity=""
+      android:theme="@android:style/Theme.NoDisplay"
+    >
+      <!-- scheme + host mirror BrowserLauncher.android.kt REDIRECT_URI. If either changes, update the other. -->
+      <intent-filter android:autoVerify="false">
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data
+          android:scheme="horologia"
+          android:host="oauth"
+        />
+      </intent-filter>
+    </activity>
   </application>
 </manifest>

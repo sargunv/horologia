@@ -48,7 +48,9 @@ struct SpacesView: View {
     .padding(24)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     .navigationTitle("Spaces")
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #endif
     .task {
       for await newState in viewModel.uiState {
         uiState = newState

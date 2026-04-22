@@ -80,7 +80,14 @@ run = "./gradlew :compose-app:run"
 
 [tasks."ios:gen"]
 description = "Generate the iosApp Xcode project from project.yml"
-run = "cd iosApp && xcodegen"
+run = """
+cd iosApp
+if [ ! -f Developer.xcconfig ]; then
+  cp Developer.xcconfig.example Developer.xcconfig
+  echo "Created iosApp/Developer.xcconfig from template — fill in DEVELOPMENT_TEAM before building."
+fi
+xcodegen
+"""
 
 [tasks."ios:xcframework"]
 description = "Assemble the HorologiaCore XCFramework for iOS"
@@ -89,12 +96,64 @@ run = "./gradlew :core:assembleHorologiaCoreXCFramework"
 [tasks."ios:build"]
 description = "Build the iosApp for the iOS simulator"
 depends = ["ios:gen"]
-run = "xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -configuration Debug CODE_SIGNING_ALLOWED=NO build"
+# Automatic signing with a real team (configured in project.yml) — required so
+# `ProcessProductPackaging` emits the real `.xcent` with the keychain-access-group entitlement,
+# which SecItemAdd needs to avoid OSStatus -34018 on simulator writes.
+run = "xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -configuration Debug build"
+
+[tasks."ios:boot"]
+description = "Boot an iOS 26 simulator (iPhone 17 by default) if none is currently booted"
+run = """
+if ! xcrun simctl list devices booted | grep -q Booted; then
+  DEVICE_ID=$(xcrun simctl list devices available | awk '/-- iOS 26/{flag=1;next}/^--/{flag=0}flag && /iPhone 17 \\(/{print; exit}' | sed -E 's/.*\\(([0-9A-F-]+)\\).*/\\1/')
+  if [ -z "$DEVICE_ID" ]; then
+    echo "No iPhone 17 (iOS 26) simulator found. Create one in Xcode → Devices & Simulators." >&2
+    exit 1
+  fi
+  xcrun simctl boot "$DEVICE_ID"
+  open -a Simulator
+fi
+"""
+
+[tasks."ios:run"]
+description = "Build, install, and launch the iosApp on the booted simulator"
+depends = ["ios:boot", "ios:build"]
+run = """
+APP=$(ls -dt ~/Library/Developer/Xcode/DerivedData/iosApp-*/Build/Products/Debug-iphonesimulator/iosApp.app 2>/dev/null | head -1)
+if [ -z "$APP" ]; then
+  echo "iosApp.app not found in DerivedData; the build must have failed." >&2
+  exit 1
+fi
+BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")
+xcrun simctl terminate booted "$BUNDLE_ID" 2>/dev/null || true
+xcrun simctl install booted "$APP"
+xcrun simctl launch booted "$BUNDLE_ID"
+"""
 
 [tasks."ios:open"]
 description = "Open the iosApp Xcode project"
 depends = ["ios:gen"]
 run = "open iosApp/iosApp.xcodeproj"
+
+[tasks."macos:build"]
+description = "Build the iosApp as a native macOS app"
+depends = ["ios:gen"]
+# First-time build needs `-allowProvisioningUpdates` so Xcode can register this
+# Mac with your developer account. If it still fails, open the project in Xcode
+# once and click "Try Again" in Signing & Capabilities.
+run = "xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -destination 'platform=macOS,arch=arm64' -configuration Debug -allowProvisioningUpdates build"
+
+[tasks."macos:run"]
+description = "Build and launch the iosApp as a native macOS app"
+depends = ["macos:build"]
+run = """
+APP=$(ls -dt ~/Library/Developer/Xcode/DerivedData/iosApp-*/Build/Products/Debug/iosApp.app 2>/dev/null | head -1)
+if [ -z "$APP" ]; then
+  echo "iosApp.app not found in DerivedData; the macOS build must have failed." >&2
+  exit 1
+fi
+open "$APP"
+"""
 
 [tasks.check]
 description = "Run host-safe shared mobile checks"

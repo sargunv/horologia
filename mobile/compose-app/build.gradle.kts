@@ -20,18 +20,9 @@ android {
     targetSdk = libs.versions.android.targetSdk.get().toInt()
     versionCode = 1
     versionName = "0.0.0"
-
-    val baseUrl =
-      providers.environmentVariable("HOROLOGIA_BASE_URL").getOrElse("http://10.0.2.2:8080/api/")
-    val devToken = providers.environmentVariable("HOROLOGIA_DEV_TOKEN").getOrElse("")
-    buildConfigField("String", "HOROLOGIA_BASE_URL", "\"$baseUrl\"")
-    buildConfigField("String", "HOROLOGIA_DEV_TOKEN", "\"$devToken\"")
   }
 
-  buildFeatures {
-    compose = true
-    buildConfig = true
-  }
+  buildFeatures { compose = true }
 
   compileOptions {
     isCoreLibraryDesugaringEnabled = true
@@ -63,6 +54,7 @@ kotlin {
     val androidMain by getting {
       dependencies {
         implementation(libs.androidx.activity.compose)
+        implementation(libs.androidx.browser)
         implementation(libs.androidx.core.ktx)
       }
     }

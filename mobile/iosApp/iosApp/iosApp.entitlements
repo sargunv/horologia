@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+      iOS simulator (and device) reject SecItemAdd with OSStatus -34018 (errSecMissingEntitlement)
+      unless the app declares a keychain-access-group. We use the bundle identifier as the group
+      so the Keychain items are app-private; `$(AppIdentifierPrefix)` is the team prefix Xcode
+      substitutes at build time (empty on the unsigned simulator build, which is fine — the
+      identifier still has to be present for SecItemAdd to succeed).
+    -->
+    <key>keychain-access-groups</key>
+    <array>
+        <string>$(AppIdentifierPrefix)dev.horologia.mobile.iosApp</string>
+    </array>
+</dict>
+</plist>

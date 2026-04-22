@@ -175,6 +175,8 @@ val openapiKmpGenCli by configurations.creating
 dependencies { openapiKmpGenCli(libs.openapi.kmpgen.cli) }
 
 kotlin {
+  compilerOptions { freeCompilerArgs.add("-Xexpect-actual-classes") }
+
   androidLibrary {
     namespace = "dev.horologia.mobile.core"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -184,7 +186,9 @@ kotlin {
   jvm("desktop") { compilerOptions { jvmTarget = JvmTarget.JVM_17 } }
 
   val xcf = XCFramework("HorologiaCore")
-  listOf(iosArm64(), iosSimulatorArm64(), iosX64()).forEach { target ->
+  // macosX64 is omitted: `openapi-kmp-gen:companion` doesn't publish a macos_x64 artifact.
+  // Apple Silicon has been the only supported dev/ship arch since 2020; we require it.
+  listOf(iosArm64(), iosSimulatorArm64(), iosX64(), macosArm64()).forEach { target ->
     target.binaries.framework {
       baseName = "HorologiaCore"
       isStatic = true
@@ -199,6 +203,10 @@ kotlin {
       dependencies {
         implementation(libs.androidx.compose.runtime.annotation)
         implementation(libs.kotlinx.coroutines.core)
+        implementation(libs.kotlinx.serialization.json)
+        implementation(libs.ktor.client.content.negotiation)
+        implementation(libs.ktor.client.core)
+        implementation(libs.ktor.serialization.kotlinx.json)
         implementation(libs.openapi.kmpgen.companion)
         api(libs.androidx.lifecycle.viewmodel)
       }
@@ -206,8 +214,19 @@ kotlin {
     commonTest.dependencies {
       implementation(kotlin("test"))
       implementation(libs.kotlinx.coroutines.test)
+      implementation(libs.ktor.client.mock)
     }
-    val desktopMain by getting { dependencies { implementation(libs.kotlinx.coroutines.swing) } }
+    androidMain.dependencies {
+      implementation(libs.androidx.security.crypto)
+      implementation(libs.ktor.client.okhttp)
+    }
+    val desktopMain by getting {
+      dependencies {
+        implementation(libs.kotlinx.coroutines.swing)
+        implementation(libs.ktor.client.okhttp)
+      }
+    }
+    appleMain.dependencies { implementation(libs.ktor.client.darwin) }
   }
 }
 
