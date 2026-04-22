@@ -73,7 +73,19 @@ internal class AppContainerCore(
         browserLauncher = browserLauncher,
         serverPrefs = serverPrefs,
         sessionHolder = sessionHolder,
+        reconfigureApi = { baseUrl ->
+          configureHorologiaApi(
+            baseUrl = baseUrl.ensureApiPath(),
+            getToken = { sessionHolder.currentAccessToken() },
+          )
+        },
       )
     }
   }
+}
+
+/** Mirrors the host-app's URL-to-API-base mapping (host -> host/api/) so both sides line up. */
+internal fun String.ensureApiPath(): String {
+  val trimmed = trimEnd('/')
+  return if (trimmed.endsWith("/api") || trimmed.contains("/api/")) "$trimmed/" else "$trimmed/api/"
 }

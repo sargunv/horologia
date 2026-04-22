@@ -42,12 +42,14 @@ internal constructor(
   private val debounceMillis: Long = DEFAULT_DEBOUNCE_MILLIS,
   private val finishingMinDwellMillis: Long = DEFAULT_FINISHING_MIN_DWELL_MILLIS,
   private val nowMillis: () -> Long = { Clock.System.now().toEpochMilliseconds() },
+  private val reconfigureApi: (String) -> Unit = {},
 ) : ViewModel() {
   internal constructor(
     gateway: LoginGateway,
     browserLauncher: BrowserLauncher,
     serverPrefs: ServerPrefs,
     sessionHolder: SessionHolder,
+    reconfigureApi: (String) -> Unit = {},
     clientId: String = DEFAULT_CLIENT_ID,
     debounceMillis: Long = DEFAULT_DEBOUNCE_MILLIS,
     finishingMinDwellMillis: Long = DEFAULT_FINISHING_MIN_DWELL_MILLIS,
@@ -59,6 +61,7 @@ internal constructor(
     clientId = clientId,
     debounceMillis = debounceMillis,
     finishingMinDwellMillis = finishingMinDwellMillis,
+    reconfigureApi = reconfigureApi,
   )
 
   private val _uiState =
@@ -219,6 +222,7 @@ internal constructor(
                   accessTokenExpiresAtMillis = tokenResult.accessTokenExpiresAtMillis,
                 ),
             )
+            reconfigureApi(normalized)
             val elapsed = nowMillis() - started
             val remaining = finishingMinDwellMillis - elapsed
             if (remaining > 0) delay(remaining)
