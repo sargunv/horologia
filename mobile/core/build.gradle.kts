@@ -175,6 +175,8 @@ val openapiKmpGenCli by configurations.creating
 dependencies { openapiKmpGenCli(libs.openapi.kmpgen.cli) }
 
 kotlin {
+  compilerOptions { freeCompilerArgs.add("-Xexpect-actual-classes") }
+
   androidLibrary {
     namespace = "dev.horologia.mobile.core"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
