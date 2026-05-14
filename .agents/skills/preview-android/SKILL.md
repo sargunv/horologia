@@ -1,6 +1,9 @@
 ---
 name: preview-android
-description: Use when the user asks you to run, preview, install, screenshot, or manually verify the Android app on an emulator (or connected device). Covers the full CLI loop via `emulator` + `adb`: boot, install, launch, screenshot, tail logs. Prefers CLI over Android Studio.
+description: >-
+  Use when the user asks you to run, preview, install, screenshot, or manually verify the
+  Android app on an emulator (or connected device). Covers the full CLI loop via `emulator` +
+  `adb`: boot, install, launch, screenshot, tail logs. Prefers CLI over Android Studio.
 ---
 
 # Preview / verify the Android app on an emulator

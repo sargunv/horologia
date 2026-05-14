@@ -1,6 +1,9 @@
 ---
 name: preview-ios
-description: Use when the user asks you to run, preview, install, screenshot, or manually verify the iOS app on a simulator. Covers the full CLI loop: boot simulator, build, install, launch, capture screenshot, inspect logs.
+description: >-
+  Use when the user asks you to run, preview, install, screenshot, or manually verify the iOS app
+  on a simulator. Covers the full CLI loop: boot simulator, build, install, launch, capture
+  screenshot, inspect logs.
 ---
 
 # Preview / verify the iOS app on a simulator
