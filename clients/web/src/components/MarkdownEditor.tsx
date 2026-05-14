@@ -14,8 +14,10 @@ const DEBOUNCE_MS = 1500;
 interface MarkdownEditorProps {
   value: string;
   onChange: (markdown: string) => void;
+  onLocalChange?: (markdown: string) => void;
   onBlur?: () => void;
   disabled?: boolean;
+  syncExternalValue?: boolean;
   placeholder?: string;
   className?: string;
 }
@@ -23,15 +25,18 @@ interface MarkdownEditorProps {
 export function MarkdownEditor({
   value,
   onChange,
+  onLocalChange,
   onBlur,
   disabled = false,
+  syncExternalValue = true,
   placeholder = "Add a description...",
   className,
 }: MarkdownEditorProps) {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastSavedRef = useRef(value);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  const onLocalChangeRef = useRef(onLocalChange);
+  onLocalChangeRef.current = onLocalChange;
   const onBlurRef = useRef(onBlur);
   onBlurRef.current = onBlur;
 
@@ -54,48 +59,39 @@ export function MarkdownEditor({
     contentType: "markdown",
     editable: !disabled,
     onUpdate: ({ editor }) => {
+      const md = editor.getMarkdown();
+      onLocalChangeRef.current?.(md);
       clearDebounce();
       debounceRef.current = setTimeout(() => {
-        const md = editor.getMarkdown();
-        lastSavedRef.current = md;
-        onChangeRef.current(md);
+        onChangeRef.current(editor.getMarkdown());
       }, DEBOUNCE_MS);
     },
     onBlur: ({ editor }) => {
       clearDebounce();
-      const md = editor.getMarkdown();
-      if (md !== lastSavedRef.current) {
-        lastSavedRef.current = md;
-        onChangeRef.current(md);
-      }
+      onChangeRef.current(editor.getMarkdown());
       onBlurRef.current?.();
     },
   });
 
-  // Sync disabled state
+  // Sync disabled state without emitting Tiptap update events. Disabled is hard read-only only.
   useEffect(() => {
-    if (editor) editor.setEditable(!disabled);
+    if (editor) editor.setEditable(!disabled, false);
   }, [editor, disabled]);
 
-  // Sync external value changes (e.g. from refetch) without disrupting cursor
+  // Sync external value changes (e.g. from refetch) only when the parent says local content is clean.
   useEffect(() => {
-    if (!editor) return;
-    if (value !== lastSavedRef.current) {
+    if (!editor || !syncExternalValue) return;
+    if (value !== editor.getMarkdown()) {
       editor.commands.setContent(value, { emitUpdate: false, contentType: "markdown" });
-      lastSavedRef.current = value;
     }
-  }, [editor, value]);
+  }, [editor, syncExternalValue, value]);
 
   // Flush pending save and clean up on unmount
   useEffect(() => {
     return () => {
       clearDebounce();
       if (editor && !editor.isDestroyed) {
-        const md = editor.getMarkdown();
-        if (md !== lastSavedRef.current) {
-          lastSavedRef.current = md;
-          onChangeRef.current(md);
-        }
+        onChangeRef.current(editor.getMarkdown());
       }
     };
   }, [clearDebounce, editor]);

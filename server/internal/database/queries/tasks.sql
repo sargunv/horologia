@@ -6,6 +6,9 @@ RETURNING *;
 -- name: GetTask :one
 SELECT * FROM tasks WHERE id = $1 AND space_slug = $2;
 
+-- name: GetTaskForUpdate :one
+SELECT * FROM tasks WHERE id = $1 AND space_slug = $2 FOR UPDATE;
+
 -- name: ListTasksBySpace :many
 SELECT
     t.id,

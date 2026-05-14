@@ -407,7 +407,7 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := dbgen.New(tx)
-	existing, err := q.GetTask(ctx, dbgen.GetTaskParams{ID: id, SpaceSlug: params.SpaceSlug})
+	existing, err := q.GetTaskForUpdate(ctx, dbgen.GetTaskForUpdateParams{ID: id, SpaceSlug: params.SpaceSlug})
 	if err != nil {
 		return nil, err
 	}
