@@ -140,6 +140,40 @@ func (q *Queries) GetTask(ctx context.Context, arg GetTaskParams) (Task, error) 
 	return i, err
 }
 
+const getTaskForUpdate = `-- name: GetTaskForUpdate :one
+SELECT id, space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, last_completed_at, created_at, updated_at, overdue_action_after_days, overdue_action, overdue_action_status FROM tasks WHERE id = $1 AND space_slug = $2 FOR UPDATE
+`
+
+type GetTaskForUpdateParams struct {
+	ID        int64
+	SpaceSlug string
+}
+
+func (q *Queries) GetTaskForUpdate(ctx context.Context, arg GetTaskForUpdateParams) (Task, error) {
+	row := q.db.QueryRow(ctx, getTaskForUpdate, arg.ID, arg.SpaceSlug)
+	var i Task
+	err := row.Scan(
+		&i.ID,
+		&i.SpaceSlug,
+		&i.Title,
+		&i.Description,
+		&i.StatusName,
+		&i.EffortName,
+		&i.PriorityName,
+		&i.DueAt,
+		&i.DueTz,
+		&i.RecurrenceType,
+		&i.RecurrenceRule,
+		&i.LastCompletedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.OverdueActionAfterDays,
+		&i.OverdueAction,
+		&i.OverdueActionStatus,
+	)
+	return i, err
+}
+
 const listOverdueAccumulatingTasks = `-- name: ListOverdueAccumulatingTasks :many
 SELECT id, space_slug, title, description, status_name, effort_name, priority_name, due_at, due_tz, recurrence_type, recurrence_rule, last_completed_at, created_at, updated_at, overdue_action_after_days, overdue_action, overdue_action_status FROM tasks
 WHERE recurrence_type = 'fixed_accumulating'

@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -364,6 +365,78 @@ func TestTaskCRUDAndSearch(t *testing.T) {
 		assertStatusClose(t, doRequest(t, env, "DELETE", "/spaces/"+spaceA+"/tasks/"+id, ""), http.StatusNotFound)
 		assertStatusClose(t, doRequest(t, env, "GET", "/spaces/"+spaceB+"/tasks/"+id, ""), http.StatusOK)
 	})
+}
+
+func TestConcurrentTaskPatchPreservesDisjointFields(t *testing.T) {
+	t.Parallel()
+	env := setupTestServer(t)
+	space := testSlug(t, "concurrent")
+	createSpace(t, env, space, "Concurrent")
+	created := createTask(t, env, space, `{"title":"Old title","description":"Old description"}`)
+	id := jsonAs[string](t, created["id"])
+	dbID := mustParseTaskID(t, id)
+
+	tx, err := env.pool.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("begin lock transaction: %v", err)
+	}
+	defer func() { _ = tx.Rollback(t.Context()) }()
+	if _, err := tx.Exec(t.Context(), `SELECT id FROM tasks WHERE id = $1 AND space_slug = $2 FOR UPDATE`, dbID, space); err != nil {
+		t.Fatalf("lock task row: %v", err)
+	}
+
+	type patchResult struct {
+		status int
+		body   string
+		err    error
+	}
+	patch := func(body string) patchResult {
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodPatch, env.Server.URL+"/spaces/"+space+"/tasks/"+id, strings.NewReader(body))
+		if err != nil {
+			return patchResult{err: err}
+		}
+		req.Header.Set("Authorization", "Bearer "+env.Token)
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return patchResult{err: err}
+		}
+		defer func() { _ = resp.Body.Close() }()
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return patchResult{err: err}
+		}
+		return patchResult{status: resp.StatusCode, body: string(data)}
+	}
+
+	patchDone := make(chan patchResult, 1)
+	go func() {
+		patchDone <- patch(`{"description":"Concurrent description"}`)
+	}()
+	time.Sleep(100 * time.Millisecond)
+
+	if _, err := tx.Exec(t.Context(), `UPDATE tasks SET title = $1 WHERE id = $2 AND space_slug = $3`, "Concurrent title", dbID, space); err != nil {
+		t.Fatalf("update title while patch is waiting: %v", err)
+	}
+	if err := tx.Commit(t.Context()); err != nil {
+		t.Fatalf("commit lock transaction: %v", err)
+	}
+
+	patched := <-patchDone
+	if patched.err != nil {
+		t.Fatalf("patch: %v", patched.err)
+	}
+	if patched.status != http.StatusOK {
+		t.Fatalf("patch status = %d, want %d; body: %s", patched.status, http.StatusOK, patched.body)
+	}
+
+	resp := doRequest(t, env, "GET", "/spaces/"+space+"/tasks/"+id, "")
+	assertStatus(t, resp, http.StatusOK)
+	var fetched map[string]any
+	readJSON(t, resp, &fetched)
+	if fetched["title"] != "Concurrent title" || fetched["description"] != "Concurrent description" {
+		t.Fatalf("concurrent patches were not preserved: %v", fetched)
+	}
 }
 
 func TestTaskAssigneeAndTagFields(t *testing.T) {
