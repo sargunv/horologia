@@ -1,32 +1,32 @@
 [versions]
-agp = "8.13.2"
+agp = "9.2.1"
 android-compileSdk = "36"
 android-desugar = "2.1.5"
 android-minSdk = "24"
 android-targetSdk = "36"
 androidx-activity = "1.13.0"
 androidx-browser = "1.10.0"
-androidx-compose-bom = "2026.03.01"
+androidx-compose-bom = "2026.06.00"
 androidx-compose-runtime = "1.10.6"
-androidx-core = "1.18.0"
-androidx-lifecycle = "2.10.0"
+androidx-core = "1.19.0"
+androidx-lifecycle = "2.11.0"
 androidx-navigation = "2.9.2"
 # androidx.security:security-crypto 1.1.0 is deprecated in favour of direct
 # Android Keystore use, but the library is still published and provides a
 # working EncryptedSharedPreferences implementation. Replacing it would
 # require hand-rolling AES/GCM over the Keystore, which is out of scope
 # for the initial login-flow task.
-androidx-security-crypto = "1.1.0-alpha06"
-compose = "1.10.3"
-coroutines = "1.10.2"
-kmpgen = "1.3.0"
-kotlin = "2.3.20"
+androidx-security-crypto = "1.1.0"
+compose = "1.11.1"
+coroutines = "1.11.0"
+kmpgen = "1.4.1"
+kotlin = "2.4.0"
 # Pin Ktor explicitly. The openapi-kmp-gen companion drags Ktor 3.x in
 # transitively; the login flow uses Ktor APIs (HttpClient, ContentNegotiation,
 # MockEngine) directly and needs a stable coordinate.
-ktor = "3.4.2"
-kotlinx-serialization-json = "1.9.0"
-skie = "0.10.11"
+ktor = "3.5.0"
+kotlinx-serialization-json = "1.11.0"
+skie = "0.10.12"
 
 [libraries]
 android-desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "android-desugar" }
