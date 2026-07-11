@@ -1,13 +1,25 @@
 import tailwindcss from "@tailwindcss/vite";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
+import daisyThemes from "daisyui/theme/object.js";
 import { env } from "node:process";
 import { defineConfig } from "vite-plus";
 
 const serverPort = env.SERVER_PORT ?? "8080";
 const webPort = env.WEB_PORT ?? "5173";
 
+const themeCatalog = Object.entries(daisyThemes).map(([name, theme]) => {
+  const scheme = theme["color-scheme"];
+  if (scheme !== "light" && scheme !== "dark") {
+    throw new Error(`Unsupported color scheme "${scheme}" for daisyUI theme "${name}"`);
+  }
+  return { name, scheme };
+});
+
 export default defineConfig({
+  define: {
+    __DAISYUI_THEMES__: JSON.stringify(themeCatalog),
+  },
   plugins: [
     TanStackRouterVite({
       routesDirectory: "./src/routes",

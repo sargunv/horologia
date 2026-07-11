@@ -1,4 +1,5 @@
 import { Toaster as SonnerToaster } from "sonner";
+import { useTheme } from "../lib/theme.tsx";
 
 /**
  * Toaster mount — place once in the app shell. Threads daisyUI semantic
@@ -33,10 +34,11 @@ const TOKEN_STYLE: Record<string, string> = {
 };
 
 export function Toaster() {
+  const { resolvedScheme } = useTheme();
   return (
     <SonnerToaster
       position="top-right"
-      theme="system"
+      theme={resolvedScheme}
       closeButton
       style={TOKEN_STYLE}
       toastOptions={{

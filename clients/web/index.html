@@ -3,6 +3,20 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>
+    (() => {
+  try {
+    const preference = JSON.parse(localStorage.getItem("horologia.appearance") ?? "null");
+    if (!preference) return;
+    const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+    const scheme = preference.mode === "system" ? (dark ? "dark" : "light") : preference.mode;
+    const theme = scheme === "dark" ? preference.darkTheme : preference.lightTheme;
+    if (typeof theme === "string") document.documentElement.dataset.theme = theme;
+  } catch {
+    // Invalid preferences are repaired after the application starts.
+  }
+})();
+    </script>
     <title>Horologia</title>
   </head>
   <body>

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { AppearanceCard } from "../../components/settings/AppearanceCard.tsx";
 import { DangerZoneCard } from "../../components/settings/DangerZoneCard.tsx";
 import { PasswordCard } from "../../components/settings/PasswordCard.tsx";
 import { ProfileCard } from "../../components/settings/ProfileCard.tsx";
@@ -39,6 +40,7 @@ function SettingsPage() {
       )}
       <TokensCard />
       <DangerZoneCard userId={user.id} email={user.email} />
+      <AppearanceCard />
     </div>
   );
 }

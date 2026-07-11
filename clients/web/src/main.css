@@ -5,7 +5,7 @@
 @import "highlight.js/styles/dark.css";
 
 @plugin "daisyui" {
-  themes: light --default, dark --prefersdark;
+  themes: all;
   root: ":root";
   logs: false;
 }

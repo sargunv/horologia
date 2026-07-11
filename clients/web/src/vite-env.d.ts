@@ -11,3 +11,8 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+declare const __DAISYUI_THEMES__: readonly {
+  readonly name: string;
+  readonly scheme: "light" | "dark";
+}[];
