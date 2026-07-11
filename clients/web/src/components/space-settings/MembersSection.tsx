@@ -281,9 +281,9 @@ function AddMemberForm({ spaceSlug, members }: { spaceSlug: string; members: Spa
       <form onSubmit={handleSubmit} className="flex flex-col gap-2">
         <Command
           shouldFilter={false}
-          className="overflow-hidden rounded-box border border-base-300"
+          className="min-w-0 overflow-hidden rounded-box border border-base-300"
         >
-          <div className="flex items-center gap-2 border-b border-base-300 p-2">
+          <div className="flex flex-wrap items-center gap-2 border-b border-base-300 p-2">
             <Command.Input
               value={inputValue}
               onValueChange={(v) => {
@@ -292,33 +292,35 @@ function AddMemberForm({ spaceSlug, members }: { spaceSlug: string; members: Spa
               }}
               aria-label="Search users to add"
               placeholder="Search by name or email..."
-              className="flex-1 bg-transparent px-1 text-sm outline-none placeholder:text-base-content/50"
+              className="min-w-40 flex-1 bg-transparent px-1 text-sm outline-none placeholder:text-base-content/50"
             />
-            <select
-              aria-label="Role"
-              value={role}
-              onChange={(e) => {
-                if (isSpaceRole(e.target.value)) setRole(e.target.value);
-              }}
-              disabled={addMutation.isPending}
-              className="select select-sm"
-            >
-              <RoleOptions />
-            </select>
-            <button
-              type="submit"
-              disabled={addMutation.isPending || !selectedUserId}
-              className="btn btn-primary btn-sm"
-            >
-              {addMutation.isPending ? (
-                "Adding..."
-              ) : (
-                <>
-                  <UserPlus className="size-4" aria-hidden="true" />
-                  Add
-                </>
-              )}
-            </button>
+            <div className="ml-auto flex shrink-0 items-center gap-2">
+              <select
+                aria-label="Role"
+                value={role}
+                onChange={(e) => {
+                  if (isSpaceRole(e.target.value)) setRole(e.target.value);
+                }}
+                disabled={addMutation.isPending}
+                className="select select-sm"
+              >
+                <RoleOptions />
+              </select>
+              <button
+                type="submit"
+                disabled={addMutation.isPending || !selectedUserId}
+                className="btn btn-primary btn-sm"
+              >
+                {addMutation.isPending ? (
+                  "Adding..."
+                ) : (
+                  <>
+                    <UserPlus className="size-4" aria-hidden="true" />
+                    Add
+                  </>
+                )}
+              </button>
+            </div>
           </div>
           <Command.List className="max-h-60 overflow-y-auto p-1">
             {usersLoading ? (
