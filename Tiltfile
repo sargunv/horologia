@@ -60,7 +60,7 @@ local_resource(
     serve_cmd="server/dev-oidc",
     serve_env=dict(common_env, **{
         "DEV_OIDC_PORT": str(OIDC_PORT),
-        "DEV_OIDC_CALLBACK_URL": "http://localhost:%d/auth/oidc/callback" % SERVER_PORT,
+        "DEV_OIDC_CALLBACK_URL": "http://localhost:%d/app/auth/oidc/callback" % SERVER_PORT,
     }),
     deps=["server"],
     readiness_probe=probe(

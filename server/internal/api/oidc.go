@@ -71,7 +71,9 @@ func NewOIDCHandler(ctx context.Context, cfg OIDCConfig, handler *Handler) (http
 	if _, err := rand.Read(encKey); err != nil {
 		return nil, fmt.Errorf("generate oidc encryption key: %w", err)
 	}
-	var cookieOpts []zhttp.CookieHandlerOpt
+	cookieOpts := []zhttp.CookieHandlerOpt{
+		zhttp.WithPath("/app/auth/oidc"),
+	}
 	if !handler.SecureCookies {
 		cookieOpts = append(cookieOpts, zhttp.WithUnsecure())
 	}

@@ -37,7 +37,8 @@ func MountRoot(apiHandler http.Handler, mcpHandler http.Handler, pool *pgxpool.P
 
 func internalCORSMiddleware(publicURL string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if isInternalAPIPath(r.URL.Path, r.Method) && !sameOriginRequest(r, publicURL) {
+		isOIDCCallback := r.Method == http.MethodGet && r.URL.Path == "/app/auth/oidc/callback"
+		if isInternalAPIPath(r.URL.Path, r.Method) && !isOIDCCallback && !sameOriginRequest(r, publicURL) {
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}

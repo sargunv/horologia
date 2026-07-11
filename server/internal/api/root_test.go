@@ -144,6 +144,30 @@ func TestInternalAPIsRejectCrossOriginRequests(t *testing.T) {
 	assertStatus(t, resp, http.StatusForbidden)
 }
 
+func TestOIDCCallbackAllowsCrossSiteNavigation(t *testing.T) {
+	t.Parallel()
+	env := setupTestServer(t)
+
+	log := slog.New(slog.DiscardHandler)
+	root := api.MountRoot(env.Server.Config.Handler, nil, env.pool, log, "")
+	srv := httptest.NewServer(root)
+	t.Cleanup(srv.Close)
+
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, srv.URL+"/app/auth/oidc/callback", nil)
+	if err != nil {
+		t.Fatalf("new request: %v", err)
+	}
+	req.Header.Set("Sec-Fetch-Site", "same-site")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("OIDC callback: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode == http.StatusForbidden {
+		t.Fatal("OIDC callback was rejected as cross-origin")
+	}
+}
+
 func TestPublicAPIsAllowCrossOriginRequests(t *testing.T) {
 	t.Parallel()
 	env := setupTestServer(t)
