@@ -42,20 +42,22 @@ function SpaceSettingsPage() {
   const isAdmin = members.some((m) => m.userId === currentUser.id && m.role === "admin");
 
   return (
-    <div className="mx-auto max-w-3xl p-6">
+    <div className="space-y-4">
       <BackLink
         to="/spaces/$spaceSlug"
         params={{ spaceSlug }}
-        className="text-base-content/70 hover:text-base-content mb-4 inline-flex items-center gap-1 text-sm transition-colors"
+        className="text-base-content/70 hover:text-base-content inline-flex items-center gap-1 text-sm transition-colors lg:hidden"
       >
         <ArrowLeft className="size-4" />
         Back to {space.name}
       </BackLink>
 
-      <h1 className="text-xl font-semibold">Space Settings</h1>
-      <p className="text-base-content/70 mt-1">Manage settings for {space.name}.</p>
+      <div>
+        <h1 className="text-xl font-semibold">Space Settings</h1>
+        <p className="text-base-content/70 mt-1">Manage settings for {space.name}.</p>
+      </div>
 
-      <div className="mt-6 flex flex-col gap-4">
+      <div className="flex flex-col gap-4">
         <GeneralSettingsSection space={space} />
 
         <MembersSection

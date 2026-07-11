@@ -29,18 +29,7 @@ function SpaceLayout() {
   const { spaceSlug } = Route.useParams();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  // Task list-detail layout for the space index and task detail routes.
-  // Activity and settings routes render as standalone pages.
-  const isTaskRoute =
-    pathname === `/spaces/${spaceSlug}` ||
-    pathname === `/spaces/${spaceSlug}/` ||
-    pathname.startsWith(`/spaces/${spaceSlug}/tasks/`);
-
-  if (!isTaskRoute) {
-    return <Outlet />;
-  }
-
-  const isTaskDetail = pathname.startsWith(`/spaces/${spaceSlug}/tasks/`);
+  const isSpaceIndex = pathname === `/spaces/${spaceSlug}` || pathname === `/spaces/${spaceSlug}/`;
 
   return (
     <div className="p-6">
@@ -51,7 +40,7 @@ function SpaceLayout() {
           </Suspense>
         }
         detail={
-          isTaskDetail ? (
+          !isSpaceIndex ? (
             <Suspense
               fallback={
                 <div className="text-base-content/60 p-6 text-center text-sm">Loading...</div>

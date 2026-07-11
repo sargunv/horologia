@@ -33,7 +33,8 @@ export const Route = createFileRoute("/_authenticated/_home")({
 
 function HomeLayout() {
   const matchRoute = useMatchRoute();
-  const isTaskDetail = !!matchRoute({ to: "/tasks/$spaceSlug/$taskId" });
+  const hasDetail =
+    !!matchRoute({ to: "/tasks/$spaceSlug/$taskId" }) || !!matchRoute({ to: "/activity" });
 
   return (
     <div className="p-6">
@@ -44,7 +45,7 @@ function HomeLayout() {
           </Suspense>
         }
         detail={
-          isTaskDetail ? (
+          hasDetail ? (
             <Suspense
               fallback={
                 <div className="text-base-content/60 p-6 text-center text-sm">Loading…</div>

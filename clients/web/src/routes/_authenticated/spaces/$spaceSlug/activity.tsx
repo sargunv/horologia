@@ -37,17 +37,17 @@ function SpaceActivityPage() {
   const entries = useMemo(() => pages.pages.flatMap((p) => p.items), [pages]);
 
   return (
-    <div className="mx-auto max-w-3xl p-6">
+    <div className="space-y-4">
       <BackLink
         to="/spaces/$spaceSlug"
         params={{ spaceSlug }}
-        className="text-base-content/70 hover:text-base-content mb-4 inline-flex items-center gap-1 text-sm transition-colors"
+        className="text-base-content/70 hover:text-base-content inline-flex items-center gap-1 text-sm transition-colors lg:hidden"
       >
         <ArrowLeft className="size-4" aria-hidden="true" />
         Back to {space.name}
       </BackLink>
 
-      <h1 className="text-xl font-semibold mb-6">{space.name} — Activity</h1>
+      <h1 className="text-xl font-semibold">{space.name} — Activity</h1>
 
       <ActivityFeed
         entries={entries}
