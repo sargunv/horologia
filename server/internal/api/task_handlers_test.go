@@ -347,7 +347,7 @@ func TestTaskCRUDAndSearch(t *testing.T) {
 	t.Run("space delete cascades tasks", func(t *testing.T) {
 		space := testSlug(t, "home")
 		createSpace(t, env, space, "Home")
-		created := createTask(t, env, space, `{"title":"Chore"}`)
+		created := createTask(t, env, space, `{"title":"Chore","effort":"small","priority":"high"}`)
 		id := jsonAs[string](t, created["id"])
 		assertStatusClose(t, doRequest(t, env, "DELETE", "/spaces/"+space, ""), http.StatusNoContent)
 		assertStatusClose(t, doRequest(t, env, "GET", "/spaces/"+space+"/tasks/"+id, ""), http.StatusNotFound)
