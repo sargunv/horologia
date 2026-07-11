@@ -20,29 +20,6 @@ jobs:
 
       - run: mise run ci
 
-  apple-ci:
-    runs-on: macos-latest
-
-    env:
-      CODE_SIGNING_ALLOWED: "NO"
-      CODE_SIGNING_REQUIRED: "NO"
-      CODE_SIGN_IDENTITY: ""
-
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - uses: ./.github/actions/setup-ci-deps
-
-      # Pick the newest installed Xcode. CI deployment target is iOS/macOS 26, so the
-      # runner image needs a matching SDK. If the build fails with "unsupported SDK",
-      # either the image is behind or the project bumped past what's available.
-      - name: Select newest Xcode
-        run: sudo xcode-select --switch "$(ls -d /Applications/Xcode_*.app | sort -rV | head -1)"
-
-      - run: mise run //clients/native:ios:build
-
-      - run: mise run //clients/native:macos:build
-
   release-smoke:
     runs-on: ubuntu-latest
 

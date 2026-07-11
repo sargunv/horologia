@@ -45,18 +45,6 @@ updates:
       npm-deps:
         patterns: ["*"]
 
-  - package-ecosystem: gradle
-    directory: /clients/native
-    schedule:
-      interval: weekly
-    cooldown:
-      default-days: 3
-    ignore:
-      - dependency-name: gradle-wrapper
-    groups:
-      gradle-deps:
-        patterns: ["*"]
-
   - package-ecosystem: github-actions
     directory: /
     schedule:

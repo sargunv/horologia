@@ -23,23 +23,6 @@ tasks. Key commands:
 Package-scoped tasks use a `//` prefix, e.g. `mise run //server:generate`,
 `mise run //server:build`, `mise run //server:test`.
 
-Native-client bootstrap/setup uses package-scoped tasks as well:
-
-- `mise run //clients/native:setup` — install Android SDK components into the mise-managed SDK root
-- `mise run //clients/native:android:assembleDebug` — build the Android target in `:compose-app`
-- `mise run //clients/native:desktop:run` — run the desktop target in `:compose-app`
-- `mise run //clients/native:ios:gen` — generate the Xcode project from `swiftui-app/project.yml`
-  via xcodegen (provisioned automatically by `mise install`)
-- `mise run //clients/native:ios:xcframework` — assemble `HorologiaCore.xcframework` for iOS +
-  simulator + macOS
-- `mise run //clients/native:ios:build` — build for the iOS simulator (depends on `ios:gen`)
-- `mise run //clients/native:ios:open` — open the Xcode project (depends on `ios:gen`)
-- `mise run //clients/native:macos:build` — build as a native macOS app (depends on `ios:gen`)
-- `mise run //clients/native:macos:run` — build + launch the macOS app
-
-The app launches into the sign-in flow; create a local dev account via `POST /app/auth/login`
-against the running dev server and sign in through the app's server picker.
-
 To run any tool managed by mise, use `mise x -- [COMMAND]`
 
 ### Database
@@ -60,10 +43,6 @@ PostgreSQL is managed by mise and started automatically by Tilt. Data is stored 
 - ./clients/web — React SPA served by the backend. Built on Tailwind v4 + daisyUI 5, with primitives
   in `clients/web/src/ui/` that wrap Radix UI (umbrella), cmdk, Ark UI (TagsInput only), and sonner.
 - ./clients/cli — Go CLI client (binary: `horo`).
-- ./clients/native — Kotlin Multiplatform monorepo. `:core` is the shared KMP library (ViewModel +
-  generated OpenAPI client); `:compose-app` is the Compose UI for Android + desktop (Linux / Windows
-  / Mac dev); `swiftui-app/` is the SwiftUI app for iOS, iPadOS, and macOS (Xcode project generated
-  from `project.yml` via xcodegen).
 
 ## Conventions
 

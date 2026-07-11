@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
-  The app accepts arbitrary user-supplied server URLs (any scheme, any host)
-  per design-spec § C. Cleartext is permitted globally so a user can point the
-  app at a self-hosted HTTP Horologia server behind their LAN.
--->
-<network-security-config>
-  <base-config cleartextTrafficPermitted="true" />
-</network-security-config>

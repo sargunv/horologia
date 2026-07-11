@@ -20,16 +20,6 @@ runs:
         restore-keys: |
           ${{ runner.os }}-pnpm-
 
-    - name: Cache Gradle
-      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('clients/native/**/*.gradle.kts', 'clients/native/gradle.properties', 'clients/native/gradle/libs.versions.toml', 'clients/native/gradle/wrapper/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
-
     - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
       with:
         cache: true

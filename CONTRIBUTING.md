@@ -6,8 +6,6 @@
 - `server/` — Go backend: HTTP API, MCP server, task engine, database migrations
 - `clients/web/` — React SPA served by the backend
 - `clients/cli/` — Go CLI client (`horo`)
-- `clients/native/` — Kotlin Multiplatform monorepo: `:core` shared library, `:compose-app` for
-  Android + desktop, `swiftui-app/` for iOS / iPadOS / macOS
 
 ## Development Setup
 
