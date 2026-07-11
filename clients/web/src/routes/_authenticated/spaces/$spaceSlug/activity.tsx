@@ -55,6 +55,7 @@ function SpaceActivityPage() {
         fetchNextPage={fetchNextPage}
         isFetchingNextPage={isFetchingNextPage}
         memberMap={memberMap}
+        variant="compact"
       />
     </div>
   );

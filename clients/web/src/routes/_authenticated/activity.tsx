@@ -41,6 +41,7 @@ function UserActivityPage() {
         isFetchingNextPage={isFetchingNextPage}
         memberMap={memberMap}
         showSpace
+        variant="compact"
       />
     </div>
   );

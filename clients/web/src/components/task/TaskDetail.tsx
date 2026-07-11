@@ -562,6 +562,7 @@ function TaskActivityFeed({ spaceSlug, taskId }: { spaceSlug: string; taskId: st
       fetchNextPage={fetchNextPage}
       isFetchingNextPage={isFetchingNextPage}
       memberMap={memberMap}
+      variant="task"
     />
   );
 }

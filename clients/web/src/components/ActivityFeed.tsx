@@ -1,5 +1,6 @@
 import { createLink } from "@tanstack/react-router";
 import { ChevronDown, UserRound } from "lucide-react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { components } from "../api/schema.d.ts";
 import { Card } from "../ui/Card.tsx";
 
@@ -20,6 +21,63 @@ export interface ActivityFeedProps {
   memberMap?: Map<string, ActivityMember>;
   /** When true, each entry shows the space as context (for cross-space feeds) */
   showSpace?: boolean;
+  /** A denser, context-aware presentation for a task detail page. */
+  variant?: "default" | "compact" | "task";
+}
+
+interface CompactActivityGroup {
+  entry: ActivityLogEntry;
+  count: number;
+}
+
+const COMPACT_GROUP_WINDOW_MS = 5 * 60 * 1000;
+
+function canGroupCompactEntries(newer: ActivityLogEntry, older: ActivityLogEntry): boolean {
+  const olderDetails = new Map(older.details.map((detail) => [detail.field, detail]));
+  return (
+    newer.action === "updated" &&
+    older.action === "updated" &&
+    newer.details.length > 0 &&
+    older.details.length > 0 &&
+    newer.actorId === older.actorId &&
+    newer.tokenId === older.tokenId &&
+    newer.entityType === older.entityType &&
+    newer.entityId === older.entityId &&
+    newer.spaceSlug === older.spaceSlug &&
+    newer.details.every((detail) => {
+      const olderDetail = olderDetails.get(detail.field);
+      return !olderDetail || olderDetail.to === detail.from;
+    }) &&
+    new Date(newer.createdAt).getTime() - new Date(older.createdAt).getTime() <=
+      COMPACT_GROUP_WINDOW_MS
+  );
+}
+
+/** Collapse adjacent autosave-like updates while retaining the full before/after range. */
+export function groupCompactActivityEntries(entries: ActivityLogEntry[]): CompactActivityGroup[] {
+  const groups: CompactActivityGroup[] = [];
+  for (const entry of entries) {
+    const group = groups.at(-1);
+    if (!group || !canGroupCompactEntries(group.entry, entry)) {
+      groups.push({ entry, count: 1 });
+      continue;
+    }
+
+    const olderDetails = new Map(entry.details.map((detail) => [detail.field, detail]));
+    const newerFields = new Set(group.entry.details.map((detail) => detail.field));
+    group.entry = {
+      ...group.entry,
+      details: [
+        ...group.entry.details.map((detail) => {
+          const olderDetail = olderDetails.get(detail.field);
+          return { ...detail, from: olderDetail ? olderDetail.from : detail.from };
+        }),
+        ...entry.details.filter((detail) => !newerFields.has(detail.field)),
+      ],
+    };
+    group.count += 1;
+  }
+  return groups;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -86,6 +144,10 @@ function humanizeField(field: string): string {
     .trim();
 }
 
+function displayDetailValue(value: string): string {
+  return value.replaceAll("&nbsp;", " ").replaceAll("\u00a0", " ");
+}
+
 // ── Sub-components ──────────────────────────────────────────────────────────
 
 const TaskLink = createLink("a");
@@ -123,7 +185,7 @@ function EntityRef({
       </SpaceLink>
     );
   }
-  return <span className="font-mono">{label}</span>;
+  return <span>{label}</span>;
 }
 
 function DetailRow({ field, from, to }: { field: string; from: string | null; to: string | null }) {
@@ -132,7 +194,7 @@ function DetailRow({ field, from, to }: { field: string; from: string | null; to
     return (
       <li>
         <span className="text-base-content/70">set {label}: </span>
-        <span className="text-base-content">{to}</span>
+        <span className="text-base-content">{displayDetailValue(to)}</span>
       </li>
     );
   }
@@ -143,7 +205,7 @@ function DetailRow({ field, from, to }: { field: string; from: string | null; to
         {from !== null && (
           <>
             <span className="text-base-content/70"> (was </span>
-            <span className="text-base-content">{from}</span>
+            <span className="text-base-content">{displayDetailValue(from)}</span>
             <span className="text-base-content/70">)</span>
           </>
         )}
@@ -153,10 +215,127 @@ function DetailRow({ field, from, to }: { field: string; from: string | null; to
   return (
     <li>
       <span className="text-base-content/70">{label}: </span>
-      <span className="line-through text-base-content/60">{from}</span>
+      <span className="line-through text-base-content/60">
+        {from === null ? null : displayDetailValue(from)}
+      </span>
       <span className="text-base-content/70"> → </span>
-      <span className="text-base-content">{to}</span>
+      <span className="text-base-content">{displayDetailValue(to)}</span>
     </li>
+  );
+}
+
+function CompactDetails({ details }: { details: ActivityLogEntry["details"] }) {
+  const [expanded, setExpanded] = useState(false);
+  const [canExpand, setCanExpand] = useState(false);
+  const contentRef = useRef<HTMLUListElement>(null);
+
+  useLayoutEffect(() => {
+    if (expanded) return;
+    const content = contentRef.current;
+    if (!content) return;
+    const measure = () => setCanExpand(content.scrollHeight > content.clientHeight + 1);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, [details, expanded]);
+
+  return (
+    <div>
+      <ul
+        ref={contentRef}
+        className={`text-base-content/70 mt-0.5 list-none space-y-0.5 text-xs ${
+          !expanded ? "line-clamp-2" : ""
+        }`}
+      >
+        {details.map((detail) => (
+          <DetailRow key={detail.field} {...detail} />
+        ))}
+      </ul>
+      {canExpand && (
+        <button
+          type="button"
+          className="text-primary mt-0.5 text-xs hover:underline"
+          onClick={() => setExpanded((value) => !value)}
+        >
+          {expanded ? "Show less" : "Show more"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function compactActionLabel(entry: ActivityLogEntry, taskContext: boolean): string {
+  if (entry.action === "updated" && entry.details.length > 0) {
+    const fields = entry.details.map((detail) => humanizeField(detail.field));
+    if (fields.length === 1) return `updated ${fields[0]}`;
+    if (fields.length === 2) return `updated ${fields[0]} and ${fields[1]}`;
+    return `updated ${fields.slice(0, -1).join(", ")}, and ${fields.at(-1)}`;
+  }
+  if (entry.action === "created") return taskContext ? "created this task" : "created";
+  if (entry.action === "deleted") return taskContext ? "deleted this task" : "deleted";
+  return ACTION_LABEL[entry.action] ?? entry.action;
+}
+
+function CompactActivityEntry({
+  group,
+  memberMap,
+  taskContext,
+  showSpace,
+}: {
+  group: CompactActivityGroup;
+  memberMap?: Map<string, ActivityMember> | undefined;
+  taskContext: boolean;
+  showSpace?: boolean | undefined;
+}) {
+  const { entry } = group;
+  return (
+    <div className="flex gap-3 py-2.5">
+      <div className="mt-0.5 shrink-0">
+        <span className="bg-base-200 flex size-7 items-center justify-center rounded-full">
+          <UserRound className="text-base-content/70 size-4" aria-hidden="true" />
+        </span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 items-baseline gap-x-1.5 text-sm">
+          <span className="text-base-content shrink-0 font-medium">
+            {actorLabel(entry, memberMap)}
+          </span>
+          <span className="text-base-content/70 min-w-0 truncate">
+            {compactActionLabel(entry, taskContext)}
+            {!taskContext && (
+              <>
+                {entry.action === "updated" ? " on " : " "}
+                <EntityRef
+                  entityType={entry.entityType}
+                  entityId={entry.entityId}
+                  spaceSlug={entry.spaceSlug}
+                />
+              </>
+            )}
+            {showSpace && (
+              <span className="text-base-content/60">
+                {" in "}
+                <SpaceLink
+                  to="/spaces/$spaceSlug"
+                  params={{ spaceSlug: entry.spaceSlug }}
+                  className="text-primary hover:underline"
+                >
+                  {entry.spaceSlug}
+                </SpaceLink>
+              </span>
+            )}
+          </span>
+          <span
+            className="text-base-content/50 shrink-0 text-xs"
+            title={new Date(entry.createdAt).toLocaleString()}
+          >
+            {formatRelativeTime(entry.createdAt)}
+          </span>
+        </div>
+        {entry.details.length > 0 && <CompactDetails details={entry.details} />}
+      </div>
+    </div>
   );
 }
 
@@ -218,9 +397,40 @@ export function ActivityFeed({
   isFetchingNextPage,
   memberMap,
   showSpace,
+  variant = "default",
 }: ActivityFeedProps) {
   if (entries.length === 0 && !hasNextPage) {
     return <div className="text-base-content/60 py-8 text-center text-sm">No activity yet.</div>;
+  }
+
+  if (variant !== "default") {
+    const groups = groupCompactActivityEntries(entries);
+    return (
+      <div>
+        <div className="divide-base-300/70 divide-y">
+          {groups.map((group) => (
+            <CompactActivityEntry
+              key={group.entry.id}
+              group={group}
+              memberMap={memberMap}
+              taskContext={variant === "task"}
+              showSpace={showSpace}
+            />
+          ))}
+        </div>
+        {hasNextPage && (
+          <div className="mt-3 flex justify-center">
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+            >
+              {isFetchingNextPage ? "Loading..." : "Load more"}
+            </button>
+          </div>
+        )}
+      </div>
+    );
   }
 
   return (
