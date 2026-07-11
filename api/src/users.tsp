@@ -6,12 +6,21 @@ using MCP;
 
 namespace Horologia;
 
+enum AppearanceMode {
+  system,
+  light,
+  dark,
+}
+
 model User {
   id: string;
   email: string;
   name: string;
   isOwner: boolean;
   hasPassword: boolean;
+  appearanceMode: AppearanceMode;
+  @minLength(1) @maxLength(100) appearanceLightTheme: string;
+  @minLength(1) @maxLength(100) appearanceDarkTheme: string;
   createdAt: utcDateTime;
   updatedAt: utcDateTime;
 }
@@ -27,6 +36,9 @@ model UserUpdate {
   @minLength(1) @maxLength(200) name?: string;
   @minLength(1) @maxLength(200) email?: string;
   isOwner?: boolean;
+  appearanceMode?: AppearanceMode;
+  @minLength(1) @maxLength(100) appearanceLightTheme?: string;
+  @minLength(1) @maxLength(100) appearanceDarkTheme?: string;
 
   // Mutually exclusive: set a new password or clear the existing one.
   @minLength(8) @maxLength(72) setPassword?: string;

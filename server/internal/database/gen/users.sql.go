@@ -26,7 +26,7 @@ func (q *Queries) CountOwners(ctx context.Context) (int64, error) {
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (email, name, password_hash, is_owner, oidc_subject, created_at, updated_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, email, name, password_hash, is_owner, oidc_subject, created_at, updated_at
+RETURNING id, email, name, password_hash, is_owner, oidc_subject, created_at, updated_at, appearance_mode, appearance_light_theme, appearance_dark_theme
 `
 
 type CreateUserParams struct {
@@ -59,6 +59,9 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.OidcSubject,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AppearanceMode,
+		&i.AppearanceLightTheme,
+		&i.AppearanceDarkTheme,
 	)
 	return i, err
 }
@@ -72,7 +75,7 @@ func (q *Queries) DeleteUser(ctx context.Context, id int64) (pgconn.CommandTag, 
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, name, password_hash, is_owner, oidc_subject, created_at, updated_at FROM users WHERE email = $1
+SELECT id, email, name, password_hash, is_owner, oidc_subject, created_at, updated_at, appearance_mode, appearance_light_theme, appearance_dark_theme FROM users WHERE email = $1
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
@@ -87,12 +90,15 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.OidcSubject,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AppearanceMode,
+		&i.AppearanceLightTheme,
+		&i.AppearanceDarkTheme,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, email, name, password_hash, is_owner, oidc_subject, created_at, updated_at FROM users WHERE id = $1
+SELECT id, email, name, password_hash, is_owner, oidc_subject, created_at, updated_at, appearance_mode, appearance_light_theme, appearance_dark_theme FROM users WHERE id = $1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
@@ -107,12 +113,15 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 		&i.OidcSubject,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AppearanceMode,
+		&i.AppearanceLightTheme,
+		&i.AppearanceDarkTheme,
 	)
 	return i, err
 }
 
 const getUserByOIDCSubject = `-- name: GetUserByOIDCSubject :one
-SELECT id, email, name, password_hash, is_owner, oidc_subject, created_at, updated_at FROM users WHERE oidc_subject = $1
+SELECT id, email, name, password_hash, is_owner, oidc_subject, created_at, updated_at, appearance_mode, appearance_light_theme, appearance_dark_theme FROM users WHERE oidc_subject = $1
 `
 
 func (q *Queries) GetUserByOIDCSubject(ctx context.Context, oidcSubject pgtype.Text) (User, error) {
@@ -127,12 +136,15 @@ func (q *Queries) GetUserByOIDCSubject(ctx context.Context, oidcSubject pgtype.T
 		&i.OidcSubject,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AppearanceMode,
+		&i.AppearanceLightTheme,
+		&i.AppearanceDarkTheme,
 	)
 	return i, err
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, email, name, password_hash, is_owner, oidc_subject, created_at, updated_at FROM users ORDER BY id ASC
+SELECT id, email, name, password_hash, is_owner, oidc_subject, created_at, updated_at, appearance_mode, appearance_light_theme, appearance_dark_theme FROM users ORDER BY id ASC
 `
 
 func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
@@ -153,6 +165,9 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 			&i.OidcSubject,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.AppearanceMode,
+			&i.AppearanceLightTheme,
+			&i.AppearanceDarkTheme,
 		); err != nil {
 			return nil, err
 		}
@@ -181,17 +196,26 @@ func (q *Queries) SetUserOIDCSubject(ctx context.Context, arg SetUserOIDCSubject
 
 const updateUser = `-- name: UpdateUser :one
 UPDATE users
-SET name = $1, email = $2, is_owner = $3, updated_at = $4
-WHERE id = $5
-RETURNING id, email, name, password_hash, is_owner, oidc_subject, created_at, updated_at
+SET name = $1,
+    email = $2,
+    is_owner = $3,
+    appearance_mode = $4,
+    appearance_light_theme = $5,
+    appearance_dark_theme = $6,
+    updated_at = $7
+WHERE id = $8
+RETURNING id, email, name, password_hash, is_owner, oidc_subject, created_at, updated_at, appearance_mode, appearance_light_theme, appearance_dark_theme
 `
 
 type UpdateUserParams struct {
-	Name      string
-	Email     string
-	IsOwner   bool
-	UpdatedAt pgtype.Timestamptz
-	ID        int64
+	Name                 string
+	Email                string
+	IsOwner              bool
+	AppearanceMode       string
+	AppearanceLightTheme string
+	AppearanceDarkTheme  string
+	UpdatedAt            pgtype.Timestamptz
+	ID                   int64
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
@@ -199,6 +223,9 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		arg.Name,
 		arg.Email,
 		arg.IsOwner,
+		arg.AppearanceMode,
+		arg.AppearanceLightTheme,
+		arg.AppearanceDarkTheme,
 		arg.UpdatedAt,
 		arg.ID,
 	)
@@ -212,6 +239,9 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.OidcSubject,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AppearanceMode,
+		&i.AppearanceLightTheme,
+		&i.AppearanceDarkTheme,
 	)
 	return i, err
 }

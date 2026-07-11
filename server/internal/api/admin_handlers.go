@@ -136,6 +136,9 @@ func (h *Handler) UsersUpdate(ctx context.Context, req *apigen.UserUpdate, param
 	newName := req.Name.Or(existing.Name)
 	newEmail := req.Email.Or(existing.Email)
 	newIsOwner := req.IsOwner.Or(existing.IsOwner)
+	newAppearanceMode := req.AppearanceMode.Or(apigen.AppearanceMode(existing.AppearanceMode))
+	newAppearanceLightTheme := req.AppearanceLightTheme.Or(existing.AppearanceLightTheme)
+	newAppearanceDarkTheme := req.AppearanceDarkTheme.Or(existing.AppearanceDarkTheme)
 
 	// Prevent demoting the last owner.
 	if existing.IsOwner && !newIsOwner {
@@ -150,11 +153,14 @@ func (h *Handler) UsersUpdate(ctx context.Context, req *apigen.UserUpdate, param
 
 	now := time.Now()
 	updated, err := q.UpdateUser(ctx, dbgen.UpdateUserParams{
-		Name:      newName,
-		Email:     newEmail,
-		IsOwner:   newIsOwner,
-		UpdatedAt: types.Timestamptz(now),
-		ID:        userID,
+		Name:                 newName,
+		Email:                newEmail,
+		IsOwner:              newIsOwner,
+		AppearanceMode:       string(newAppearanceMode),
+		AppearanceLightTheme: newAppearanceLightTheme,
+		AppearanceDarkTheme:  newAppearanceDarkTheme,
+		UpdatedAt:            types.Timestamptz(now),
+		ID:                   userID,
 	})
 	if err != nil {
 		return nil, err

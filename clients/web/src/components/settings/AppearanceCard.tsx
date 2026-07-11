@@ -1,5 +1,8 @@
 import { Check, Moon, Palette, Sun } from "lucide-react";
 import { useCallback, useEffect, useRef, type PointerEvent } from "react";
+import { toast } from "sonner";
+import type { components } from "../../api/schema.d.ts";
+import { useUserPatch } from "../../lib/mutations.ts";
 import {
   darkThemes,
   lightThemes,
@@ -9,6 +12,8 @@ import {
 } from "../../lib/theme.tsx";
 import { cx } from "../../ui/cx.ts";
 import { SettingsSection } from "../space-settings/SettingsSection.tsx";
+
+type UserUpdate = components["schemas"]["UserUpdate"];
 
 const MODES: readonly { value: ThemeMode; label: string }[] = [
   { value: "system", label: "System" },
@@ -68,9 +73,10 @@ function ThemePreview({
   );
 }
 
-export function AppearanceCard() {
+export function AppearanceCard({ userId }: { userId: string }) {
   const { preference, previewTheme, clearThemePreview, setMode, setLightTheme, setDarkTheme } =
     useTheme();
+  const updateUser = useUserPatch(userId);
   const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const cancelScheduledPreview = useCallback(() => {
@@ -101,6 +107,45 @@ export function AppearanceCard() {
     [cancelScheduledPreview, clearThemePreview],
   );
 
+  const persist = useCallback(
+    (body: UserUpdate, rollback: () => void) => {
+      updateUser.mutate(body, {
+        onError: (error) => {
+          rollback();
+          toast.error("Could not save appearance", { description: error.message });
+        },
+      });
+    },
+    [updateUser],
+  );
+
+  const selectMode = useCallback(
+    (mode: ThemeMode) => {
+      const previous = preference.mode;
+      setMode(mode);
+      persist({ appearanceMode: mode }, () => setMode(previous));
+    },
+    [persist, preference.mode, setMode],
+  );
+
+  const selectLightTheme = useCallback(
+    (theme: string) => {
+      const previous = preference.lightTheme;
+      setLightTheme(theme);
+      persist({ appearanceLightTheme: theme }, () => setLightTheme(previous));
+    },
+    [persist, preference.lightTheme, setLightTheme],
+  );
+
+  const selectDarkTheme = useCallback(
+    (theme: string) => {
+      const previous = preference.darkTheme;
+      setDarkTheme(theme);
+      persist({ appearanceDarkTheme: theme }, () => setDarkTheme(previous));
+    },
+    [persist, preference.darkTheme, setDarkTheme],
+  );
+
   return (
     <SettingsSection
       icon={<Palette className="size-5" aria-hidden="true" />}
@@ -119,7 +164,7 @@ export function AppearanceCard() {
                 preference.mode === mode.value ? "btn-primary" : "btn-ghost border-base-300",
               )}
               aria-pressed={preference.mode === mode.value}
-              onClick={() => setMode(mode.value)}
+              onClick={() => selectMode(mode.value)}
             >
               {mode.label}
             </button>
@@ -140,7 +185,7 @@ export function AppearanceCard() {
                 key={theme.name}
                 theme={theme}
                 selected={preference.lightTheme === theme.name}
-                onSelect={() => setLightTheme(theme.name)}
+                onSelect={() => selectLightTheme(theme.name)}
                 onPreview={schedulePreview}
                 onPreviewEnd={schedulePreviewEnd}
               />
@@ -161,7 +206,7 @@ export function AppearanceCard() {
                 key={theme.name}
                 theme={theme}
                 selected={preference.darkTheme === theme.name}
-                onSelect={() => setDarkTheme(theme.name)}
+                onSelect={() => selectDarkTheme(theme.name)}
                 onPreview={schedulePreview}
                 onPreviewEnd={schedulePreviewEnd}
               />

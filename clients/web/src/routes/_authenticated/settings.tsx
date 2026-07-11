@@ -40,7 +40,7 @@ function SettingsPage() {
       )}
       <TokensCard />
       <DangerZoneCard userId={user.id} email={user.email} />
-      <AppearanceCard />
+      <AppearanceCard userId={user.id} />
     </div>
   );
 }

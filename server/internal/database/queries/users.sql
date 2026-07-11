@@ -20,8 +20,14 @@ SELECT * FROM users ORDER BY id ASC;
 
 -- name: UpdateUser :one
 UPDATE users
-SET name = $1, email = $2, is_owner = $3, updated_at = $4
-WHERE id = $5
+SET name = $1,
+    email = $2,
+    is_owner = $3,
+    appearance_mode = $4,
+    appearance_light_theme = $5,
+    appearance_dark_theme = $6,
+    updated_at = $7
+WHERE id = $8
 RETURNING *;
 
 -- name: UpdateUserPasswordHash :exec

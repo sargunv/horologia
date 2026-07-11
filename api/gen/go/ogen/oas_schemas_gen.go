@@ -375,6 +375,55 @@ func (s *ApiErrorStatusCode) SetResponse(val ApiError) {
 	s.Response = val
 }
 
+// Ref: #/components/schemas/AppearanceMode
+type AppearanceMode string
+
+const (
+	AppearanceModeSystem AppearanceMode = "system"
+	AppearanceModeLight  AppearanceMode = "light"
+	AppearanceModeDark   AppearanceMode = "dark"
+)
+
+// AllValues returns all AppearanceMode values.
+func (AppearanceMode) AllValues() []AppearanceMode {
+	return []AppearanceMode{
+		AppearanceModeSystem,
+		AppearanceModeLight,
+		AppearanceModeDark,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s AppearanceMode) MarshalText() ([]byte, error) {
+	switch s {
+	case AppearanceModeSystem:
+		return []byte(s), nil
+	case AppearanceModeLight:
+		return []byte(s), nil
+	case AppearanceModeDark:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *AppearanceMode) UnmarshalText(data []byte) error {
+	switch AppearanceMode(data) {
+	case AppearanceModeSystem:
+		*s = AppearanceModeSystem
+		return nil
+	case AppearanceModeLight:
+		*s = AppearanceModeLight
+		return nil
+	case AppearanceModeDark:
+		*s = AppearanceModeDark
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/AuthConfig
 type AuthConfig struct {
 	Oidc     AuthConfigOIDC     `json:"oidc"`
@@ -995,6 +1044,52 @@ func (o NilTaskOverdueActionRule) Get() (v TaskOverdueActionRule, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilTaskOverdueActionRule) Or(d TaskOverdueActionRule) TaskOverdueActionRule {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptAppearanceMode returns new OptAppearanceMode with value set to v.
+func NewOptAppearanceMode(v AppearanceMode) OptAppearanceMode {
+	return OptAppearanceMode{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptAppearanceMode is optional AppearanceMode.
+type OptAppearanceMode struct {
+	Value AppearanceMode
+	Set   bool
+}
+
+// IsSet returns true if OptAppearanceMode was set.
+func (o OptAppearanceMode) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptAppearanceMode) Reset() {
+	var v AppearanceMode
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptAppearanceMode) SetTo(v AppearanceMode) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptAppearanceMode) Get() (v AppearanceMode, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptAppearanceMode) Or(d AppearanceMode) AppearanceMode {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -3065,13 +3160,16 @@ func (s *TaskUpdate) SetOverdueActionRule(val OptNilTaskOverdueActionRule) {
 
 // Ref: #/components/schemas/User
 type User struct {
-	ID          string    `json:"id"`
-	Email       string    `json:"email"`
-	Name        string    `json:"name"`
-	IsOwner     bool      `json:"isOwner"`
-	HasPassword bool      `json:"hasPassword"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
+	ID                   string         `json:"id"`
+	Email                string         `json:"email"`
+	Name                 string         `json:"name"`
+	IsOwner              bool           `json:"isOwner"`
+	HasPassword          bool           `json:"hasPassword"`
+	AppearanceMode       AppearanceMode `json:"appearanceMode"`
+	AppearanceLightTheme string         `json:"appearanceLightTheme"`
+	AppearanceDarkTheme  string         `json:"appearanceDarkTheme"`
+	CreatedAt            time.Time      `json:"createdAt"`
+	UpdatedAt            time.Time      `json:"updatedAt"`
 }
 
 // GetID returns the value of ID.
@@ -3097,6 +3195,21 @@ func (s *User) GetIsOwner() bool {
 // GetHasPassword returns the value of HasPassword.
 func (s *User) GetHasPassword() bool {
 	return s.HasPassword
+}
+
+// GetAppearanceMode returns the value of AppearanceMode.
+func (s *User) GetAppearanceMode() AppearanceMode {
+	return s.AppearanceMode
+}
+
+// GetAppearanceLightTheme returns the value of AppearanceLightTheme.
+func (s *User) GetAppearanceLightTheme() string {
+	return s.AppearanceLightTheme
+}
+
+// GetAppearanceDarkTheme returns the value of AppearanceDarkTheme.
+func (s *User) GetAppearanceDarkTheme() string {
+	return s.AppearanceDarkTheme
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -3132,6 +3245,21 @@ func (s *User) SetIsOwner(val bool) {
 // SetHasPassword sets the value of HasPassword.
 func (s *User) SetHasPassword(val bool) {
 	s.HasPassword = val
+}
+
+// SetAppearanceMode sets the value of AppearanceMode.
+func (s *User) SetAppearanceMode(val AppearanceMode) {
+	s.AppearanceMode = val
+}
+
+// SetAppearanceLightTheme sets the value of AppearanceLightTheme.
+func (s *User) SetAppearanceLightTheme(val string) {
+	s.AppearanceLightTheme = val
+}
+
+// SetAppearanceDarkTheme sets the value of AppearanceDarkTheme.
+func (s *User) SetAppearanceDarkTheme(val string) {
+	s.AppearanceDarkTheme = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -3209,11 +3337,14 @@ func (s *UserList) SetItems(val []User) {
 
 // Ref: #/components/schemas/UserUpdate
 type UserUpdate struct {
-	Name          OptString `json:"name"`
-	Email         OptString `json:"email"`
-	IsOwner       OptBool   `json:"isOwner"`
-	SetPassword   OptString `json:"setPassword"`
-	ClearPassword OptBool   `json:"clearPassword"`
+	Name                 OptString         `json:"name"`
+	Email                OptString         `json:"email"`
+	IsOwner              OptBool           `json:"isOwner"`
+	AppearanceMode       OptAppearanceMode `json:"appearanceMode"`
+	AppearanceLightTheme OptString         `json:"appearanceLightTheme"`
+	AppearanceDarkTheme  OptString         `json:"appearanceDarkTheme"`
+	SetPassword          OptString         `json:"setPassword"`
+	ClearPassword        OptBool           `json:"clearPassword"`
 }
 
 // GetName returns the value of Name.
@@ -3229,6 +3360,21 @@ func (s *UserUpdate) GetEmail() OptString {
 // GetIsOwner returns the value of IsOwner.
 func (s *UserUpdate) GetIsOwner() OptBool {
 	return s.IsOwner
+}
+
+// GetAppearanceMode returns the value of AppearanceMode.
+func (s *UserUpdate) GetAppearanceMode() OptAppearanceMode {
+	return s.AppearanceMode
+}
+
+// GetAppearanceLightTheme returns the value of AppearanceLightTheme.
+func (s *UserUpdate) GetAppearanceLightTheme() OptString {
+	return s.AppearanceLightTheme
+}
+
+// GetAppearanceDarkTheme returns the value of AppearanceDarkTheme.
+func (s *UserUpdate) GetAppearanceDarkTheme() OptString {
+	return s.AppearanceDarkTheme
 }
 
 // GetSetPassword returns the value of SetPassword.
@@ -3254,6 +3400,21 @@ func (s *UserUpdate) SetEmail(val OptString) {
 // SetIsOwner sets the value of IsOwner.
 func (s *UserUpdate) SetIsOwner(val OptBool) {
 	s.IsOwner = val
+}
+
+// SetAppearanceMode sets the value of AppearanceMode.
+func (s *UserUpdate) SetAppearanceMode(val OptAppearanceMode) {
+	s.AppearanceMode = val
+}
+
+// SetAppearanceLightTheme sets the value of AppearanceLightTheme.
+func (s *UserUpdate) SetAppearanceLightTheme(val OptString) {
+	s.AppearanceLightTheme = val
+}
+
+// SetAppearanceDarkTheme sets the value of AppearanceDarkTheme.
+func (s *UserUpdate) SetAppearanceDarkTheme(val OptString) {
+	s.AppearanceDarkTheme = val
 }
 
 // SetSetPassword sets the value of SetPassword.

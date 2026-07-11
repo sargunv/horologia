@@ -525,14 +525,17 @@ type TaskTag struct {
 }
 
 type User struct {
-	ID           int64
-	Email        string
-	Name         string
-	PasswordHash pgtype.Text
-	IsOwner      bool
-	OidcSubject  pgtype.Text
-	CreatedAt    pgtype.Timestamptz
-	UpdatedAt    pgtype.Timestamptz
+	ID                   int64
+	Email                string
+	Name                 string
+	PasswordHash         pgtype.Text
+	IsOwner              bool
+	OidcSubject          pgtype.Text
+	CreatedAt            pgtype.Timestamptz
+	UpdatedAt            pgtype.Timestamptz
+	AppearanceMode       string
+	AppearanceLightTheme string
+	AppearanceDarkTheme  string
 }
 
 type VisibleTask struct {

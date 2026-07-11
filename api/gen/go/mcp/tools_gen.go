@@ -339,6 +339,9 @@ func userUpdateTool() mcp.Tool {
 		mcp.WithString("name"),
 		mcp.WithString("email"),
 		mcp.WithBoolean("isOwner"),
+		mcp.WithString("appearanceMode", mcp.Enum("system", "light", "dark")),
+		mcp.WithString("appearanceLightTheme"),
+		mcp.WithString("appearanceDarkTheme"),
 		mcp.WithString("setPassword"),
 		mcp.WithBoolean("clearPassword"),
 	)
@@ -394,6 +397,48 @@ func userUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 				body.IsOwner.SetTo(convertedIsOwner)
 		} else if false {
 			return mcp.NewToolResultError("isOwner is required"), nil
+		}
+		rawAppearanceMode, hasAppearanceMode := args["appearanceMode"]
+		if hasAppearanceMode {
+			if rawAppearanceMode == nil {
+				return mcp.NewToolResultError("appearanceMode must not be null"), nil
+			}
+				vAppearanceMode, ok := rawAppearanceMode.(string)
+				if !ok {
+					return mcp.NewToolResultError("appearanceMode must be a string"), nil
+				}
+				convertedAppearanceMode := apigen.AppearanceMode(vAppearanceMode)
+				body.AppearanceMode.SetTo(convertedAppearanceMode)
+		} else if false {
+			return mcp.NewToolResultError("appearanceMode is required"), nil
+		}
+		rawAppearanceLightTheme, hasAppearanceLightTheme := args["appearanceLightTheme"]
+		if hasAppearanceLightTheme {
+			if rawAppearanceLightTheme == nil {
+				return mcp.NewToolResultError("appearanceLightTheme must not be null"), nil
+			}
+				vAppearanceLightTheme, ok := rawAppearanceLightTheme.(string)
+				if !ok {
+					return mcp.NewToolResultError("appearanceLightTheme must be a string"), nil
+				}
+				convertedAppearanceLightTheme := vAppearanceLightTheme
+				body.AppearanceLightTheme.SetTo(convertedAppearanceLightTheme)
+		} else if false {
+			return mcp.NewToolResultError("appearanceLightTheme is required"), nil
+		}
+		rawAppearanceDarkTheme, hasAppearanceDarkTheme := args["appearanceDarkTheme"]
+		if hasAppearanceDarkTheme {
+			if rawAppearanceDarkTheme == nil {
+				return mcp.NewToolResultError("appearanceDarkTheme must not be null"), nil
+			}
+				vAppearanceDarkTheme, ok := rawAppearanceDarkTheme.(string)
+				if !ok {
+					return mcp.NewToolResultError("appearanceDarkTheme must be a string"), nil
+				}
+				convertedAppearanceDarkTheme := vAppearanceDarkTheme
+				body.AppearanceDarkTheme.SetTo(convertedAppearanceDarkTheme)
+		} else if false {
+			return mcp.NewToolResultError("appearanceDarkTheme is required"), nil
 		}
 		rawSetPassword, hasSetPassword := args["setPassword"]
 		if hasSetPassword {

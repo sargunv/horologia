@@ -508,6 +508,8 @@ export interface components {
             code: string;
             message: string;
         };
+        /** @enum {string} */
+        AppearanceMode: "system" | "light" | "dark";
         AuthConfig: {
             oidc: components["schemas"]["AuthConfigOIDC"];
             password: components["schemas"]["AuthConfigPassword"];
@@ -786,6 +788,9 @@ export interface components {
             name: string;
             isOwner: boolean;
             hasPassword: boolean;
+            appearanceMode: components["schemas"]["AppearanceMode"];
+            appearanceLightTheme: string;
+            appearanceDarkTheme: string;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -804,6 +809,9 @@ export interface components {
             name?: string;
             email?: string;
             isOwner?: boolean;
+            appearanceMode?: components["schemas"]["AppearanceMode"];
+            appearanceLightTheme?: string;
+            appearanceDarkTheme?: string;
             setPassword?: string;
             clearPassword?: boolean;
         };

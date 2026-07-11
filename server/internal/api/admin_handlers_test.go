@@ -203,6 +203,24 @@ func TestUsersUpdate(t *testing.T) {
 		}
 	})
 
+	t.Run("update appearance", func(t *testing.T) {
+		resp := doRequest(t, env, "PATCH", "/users/"+userID,
+			`{"appearanceMode":"dark","appearanceLightTheme":"nord","appearanceDarkTheme":"night"}`)
+		assertStatus(t, resp, http.StatusOK)
+
+		var user map[string]any
+		readJSON(t, resp, &user)
+		if user["appearanceMode"] != "dark" {
+			t.Errorf("appearanceMode = %v, want dark", user["appearanceMode"])
+		}
+		if user["appearanceLightTheme"] != "nord" {
+			t.Errorf("appearanceLightTheme = %v, want nord", user["appearanceLightTheme"])
+		}
+		if user["appearanceDarkTheme"] != "night" {
+			t.Errorf("appearanceDarkTheme = %v, want night", user["appearanceDarkTheme"])
+		}
+	})
+
 	t.Run("promote to owner", func(t *testing.T) {
 		resp := doRequest(t, env, "PATCH", "/users/"+userID,
 			`{"isOwner":true}`)

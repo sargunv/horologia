@@ -717,6 +717,48 @@ func (s *ApiError) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes AppearanceMode as json.
+func (s AppearanceMode) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes AppearanceMode from json.
+func (s *AppearanceMode) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode AppearanceMode to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch AppearanceMode(v) {
+	case AppearanceModeSystem:
+		*s = AppearanceModeSystem
+	case AppearanceModeLight:
+		*s = AppearanceModeLight
+	case AppearanceModeDark:
+		*s = AppearanceModeDark
+	default:
+		*s = AppearanceMode(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s AppearanceMode) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *AppearanceMode) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode implements json.Marshaler.
 func (s *AuthConfig) Encode(e *jx.Encoder) {
 	e.ObjStart()
@@ -2284,6 +2326,39 @@ func (s NilTaskOverdueActionRule) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *NilTaskOverdueActionRule) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes AppearanceMode as json.
+func (o OptAppearanceMode) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes AppearanceMode from json.
+func (o *OptAppearanceMode) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptAppearanceMode to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptAppearanceMode) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptAppearanceMode) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -7457,6 +7532,18 @@ func (s *User) encodeFields(e *jx.Encoder) {
 		e.Bool(s.HasPassword)
 	}
 	{
+		e.FieldStart("appearanceMode")
+		s.AppearanceMode.Encode(e)
+	}
+	{
+		e.FieldStart("appearanceLightTheme")
+		e.Str(s.AppearanceLightTheme)
+	}
+	{
+		e.FieldStart("appearanceDarkTheme")
+		e.Str(s.AppearanceDarkTheme)
+	}
+	{
 		e.FieldStart("createdAt")
 		json.EncodeDateTime(e, s.CreatedAt)
 	}
@@ -7466,14 +7553,17 @@ func (s *User) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfUser = [7]string{
+var jsonFieldsNameOfUser = [10]string{
 	0: "id",
 	1: "email",
 	2: "name",
 	3: "isOwner",
 	4: "hasPassword",
-	5: "createdAt",
-	6: "updatedAt",
+	5: "appearanceMode",
+	6: "appearanceLightTheme",
+	7: "appearanceDarkTheme",
+	8: "createdAt",
+	9: "updatedAt",
 }
 
 // Decode decodes User from json.
@@ -7481,7 +7571,7 @@ func (s *User) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode User to nil")
 	}
-	var requiredBitSet [1]uint8
+	var requiredBitSet [2]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -7545,8 +7635,42 @@ func (s *User) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"hasPassword\"")
 			}
-		case "createdAt":
+		case "appearanceMode":
 			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				if err := s.AppearanceMode.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"appearanceMode\"")
+			}
+		case "appearanceLightTheme":
+			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				v, err := d.Str()
+				s.AppearanceLightTheme = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"appearanceLightTheme\"")
+			}
+		case "appearanceDarkTheme":
+			requiredBitSet[0] |= 1 << 7
+			if err := func() error {
+				v, err := d.Str()
+				s.AppearanceDarkTheme = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"appearanceDarkTheme\"")
+			}
+		case "createdAt":
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -7558,7 +7682,7 @@ func (s *User) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"createdAt\"")
 			}
 		case "updatedAt":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -7578,8 +7702,9 @@ func (s *User) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
-		0b01111111,
+	for i, mask := range [2]uint8{
+		0b11111111,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -7906,6 +8031,24 @@ func (s *UserUpdate) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.AppearanceMode.Set {
+			e.FieldStart("appearanceMode")
+			s.AppearanceMode.Encode(e)
+		}
+	}
+	{
+		if s.AppearanceLightTheme.Set {
+			e.FieldStart("appearanceLightTheme")
+			s.AppearanceLightTheme.Encode(e)
+		}
+	}
+	{
+		if s.AppearanceDarkTheme.Set {
+			e.FieldStart("appearanceDarkTheme")
+			s.AppearanceDarkTheme.Encode(e)
+		}
+	}
+	{
 		if s.SetPassword.Set {
 			e.FieldStart("setPassword")
 			s.SetPassword.Encode(e)
@@ -7919,12 +8062,15 @@ func (s *UserUpdate) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfUserUpdate = [5]string{
+var jsonFieldsNameOfUserUpdate = [8]string{
 	0: "name",
 	1: "email",
 	2: "isOwner",
-	3: "setPassword",
-	4: "clearPassword",
+	3: "appearanceMode",
+	4: "appearanceLightTheme",
+	5: "appearanceDarkTheme",
+	6: "setPassword",
+	7: "clearPassword",
 }
 
 // Decode decodes UserUpdate from json.
@@ -7964,6 +8110,36 @@ func (s *UserUpdate) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"isOwner\"")
+			}
+		case "appearanceMode":
+			if err := func() error {
+				s.AppearanceMode.Reset()
+				if err := s.AppearanceMode.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"appearanceMode\"")
+			}
+		case "appearanceLightTheme":
+			if err := func() error {
+				s.AppearanceLightTheme.Reset()
+				if err := s.AppearanceLightTheme.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"appearanceLightTheme\"")
+			}
+		case "appearanceDarkTheme":
+			if err := func() error {
+				s.AppearanceDarkTheme.Reset()
+				if err := s.AppearanceDarkTheme.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"appearanceDarkTheme\"")
 			}
 		case "setPassword":
 			if err := func() error {

@@ -74,6 +74,7 @@ interface ThemeContextValue {
   readonly resolvedTheme: string;
   readonly previewTheme: (theme: string) => void;
   readonly clearThemePreview: () => void;
+  readonly syncPreference: (preference: AppearancePreference) => void;
   readonly setMode: (mode: ThemeMode) => void;
   readonly setLightTheme: (theme: string) => void;
   readonly setDarkTheme: (theme: string) => void;
@@ -112,6 +113,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const clearThemePreview = useCallback(() => {
     setPreviewedTheme(null);
   }, []);
+  const syncPreference = useCallback((next: AppearancePreference) => {
+    setPreference({
+      mode: next.mode,
+      lightTheme: lightThemeNames.has(next.lightTheme)
+        ? next.lightTheme
+        : DEFAULT_PREFERENCE.lightTheme,
+      darkTheme: darkThemeNames.has(next.darkTheme) ? next.darkTheme : DEFAULT_PREFERENCE.darkTheme,
+    });
+  }, []);
 
   const setMode = useCallback((mode: ThemeMode) => {
     setPreviewedTheme(null);
@@ -135,6 +145,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       resolvedTheme: activeTheme,
       previewTheme,
       clearThemePreview,
+      syncPreference,
       setMode,
       setLightTheme,
       setDarkTheme,
@@ -145,6 +156,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       activeTheme,
       previewTheme,
       clearThemePreview,
+      syncPreference,
       setMode,
       setLightTheme,
       setDarkTheme,
