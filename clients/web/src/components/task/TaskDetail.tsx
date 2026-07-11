@@ -54,6 +54,7 @@ import {
 } from "../../ui/DropdownMenu.tsx";
 import { TagsInput } from "../../ui/TagsInput.tsx";
 import { ActivityFeed } from "../ActivityFeed.tsx";
+import { DetailPaneHeader, DETAIL_PANE_TITLE_CLASS } from "../DetailPaneHeader.tsx";
 import { FieldPill } from "../FieldPill.tsx";
 import { SearchableMenuContent } from "../SearchableMenuContent.tsx";
 import { TaskDescriptionEditor } from "../TaskDescriptionEditor.tsx";
@@ -67,15 +68,13 @@ type SpaceMember = components["schemas"]["SpaceMember"];
 
 // ─── Action Bar ─────────────────────────────────────────────────────────────
 
-function TaskActionBar({
+function TaskActions({
   spaceSlug,
   taskId,
-  breadcrumb,
   onDeleteSuccess,
 }: {
   spaceSlug: string;
   taskId: string;
-  breadcrumb: ReactNode;
   onDeleteSuccess: () => void;
 }) {
   const queryClient = useQueryClient();
@@ -112,14 +111,9 @@ function TaskActionBar({
   }
 
   return (
-    <nav aria-label="Breadcrumb" className="flex items-center gap-2">
-      {breadcrumb}
-
+    <>
       <DropdownMenuRoot>
-        <DropdownMenuTrigger
-          className="btn btn-soft btn-square btn-sm ml-auto"
-          aria-label="Task actions"
-        >
+        <DropdownMenuTrigger className="btn btn-soft btn-square btn-sm" aria-label="Task actions">
           <Ellipsis className="size-3.5" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
@@ -178,7 +172,7 @@ function TaskActionBar({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialogRoot>
-    </nav>
+    </>
   );
 }
 
@@ -238,7 +232,7 @@ function EditableTitle({
               setEditing(false);
             }
           }}
-          className="w-full border-b-2 border-primary bg-transparent text-xl font-semibold outline-none"
+          className={`w-full border-b-2 border-primary bg-transparent outline-none ${DETAIL_PANE_TITLE_CLASS}`}
           maxLength={500}
           disabled={mutation.isPending}
         />
@@ -250,7 +244,7 @@ function EditableTitle({
   return (
     <div>
       <h1
-        className="-mx-1 cursor-pointer rounded px-1 text-xl font-semibold transition-colors hover:bg-base-200"
+        className={`w-fit max-w-full cursor-pointer rounded-field transition-colors hover:bg-base-200 ${DETAIL_PANE_TITLE_CLASS}`}
         onClick={enterEditing}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
@@ -591,16 +585,14 @@ export function TaskDetailView({
 
   return (
     <div className="space-y-4">
-      {backLink}
-
-      <TaskActionBar
-        spaceSlug={spaceSlug}
-        taskId={task.id}
+      <DetailPaneHeader
+        backLink={backLink}
         breadcrumb={breadcrumb}
-        onDeleteSuccess={onDeleteSuccess}
+        actions={
+          <TaskActions spaceSlug={spaceSlug} taskId={task.id} onDeleteSuccess={onDeleteSuccess} />
+        }
+        title={<EditableTitle spaceSlug={spaceSlug} taskId={taskId} value={task.title} />}
       />
-
-      <EditableTitle spaceSlug={spaceSlug} taskId={taskId} value={task.title} />
 
       <div className="flex flex-wrap items-center gap-2">
         <StatusField

@@ -3,6 +3,10 @@ import { createFileRoute, createLink, useNavigate } from "@tanstack/react-router
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { apiClient } from "../../../../../api/client.ts";
+import {
+  DetailPaneHeader,
+  DETAIL_PANE_TITLE_CLASS,
+} from "../../../../../components/DetailPaneHeader.tsx";
 import { ErrorAlert } from "../../../../../components/space-settings/ErrorAlert.tsx";
 import { spaceQueryOptions } from "../../../../../lib/queries.ts";
 import { notifyStaleData } from "../../../../../lib/toaster.ts";
@@ -55,32 +59,38 @@ function CreateTaskPage() {
 
   return (
     <div className="space-y-4">
-      <BackLink
-        to="/spaces/$spaceSlug"
-        params={{ spaceSlug }}
-        className="text-base-content/70 hover:text-base-content inline-flex items-center gap-1 text-sm transition-colors lg:hidden"
-      >
-        <ArrowLeft className="size-4" aria-hidden="true" />
-        Back
-      </BackLink>
-
-      <ol className="flex items-center gap-1 text-sm">
-        <li>
-          <BreadcrumbLink
+      <DetailPaneHeader
+        backLink={
+          <BackLink
             to="/spaces/$spaceSlug"
             params={{ spaceSlug }}
-            className="text-base-content/70 truncate hover:underline"
+            className="text-base-content/70 hover:text-base-content inline-flex items-center gap-1 text-sm transition-colors lg:hidden"
           >
-            {space.name}
-          </BreadcrumbLink>
-        </li>
-        <li className="text-base-content/60" aria-hidden="true">
-          <ChevronRight className="size-3" />
-        </li>
-        <li className="shrink-0">New task</li>
-      </ol>
-
-      <h2 className="text-lg font-semibold">Create task</h2>
+            <ArrowLeft className="size-4" aria-hidden="true" />
+            Back to {space.name}
+          </BackLink>
+        }
+        breadcrumb={
+          <ol className="flex min-w-0 items-center gap-1 text-sm">
+            <li>
+              <BreadcrumbLink
+                to="/spaces/$spaceSlug"
+                params={{ spaceSlug }}
+                className="text-base-content/70 truncate hover:underline"
+              >
+                {space.name}
+              </BreadcrumbLink>
+            </li>
+            <li className="text-base-content/60" aria-hidden="true">
+              <ChevronRight className="size-3" />
+            </li>
+            <li className="shrink-0" aria-current="page">
+              New task
+            </li>
+          </ol>
+        }
+        title={<h1 className={DETAIL_PANE_TITLE_CLASS}>Create task</h1>}
+      />
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1">

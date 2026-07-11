@@ -1,6 +1,10 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, createLink } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ChevronRight } from "lucide-react";
+import {
+  DetailPaneHeader,
+  DETAIL_PANE_TITLE_CLASS,
+} from "../../../../components/DetailPaneHeader.tsx";
 import { DangerZoneSection } from "../../../../components/space-settings/DangerZoneSection.tsx";
 import { EffortLevelsSection } from "../../../../components/space-settings/EffortLevelsSection.tsx";
 import { GeneralSettingsSection } from "../../../../components/space-settings/GeneralSettingsSection.tsx";
@@ -28,6 +32,7 @@ export const Route = createFileRoute("/_authenticated/spaces/$spaceSlug/settings
 });
 
 const BackLink = createLink("a");
+const BreadcrumbLink = createLink("a");
 
 function SpaceSettingsPage() {
   const { spaceSlug } = Route.useParams();
@@ -43,19 +48,38 @@ function SpaceSettingsPage() {
 
   return (
     <div className="space-y-4">
-      <BackLink
-        to="/spaces/$spaceSlug"
-        params={{ spaceSlug }}
-        className="text-base-content/70 hover:text-base-content inline-flex items-center gap-1 text-sm transition-colors lg:hidden"
-      >
-        <ArrowLeft className="size-4" />
-        Back to {space.name}
-      </BackLink>
-
-      <div>
-        <h1 className="text-xl font-semibold">Space Settings</h1>
-        <p className="text-base-content/70 mt-1">Manage settings for {space.name}.</p>
-      </div>
+      <DetailPaneHeader
+        backLink={
+          <BackLink
+            to="/spaces/$spaceSlug"
+            params={{ spaceSlug }}
+            className="text-base-content/70 hover:text-base-content inline-flex items-center gap-1 text-sm transition-colors lg:hidden"
+          >
+            <ArrowLeft className="size-4" aria-hidden="true" />
+            Back to {space.name}
+          </BackLink>
+        }
+        breadcrumb={
+          <ol className="flex min-w-0 items-center gap-1 text-sm">
+            <li>
+              <BreadcrumbLink
+                to="/spaces/$spaceSlug"
+                params={{ spaceSlug }}
+                className="text-base-content/70 truncate hover:underline"
+              >
+                {space.name}
+              </BreadcrumbLink>
+            </li>
+            <li className="text-base-content/60" aria-hidden="true">
+              <ChevronRight className="size-3" />
+            </li>
+            <li className="shrink-0" aria-current="page">
+              Settings
+            </li>
+          </ol>
+        }
+        title={<h1 className={DETAIL_PANE_TITLE_CLASS}>Space settings</h1>}
+      />
 
       <div className="flex flex-col gap-4">
         <GeneralSettingsSection space={space} />
