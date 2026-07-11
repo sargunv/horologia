@@ -3455,6 +3455,7 @@ func decodeWebAuthLinkResponse(resp *http.Response) (res *AuthLinkResponseHeader
 				if err := func() error {
 					if err := h.HasParam(cfg); err == nil {
 						if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
+							wrapper.SetCookie = nil
 							return d.DecodeArray(func(d uri.Decoder) error {
 								var wrapperDotSetCookieVal string
 								if err := func() error {

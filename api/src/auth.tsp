@@ -96,21 +96,25 @@ interface WebAuth {
    */
   @post
   @route("/login")
-  login(@body body: AuthLoginRequest): {
-    @statusCode statusCode: 200;
-    @header("Set-Cookie") setCookie: string;
-    @body body: AuthLoginResponse;
-  } | ApiError;
+  login(@body body: AuthLoginRequest):
+    | {
+        @statusCode statusCode: 200;
+        @header("Set-Cookie") setCookie: string;
+        @body body: AuthLoginResponse;
+      }
+    | ApiError;
 
   /**
    * Clear the current browser session.
    */
   @post
   @route("/logout")
-  logout(): {
-    @statusCode statusCode: 204;
-    @header("Set-Cookie") setCookie: string;
-  } | ApiError;
+  logout():
+    | {
+        @statusCode statusCode: 204;
+        @header("Set-Cookie") setCookie: string;
+      }
+    | ApiError;
 
   /**
    * Read the pending OIDC account-link request created during the OIDC callback.
@@ -132,11 +136,13 @@ interface WebAuth {
    */
   @post
   @route("/link")
-  link(@body body: AuthLinkRequest): {
-    @statusCode statusCode: 200;
-    @header("Set-Cookie") setCookie: string[];
-    @body body: AuthLinkResponse;
-  } | ApiError;
+  link(@body body: AuthLinkRequest):
+    | {
+        @statusCode statusCode: 200;
+        @header("Set-Cookie") setCookie: string[];
+        @body body: AuthLinkResponse;
+      }
+    | ApiError;
 }
 
 @route("/auth")
@@ -150,10 +156,12 @@ interface Auth {
   @mcpTool("auth_token_create", "Create a new API token with a name.")
   @post
   @route("/tokens")
-  createToken(@body body: AuthTokenCreate): {
-    @statusCode statusCode: 201;
-    @body body: AuthTokenCreateResponse;
-  } | ApiError;
+  createToken(@body body: AuthTokenCreate):
+    | {
+        @statusCode statusCode: 201;
+        @body body: AuthTokenCreateResponse;
+      }
+    | ApiError;
 
   @mcpTool("auth_token_delete", "Delete an API token by ID.")
   @delete

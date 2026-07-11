@@ -38,10 +38,12 @@ interface SpaceTags {
     @path spaceSlug: string,
 
     @body body: TagCreate,
-  ): {
-    @statusCode statusCode: 201;
-    @body body: Tag;
-  } | ApiError;
+  ):
+    | {
+        @statusCode statusCode: 201;
+        @body body: Tag;
+      }
+    | ApiError;
 
   @mcpTool("tag_update", "Rename a tag. Obtain tag names from tag_list.")
   @patch

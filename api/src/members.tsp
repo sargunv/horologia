@@ -53,10 +53,12 @@ interface SpaceMembers {
     @path spaceSlug: string,
 
     @body body: SpaceMemberCreate,
-  ): {
-    @statusCode statusCode: 201;
-    @body body: SpaceMember;
-  } | ApiError;
+  ):
+    | {
+        @statusCode statusCode: 201;
+        @body body: SpaceMember;
+      }
+    | ApiError;
 
   @mcpTool(
     "member_update",

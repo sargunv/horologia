@@ -177,10 +177,12 @@ interface SpaceTasks {
     @path spaceSlug: string,
 
     @body body: TaskCreate,
-  ): {
-    @statusCode statusCode: 201;
-    @body body: Task;
-  } | ApiError;
+  ):
+    | {
+        @statusCode statusCode: 201;
+        @body body: Task;
+      }
+    | ApiError;
 
   @mcpTool("task_get", "Get a task by ID. Obtain task IDs from task_list.")
   @get
@@ -258,10 +260,12 @@ interface SpaceTaskRelations {
     @path taskId: string,
 
     @body body: TaskRelationCreate,
-  ): {
-    @statusCode statusCode: 201;
-    @body body: TaskRelation;
-  } | ApiError;
+  ):
+    | {
+        @statusCode statusCode: 201;
+        @body body: TaskRelation;
+      }
+    | ApiError;
 
   @mcpTool(
     "relation_delete",

@@ -62,10 +62,12 @@ interface Users {
     "Create a new user with name, email, and optional password."
   )
   @post
-  create(@body body: UserCreate): {
-    @statusCode statusCode: 201;
-    @body body: User;
-  } | ApiError;
+  create(@body body: UserCreate):
+    | {
+        @statusCode statusCode: 201;
+        @body body: User;
+      }
+    | ApiError;
 
   @mcpTool(
     "user_update",

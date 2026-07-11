@@ -17,7 +17,6 @@ import (
 func encodeAuthCreateTokenResponse(response *AuthTokenCreateResponse, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
-	span.SetStatus(codes.Ok, http.StatusText(201))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -30,7 +29,6 @@ func encodeAuthCreateTokenResponse(response *AuthTokenCreateResponse, w http.Res
 
 func encodeAuthDeleteTokenResponse(response *AuthDeleteTokenNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
-	span.SetStatus(codes.Ok, http.StatusText(204))
 
 	return nil
 }
@@ -38,7 +36,6 @@ func encodeAuthDeleteTokenResponse(response *AuthDeleteTokenNoContent, w http.Re
 func encodeAuthListTokensResponse(response *AuthTokenList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -52,7 +49,6 @@ func encodeAuthListTokensResponse(response *AuthTokenList, w http.ResponseWriter
 func encodeSpaceActivityListResponse(response *ActivityLogPage, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -66,7 +62,6 @@ func encodeSpaceActivityListResponse(response *ActivityLogPage, w http.ResponseW
 func encodeSpaceMembersCreateResponse(response *SpaceMember, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
-	span.SetStatus(codes.Ok, http.StatusText(201))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -79,7 +74,6 @@ func encodeSpaceMembersCreateResponse(response *SpaceMember, w http.ResponseWrit
 
 func encodeSpaceMembersDeleteResponse(response *SpaceMembersDeleteNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
-	span.SetStatus(codes.Ok, http.StatusText(204))
 
 	return nil
 }
@@ -87,7 +81,6 @@ func encodeSpaceMembersDeleteResponse(response *SpaceMembersDeleteNoContent, w h
 func encodeSpaceMembersListResponse(response *SpaceMemberList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -101,7 +94,6 @@ func encodeSpaceMembersListResponse(response *SpaceMemberList, w http.ResponseWr
 func encodeSpaceMembersUpdateResponse(response *SpaceMember, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -115,7 +107,6 @@ func encodeSpaceMembersUpdateResponse(response *SpaceMember, w http.ResponseWrit
 func encodeSpaceTagsCreateResponse(response *Tag, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
-	span.SetStatus(codes.Ok, http.StatusText(201))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -128,7 +119,6 @@ func encodeSpaceTagsCreateResponse(response *Tag, w http.ResponseWriter, span tr
 
 func encodeSpaceTagsDeleteResponse(response *SpaceTagsDeleteNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
-	span.SetStatus(codes.Ok, http.StatusText(204))
 
 	return nil
 }
@@ -136,7 +126,6 @@ func encodeSpaceTagsDeleteResponse(response *SpaceTagsDeleteNoContent, w http.Re
 func encodeSpaceTagsListResponse(response *TagList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -150,7 +139,6 @@ func encodeSpaceTagsListResponse(response *TagList, w http.ResponseWriter, span 
 func encodeSpaceTagsUpdateResponse(response *Tag, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -164,7 +152,6 @@ func encodeSpaceTagsUpdateResponse(response *Tag, w http.ResponseWriter, span tr
 func encodeSpaceTaskActivityListResponse(response *ActivityLogPage, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -178,7 +165,6 @@ func encodeSpaceTaskActivityListResponse(response *ActivityLogPage, w http.Respo
 func encodeSpaceTaskEffortLevelsListResponse(response *TaskEffortLevelList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -192,7 +178,6 @@ func encodeSpaceTaskEffortLevelsListResponse(response *TaskEffortLevelList, w ht
 func encodeSpaceTaskEffortLevelsReplaceResponse(response *TaskEffortLevelList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -206,7 +191,6 @@ func encodeSpaceTaskEffortLevelsReplaceResponse(response *TaskEffortLevelList, w
 func encodeSpaceTaskPriorityLevelsListResponse(response *TaskPriorityLevelList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -220,7 +204,6 @@ func encodeSpaceTaskPriorityLevelsListResponse(response *TaskPriorityLevelList, 
 func encodeSpaceTaskPriorityLevelsReplaceResponse(response *TaskPriorityLevelList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -234,7 +217,6 @@ func encodeSpaceTaskPriorityLevelsReplaceResponse(response *TaskPriorityLevelLis
 func encodeSpaceTaskRelationsCreateResponse(response *TaskRelation, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
-	span.SetStatus(codes.Ok, http.StatusText(201))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -247,7 +229,6 @@ func encodeSpaceTaskRelationsCreateResponse(response *TaskRelation, w http.Respo
 
 func encodeSpaceTaskRelationsDeleteResponse(response *SpaceTaskRelationsDeleteNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
-	span.SetStatus(codes.Ok, http.StatusText(204))
 
 	return nil
 }
@@ -255,7 +236,6 @@ func encodeSpaceTaskRelationsDeleteResponse(response *SpaceTaskRelationsDeleteNo
 func encodeSpaceTaskStatusesListResponse(response *TaskStatusList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -269,7 +249,6 @@ func encodeSpaceTaskStatusesListResponse(response *TaskStatusList, w http.Respon
 func encodeSpaceTaskStatusesReplaceResponse(response *TaskStatusList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -283,7 +262,6 @@ func encodeSpaceTaskStatusesReplaceResponse(response *TaskStatusList, w http.Res
 func encodeSpaceTasksCreateResponse(response *Task, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
-	span.SetStatus(codes.Ok, http.StatusText(201))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -296,7 +274,6 @@ func encodeSpaceTasksCreateResponse(response *Task, w http.ResponseWriter, span 
 
 func encodeSpaceTasksDeleteResponse(response *SpaceTasksDeleteNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
-	span.SetStatus(codes.Ok, http.StatusText(204))
 
 	return nil
 }
@@ -304,7 +281,6 @@ func encodeSpaceTasksDeleteResponse(response *SpaceTasksDeleteNoContent, w http.
 func encodeSpaceTasksListResponse(response *TaskPage, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -318,7 +294,6 @@ func encodeSpaceTasksListResponse(response *TaskPage, w http.ResponseWriter, spa
 func encodeSpaceTasksReadResponse(response *Task, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -332,7 +307,6 @@ func encodeSpaceTasksReadResponse(response *Task, w http.ResponseWriter, span tr
 func encodeSpaceTasksUpdateResponse(response *Task, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -346,7 +320,6 @@ func encodeSpaceTasksUpdateResponse(response *Task, w http.ResponseWriter, span 
 func encodeSpacesCreateResponse(response *Space, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
-	span.SetStatus(codes.Ok, http.StatusText(201))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -359,7 +332,6 @@ func encodeSpacesCreateResponse(response *Space, w http.ResponseWriter, span tra
 
 func encodeSpacesDeleteResponse(response *SpacesDeleteNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
-	span.SetStatus(codes.Ok, http.StatusText(204))
 
 	return nil
 }
@@ -367,7 +339,6 @@ func encodeSpacesDeleteResponse(response *SpacesDeleteNoContent, w http.Response
 func encodeSpacesListResponse(response *SpaceList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -381,7 +352,6 @@ func encodeSpacesListResponse(response *SpaceList, w http.ResponseWriter, span t
 func encodeSpacesReadResponse(response *Space, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -395,7 +365,6 @@ func encodeSpacesReadResponse(response *Space, w http.ResponseWriter, span trace
 func encodeSpacesUpdateResponse(response *Space, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -409,7 +378,6 @@ func encodeSpacesUpdateResponse(response *Space, w http.ResponseWriter, span tra
 func encodeTasksSearchResponse(response *TaskSearchResultList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -423,7 +391,6 @@ func encodeTasksSearchResponse(response *TaskSearchResultList, w http.ResponseWr
 func encodeUserActivityListResponse(response *ActivityLogPage, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -437,7 +404,6 @@ func encodeUserActivityListResponse(response *ActivityLogPage, w http.ResponseWr
 func encodeUserTasksListResponse(response *TaskPage, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -451,7 +417,6 @@ func encodeUserTasksListResponse(response *TaskPage, w http.ResponseWriter, span
 func encodeUsersCreateResponse(response *User, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
-	span.SetStatus(codes.Ok, http.StatusText(201))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -464,7 +429,6 @@ func encodeUsersCreateResponse(response *User, w http.ResponseWriter, span trace
 
 func encodeUsersDeleteResponse(response *UsersDeleteNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
-	span.SetStatus(codes.Ok, http.StatusText(204))
 
 	return nil
 }
@@ -472,7 +436,6 @@ func encodeUsersDeleteResponse(response *UsersDeleteNoContent, w http.ResponseWr
 func encodeUsersGetResponse(response *User, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -486,7 +449,6 @@ func encodeUsersGetResponse(response *User, w http.ResponseWriter, span trace.Sp
 func encodeUsersListResponse(response *UserList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -500,7 +462,6 @@ func encodeUsersListResponse(response *UserList, w http.ResponseWriter, span tra
 func encodeUsersMeResponse(response *User, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -514,7 +475,6 @@ func encodeUsersMeResponse(response *User, w http.ResponseWriter, span trace.Spa
 func encodeUsersUpdateResponse(response *User, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -528,7 +488,6 @@ func encodeUsersUpdateResponse(response *User, w http.ResponseWriter, span trace
 func encodeWebAuthConfigResponse(response *AuthConfig, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -568,7 +527,6 @@ func encodeWebAuthLinkResponse(response *AuthLinkResponseHeaders, w http.Respons
 		}
 	}
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Response.Encode(e)
@@ -582,7 +540,6 @@ func encodeWebAuthLinkResponse(response *AuthLinkResponseHeaders, w http.Respons
 func encodeWebAuthLinkPendingResponse(response *AuthLinkPendingResponse, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -613,7 +570,6 @@ func encodeWebAuthLoginResponse(response *AuthLoginResponseHeaders, w http.Respo
 		}
 	}
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Response.Encode(e)
@@ -643,7 +599,6 @@ func encodeWebAuthLogoutResponse(response *WebAuthLogoutNoContent, w http.Respon
 		}
 	}
 	w.WriteHeader(204)
-	span.SetStatus(codes.Ok, http.StatusText(204))
 
 	return nil
 }
@@ -656,10 +611,8 @@ func encodeErrorResponse(response *ApiErrorStatusCode, w http.ResponseWriter, sp
 		code = http.StatusOK
 	}
 	w.WriteHeader(code)
-	if st := http.StatusText(code); code >= http.StatusBadRequest {
-		span.SetStatus(codes.Error, st)
-	} else {
-		span.SetStatus(codes.Ok, st)
+	if code >= http.StatusInternalServerError {
+		span.SetStatus(codes.Error, http.StatusText(code))
 	}
 
 	e := new(jx.Encoder)

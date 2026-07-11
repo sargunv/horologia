@@ -52,10 +52,12 @@ interface Spaces {
     "Create a new space with a slug, name, and optional description."
   )
   @post
-  create(@body body: SpaceCreate): {
-    @statusCode statusCode: 201;
-    @body body: Space;
-  } | ApiError;
+  create(@body body: SpaceCreate):
+    | {
+        @statusCode statusCode: 201;
+        @body body: Space;
+      }
+    | ApiError;
 
   @mcpTool("space_get", "Get a space by slug.")
   @get

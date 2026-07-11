@@ -4,6 +4,7 @@ package gen
 
 import (
 	"context"
+	"io"
 	"net/url"
 	"strings"
 	"time"
@@ -197,9 +198,9 @@ type Invoker interface {
 	// WebAuthLink invokes WebAuth_link operation.
 	//
 	// Confirm OIDC account linking using the existing account password.
-	// This endpoint relies on the temporary `horologia_oidc_link` cookie issued
-	// during the OIDC callback. On success it creates the normal
-	// `horologia_session` cookie and clears the pending link cookie. This
+	//
+	// This endpoint relies on the temporary `horologia_oidc_link` cookie issued during the OIDC callback.
+	// On success it creates the normal `horologia_session` cookie and clears the pending link cookie. This
 	// endpoint is only available when OIDC link consent is enabled.
 	//
 	// POST /app/auth/link
@@ -207,16 +208,18 @@ type Invoker interface {
 	// WebAuthLinkPending invokes WebAuth_linkPending operation.
 	//
 	// Read the pending OIDC account-link request created during the OIDC callback.
-	// This endpoint relies on the temporary `horologia_oidc_link` cookie and is
-	// only available when OIDC link consent is enabled.
+	//
+	// This endpoint relies on the temporary `horologia_oidc_link` cookie and is only available when OIDC
+	// link consent is enabled.
 	//
 	// GET /app/auth/link/pending
 	WebAuthLinkPending(ctx context.Context) (*AuthLinkPendingResponse, error)
 	// WebAuthLogin invokes WebAuth_login operation.
 	//
 	// Log in with email and password.
-	// Returns the authenticated user and sets the `horologia_session` cookie on
-	// success. This endpoint is only available when password auth is enabled.
+	//
+	// Returns the authenticated user and sets the `horologia_session` cookie on success. This endpoint is
+	// only available when password auth is enabled.
 	//
 	// POST /app/auth/login
 	WebAuthLogin(ctx context.Context, request *AuthLoginRequest) (*AuthLoginResponseHeaders, error)
@@ -366,7 +369,13 @@ func (c *Client) sendAuthCreateToken(ctx context.Context, request *AuthTokenCrea
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeAuthCreateTokenResponse(resp)
@@ -489,7 +498,13 @@ func (c *Client) sendAuthDeleteToken(ctx context.Context, params AuthDeleteToken
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeAuthDeleteTokenResponse(resp)
@@ -594,7 +609,13 @@ func (c *Client) sendAuthListTokens(ctx context.Context) (res *AuthTokenList, er
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeAuthListTokensResponse(resp)
@@ -756,7 +777,13 @@ func (c *Client) sendSpaceActivityList(ctx context.Context, params SpaceActivity
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpaceActivityListResponse(resp)
@@ -883,7 +910,13 @@ func (c *Client) sendSpaceMembersCreate(ctx context.Context, request *SpaceMembe
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpaceMembersCreateResponse(resp)
@@ -1025,7 +1058,13 @@ func (c *Client) sendSpaceMembersDelete(ctx context.Context, params SpaceMembers
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpaceMembersDeleteResponse(resp)
@@ -1149,7 +1188,13 @@ func (c *Client) sendSpaceMembersList(ctx context.Context, params SpaceMembersLi
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpaceMembersListResponse(resp)
@@ -1294,7 +1339,13 @@ func (c *Client) sendSpaceMembersUpdate(ctx context.Context, request *SpaceMembe
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpaceMembersUpdateResponse(resp)
@@ -1421,7 +1472,13 @@ func (c *Client) sendSpaceTagsCreate(ctx context.Context, request *TagCreate, pa
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpaceTagsCreateResponse(resp)
@@ -1563,7 +1620,13 @@ func (c *Client) sendSpaceTagsDelete(ctx context.Context, params SpaceTagsDelete
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpaceTagsDeleteResponse(resp)
@@ -1687,7 +1750,13 @@ func (c *Client) sendSpaceTagsList(ctx context.Context, params SpaceTagsListPara
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpaceTagsListResponse(resp)
@@ -1832,7 +1901,13 @@ func (c *Client) sendSpaceTagsUpdate(ctx context.Context, request *TagUpdate, pa
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpaceTagsUpdateResponse(resp)
@@ -2013,7 +2088,13 @@ func (c *Client) sendSpaceTaskActivityList(ctx context.Context, params SpaceTask
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpaceTaskActivityListResponse(resp)
@@ -2137,7 +2218,13 @@ func (c *Client) sendSpaceTaskEffortLevelsList(ctx context.Context, params Space
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpaceTaskEffortLevelsListResponse(resp)
@@ -2264,7 +2351,13 @@ func (c *Client) sendSpaceTaskEffortLevelsReplace(ctx context.Context, request *
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpaceTaskEffortLevelsReplaceResponse(resp)
@@ -2388,7 +2481,13 @@ func (c *Client) sendSpaceTaskPriorityLevelsList(ctx context.Context, params Spa
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpaceTaskPriorityLevelsListResponse(resp)
@@ -2515,7 +2614,13 @@ func (c *Client) sendSpaceTaskPriorityLevelsReplace(ctx context.Context, request
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpaceTaskPriorityLevelsReplaceResponse(resp)
@@ -2661,7 +2766,13 @@ func (c *Client) sendSpaceTaskRelationsCreate(ctx context.Context, request *Task
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpaceTaskRelationsCreateResponse(resp)
@@ -2841,7 +2952,13 @@ func (c *Client) sendSpaceTaskRelationsDelete(ctx context.Context, params SpaceT
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpaceTaskRelationsDeleteResponse(resp)
@@ -2965,7 +3082,13 @@ func (c *Client) sendSpaceTaskStatusesList(ctx context.Context, params SpaceTask
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpaceTaskStatusesListResponse(resp)
@@ -3092,7 +3215,13 @@ func (c *Client) sendSpaceTaskStatusesReplace(ctx context.Context, request *Task
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpaceTaskStatusesReplaceResponse(resp)
@@ -3219,7 +3348,13 @@ func (c *Client) sendSpaceTasksCreate(ctx context.Context, request *TaskCreate, 
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpaceTasksCreateResponse(resp)
@@ -3361,7 +3496,13 @@ func (c *Client) sendSpaceTasksDelete(ctx context.Context, params SpaceTasksDele
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpaceTasksDeleteResponse(resp)
@@ -3523,7 +3664,13 @@ func (c *Client) sendSpaceTasksList(ctx context.Context, params SpaceTasksListPa
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpaceTasksListResponse(resp)
@@ -3665,7 +3812,13 @@ func (c *Client) sendSpaceTasksRead(ctx context.Context, params SpaceTasksReadPa
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpaceTasksReadResponse(resp)
@@ -3810,7 +3963,13 @@ func (c *Client) sendSpaceTasksUpdate(ctx context.Context, request *TaskUpdate, 
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpaceTasksUpdateResponse(resp)
@@ -3918,7 +4077,13 @@ func (c *Client) sendSpacesCreate(ctx context.Context, request *SpaceCreate) (re
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpacesCreateResponse(resp)
@@ -4041,7 +4206,13 @@ func (c *Client) sendSpacesDelete(ctx context.Context, params SpacesDeleteParams
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpacesDeleteResponse(resp)
@@ -4146,7 +4317,13 @@ func (c *Client) sendSpacesList(ctx context.Context) (res *SpaceList, err error)
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpacesListResponse(resp)
@@ -4269,7 +4446,13 @@ func (c *Client) sendSpacesRead(ctx context.Context, params SpacesReadParams) (r
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpacesReadResponse(resp)
@@ -4395,7 +4578,13 @@ func (c *Client) sendSpacesUpdate(ctx context.Context, request *SpaceUpdate, par
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeSpacesUpdateResponse(resp)
@@ -4569,7 +4758,13 @@ func (c *Client) sendTasksSearch(ctx context.Context, params TasksSearchParams) 
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeTasksSearchResponse(resp)
@@ -4731,7 +4926,13 @@ func (c *Client) sendUserActivityList(ctx context.Context, params UserActivityLi
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeUserActivityListResponse(resp)
@@ -4893,7 +5094,13 @@ func (c *Client) sendUserTasksList(ctx context.Context, params UserTasksListPara
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeUserTasksListResponse(resp)
@@ -5001,7 +5208,13 @@ func (c *Client) sendUsersCreate(ctx context.Context, request *UserCreate) (res 
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeUsersCreateResponse(resp)
@@ -5124,7 +5337,13 @@ func (c *Client) sendUsersDelete(ctx context.Context, params UsersDeleteParams) 
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeUsersDeleteResponse(resp)
@@ -5247,7 +5466,13 @@ func (c *Client) sendUsersGet(ctx context.Context, params UsersGetParams) (res *
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeUsersGetResponse(resp)
@@ -5352,7 +5577,13 @@ func (c *Client) sendUsersList(ctx context.Context) (res *UserList, err error) {
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeUsersListResponse(resp)
@@ -5457,7 +5688,13 @@ func (c *Client) sendUsersMe(ctx context.Context) (res *User, err error) {
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeUsersMeResponse(resp)
@@ -5583,7 +5820,13 @@ func (c *Client) sendUsersUpdate(ctx context.Context, request *UserUpdate, param
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeUsersUpdateResponse(resp)
@@ -5657,7 +5900,13 @@ func (c *Client) sendWebAuthConfig(ctx context.Context) (res *AuthConfig, err er
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeWebAuthConfigResponse(resp)
@@ -5671,9 +5920,9 @@ func (c *Client) sendWebAuthConfig(ctx context.Context) (res *AuthConfig, err er
 // WebAuthLink invokes WebAuth_link operation.
 //
 // Confirm OIDC account linking using the existing account password.
-// This endpoint relies on the temporary `horologia_oidc_link` cookie issued
-// during the OIDC callback. On success it creates the normal
-// `horologia_session` cookie and clears the pending link cookie. This
+//
+// This endpoint relies on the temporary `horologia_oidc_link` cookie issued during the OIDC callback.
+// On success it creates the normal `horologia_session` cookie and clears the pending link cookie. This
 // endpoint is only available when OIDC link consent is enabled.
 //
 // POST /app/auth/link
@@ -5738,7 +5987,13 @@ func (c *Client) sendWebAuthLink(ctx context.Context, request *AuthLinkRequest) 
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeWebAuthLinkResponse(resp)
@@ -5752,8 +6007,9 @@ func (c *Client) sendWebAuthLink(ctx context.Context, request *AuthLinkRequest) 
 // WebAuthLinkPending invokes WebAuth_linkPending operation.
 //
 // Read the pending OIDC account-link request created during the OIDC callback.
-// This endpoint relies on the temporary `horologia_oidc_link` cookie and is
-// only available when OIDC link consent is enabled.
+//
+// This endpoint relies on the temporary `horologia_oidc_link` cookie and is only available when OIDC
+// link consent is enabled.
 //
 // GET /app/auth/link/pending
 func (c *Client) WebAuthLinkPending(ctx context.Context) (*AuthLinkPendingResponse, error) {
@@ -5814,7 +6070,13 @@ func (c *Client) sendWebAuthLinkPending(ctx context.Context) (res *AuthLinkPendi
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeWebAuthLinkPendingResponse(resp)
@@ -5828,8 +6090,9 @@ func (c *Client) sendWebAuthLinkPending(ctx context.Context) (res *AuthLinkPendi
 // WebAuthLogin invokes WebAuth_login operation.
 //
 // Log in with email and password.
-// Returns the authenticated user and sets the `horologia_session` cookie on
-// success. This endpoint is only available when password auth is enabled.
+//
+// Returns the authenticated user and sets the `horologia_session` cookie on success. This endpoint is
+// only available when password auth is enabled.
 //
 // POST /app/auth/login
 func (c *Client) WebAuthLogin(ctx context.Context, request *AuthLoginRequest) (*AuthLoginResponseHeaders, error) {
@@ -5893,7 +6156,13 @@ func (c *Client) sendWebAuthLogin(ctx context.Context, request *AuthLoginRequest
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeWebAuthLoginResponse(resp)
@@ -5967,7 +6236,13 @@ func (c *Client) sendWebAuthLogout(ctx context.Context) (res *WebAuthLogoutNoCon
 		return res, errors.Wrap(err, "do request")
 	}
 	body := resp.Body
-	defer body.Close()
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
 
 	stage = "DecodeResponse"
 	result, err := decodeWebAuthLogoutResponse(resp)

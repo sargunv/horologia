@@ -177,9 +177,9 @@ type Handler interface {
 	// WebAuthLink implements WebAuth_link operation.
 	//
 	// Confirm OIDC account linking using the existing account password.
-	// This endpoint relies on the temporary `horologia_oidc_link` cookie issued
-	// during the OIDC callback. On success it creates the normal
-	// `horologia_session` cookie and clears the pending link cookie. This
+	//
+	// This endpoint relies on the temporary `horologia_oidc_link` cookie issued during the OIDC callback.
+	// On success it creates the normal `horologia_session` cookie and clears the pending link cookie. This
 	// endpoint is only available when OIDC link consent is enabled.
 	//
 	// POST /app/auth/link
@@ -187,16 +187,18 @@ type Handler interface {
 	// WebAuthLinkPending implements WebAuth_linkPending operation.
 	//
 	// Read the pending OIDC account-link request created during the OIDC callback.
-	// This endpoint relies on the temporary `horologia_oidc_link` cookie and is
-	// only available when OIDC link consent is enabled.
+	//
+	// This endpoint relies on the temporary `horologia_oidc_link` cookie and is only available when OIDC
+	// link consent is enabled.
 	//
 	// GET /app/auth/link/pending
 	WebAuthLinkPending(ctx context.Context) (*AuthLinkPendingResponse, error)
 	// WebAuthLogin implements WebAuth_login operation.
 	//
 	// Log in with email and password.
-	// Returns the authenticated user and sets the `horologia_session` cookie on
-	// success. This endpoint is only available when password auth is enabled.
+	//
+	// Returns the authenticated user and sets the `horologia_session` cookie on success. This endpoint is
+	// only available when password auth is enabled.
 	//
 	// POST /app/auth/login
 	WebAuthLogin(ctx context.Context, req *AuthLoginRequest) (*AuthLoginResponseHeaders, error)

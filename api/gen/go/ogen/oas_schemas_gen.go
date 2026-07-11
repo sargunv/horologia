@@ -1137,6 +1137,11 @@ func (o *OptNilString) SetToNull() {
 	o.Value = v
 }
 
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilString) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
 // Get returns value and boolean that denotes whether value was set.
 func (o OptNilString) Get() (v string, ok bool) {
 	if o.Null {
@@ -1200,6 +1205,11 @@ func (o *OptNilTaskDue) SetToNull() {
 	o.Value = v
 }
 
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilTaskDue) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
 // Get returns value and boolean that denotes whether value was set.
 func (o OptNilTaskDue) Get() (v TaskDue, ok bool) {
 	if o.Null {
@@ -1261,6 +1271,11 @@ func (o *OptNilTaskOverdueActionRule) SetToNull() {
 	o.Null = true
 	var v TaskOverdueActionRule
 	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilTaskOverdueActionRule) IsEmpty() bool {
+	return !o.Set && !o.Null
 }
 
 // Get returns value and boolean that denotes whether value was set.
@@ -2289,8 +2304,8 @@ func (s *TaskOverdueAction) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/TaskOverdueActionRule
 type TaskOverdueActionRule struct {
-	// Grace period in days after the due date before the action fires.
-	// null means act immediately when the task becomes overdue.
+	// Grace period in days after the due date before the action fires. null means act immediately when the
+	// task becomes overdue.
 	After  NilInt32          `json:"after"`
 	Action TaskOverdueAction `json:"action"`
 	// Required when action is set_status; the status name to transition to.
