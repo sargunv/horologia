@@ -4,12 +4,8 @@
 #MISE tools={"aqua:nushell/nushell"="latest"}
 #USAGE flag "--dry-run" help="Compute and confirm the next release tag without creating or pushing it"
 
-def run [cmd: string, ...args: string] {
-  ^$cmd ...$args | complete
-}
-
 def run-checked [cmd: string, ...args: string] {
-  let result = (run $cmd ...$args)
+  let result = (^$cmd ...$args | complete)
   if $result.exit_code != 0 {
     error make {msg: $"command failed: ($cmd) ($args | str join ' ')"}
   }
@@ -73,7 +69,7 @@ def main [--dry-run] {
   print $"Commit: ($commit)"
   print $"Tag:    ($tag)"
 
-  let answer = (input $"Create and push release tag ($tag)? [y/N] " | str trim | str downcase)
+  let answer = (input $"Create and push release tag ($tag)? [y/N] " | str trim | str lowercase)
   if $answer not-in ["y" "yes"] {
     error make {msg: "release cancelled"}
   }
