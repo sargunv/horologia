@@ -26,6 +26,8 @@ func (s ActivityEntityType) Validate() error {
 	switch s {
 	case "task":
 		return nil
+	case "recipe":
+		return nil
 	case "space":
 		return nil
 	case "member":

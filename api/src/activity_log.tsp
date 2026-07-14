@@ -8,6 +8,7 @@ namespace Horologia;
 
 enum ActivityEntityType {
   task,
+  recipe,
   space,
   member,
   tag,

@@ -199,6 +199,8 @@ func (s *ActivityEntityType) Decode(d *jx.Decoder) error {
 	switch ActivityEntityType(v) {
 	case ActivityEntityTypeTask:
 		*s = ActivityEntityTypeTask
+	case ActivityEntityTypeRecipe:
+		*s = ActivityEntityTypeRecipe
 	case ActivityEntityTypeSpace:
 		*s = ActivityEntityTypeSpace
 	case ActivityEntityTypeMember:

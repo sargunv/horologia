@@ -1321,6 +1321,7 @@ components:
       type: string
       enum:
         - task
+        - recipe
         - space
         - member
         - tag

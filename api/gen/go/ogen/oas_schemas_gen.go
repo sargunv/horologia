@@ -104,6 +104,7 @@ type ActivityEntityType string
 
 const (
 	ActivityEntityTypeTask          ActivityEntityType = "task"
+	ActivityEntityTypeRecipe        ActivityEntityType = "recipe"
 	ActivityEntityTypeSpace         ActivityEntityType = "space"
 	ActivityEntityTypeMember        ActivityEntityType = "member"
 	ActivityEntityTypeTag           ActivityEntityType = "tag"
@@ -117,6 +118,7 @@ const (
 func (ActivityEntityType) AllValues() []ActivityEntityType {
 	return []ActivityEntityType{
 		ActivityEntityTypeTask,
+		ActivityEntityTypeRecipe,
 		ActivityEntityTypeSpace,
 		ActivityEntityTypeMember,
 		ActivityEntityTypeTag,
@@ -131,6 +133,8 @@ func (ActivityEntityType) AllValues() []ActivityEntityType {
 func (s ActivityEntityType) MarshalText() ([]byte, error) {
 	switch s {
 	case ActivityEntityTypeTask:
+		return []byte(s), nil
+	case ActivityEntityTypeRecipe:
 		return []byte(s), nil
 	case ActivityEntityTypeSpace:
 		return []byte(s), nil
@@ -156,6 +160,9 @@ func (s *ActivityEntityType) UnmarshalText(data []byte) error {
 	switch ActivityEntityType(data) {
 	case ActivityEntityTypeTask:
 		*s = ActivityEntityTypeTask
+		return nil
+	case ActivityEntityTypeRecipe:
+		*s = ActivityEntityTypeRecipe
 		return nil
 	case ActivityEntityTypeSpace:
 		*s = ActivityEntityTypeSpace

@@ -66,6 +66,7 @@ const (
 	ActivityEntityTypePriorityLevel ActivityEntityType = "priority_level"
 	ActivityEntityTypeRelation      ActivityEntityType = "relation"
 	ActivityEntityTypeUser          ActivityEntityType = "user"
+	ActivityEntityTypeRecipe        ActivityEntityType = "recipe"
 )
 
 func (e *ActivityEntityType) Scan(src interface{}) error {
@@ -430,6 +431,61 @@ type OauthConsentGrant struct {
 	Scopes    []string
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
+}
+
+type Recipe struct {
+	ID          int64
+	SpaceSlug   string
+	Name        string
+	Description string
+	YieldAmount pgtype.Numeric
+	YieldUnit   pgtype.Text
+	PrepMinutes pgtype.Int4
+	CookMinutes pgtype.Int4
+	Source      string
+	SourceUrl   pgtype.Text
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+}
+
+type RecipeIngredient struct {
+	ID          int64
+	SectionID   int64
+	Position    int32
+	Quantity    pgtype.Numeric
+	QuantityMax pgtype.Numeric
+	Unit        string
+	Item        string
+	Preparation string
+	Optional    bool
+}
+
+type RecipeIngredientSection struct {
+	ID       int64
+	RecipeID int64
+	Title    string
+	Position int32
+}
+
+type RecipeInstructionSection struct {
+	ID       int64
+	RecipeID int64
+	Title    string
+	Position int32
+}
+
+type RecipeStep struct {
+	ID        int64
+	SectionID int64
+	Position  int32
+	Body      string
+}
+
+type RecipeTag struct {
+	RecipeID  int64
+	TagID     int64
+	SpaceSlug string
+	CreatedAt pgtype.Timestamptz
 }
 
 type Space struct {
