@@ -7,7 +7,7 @@ import (
 	apigen "github.com/sargunv/horologia/api/gen/go/ogen"
 	"github.com/sargunv/horologia/server/internal/activitylog"
 	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
-	"github.com/sargunv/horologia/server/internal/taskengine"
+	"github.com/sargunv/horologia/server/internal/tagname"
 	"github.com/sargunv/horologia/server/internal/types"
 )
 
@@ -54,7 +54,7 @@ func (h *Handler) SpaceTagsCreate(ctx context.Context, req *apigen.TagCreate, pa
 	tag, err := q.CreateTag(ctx, dbgen.CreateTagParams{
 		SpaceSlug:  params.SpaceSlug,
 		Name:       name,
-		NameFolded: taskengine.FoldTagName(name),
+		NameFolded: tagname.Fold(name),
 		CreatedAt:  types.Timestamptz(now),
 	})
 	if err != nil {
@@ -99,7 +99,7 @@ func (h *Handler) SpaceTagsUpdate(ctx context.Context, req *apigen.TagUpdate, pa
 	q := dbgen.New(tx)
 	existing, err := q.GetTagByFoldedName(ctx, dbgen.GetTagByFoldedNameParams{
 		SpaceSlug:  params.SpaceSlug,
-		NameFolded: taskengine.FoldTagName(params.TagName),
+		NameFolded: tagname.Fold(params.TagName),
 	})
 	if err != nil {
 		return nil, err
@@ -107,7 +107,7 @@ func (h *Handler) SpaceTagsUpdate(ctx context.Context, req *apigen.TagUpdate, pa
 
 	tag, err := q.UpdateTag(ctx, dbgen.UpdateTagParams{
 		Name:       newName,
-		NameFolded: taskengine.FoldTagName(newName),
+		NameFolded: tagname.Fold(newName),
 		ID:         existing.ID,
 		SpaceSlug:  params.SpaceSlug,
 	})
@@ -152,7 +152,7 @@ func (h *Handler) SpaceTagsDelete(ctx context.Context, params apigen.SpaceTagsDe
 	q := dbgen.New(tx)
 	existing, err := q.GetTagByFoldedName(ctx, dbgen.GetTagByFoldedNameParams{
 		SpaceSlug:  params.SpaceSlug,
-		NameFolded: taskengine.FoldTagName(params.TagName),
+		NameFolded: tagname.Fold(params.TagName),
 	})
 	if err != nil {
 		return err
@@ -160,7 +160,7 @@ func (h *Handler) SpaceTagsDelete(ctx context.Context, params apigen.SpaceTagsDe
 
 	result, err := q.DeleteTag(ctx, dbgen.DeleteTagParams{
 		SpaceSlug:  params.SpaceSlug,
-		NameFolded: taskengine.FoldTagName(params.TagName),
+		NameFolded: tagname.Fold(params.TagName),
 	})
 	if err != nil {
 		return err

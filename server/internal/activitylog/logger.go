@@ -16,6 +16,7 @@ type EntityType dbgen.ActivityEntityType
 
 const (
 	EntityTask          EntityType = "task"
+	EntityRecipe        EntityType = "recipe"
 	EntitySpace         EntityType = "space"
 	EntityMember        EntityType = "member"
 	EntityTag           EntityType = "tag"

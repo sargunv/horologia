@@ -79,6 +79,41 @@ func (h *Handler) SpaceTaskActivityList(ctx context.Context, params apigen.Space
 	return h.paginateActivityLog(ctx, q, rows, limit)
 }
 
+func (h *Handler) SpaceRecipeActivityList(ctx context.Context, params apigen.SpaceRecipeActivityListParams) (*apigen.ActivityLogPage, error) {
+	if err := h.requireScope(ctx, "activity:read"); err != nil {
+		return nil, err
+	}
+	if err := h.requireSpaceRead(ctx, params.SpaceSlug); err != nil {
+		return nil, err
+	}
+
+	recipeID, err := types.ParseRecipeID(params.RecipeId)
+	if err != nil {
+		return nil, badRequest(err.Error())
+	}
+
+	q := dbgen.New(h.Pool)
+	if _, err := q.GetRecipe(ctx, dbgen.GetRecipeParams{ID: recipeID, SpaceSlug: params.SpaceSlug}); err != nil {
+		return nil, err
+	}
+
+	cursorID, err := decodeCursorInt64(params.Cursor)
+	if err != nil {
+		return nil, badRequest(err.Error())
+	}
+	limit := clampLimit(params.Limit)
+	rows, err := q.ListActivityLogByRecipe(ctx, dbgen.ListActivityLogByRecipeParams{
+		EntityID:  params.RecipeId,
+		SpaceSlug: params.SpaceSlug,
+		Column3:   cursorID,
+		Limit:     limit + 1,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return h.paginateActivityLog(ctx, q, rows, limit)
+}
+
 func (h *Handler) UserActivityList(ctx context.Context, params apigen.UserActivityListParams) (*apigen.ActivityLogPage, error) {
 	if err := h.requireScope(ctx, "activity:read"); err != nil {
 		return nil, err

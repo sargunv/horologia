@@ -110,6 +110,7 @@ function actorLabel(entry: ActivityLogEntry, memberMap?: Map<string, ActivityMem
 
 const ENTITY_TYPE_LABEL: Record<ActivityEntityType, string> = {
   task: "task",
+  recipe: "recipe",
   space: "space",
   member: "member",
   tag: "tag",

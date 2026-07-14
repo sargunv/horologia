@@ -22,6 +22,8 @@ var DefaultOAuthScopes = []string{
 	"admin:read",
 	"admin:write",
 	"profile:read",
+	"recipes:read",
+	"recipes:write",
 	"spaces:read",
 	"spaces:write",
 	"tags:read",

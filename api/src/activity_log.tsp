@@ -64,6 +64,19 @@ interface SpaceTaskActivity {
   ): ActivityLogPage | ApiError;
 }
 
+@route("/spaces/{spaceSlug}/recipes/{recipeId}/activity")
+@tag("Activity")
+interface SpaceRecipeActivity {
+  @mcpTool(
+    "recipe_activity_list",
+    "List activity log entries for a specific recipe."
+  )
+  @get
+  list(@path spaceSlug: string, @path recipeId: string, ...PageParams):
+    | ActivityLogPage
+    | ApiError;
+}
+
 @route("/spaces/{spaceSlug}/activity")
 @tag("Activity")
 interface SpaceActivity {

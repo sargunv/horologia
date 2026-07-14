@@ -194,7 +194,8 @@ interface GoParam {
 
 // --- Body field types (discriminated union) ---
 
-interface GoObjectFieldMember {
+interface GoObjectScalarFieldMember {
+  kind: "scalar";
   name: string;
   goField: string;
   required: boolean;
@@ -202,6 +203,18 @@ interface GoObjectFieldMember {
   typeInfo: GoTypeInfo;
   nullable: boolean;
 }
+
+interface GoObjectArrayFieldMember {
+  kind: "objectArray";
+  name: string;
+  goField: string;
+  required: boolean;
+  description: string;
+  elementTypeName: string;
+  elementFields: GoObjectScalarFieldMember[];
+}
+
+type GoObjectFieldMember = GoObjectScalarFieldMember | GoObjectArrayFieldMember;
 
 interface GoScalarBodyField {
   kind: "scalar";
@@ -277,19 +290,45 @@ function collectObjectFields(
   const fields: GoObjectFieldMember[] = [];
   for (const [name, prop] of objectType.properties) {
     const resolved = getSimpleType(prop.type);
-    if (!resolved) {
-      throw new Error(
-        `Object field "${name}" in "${objectType.name}" is not a simple scalar/enum — unsupported`,
-      );
+    if (resolved) {
+      fields.push({
+        kind: "scalar",
+        name,
+        goField: capitalize(name),
+        required: !prop.optional,
+        description: getDoc(program, prop) ?? "",
+        typeInfo: goTypeInfo(resolved.type, alias),
+        nullable: resolved.nullable,
+      });
+      continue;
     }
-    fields.push({
-      name,
-      goField: capitalize(name),
-      required: !prop.optional,
-      description: getDoc(program, prop) ?? "",
-      typeInfo: goTypeInfo(resolved.type, alias),
-      nullable: resolved.nullable,
-    });
+
+    const array = getArrayElementType(prop.type);
+    if (array?.type.kind === "Model" && array.type.name) {
+      const elementFields = collectObjectFields(program, array.type, alias);
+      if (elementFields.some((field) => field.kind !== "scalar")) {
+        throw new Error(
+          `Object field "${name}" in "${objectType.name}" nests arrays more than two levels — unsupported`,
+        );
+      }
+      const scalarElementFields = elementFields.filter(
+        (field): field is GoObjectScalarFieldMember => field.kind === "scalar",
+      );
+      fields.push({
+        kind: "objectArray",
+        name,
+        goField: capitalize(name),
+        required: !prop.optional,
+        description: getDoc(program, prop) ?? "",
+        elementTypeName: array.type.name,
+        elementFields: scalarElementFields,
+      });
+      continue;
+    }
+
+    throw new Error(
+      `Object field "${name}" in "${objectType.name}" has an unsupported nested type`,
+    );
   }
   return fields;
 }
@@ -490,15 +529,19 @@ function typeNeedsTime(info: GoTypeInfo): boolean {
 }
 
 function bodyFieldNeedsTime(field: GoBodyField): boolean {
+  const memberNeedsTime = (member: GoObjectFieldMember): boolean =>
+    member.kind === "scalar"
+      ? typeNeedsTime(member.typeInfo)
+      : member.elementFields.some((nested) => typeNeedsTime(nested.typeInfo));
   switch (field.kind) {
     case "scalar":
       return typeNeedsTime(field.typeInfo);
     case "scalarArray":
       return typeNeedsTime(field.elementTypeInfo);
     case "object":
-      return field.members.some((member) => typeNeedsTime(member.typeInfo));
+      return field.members.some(memberNeedsTime);
     case "objectArray":
-      return field.elementFields.some((member) => typeNeedsTime(member.typeInfo));
+      return field.elementFields.some(memberNeedsTime);
   }
 }
 
@@ -522,6 +565,44 @@ function emitSimpleSchemaMap(
       `${indent}"enum": []any{${info.enumValues.map((v) => `"${escapeDQ(v)}"`).join(", ")}},`,
     );
   }
+}
+
+function emitObjectMemberSchema(
+  lines: string[],
+  indent: string,
+  member: GoObjectFieldMember,
+): void {
+  if (member.kind === "scalar") {
+    emitSimpleSchemaMap(lines, indent, member.typeInfo, member.nullable, member.description);
+    return;
+  }
+
+  lines.push(`${indent}"type": "array",`);
+  if (member.description) {
+    lines.push(`${indent}"description": "${escapeDQ(member.description)}",`);
+  }
+  lines.push(`${indent}"items": map[string]any{`);
+  lines.push(`${indent}\t"type": "object",`);
+  lines.push(`${indent}\t"properties": map[string]any{`);
+  for (const nested of member.elementFields) {
+    lines.push(`${indent}\t\t"${nested.name}": map[string]any{`);
+    emitSimpleSchemaMap(
+      lines,
+      `${indent}\t\t\t`,
+      nested.typeInfo,
+      nested.nullable,
+      nested.description,
+    );
+    lines.push(`${indent}\t\t},`);
+  }
+  lines.push(`${indent}\t},`);
+  const required = member.elementFields.filter((field) => field.required);
+  if (required.length > 0) {
+    lines.push(
+      `${indent}\t"required": []string{${required.map((field) => `"${field.name}"`).join(", ")}},`,
+    );
+  }
+  lines.push(`${indent}},`);
 }
 
 function emitConvertedValue(
@@ -673,6 +754,134 @@ function emitScalarArrayFieldExtraction(lines: string[], field: GoScalarArrayBod
   lines.push(`\t\t}`);
 }
 
+function nestedMessage(label: string, isIndexed: boolean, includeNestedIndex = false): string {
+  const args = [isIndexed ? "i" : "", includeNestedIndex ? "j" : ""].filter(Boolean);
+  return args.length > 0
+    ? `fmt.Sprintf("${escapeDQ(label)}", ${args.join(", ")})`
+    : `"${escapeDQ(label)}"`;
+}
+
+function emitNestedObjectArrayMember(
+  lines: string[],
+  member: GoObjectArrayFieldMember,
+  objectVar: string,
+  mapVar: string,
+  labelPrefix: string,
+  isIndexed: boolean,
+  alias: string,
+): void {
+  const indent = "\t\t\t\t";
+  const inside = `${indent}\t`;
+  const elementIndent = `${inside}\t`;
+  const rawVar = `raw${objectVar}${member.goField}`;
+  const hasVar = `has${objectVar}${member.goField}`;
+  const rawItemsVar = `${rawVar}Items`;
+  const itemsVar = `${objectVar}${member.goField}Items`;
+  const requiredMessage = nestedMessage(`${labelPrefix}.${member.name} is required`, isIndexed);
+  const invalidArrayMessage = nestedMessage(
+    `${labelPrefix}.${member.name} must be an array`,
+    isIndexed,
+  );
+
+  lines.push(`${indent}${rawVar}, ${hasVar} := ${mapVar}["${member.name}"]`);
+  lines.push(`${indent}if ${hasVar} {`);
+  lines.push(`${inside}if ${rawVar} == nil {`);
+  lines.push(`${inside}\treturn mcp.NewToolResultError(${invalidArrayMessage}), nil`);
+  lines.push(`${inside}}`);
+  lines.push(`${inside}${rawItemsVar}, ok := ${rawVar}.([]any)`);
+  lines.push(`${inside}if !ok {`);
+  lines.push(`${inside}\treturn mcp.NewToolResultError(${invalidArrayMessage}), nil`);
+  lines.push(`${inside}}`);
+  lines.push(
+    `${inside}${itemsVar} := make([]${alias}.${member.elementTypeName}, len(${rawItemsVar}))`,
+  );
+  lines.push(`${inside}for j, rawNested := range ${rawItemsVar} {`);
+  lines.push(`${elementIndent}nestedMap, ok := rawNested.(map[string]any)`);
+  lines.push(`${elementIndent}if !ok {`);
+  lines.push(
+    `${elementIndent}\treturn mcp.NewToolResultError(${nestedMessage(`${labelPrefix}.${member.name}[%d] must be an object`, isIndexed, true)}), nil`,
+  );
+  lines.push(`${elementIndent}}`);
+  lines.push(`${elementIndent}var nestedValue ${alias}.${member.elementTypeName}`);
+
+  for (const nested of member.elementFields) {
+    const nestedRaw = `rawNested${member.goField}${nested.goField}`;
+    const nestedHas = `hasNested${member.goField}${nested.goField}`;
+    const nestedValue = `vNested${member.goField}${nested.goField}`;
+    const converted = `convertedNested${member.goField}${nested.goField}`;
+    const fieldLabel = `${labelPrefix}.${member.name}[%d].${nested.name}`;
+    const fieldRequiredMessage = nestedMessage(`${fieldLabel} is required`, isIndexed, true);
+    const invalidNullMessage = nestedMessage(`${fieldLabel} must not be null`, isIndexed, true);
+    const invalidTypeMessage = nestedMessage(
+      `${fieldLabel} must be a ${nested.typeInfo.schemaType}`,
+      isIndexed,
+      true,
+    );
+    const invalidFormatMessage =
+      nested.typeInfo.scalarName === "plainDate"
+        ? nestedMessage(`${fieldLabel} must be a valid date`, isIndexed, true)
+        : nested.typeInfo.scalarName === "utcDateTime"
+          ? nestedMessage(`${fieldLabel} must be a valid RFC3339 timestamp`, isIndexed, true)
+          : invalidTypeMessage;
+
+    lines.push(`${elementIndent}${nestedRaw}, ${nestedHas} := nestedMap["${nested.name}"]`);
+    lines.push(`${elementIndent}if ${nestedHas} {`);
+    if (nested.nullable) {
+      lines.push(`${elementIndent}\tif ${nestedRaw} == nil {`);
+      lines.push(`${elementIndent}\t\tnestedValue.${nested.goField}.SetToNull()`);
+      lines.push(`${elementIndent}\t} else {`);
+    } else {
+      lines.push(`${elementIndent}\tif ${nestedRaw} == nil {`);
+      lines.push(
+        `${elementIndent}\t\treturn mcp.NewToolResultError(${nested.required ? fieldRequiredMessage : invalidNullMessage}), nil`,
+      );
+      lines.push(`${elementIndent}\t}`);
+    }
+    lines.push(
+      `${elementIndent}\t\t${nestedValue}, ok := ${nestedRaw}.(${nested.typeInfo.assertType})`,
+    );
+    if (nested.required && nested.typeInfo.assertType === "string") {
+      lines.push(`${elementIndent}\t\tif !ok || ${nestedValue} == "" {`);
+      lines.push(
+        `${elementIndent}\t\t\treturn mcp.NewToolResultError(${fieldRequiredMessage}), nil`,
+      );
+    } else {
+      lines.push(`${elementIndent}\t\tif !ok {`);
+      lines.push(`${elementIndent}\t\t\treturn mcp.NewToolResultError(${invalidTypeMessage}), nil`);
+    }
+    lines.push(`${elementIndent}\t\t}`);
+    emitConvertedValue(
+      lines,
+      `${elementIndent}\t\t`,
+      converted,
+      nestedValue,
+      nested.typeInfo,
+      invalidFormatMessage,
+    );
+    emitAssignValue(
+      lines,
+      `${elementIndent}\t\t`,
+      `nestedValue.${nested.goField}`,
+      converted,
+      nested.required,
+      nested.nullable,
+    );
+    if (nested.nullable) {
+      lines.push(`${elementIndent}\t}`);
+    }
+    lines.push(`${elementIndent}} else if ${String(nested.required)} {`);
+    lines.push(`${elementIndent}\treturn mcp.NewToolResultError(${fieldRequiredMessage}), nil`);
+    lines.push(`${elementIndent}}`);
+  }
+
+  lines.push(`${elementIndent}${itemsVar}[j] = nestedValue`);
+  lines.push(`${inside}}`);
+  lines.push(`${inside}${objectVar}.${member.goField} = ${itemsVar}`);
+  lines.push(`${indent}} else if ${String(member.required)} {`);
+  lines.push(`${inside}return mcp.NewToolResultError(${requiredMessage}), nil`);
+  lines.push(`${indent}}`);
+}
+
 function emitObjectMembers(
   lines: string[],
   members: GoObjectFieldMember[],
@@ -680,8 +889,13 @@ function emitObjectMembers(
   mapVar: string,
   labelPrefix: string,
   isIndexed: boolean,
+  alias: string,
 ): void {
   for (const member of members) {
+    if (member.kind === "objectArray") {
+      emitNestedObjectArrayMember(lines, member, objectVar, mapVar, labelPrefix, isIndexed, alias);
+      continue;
+    }
     const rawVar = `raw${objectVar}${member.goField}`;
     const hasVar = `has${objectVar}${member.goField}`;
     const valueVar = `v${objectVar}${member.goField}`;
@@ -779,7 +993,7 @@ function emitObjectFieldExtraction(lines: string[], field: GoObjectBodyField, al
   lines.push(`\t\t\t\t\treturn mcp.NewToolResultError(${invalidObjectMessage}), nil`);
   lines.push(`\t\t\t\t}`);
   lines.push(`\t\t\t\tvar ${objectVar} ${alias}.${field.objectTypeName}`);
-  emitObjectMembers(lines, field.members, objectVar, mapVar, field.name, false);
+  emitObjectMembers(lines, field.members, objectVar, mapVar, field.name, false, alias);
   emitAssignValue(
     lines,
     "\t\t\t\t",
@@ -826,7 +1040,7 @@ function emitObjectArrayFieldExtraction(
   );
   lines.push(`\t\t\t\t}`);
   lines.push(`\t\t\t\tvar value ${alias}.${field.elementTypeName}`);
-  emitObjectMembers(lines, field.elementFields, "value", "m", `${field.name}[%d]`, true);
+  emitObjectMembers(lines, field.elementFields, "value", "m", `${field.name}[%d]`, true, alias);
   lines.push(`\t\t\t\t${itemsVar}[i] = value`);
   lines.push(`\t\t\t}`);
   lines.push(`\t\t\tbody.${field.goField} = ${itemsVar}`);
@@ -1061,13 +1275,7 @@ export function generateGoFile(program: Program, tools: ToolInfo[], opts: Emitte
           lines.push(`\t\t\t"properties": map[string]any{`);
           for (const member of field.members) {
             lines.push(`\t\t\t\t"${member.name}": map[string]any{`);
-            emitSimpleSchemaMap(
-              lines,
-              "\t\t\t\t\t",
-              member.typeInfo,
-              member.nullable,
-              member.description,
-            );
+            emitObjectMemberSchema(lines, "\t\t\t\t\t", member);
             lines.push(`\t\t\t\t},`);
           }
           lines.push(`\t\t\t},`);
@@ -1094,13 +1302,7 @@ export function generateGoFile(program: Program, tools: ToolInfo[], opts: Emitte
           lines.push(`\t\t\t\t"properties": map[string]any{`);
           for (const member of field.elementFields) {
             lines.push(`\t\t\t\t\t"${member.name}": map[string]any{`);
-            emitSimpleSchemaMap(
-              lines,
-              "\t\t\t\t\t\t",
-              member.typeInfo,
-              member.nullable,
-              member.description,
-            );
+            emitObjectMemberSchema(lines, "\t\t\t\t\t\t", member);
             lines.push(`\t\t\t\t\t},`);
           }
           lines.push(`\t\t\t\t},`);

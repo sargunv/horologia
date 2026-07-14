@@ -138,6 +138,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/recipes/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Recipes_search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/spaces": {
         parameters: {
             query?: never;
@@ -216,6 +232,54 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["SpaceMembers_update"];
+        trace?: never;
+    };
+    "/spaces/{spaceSlug}/recipes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SpaceRecipes_list"];
+        put?: never;
+        post: operations["SpaceRecipes_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/spaces/{spaceSlug}/recipes/{recipeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SpaceRecipes_read"];
+        put?: never;
+        post?: never;
+        delete: operations["SpaceRecipes_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["SpaceRecipes_update"];
+        trace?: never;
+    };
+    "/spaces/{spaceSlug}/recipes/{recipeId}/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SpaceRecipeActivity_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/spaces/{spaceSlug}/tags": {
@@ -486,7 +550,7 @@ export interface components {
             to: string | null;
         };
         /** @enum {string} */
-        ActivityEntityType: "task" | "space" | "member" | "tag" | "status" | "effort_level" | "priority_level" | "relation";
+        ActivityEntityType: "task" | "recipe" | "space" | "member" | "tag" | "status" | "effort_level" | "priority_level" | "relation";
         ActivityLogEntry: {
             id: string;
             spaceSlug: string;
@@ -557,6 +621,113 @@ export interface components {
         AuthTokenKind: "session" | "api";
         AuthTokenList: {
             items: components["schemas"]["AuthToken"][];
+        };
+        Recipe: {
+            id: string;
+            spaceSlug: string;
+            name: string;
+            description: string;
+            yield: components["schemas"]["RecipeYield"] | null;
+            prepMinutes: number | null;
+            cookMinutes: number | null;
+            source: string;
+            sourceUrl: string | null;
+            tags: string[];
+            ingredientSections: components["schemas"]["RecipeIngredientSection"][];
+            instructionSections: components["schemas"]["RecipeInstructionSection"][];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        RecipeCreate: {
+            name: string;
+            description?: string;
+            yield?: components["schemas"]["RecipeYield"];
+            /** Format: int32 */
+            prepMinutes?: number;
+            /** Format: int32 */
+            cookMinutes?: number;
+            source?: string;
+            sourceUrl?: string;
+            tags?: string[];
+            ingredientSections?: components["schemas"]["RecipeIngredientSectionInput"][];
+            instructionSections?: components["schemas"]["RecipeInstructionSectionInput"][];
+        };
+        RecipeIngredient: {
+            quantity: number | null;
+            quantityMax: number | null;
+            unit: string;
+            item: string;
+            preparation: string;
+            optional: boolean;
+        };
+        RecipeIngredientInput: {
+            /** Format: double */
+            quantity?: number;
+            /** Format: double */
+            quantityMax?: number;
+            unit?: string;
+            item: string;
+            preparation?: string;
+            optional?: boolean;
+        };
+        RecipeIngredientSection: {
+            title: string;
+            ingredients: components["schemas"]["RecipeIngredient"][];
+        };
+        RecipeIngredientSectionInput: {
+            title?: string;
+            ingredients: components["schemas"]["RecipeIngredientInput"][];
+        };
+        RecipeInstructionSection: {
+            title: string;
+            steps: components["schemas"]["RecipeStep"][];
+        };
+        RecipeInstructionSectionInput: {
+            title?: string;
+            steps: components["schemas"]["RecipeStepInput"][];
+        };
+        RecipePage: {
+            items: components["schemas"]["RecipeSummary"][];
+            nextCursor: string | null;
+        };
+        RecipeSearchResultList: {
+            items: components["schemas"]["RecipeSummary"][];
+        };
+        RecipeStep: {
+            body: string;
+        };
+        RecipeStepInput: {
+            body: string;
+        };
+        RecipeSummary: {
+            id: string;
+            spaceSlug: string;
+            name: string;
+            yield: components["schemas"]["RecipeYield"] | null;
+            prepMinutes: number | null;
+            cookMinutes: number | null;
+            tags: string[];
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        RecipeUpdate: {
+            name?: string;
+            description?: string;
+            yield?: components["schemas"]["RecipeYield"] | null;
+            prepMinutes?: number | null;
+            cookMinutes?: number | null;
+            source?: string;
+            sourceUrl?: string | null;
+            tags?: string[];
+            ingredientSections?: components["schemas"]["RecipeIngredientSectionInput"][];
+            instructionSections?: components["schemas"]["RecipeInstructionSectionInput"][];
+        };
+        RecipeYield: {
+            /** Format: double */
+            amount: number;
+            unit: string;
         };
         Space: {
             slug: string;
@@ -1075,6 +1246,39 @@ export interface operations {
             };
         };
     };
+    Recipes_search: {
+        parameters: {
+            query: {
+                q: string;
+                spaceSlug?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipeSearchResultList"];
+                };
+            };
+            /** @description An unexpected error response. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     Spaces_list: {
         parameters: {
             query?: never;
@@ -1397,6 +1601,212 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SpaceMember"];
+                };
+            };
+            /** @description An unexpected error response. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    SpaceRecipes_list: {
+        parameters: {
+            query?: {
+                /** @description Pagination cursor from a previous response. */
+                cursor?: components["parameters"]["PageParams.cursor"];
+                /** @description Maximum number of items to return (1–100). */
+                limit?: components["parameters"]["PageParams.limit"];
+            };
+            header?: never;
+            path: {
+                spaceSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipePage"];
+                };
+            };
+            /** @description An unexpected error response. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    SpaceRecipes_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                spaceSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecipeCreate"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded and a new resource has been created as a result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Recipe"];
+                };
+            };
+            /** @description An unexpected error response. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    SpaceRecipes_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                spaceSlug: string;
+                recipeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Recipe"];
+                };
+            };
+            /** @description An unexpected error response. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    SpaceRecipes_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                spaceSlug: string;
+                recipeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description There is no content to send for this request, but the headers may be useful. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description An unexpected error response. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    SpaceRecipes_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                spaceSlug: string;
+                recipeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecipeUpdate"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Recipe"];
+                };
+            };
+            /** @description An unexpected error response. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    SpaceRecipeActivity_list: {
+        parameters: {
+            query?: {
+                /** @description Pagination cursor from a previous response. */
+                cursor?: components["parameters"]["PageParams.cursor"];
+                /** @description Maximum number of items to return (1–100). */
+                limit?: components["parameters"]["PageParams.limit"];
+            };
+            header?: never;
+            path: {
+                spaceSlug: string;
+                recipeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityLogPage"];
                 };
             };
             /** @description An unexpected error response. */

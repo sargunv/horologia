@@ -877,6 +877,51 @@ func (o NilDateTime) Or(d time.Time) time.Time {
 	return d
 }
 
+// NewNilFloat64 returns new NilFloat64 with value set to v.
+func NewNilFloat64(v float64) NilFloat64 {
+	return NilFloat64{
+		Value: v,
+	}
+}
+
+// NilFloat64 is nullable float64.
+type NilFloat64 struct {
+	Value float64
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilFloat64) SetTo(v float64) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilFloat64) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilFloat64) SetToNull() {
+	o.Null = true
+	var v float64
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilFloat64) Get() (v float64, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilFloat64) Or(d float64) float64 {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewNilInt32 returns new NilInt32 with value set to v.
 func NewNilInt32(v int32) NilInt32 {
 	return NilInt32{
@@ -916,6 +961,51 @@ func (o NilInt32) Get() (v int32, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilInt32) Or(d int32) int32 {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilRecipeYield returns new NilRecipeYield with value set to v.
+func NewNilRecipeYield(v RecipeYield) NilRecipeYield {
+	return NilRecipeYield{
+		Value: v,
+	}
+}
+
+// NilRecipeYield is nullable RecipeYield.
+type NilRecipeYield struct {
+	Value RecipeYield
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilRecipeYield) SetTo(v RecipeYield) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilRecipeYield) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilRecipeYield) SetToNull() {
+	o.Null = true
+	var v RecipeYield
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilRecipeYield) Get() (v RecipeYield, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilRecipeYield) Or(d RecipeYield) RecipeYield {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -1149,6 +1239,52 @@ func (o OptBool) Or(d bool) bool {
 	return d
 }
 
+// NewOptFloat64 returns new OptFloat64 with value set to v.
+func NewOptFloat64(v float64) OptFloat64 {
+	return OptFloat64{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptFloat64 is optional float64.
+type OptFloat64 struct {
+	Value float64
+	Set   bool
+}
+
+// IsSet returns true if OptFloat64 was set.
+func (o OptFloat64) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptFloat64) Reset() {
+	var v float64
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptFloat64) SetTo(v float64) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptFloat64) Get() (v float64, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptFloat64) Or(d float64) float64 {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptInt32 returns new OptInt32 with value set to v.
 func NewOptInt32(v int32) OptInt32 {
 	return OptInt32{
@@ -1189,6 +1325,142 @@ func (o OptInt32) Get() (v int32, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptInt32) Or(d int32) int32 {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilInt32 returns new OptNilInt32 with value set to v.
+func NewOptNilInt32(v int32) OptNilInt32 {
+	return OptNilInt32{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilInt32 is optional nullable int32.
+type OptNilInt32 struct {
+	Value int32
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilInt32 was set.
+func (o OptNilInt32) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilInt32) Reset() {
+	var v int32
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilInt32) SetTo(v int32) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilInt32) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilInt32) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v int32
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilInt32) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilInt32) Get() (v int32, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilInt32) Or(d int32) int32 {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilRecipeYield returns new OptNilRecipeYield with value set to v.
+func NewOptNilRecipeYield(v RecipeYield) OptNilRecipeYield {
+	return OptNilRecipeYield{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilRecipeYield is optional nullable RecipeYield.
+type OptNilRecipeYield struct {
+	Value RecipeYield
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilRecipeYield was set.
+func (o OptNilRecipeYield) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilRecipeYield) Reset() {
+	var v RecipeYield
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilRecipeYield) SetTo(v RecipeYield) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilRecipeYield) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilRecipeYield) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v RecipeYield
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilRecipeYield) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilRecipeYield) Get() (v RecipeYield, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilRecipeYield) Or(d RecipeYield) RecipeYield {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -1399,6 +1671,52 @@ func (o OptNilTaskOverdueActionRule) Or(d TaskOverdueActionRule) TaskOverdueActi
 	return d
 }
 
+// NewOptRecipeYield returns new OptRecipeYield with value set to v.
+func NewOptRecipeYield(v RecipeYield) OptRecipeYield {
+	return OptRecipeYield{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptRecipeYield is optional RecipeYield.
+type OptRecipeYield struct {
+	Value RecipeYield
+	Set   bool
+}
+
+// IsSet returns true if OptRecipeYield was set.
+func (o OptRecipeYield) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptRecipeYield) Reset() {
+	var v RecipeYield
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptRecipeYield) SetTo(v RecipeYield) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptRecipeYield) Get() (v RecipeYield, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptRecipeYield) Or(d RecipeYield) RecipeYield {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptString returns new OptString with value set to v.
 func NewOptString(v string) OptString {
 	return OptString{
@@ -1489,6 +1807,825 @@ func (o OptTaskRecurrenceType) Or(d TaskRecurrenceType) TaskRecurrenceType {
 		return v
 	}
 	return d
+}
+
+// Ref: #/components/schemas/Recipe
+type Recipe struct {
+	ID                  string                     `json:"id"`
+	SpaceSlug           string                     `json:"spaceSlug"`
+	Name                string                     `json:"name"`
+	Description         string                     `json:"description"`
+	Yield               NilRecipeYield             `json:"yield"`
+	PrepMinutes         NilInt32                   `json:"prepMinutes"`
+	CookMinutes         NilInt32                   `json:"cookMinutes"`
+	Source              string                     `json:"source"`
+	SourceUrl           NilString                  `json:"sourceUrl"`
+	Tags                []string                   `json:"tags"`
+	IngredientSections  []RecipeIngredientSection  `json:"ingredientSections"`
+	InstructionSections []RecipeInstructionSection `json:"instructionSections"`
+	CreatedAt           time.Time                  `json:"createdAt"`
+	UpdatedAt           time.Time                  `json:"updatedAt"`
+}
+
+// GetID returns the value of ID.
+func (s *Recipe) GetID() string {
+	return s.ID
+}
+
+// GetSpaceSlug returns the value of SpaceSlug.
+func (s *Recipe) GetSpaceSlug() string {
+	return s.SpaceSlug
+}
+
+// GetName returns the value of Name.
+func (s *Recipe) GetName() string {
+	return s.Name
+}
+
+// GetDescription returns the value of Description.
+func (s *Recipe) GetDescription() string {
+	return s.Description
+}
+
+// GetYield returns the value of Yield.
+func (s *Recipe) GetYield() NilRecipeYield {
+	return s.Yield
+}
+
+// GetPrepMinutes returns the value of PrepMinutes.
+func (s *Recipe) GetPrepMinutes() NilInt32 {
+	return s.PrepMinutes
+}
+
+// GetCookMinutes returns the value of CookMinutes.
+func (s *Recipe) GetCookMinutes() NilInt32 {
+	return s.CookMinutes
+}
+
+// GetSource returns the value of Source.
+func (s *Recipe) GetSource() string {
+	return s.Source
+}
+
+// GetSourceUrl returns the value of SourceUrl.
+func (s *Recipe) GetSourceUrl() NilString {
+	return s.SourceUrl
+}
+
+// GetTags returns the value of Tags.
+func (s *Recipe) GetTags() []string {
+	return s.Tags
+}
+
+// GetIngredientSections returns the value of IngredientSections.
+func (s *Recipe) GetIngredientSections() []RecipeIngredientSection {
+	return s.IngredientSections
+}
+
+// GetInstructionSections returns the value of InstructionSections.
+func (s *Recipe) GetInstructionSections() []RecipeInstructionSection {
+	return s.InstructionSections
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *Recipe) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *Recipe) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// SetID sets the value of ID.
+func (s *Recipe) SetID(val string) {
+	s.ID = val
+}
+
+// SetSpaceSlug sets the value of SpaceSlug.
+func (s *Recipe) SetSpaceSlug(val string) {
+	s.SpaceSlug = val
+}
+
+// SetName sets the value of Name.
+func (s *Recipe) SetName(val string) {
+	s.Name = val
+}
+
+// SetDescription sets the value of Description.
+func (s *Recipe) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetYield sets the value of Yield.
+func (s *Recipe) SetYield(val NilRecipeYield) {
+	s.Yield = val
+}
+
+// SetPrepMinutes sets the value of PrepMinutes.
+func (s *Recipe) SetPrepMinutes(val NilInt32) {
+	s.PrepMinutes = val
+}
+
+// SetCookMinutes sets the value of CookMinutes.
+func (s *Recipe) SetCookMinutes(val NilInt32) {
+	s.CookMinutes = val
+}
+
+// SetSource sets the value of Source.
+func (s *Recipe) SetSource(val string) {
+	s.Source = val
+}
+
+// SetSourceUrl sets the value of SourceUrl.
+func (s *Recipe) SetSourceUrl(val NilString) {
+	s.SourceUrl = val
+}
+
+// SetTags sets the value of Tags.
+func (s *Recipe) SetTags(val []string) {
+	s.Tags = val
+}
+
+// SetIngredientSections sets the value of IngredientSections.
+func (s *Recipe) SetIngredientSections(val []RecipeIngredientSection) {
+	s.IngredientSections = val
+}
+
+// SetInstructionSections sets the value of InstructionSections.
+func (s *Recipe) SetInstructionSections(val []RecipeInstructionSection) {
+	s.InstructionSections = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *Recipe) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *Recipe) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}
+
+// Ref: #/components/schemas/RecipeCreate
+type RecipeCreate struct {
+	Name                string                          `json:"name"`
+	Description         OptString                       `json:"description"`
+	Yield               OptRecipeYield                  `json:"yield"`
+	PrepMinutes         OptInt32                        `json:"prepMinutes"`
+	CookMinutes         OptInt32                        `json:"cookMinutes"`
+	Source              OptString                       `json:"source"`
+	SourceUrl           OptString                       `json:"sourceUrl"`
+	Tags                []string                        `json:"tags"`
+	IngredientSections  []RecipeIngredientSectionInput  `json:"ingredientSections"`
+	InstructionSections []RecipeInstructionSectionInput `json:"instructionSections"`
+}
+
+// GetName returns the value of Name.
+func (s *RecipeCreate) GetName() string {
+	return s.Name
+}
+
+// GetDescription returns the value of Description.
+func (s *RecipeCreate) GetDescription() OptString {
+	return s.Description
+}
+
+// GetYield returns the value of Yield.
+func (s *RecipeCreate) GetYield() OptRecipeYield {
+	return s.Yield
+}
+
+// GetPrepMinutes returns the value of PrepMinutes.
+func (s *RecipeCreate) GetPrepMinutes() OptInt32 {
+	return s.PrepMinutes
+}
+
+// GetCookMinutes returns the value of CookMinutes.
+func (s *RecipeCreate) GetCookMinutes() OptInt32 {
+	return s.CookMinutes
+}
+
+// GetSource returns the value of Source.
+func (s *RecipeCreate) GetSource() OptString {
+	return s.Source
+}
+
+// GetSourceUrl returns the value of SourceUrl.
+func (s *RecipeCreate) GetSourceUrl() OptString {
+	return s.SourceUrl
+}
+
+// GetTags returns the value of Tags.
+func (s *RecipeCreate) GetTags() []string {
+	return s.Tags
+}
+
+// GetIngredientSections returns the value of IngredientSections.
+func (s *RecipeCreate) GetIngredientSections() []RecipeIngredientSectionInput {
+	return s.IngredientSections
+}
+
+// GetInstructionSections returns the value of InstructionSections.
+func (s *RecipeCreate) GetInstructionSections() []RecipeInstructionSectionInput {
+	return s.InstructionSections
+}
+
+// SetName sets the value of Name.
+func (s *RecipeCreate) SetName(val string) {
+	s.Name = val
+}
+
+// SetDescription sets the value of Description.
+func (s *RecipeCreate) SetDescription(val OptString) {
+	s.Description = val
+}
+
+// SetYield sets the value of Yield.
+func (s *RecipeCreate) SetYield(val OptRecipeYield) {
+	s.Yield = val
+}
+
+// SetPrepMinutes sets the value of PrepMinutes.
+func (s *RecipeCreate) SetPrepMinutes(val OptInt32) {
+	s.PrepMinutes = val
+}
+
+// SetCookMinutes sets the value of CookMinutes.
+func (s *RecipeCreate) SetCookMinutes(val OptInt32) {
+	s.CookMinutes = val
+}
+
+// SetSource sets the value of Source.
+func (s *RecipeCreate) SetSource(val OptString) {
+	s.Source = val
+}
+
+// SetSourceUrl sets the value of SourceUrl.
+func (s *RecipeCreate) SetSourceUrl(val OptString) {
+	s.SourceUrl = val
+}
+
+// SetTags sets the value of Tags.
+func (s *RecipeCreate) SetTags(val []string) {
+	s.Tags = val
+}
+
+// SetIngredientSections sets the value of IngredientSections.
+func (s *RecipeCreate) SetIngredientSections(val []RecipeIngredientSectionInput) {
+	s.IngredientSections = val
+}
+
+// SetInstructionSections sets the value of InstructionSections.
+func (s *RecipeCreate) SetInstructionSections(val []RecipeInstructionSectionInput) {
+	s.InstructionSections = val
+}
+
+// Ref: #/components/schemas/RecipeIngredient
+type RecipeIngredient struct {
+	Quantity    NilFloat64 `json:"quantity"`
+	QuantityMax NilFloat64 `json:"quantityMax"`
+	Unit        string     `json:"unit"`
+	Item        string     `json:"item"`
+	Preparation string     `json:"preparation"`
+	Optional    bool       `json:"optional"`
+}
+
+// GetQuantity returns the value of Quantity.
+func (s *RecipeIngredient) GetQuantity() NilFloat64 {
+	return s.Quantity
+}
+
+// GetQuantityMax returns the value of QuantityMax.
+func (s *RecipeIngredient) GetQuantityMax() NilFloat64 {
+	return s.QuantityMax
+}
+
+// GetUnit returns the value of Unit.
+func (s *RecipeIngredient) GetUnit() string {
+	return s.Unit
+}
+
+// GetItem returns the value of Item.
+func (s *RecipeIngredient) GetItem() string {
+	return s.Item
+}
+
+// GetPreparation returns the value of Preparation.
+func (s *RecipeIngredient) GetPreparation() string {
+	return s.Preparation
+}
+
+// GetOptional returns the value of Optional.
+func (s *RecipeIngredient) GetOptional() bool {
+	return s.Optional
+}
+
+// SetQuantity sets the value of Quantity.
+func (s *RecipeIngredient) SetQuantity(val NilFloat64) {
+	s.Quantity = val
+}
+
+// SetQuantityMax sets the value of QuantityMax.
+func (s *RecipeIngredient) SetQuantityMax(val NilFloat64) {
+	s.QuantityMax = val
+}
+
+// SetUnit sets the value of Unit.
+func (s *RecipeIngredient) SetUnit(val string) {
+	s.Unit = val
+}
+
+// SetItem sets the value of Item.
+func (s *RecipeIngredient) SetItem(val string) {
+	s.Item = val
+}
+
+// SetPreparation sets the value of Preparation.
+func (s *RecipeIngredient) SetPreparation(val string) {
+	s.Preparation = val
+}
+
+// SetOptional sets the value of Optional.
+func (s *RecipeIngredient) SetOptional(val bool) {
+	s.Optional = val
+}
+
+// Ref: #/components/schemas/RecipeIngredientInput
+type RecipeIngredientInput struct {
+	Quantity    OptFloat64 `json:"quantity"`
+	QuantityMax OptFloat64 `json:"quantityMax"`
+	Unit        OptString  `json:"unit"`
+	Item        string     `json:"item"`
+	Preparation OptString  `json:"preparation"`
+	Optional    OptBool    `json:"optional"`
+}
+
+// GetQuantity returns the value of Quantity.
+func (s *RecipeIngredientInput) GetQuantity() OptFloat64 {
+	return s.Quantity
+}
+
+// GetQuantityMax returns the value of QuantityMax.
+func (s *RecipeIngredientInput) GetQuantityMax() OptFloat64 {
+	return s.QuantityMax
+}
+
+// GetUnit returns the value of Unit.
+func (s *RecipeIngredientInput) GetUnit() OptString {
+	return s.Unit
+}
+
+// GetItem returns the value of Item.
+func (s *RecipeIngredientInput) GetItem() string {
+	return s.Item
+}
+
+// GetPreparation returns the value of Preparation.
+func (s *RecipeIngredientInput) GetPreparation() OptString {
+	return s.Preparation
+}
+
+// GetOptional returns the value of Optional.
+func (s *RecipeIngredientInput) GetOptional() OptBool {
+	return s.Optional
+}
+
+// SetQuantity sets the value of Quantity.
+func (s *RecipeIngredientInput) SetQuantity(val OptFloat64) {
+	s.Quantity = val
+}
+
+// SetQuantityMax sets the value of QuantityMax.
+func (s *RecipeIngredientInput) SetQuantityMax(val OptFloat64) {
+	s.QuantityMax = val
+}
+
+// SetUnit sets the value of Unit.
+func (s *RecipeIngredientInput) SetUnit(val OptString) {
+	s.Unit = val
+}
+
+// SetItem sets the value of Item.
+func (s *RecipeIngredientInput) SetItem(val string) {
+	s.Item = val
+}
+
+// SetPreparation sets the value of Preparation.
+func (s *RecipeIngredientInput) SetPreparation(val OptString) {
+	s.Preparation = val
+}
+
+// SetOptional sets the value of Optional.
+func (s *RecipeIngredientInput) SetOptional(val OptBool) {
+	s.Optional = val
+}
+
+// Ref: #/components/schemas/RecipeIngredientSection
+type RecipeIngredientSection struct {
+	Title       string             `json:"title"`
+	Ingredients []RecipeIngredient `json:"ingredients"`
+}
+
+// GetTitle returns the value of Title.
+func (s *RecipeIngredientSection) GetTitle() string {
+	return s.Title
+}
+
+// GetIngredients returns the value of Ingredients.
+func (s *RecipeIngredientSection) GetIngredients() []RecipeIngredient {
+	return s.Ingredients
+}
+
+// SetTitle sets the value of Title.
+func (s *RecipeIngredientSection) SetTitle(val string) {
+	s.Title = val
+}
+
+// SetIngredients sets the value of Ingredients.
+func (s *RecipeIngredientSection) SetIngredients(val []RecipeIngredient) {
+	s.Ingredients = val
+}
+
+// Ref: #/components/schemas/RecipeIngredientSectionInput
+type RecipeIngredientSectionInput struct {
+	Title       OptString               `json:"title"`
+	Ingredients []RecipeIngredientInput `json:"ingredients"`
+}
+
+// GetTitle returns the value of Title.
+func (s *RecipeIngredientSectionInput) GetTitle() OptString {
+	return s.Title
+}
+
+// GetIngredients returns the value of Ingredients.
+func (s *RecipeIngredientSectionInput) GetIngredients() []RecipeIngredientInput {
+	return s.Ingredients
+}
+
+// SetTitle sets the value of Title.
+func (s *RecipeIngredientSectionInput) SetTitle(val OptString) {
+	s.Title = val
+}
+
+// SetIngredients sets the value of Ingredients.
+func (s *RecipeIngredientSectionInput) SetIngredients(val []RecipeIngredientInput) {
+	s.Ingredients = val
+}
+
+// Ref: #/components/schemas/RecipeInstructionSection
+type RecipeInstructionSection struct {
+	Title string       `json:"title"`
+	Steps []RecipeStep `json:"steps"`
+}
+
+// GetTitle returns the value of Title.
+func (s *RecipeInstructionSection) GetTitle() string {
+	return s.Title
+}
+
+// GetSteps returns the value of Steps.
+func (s *RecipeInstructionSection) GetSteps() []RecipeStep {
+	return s.Steps
+}
+
+// SetTitle sets the value of Title.
+func (s *RecipeInstructionSection) SetTitle(val string) {
+	s.Title = val
+}
+
+// SetSteps sets the value of Steps.
+func (s *RecipeInstructionSection) SetSteps(val []RecipeStep) {
+	s.Steps = val
+}
+
+// Ref: #/components/schemas/RecipeInstructionSectionInput
+type RecipeInstructionSectionInput struct {
+	Title OptString         `json:"title"`
+	Steps []RecipeStepInput `json:"steps"`
+}
+
+// GetTitle returns the value of Title.
+func (s *RecipeInstructionSectionInput) GetTitle() OptString {
+	return s.Title
+}
+
+// GetSteps returns the value of Steps.
+func (s *RecipeInstructionSectionInput) GetSteps() []RecipeStepInput {
+	return s.Steps
+}
+
+// SetTitle sets the value of Title.
+func (s *RecipeInstructionSectionInput) SetTitle(val OptString) {
+	s.Title = val
+}
+
+// SetSteps sets the value of Steps.
+func (s *RecipeInstructionSectionInput) SetSteps(val []RecipeStepInput) {
+	s.Steps = val
+}
+
+// Ref: #/components/schemas/RecipePage
+type RecipePage struct {
+	Items      []RecipeSummary `json:"items"`
+	NextCursor NilString       `json:"nextCursor"`
+}
+
+// GetItems returns the value of Items.
+func (s *RecipePage) GetItems() []RecipeSummary {
+	return s.Items
+}
+
+// GetNextCursor returns the value of NextCursor.
+func (s *RecipePage) GetNextCursor() NilString {
+	return s.NextCursor
+}
+
+// SetItems sets the value of Items.
+func (s *RecipePage) SetItems(val []RecipeSummary) {
+	s.Items = val
+}
+
+// SetNextCursor sets the value of NextCursor.
+func (s *RecipePage) SetNextCursor(val NilString) {
+	s.NextCursor = val
+}
+
+// Ref: #/components/schemas/RecipeSearchResultList
+type RecipeSearchResultList struct {
+	Items []RecipeSummary `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *RecipeSearchResultList) GetItems() []RecipeSummary {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *RecipeSearchResultList) SetItems(val []RecipeSummary) {
+	s.Items = val
+}
+
+// Ref: #/components/schemas/RecipeStep
+type RecipeStep struct {
+	Body string `json:"body"`
+}
+
+// GetBody returns the value of Body.
+func (s *RecipeStep) GetBody() string {
+	return s.Body
+}
+
+// SetBody sets the value of Body.
+func (s *RecipeStep) SetBody(val string) {
+	s.Body = val
+}
+
+// Ref: #/components/schemas/RecipeStepInput
+type RecipeStepInput struct {
+	Body string `json:"body"`
+}
+
+// GetBody returns the value of Body.
+func (s *RecipeStepInput) GetBody() string {
+	return s.Body
+}
+
+// SetBody sets the value of Body.
+func (s *RecipeStepInput) SetBody(val string) {
+	s.Body = val
+}
+
+// Ref: #/components/schemas/RecipeSummary
+type RecipeSummary struct {
+	ID          string         `json:"id"`
+	SpaceSlug   string         `json:"spaceSlug"`
+	Name        string         `json:"name"`
+	Yield       NilRecipeYield `json:"yield"`
+	PrepMinutes NilInt32       `json:"prepMinutes"`
+	CookMinutes NilInt32       `json:"cookMinutes"`
+	Tags        []string       `json:"tags"`
+	UpdatedAt   time.Time      `json:"updatedAt"`
+}
+
+// GetID returns the value of ID.
+func (s *RecipeSummary) GetID() string {
+	return s.ID
+}
+
+// GetSpaceSlug returns the value of SpaceSlug.
+func (s *RecipeSummary) GetSpaceSlug() string {
+	return s.SpaceSlug
+}
+
+// GetName returns the value of Name.
+func (s *RecipeSummary) GetName() string {
+	return s.Name
+}
+
+// GetYield returns the value of Yield.
+func (s *RecipeSummary) GetYield() NilRecipeYield {
+	return s.Yield
+}
+
+// GetPrepMinutes returns the value of PrepMinutes.
+func (s *RecipeSummary) GetPrepMinutes() NilInt32 {
+	return s.PrepMinutes
+}
+
+// GetCookMinutes returns the value of CookMinutes.
+func (s *RecipeSummary) GetCookMinutes() NilInt32 {
+	return s.CookMinutes
+}
+
+// GetTags returns the value of Tags.
+func (s *RecipeSummary) GetTags() []string {
+	return s.Tags
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *RecipeSummary) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// SetID sets the value of ID.
+func (s *RecipeSummary) SetID(val string) {
+	s.ID = val
+}
+
+// SetSpaceSlug sets the value of SpaceSlug.
+func (s *RecipeSummary) SetSpaceSlug(val string) {
+	s.SpaceSlug = val
+}
+
+// SetName sets the value of Name.
+func (s *RecipeSummary) SetName(val string) {
+	s.Name = val
+}
+
+// SetYield sets the value of Yield.
+func (s *RecipeSummary) SetYield(val NilRecipeYield) {
+	s.Yield = val
+}
+
+// SetPrepMinutes sets the value of PrepMinutes.
+func (s *RecipeSummary) SetPrepMinutes(val NilInt32) {
+	s.PrepMinutes = val
+}
+
+// SetCookMinutes sets the value of CookMinutes.
+func (s *RecipeSummary) SetCookMinutes(val NilInt32) {
+	s.CookMinutes = val
+}
+
+// SetTags sets the value of Tags.
+func (s *RecipeSummary) SetTags(val []string) {
+	s.Tags = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *RecipeSummary) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}
+
+// Ref: #/components/schemas/RecipeUpdate
+type RecipeUpdate struct {
+	Name                OptString                       `json:"name"`
+	Description         OptString                       `json:"description"`
+	Yield               OptNilRecipeYield               `json:"yield"`
+	PrepMinutes         OptNilInt32                     `json:"prepMinutes"`
+	CookMinutes         OptNilInt32                     `json:"cookMinutes"`
+	Source              OptString                       `json:"source"`
+	SourceUrl           OptNilString                    `json:"sourceUrl"`
+	Tags                []string                        `json:"tags"`
+	IngredientSections  []RecipeIngredientSectionInput  `json:"ingredientSections"`
+	InstructionSections []RecipeInstructionSectionInput `json:"instructionSections"`
+}
+
+// GetName returns the value of Name.
+func (s *RecipeUpdate) GetName() OptString {
+	return s.Name
+}
+
+// GetDescription returns the value of Description.
+func (s *RecipeUpdate) GetDescription() OptString {
+	return s.Description
+}
+
+// GetYield returns the value of Yield.
+func (s *RecipeUpdate) GetYield() OptNilRecipeYield {
+	return s.Yield
+}
+
+// GetPrepMinutes returns the value of PrepMinutes.
+func (s *RecipeUpdate) GetPrepMinutes() OptNilInt32 {
+	return s.PrepMinutes
+}
+
+// GetCookMinutes returns the value of CookMinutes.
+func (s *RecipeUpdate) GetCookMinutes() OptNilInt32 {
+	return s.CookMinutes
+}
+
+// GetSource returns the value of Source.
+func (s *RecipeUpdate) GetSource() OptString {
+	return s.Source
+}
+
+// GetSourceUrl returns the value of SourceUrl.
+func (s *RecipeUpdate) GetSourceUrl() OptNilString {
+	return s.SourceUrl
+}
+
+// GetTags returns the value of Tags.
+func (s *RecipeUpdate) GetTags() []string {
+	return s.Tags
+}
+
+// GetIngredientSections returns the value of IngredientSections.
+func (s *RecipeUpdate) GetIngredientSections() []RecipeIngredientSectionInput {
+	return s.IngredientSections
+}
+
+// GetInstructionSections returns the value of InstructionSections.
+func (s *RecipeUpdate) GetInstructionSections() []RecipeInstructionSectionInput {
+	return s.InstructionSections
+}
+
+// SetName sets the value of Name.
+func (s *RecipeUpdate) SetName(val OptString) {
+	s.Name = val
+}
+
+// SetDescription sets the value of Description.
+func (s *RecipeUpdate) SetDescription(val OptString) {
+	s.Description = val
+}
+
+// SetYield sets the value of Yield.
+func (s *RecipeUpdate) SetYield(val OptNilRecipeYield) {
+	s.Yield = val
+}
+
+// SetPrepMinutes sets the value of PrepMinutes.
+func (s *RecipeUpdate) SetPrepMinutes(val OptNilInt32) {
+	s.PrepMinutes = val
+}
+
+// SetCookMinutes sets the value of CookMinutes.
+func (s *RecipeUpdate) SetCookMinutes(val OptNilInt32) {
+	s.CookMinutes = val
+}
+
+// SetSource sets the value of Source.
+func (s *RecipeUpdate) SetSource(val OptString) {
+	s.Source = val
+}
+
+// SetSourceUrl sets the value of SourceUrl.
+func (s *RecipeUpdate) SetSourceUrl(val OptNilString) {
+	s.SourceUrl = val
+}
+
+// SetTags sets the value of Tags.
+func (s *RecipeUpdate) SetTags(val []string) {
+	s.Tags = val
+}
+
+// SetIngredientSections sets the value of IngredientSections.
+func (s *RecipeUpdate) SetIngredientSections(val []RecipeIngredientSectionInput) {
+	s.IngredientSections = val
+}
+
+// SetInstructionSections sets the value of InstructionSections.
+func (s *RecipeUpdate) SetInstructionSections(val []RecipeInstructionSectionInput) {
+	s.InstructionSections = val
+}
+
+// Ref: #/components/schemas/RecipeYield
+type RecipeYield struct {
+	Amount float64 `json:"amount"`
+	Unit   string  `json:"unit"`
+}
+
+// GetAmount returns the value of Amount.
+func (s *RecipeYield) GetAmount() float64 {
+	return s.Amount
+}
+
+// GetUnit returns the value of Unit.
+func (s *RecipeYield) GetUnit() string {
+	return s.Unit
+}
+
+// SetAmount sets the value of Amount.
+func (s *RecipeYield) SetAmount(val float64) {
+	s.Amount = val
+}
+
+// SetUnit sets the value of Unit.
+func (s *RecipeYield) SetUnit(val string) {
+	s.Unit = val
 }
 
 // Ref: #/components/schemas/Space
@@ -1719,6 +2856,9 @@ func (s *SpaceMemberUpdate) SetRole(val SpaceRole) {
 
 // SpaceMembersDeleteNoContent is response for SpaceMembersDelete operation.
 type SpaceMembersDeleteNoContent struct{}
+
+// SpaceRecipesDeleteNoContent is response for SpaceRecipesDelete operation.
+type SpaceRecipesDeleteNoContent struct{}
 
 // Ref: #/components/schemas/SpaceRole
 type SpaceRole string

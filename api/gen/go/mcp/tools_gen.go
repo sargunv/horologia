@@ -48,6 +48,12 @@ type Handlers interface {
 	TasksSearch(ctx context.Context, params apigen.TasksSearchParams) (*apigen.TaskSearchResultList, error)
 	SpaceTaskRelationsCreate(ctx context.Context, req *apigen.TaskRelationCreate, params apigen.SpaceTaskRelationsCreateParams) (*apigen.TaskRelation, error)
 	SpaceTaskRelationsDelete(ctx context.Context, params apigen.SpaceTaskRelationsDeleteParams) error
+	SpaceRecipesList(ctx context.Context, params apigen.SpaceRecipesListParams) (*apigen.RecipePage, error)
+	SpaceRecipesCreate(ctx context.Context, req *apigen.RecipeCreate, params apigen.SpaceRecipesCreateParams) (*apigen.Recipe, error)
+	SpaceRecipesRead(ctx context.Context, params apigen.SpaceRecipesReadParams) (*apigen.Recipe, error)
+	SpaceRecipesUpdate(ctx context.Context, req *apigen.RecipeUpdate, params apigen.SpaceRecipesUpdateParams) (*apigen.Recipe, error)
+	SpaceRecipesDelete(ctx context.Context, params apigen.SpaceRecipesDeleteParams) error
+	RecipesSearch(ctx context.Context, params apigen.RecipesSearchParams) (*apigen.RecipeSearchResultList, error)
 	SpaceTaskStatusesList(ctx context.Context, params apigen.SpaceTaskStatusesListParams) (*apigen.TaskStatusList, error)
 	SpaceTaskStatusesReplace(ctx context.Context, req *apigen.TaskStatusReplace, params apigen.SpaceTaskStatusesReplaceParams) (*apigen.TaskStatusList, error)
 	SpaceTaskEffortLevelsList(ctx context.Context, params apigen.SpaceTaskEffortLevelsListParams) (*apigen.TaskEffortLevelList, error)
@@ -55,6 +61,7 @@ type Handlers interface {
 	SpaceTaskPriorityLevelsList(ctx context.Context, params apigen.SpaceTaskPriorityLevelsListParams) (*apigen.TaskPriorityLevelList, error)
 	SpaceTaskPriorityLevelsReplace(ctx context.Context, req *apigen.TaskPriorityLevelReplace, params apigen.SpaceTaskPriorityLevelsReplaceParams) (*apigen.TaskPriorityLevelList, error)
 	SpaceTaskActivityList(ctx context.Context, params apigen.SpaceTaskActivityListParams) (*apigen.ActivityLogPage, error)
+	SpaceRecipeActivityList(ctx context.Context, params apigen.SpaceRecipeActivityListParams) (*apigen.ActivityLogPage, error)
 	SpaceActivityList(ctx context.Context, params apigen.SpaceActivityListParams) (*apigen.ActivityLogPage, error)
 	UserActivityList(ctx context.Context, params apigen.UserActivityListParams) (*apigen.ActivityLogPage, error)
 }
@@ -92,6 +99,12 @@ func RegisterTools(s *mcpserver.MCPServer, h Handlers) {
 	s.AddTool(taskSearchTool(), taskSearchHandler(h))
 	s.AddTool(relationCreateTool(), relationCreateHandler(h))
 	s.AddTool(relationDeleteTool(), relationDeleteHandler(h))
+	s.AddTool(recipeListTool(), recipeListHandler(h))
+	s.AddTool(recipeCreateTool(), recipeCreateHandler(h))
+	s.AddTool(recipeGetTool(), recipeGetHandler(h))
+	s.AddTool(recipeUpdateTool(), recipeUpdateHandler(h))
+	s.AddTool(recipeDeleteTool(), recipeDeleteHandler(h))
+	s.AddTool(recipeSearchTool(), recipeSearchHandler(h))
 	s.AddTool(statusListTool(), statusListHandler(h))
 	s.AddTool(statusReplaceTool(), statusReplaceHandler(h))
 	s.AddTool(effortLevelListTool(), effortLevelListHandler(h))
@@ -99,6 +112,7 @@ func RegisterTools(s *mcpserver.MCPServer, h Handlers) {
 	s.AddTool(priorityLevelListTool(), priorityLevelListHandler(h))
 	s.AddTool(priorityLevelReplaceTool(), priorityLevelReplaceHandler(h))
 	s.AddTool(taskActivityListTool(), taskActivityListHandler(h))
+	s.AddTool(recipeActivityListTool(), recipeActivityListHandler(h))
 	s.AddTool(spaceActivityListTool(), spaceActivityListHandler(h))
 	s.AddTool(userActivityListTool(), userActivityListHandler(h))
 }
@@ -1984,6 +1998,1100 @@ func relationDeleteHandler(h Handlers) mcpserver.ToolHandlerFunc {
 	}
 }
 
+// --- recipe_list ---
+
+func recipeListTool() mcp.Tool {
+	return mcp.NewTool("recipe_list",
+		mcp.WithDescription("List recipe summaries in a space. Returns recipe IDs needed by recipe_get and recipe_update."),
+		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("cursor", mcp.Description("Pagination cursor from a previous response.")),
+		mcp.WithNumber("limit", mcp.Description("Maximum number of items to return (1–100).")),
+	)
+}
+
+func recipeListHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		params := apigen.SpaceRecipesListParams{SpaceSlug: spaceSlug}
+		if v, ok := args["cursor"].(string); ok && v != "" {
+			convertedCursor := v
+			params.Cursor.SetTo(convertedCursor)
+		}
+		if v, ok := args["limit"].(float64); ok {
+			convertedLimit := int32(v)
+			params.Limit.SetTo(convertedLimit)
+		}
+		result, err := h.SpaceRecipesList(ctx, params)
+		if err != nil {
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- recipe_create ---
+
+func recipeCreateTool() mcp.Tool {
+	return mcp.NewTool("recipe_create",
+		mcp.WithDescription("Create a recipe in a space."),
+		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("name", mcp.Required()),
+		mcp.WithString("description"),
+		withRawProperty("yield", false, map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"amount": map[string]any{
+					"type": "number",
+				},
+				"unit": map[string]any{
+					"type": "string",
+				},
+			},
+			"required": []string{"amount", "unit"},
+		}),
+		mcp.WithNumber("prepMinutes"),
+		mcp.WithNumber("cookMinutes"),
+		mcp.WithString("source"),
+		mcp.WithString("sourceUrl"),
+		withRawProperty("tags", false, map[string]any{
+			"type": "array",
+			"items": map[string]any{
+				"type": "string",
+			},
+		}),
+		withRawProperty("ingredientSections", false, map[string]any{
+			"type": "array",
+			"items": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"title": map[string]any{
+						"type": "string",
+					},
+					"ingredients": map[string]any{
+						"type": "array",
+						"items": map[string]any{
+							"type": "object",
+							"properties": map[string]any{
+								"quantity": map[string]any{
+									"type": "number",
+								},
+								"quantityMax": map[string]any{
+									"type": "number",
+								},
+								"unit": map[string]any{
+									"type": "string",
+								},
+								"item": map[string]any{
+									"type": "string",
+								},
+								"preparation": map[string]any{
+									"type": "string",
+								},
+								"optional": map[string]any{
+									"type": "boolean",
+								},
+							},
+							"required": []string{"item"},
+						},
+					},
+				},
+				"required": []string{"ingredients"},
+			},
+		}),
+		withRawProperty("instructionSections", false, map[string]any{
+			"type": "array",
+			"items": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"title": map[string]any{
+						"type": "string",
+					},
+					"steps": map[string]any{
+						"type": "array",
+						"items": map[string]any{
+							"type": "object",
+							"properties": map[string]any{
+								"body": map[string]any{
+									"type": "string",
+								},
+							},
+							"required": []string{"body"},
+						},
+					},
+				},
+				"required": []string{"steps"},
+			},
+		}),
+	)
+}
+
+func recipeCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		params := apigen.SpaceRecipesCreateParams{SpaceSlug: spaceSlug}
+		body := &apigen.RecipeCreate{}
+		rawName, hasName := args["name"]
+		if hasName {
+			if rawName == nil {
+				return mcp.NewToolResultError("name is required"), nil
+			}
+				vName, ok := rawName.(string)
+				if !ok || vName == "" {
+					return mcp.NewToolResultError("name is required"), nil
+				}
+				convertedName := vName
+				body.Name = convertedName
+		} else if true {
+			return mcp.NewToolResultError("name is required"), nil
+		}
+		rawDescription, hasDescription := args["description"]
+		if hasDescription {
+			if rawDescription == nil {
+				return mcp.NewToolResultError("description must not be null"), nil
+			}
+				vDescription, ok := rawDescription.(string)
+				if !ok {
+					return mcp.NewToolResultError("description must be a string"), nil
+				}
+				convertedDescription := vDescription
+				body.Description.SetTo(convertedDescription)
+		} else if false {
+			return mcp.NewToolResultError("description is required"), nil
+		}
+		rawYield, hasYield := args["yield"]
+		if hasYield {
+			if rawYield == nil {
+				return mcp.NewToolResultError("yield must be an object"), nil
+			}
+				mYield, ok := rawYield.(map[string]any)
+				if !ok {
+					return mcp.NewToolResultError("yield must be an object"), nil
+				}
+				var valueYield apigen.RecipeYield
+				rawvalueYieldAmount, hasvalueYieldAmount := mYield["amount"]
+				if hasvalueYieldAmount {
+					if rawvalueYieldAmount == nil {
+						return mcp.NewToolResultError("yield.amount is required"), nil
+					}
+						vvalueYieldAmount, ok := rawvalueYieldAmount.(float64)
+						if !ok {
+							return mcp.NewToolResultError("yield.amount must be a number"), nil
+						}
+						convertedvalueYieldAmount := vvalueYieldAmount
+						valueYield.Amount = convertedvalueYieldAmount
+				} else if true {
+					return mcp.NewToolResultError("yield.amount is required"), nil
+				}
+				rawvalueYieldUnit, hasvalueYieldUnit := mYield["unit"]
+				if hasvalueYieldUnit {
+					if rawvalueYieldUnit == nil {
+						return mcp.NewToolResultError("yield.unit is required"), nil
+					}
+						vvalueYieldUnit, ok := rawvalueYieldUnit.(string)
+						if !ok || vvalueYieldUnit == "" {
+							return mcp.NewToolResultError("yield.unit is required"), nil
+						}
+						convertedvalueYieldUnit := vvalueYieldUnit
+						valueYield.Unit = convertedvalueYieldUnit
+				} else if true {
+					return mcp.NewToolResultError("yield.unit is required"), nil
+				}
+				body.Yield.SetTo(valueYield)
+		} else if false {
+			return mcp.NewToolResultError("yield is required"), nil
+		}
+		rawPrepMinutes, hasPrepMinutes := args["prepMinutes"]
+		if hasPrepMinutes {
+			if rawPrepMinutes == nil {
+				return mcp.NewToolResultError("prepMinutes must not be null"), nil
+			}
+				vPrepMinutes, ok := rawPrepMinutes.(float64)
+				if !ok {
+					return mcp.NewToolResultError("prepMinutes must be a number"), nil
+				}
+				convertedPrepMinutes := int32(vPrepMinutes)
+				body.PrepMinutes.SetTo(convertedPrepMinutes)
+		} else if false {
+			return mcp.NewToolResultError("prepMinutes is required"), nil
+		}
+		rawCookMinutes, hasCookMinutes := args["cookMinutes"]
+		if hasCookMinutes {
+			if rawCookMinutes == nil {
+				return mcp.NewToolResultError("cookMinutes must not be null"), nil
+			}
+				vCookMinutes, ok := rawCookMinutes.(float64)
+				if !ok {
+					return mcp.NewToolResultError("cookMinutes must be a number"), nil
+				}
+				convertedCookMinutes := int32(vCookMinutes)
+				body.CookMinutes.SetTo(convertedCookMinutes)
+		} else if false {
+			return mcp.NewToolResultError("cookMinutes is required"), nil
+		}
+		rawSource, hasSource := args["source"]
+		if hasSource {
+			if rawSource == nil {
+				return mcp.NewToolResultError("source must not be null"), nil
+			}
+				vSource, ok := rawSource.(string)
+				if !ok {
+					return mcp.NewToolResultError("source must be a string"), nil
+				}
+				convertedSource := vSource
+				body.Source.SetTo(convertedSource)
+		} else if false {
+			return mcp.NewToolResultError("source is required"), nil
+		}
+		rawSourceUrl, hasSourceUrl := args["sourceUrl"]
+		if hasSourceUrl {
+			if rawSourceUrl == nil {
+				return mcp.NewToolResultError("sourceUrl must not be null"), nil
+			}
+				vSourceUrl, ok := rawSourceUrl.(string)
+				if !ok {
+					return mcp.NewToolResultError("sourceUrl must be a string"), nil
+				}
+				convertedSourceUrl := vSourceUrl
+				body.SourceUrl.SetTo(convertedSourceUrl)
+		} else if false {
+			return mcp.NewToolResultError("sourceUrl is required"), nil
+		}
+		rawTags, hasTags := args["tags"]
+		if hasTags {
+			if rawTags == nil {
+				return mcp.NewToolResultError("tags must be an array"), nil
+			}
+			rawTagsItems, ok := rawTags.([]any)
+			if !ok {
+				return mcp.NewToolResultError("tags must be an array"), nil
+			}
+			tagsItems := make([]string, len(rawTagsItems))
+			for i, raw := range rawTagsItems {
+				v, ok := raw.(string)
+				if !ok {
+					return mcp.NewToolResultError(fmt.Sprintf("tags[%d] must be a string", i)), nil
+				}
+				converted := v
+				tagsItems[i] = converted
+			}
+			body.Tags = tagsItems
+		} else if false {
+			return mcp.NewToolResultError("tags is required"), nil
+		}
+		rawIngredientSections, hasIngredientSections := args["ingredientSections"]
+		if hasIngredientSections {
+			if rawIngredientSections == nil {
+				return mcp.NewToolResultError("ingredientSections must be an array"), nil
+			}
+			rawIngredientSectionsItems, ok := rawIngredientSections.([]any)
+			if !ok {
+				return mcp.NewToolResultError("ingredientSections must be an array"), nil
+			}
+			ingredientSectionsItems := make([]apigen.RecipeIngredientSectionInput, len(rawIngredientSectionsItems))
+			for i, raw := range rawIngredientSectionsItems {
+				m, ok := raw.(map[string]any)
+				if !ok {
+					return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d] must be an object", i)), nil
+				}
+				var value apigen.RecipeIngredientSectionInput
+				rawvalueTitle, hasvalueTitle := m["title"]
+				if hasvalueTitle {
+					if rawvalueTitle == nil {
+						return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].title must not be null", i)), nil
+					}
+						vvalueTitle, ok := rawvalueTitle.(string)
+						if !ok {
+							return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].title must be a string", i)), nil
+						}
+						convertedvalueTitle := vvalueTitle
+						value.Title.SetTo(convertedvalueTitle)
+				} else if false {
+					return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].title is required", i)), nil
+				}
+				rawvalueIngredients, hasvalueIngredients := m["ingredients"]
+				if hasvalueIngredients {
+					if rawvalueIngredients == nil {
+						return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients must be an array", i)), nil
+					}
+					rawvalueIngredientsItems, ok := rawvalueIngredients.([]any)
+					if !ok {
+						return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients must be an array", i)), nil
+					}
+					valueIngredientsItems := make([]apigen.RecipeIngredientInput, len(rawvalueIngredientsItems))
+					for j, rawNested := range rawvalueIngredientsItems {
+						nestedMap, ok := rawNested.(map[string]any)
+						if !ok {
+							return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d] must be an object", i, j)), nil
+						}
+						var nestedValue apigen.RecipeIngredientInput
+						rawNestedIngredientsQuantity, hasNestedIngredientsQuantity := nestedMap["quantity"]
+						if hasNestedIngredientsQuantity {
+							if rawNestedIngredientsQuantity == nil {
+								return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].quantity must not be null", i, j)), nil
+							}
+								vNestedIngredientsQuantity, ok := rawNestedIngredientsQuantity.(float64)
+								if !ok {
+									return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].quantity must be a number", i, j)), nil
+								}
+								convertedNestedIngredientsQuantity := vNestedIngredientsQuantity
+								nestedValue.Quantity.SetTo(convertedNestedIngredientsQuantity)
+						} else if false {
+							return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].quantity is required", i, j)), nil
+						}
+						rawNestedIngredientsQuantityMax, hasNestedIngredientsQuantityMax := nestedMap["quantityMax"]
+						if hasNestedIngredientsQuantityMax {
+							if rawNestedIngredientsQuantityMax == nil {
+								return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].quantityMax must not be null", i, j)), nil
+							}
+								vNestedIngredientsQuantityMax, ok := rawNestedIngredientsQuantityMax.(float64)
+								if !ok {
+									return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].quantityMax must be a number", i, j)), nil
+								}
+								convertedNestedIngredientsQuantityMax := vNestedIngredientsQuantityMax
+								nestedValue.QuantityMax.SetTo(convertedNestedIngredientsQuantityMax)
+						} else if false {
+							return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].quantityMax is required", i, j)), nil
+						}
+						rawNestedIngredientsUnit, hasNestedIngredientsUnit := nestedMap["unit"]
+						if hasNestedIngredientsUnit {
+							if rawNestedIngredientsUnit == nil {
+								return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].unit must not be null", i, j)), nil
+							}
+								vNestedIngredientsUnit, ok := rawNestedIngredientsUnit.(string)
+								if !ok {
+									return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].unit must be a string", i, j)), nil
+								}
+								convertedNestedIngredientsUnit := vNestedIngredientsUnit
+								nestedValue.Unit.SetTo(convertedNestedIngredientsUnit)
+						} else if false {
+							return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].unit is required", i, j)), nil
+						}
+						rawNestedIngredientsItem, hasNestedIngredientsItem := nestedMap["item"]
+						if hasNestedIngredientsItem {
+							if rawNestedIngredientsItem == nil {
+								return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].item is required", i, j)), nil
+							}
+								vNestedIngredientsItem, ok := rawNestedIngredientsItem.(string)
+								if !ok || vNestedIngredientsItem == "" {
+									return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].item is required", i, j)), nil
+								}
+								convertedNestedIngredientsItem := vNestedIngredientsItem
+								nestedValue.Item = convertedNestedIngredientsItem
+						} else if true {
+							return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].item is required", i, j)), nil
+						}
+						rawNestedIngredientsPreparation, hasNestedIngredientsPreparation := nestedMap["preparation"]
+						if hasNestedIngredientsPreparation {
+							if rawNestedIngredientsPreparation == nil {
+								return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].preparation must not be null", i, j)), nil
+							}
+								vNestedIngredientsPreparation, ok := rawNestedIngredientsPreparation.(string)
+								if !ok {
+									return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].preparation must be a string", i, j)), nil
+								}
+								convertedNestedIngredientsPreparation := vNestedIngredientsPreparation
+								nestedValue.Preparation.SetTo(convertedNestedIngredientsPreparation)
+						} else if false {
+							return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].preparation is required", i, j)), nil
+						}
+						rawNestedIngredientsOptional, hasNestedIngredientsOptional := nestedMap["optional"]
+						if hasNestedIngredientsOptional {
+							if rawNestedIngredientsOptional == nil {
+								return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].optional must not be null", i, j)), nil
+							}
+								vNestedIngredientsOptional, ok := rawNestedIngredientsOptional.(bool)
+								if !ok {
+									return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].optional must be a boolean", i, j)), nil
+								}
+								convertedNestedIngredientsOptional := vNestedIngredientsOptional
+								nestedValue.Optional.SetTo(convertedNestedIngredientsOptional)
+						} else if false {
+							return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].optional is required", i, j)), nil
+						}
+						valueIngredientsItems[j] = nestedValue
+					}
+					value.Ingredients = valueIngredientsItems
+				} else if true {
+					return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients is required", i)), nil
+				}
+				ingredientSectionsItems[i] = value
+			}
+			body.IngredientSections = ingredientSectionsItems
+		} else if false {
+			return mcp.NewToolResultError("ingredientSections is required"), nil
+		}
+		rawInstructionSections, hasInstructionSections := args["instructionSections"]
+		if hasInstructionSections {
+			if rawInstructionSections == nil {
+				return mcp.NewToolResultError("instructionSections must be an array"), nil
+			}
+			rawInstructionSectionsItems, ok := rawInstructionSections.([]any)
+			if !ok {
+				return mcp.NewToolResultError("instructionSections must be an array"), nil
+			}
+			instructionSectionsItems := make([]apigen.RecipeInstructionSectionInput, len(rawInstructionSectionsItems))
+			for i, raw := range rawInstructionSectionsItems {
+				m, ok := raw.(map[string]any)
+				if !ok {
+					return mcp.NewToolResultError(fmt.Sprintf("instructionSections[%d] must be an object", i)), nil
+				}
+				var value apigen.RecipeInstructionSectionInput
+				rawvalueTitle, hasvalueTitle := m["title"]
+				if hasvalueTitle {
+					if rawvalueTitle == nil {
+						return mcp.NewToolResultError(fmt.Sprintf("instructionSections[%d].title must not be null", i)), nil
+					}
+						vvalueTitle, ok := rawvalueTitle.(string)
+						if !ok {
+							return mcp.NewToolResultError(fmt.Sprintf("instructionSections[%d].title must be a string", i)), nil
+						}
+						convertedvalueTitle := vvalueTitle
+						value.Title.SetTo(convertedvalueTitle)
+				} else if false {
+					return mcp.NewToolResultError(fmt.Sprintf("instructionSections[%d].title is required", i)), nil
+				}
+				rawvalueSteps, hasvalueSteps := m["steps"]
+				if hasvalueSteps {
+					if rawvalueSteps == nil {
+						return mcp.NewToolResultError(fmt.Sprintf("instructionSections[%d].steps must be an array", i)), nil
+					}
+					rawvalueStepsItems, ok := rawvalueSteps.([]any)
+					if !ok {
+						return mcp.NewToolResultError(fmt.Sprintf("instructionSections[%d].steps must be an array", i)), nil
+					}
+					valueStepsItems := make([]apigen.RecipeStepInput, len(rawvalueStepsItems))
+					for j, rawNested := range rawvalueStepsItems {
+						nestedMap, ok := rawNested.(map[string]any)
+						if !ok {
+							return mcp.NewToolResultError(fmt.Sprintf("instructionSections[%d].steps[%d] must be an object", i, j)), nil
+						}
+						var nestedValue apigen.RecipeStepInput
+						rawNestedStepsBody, hasNestedStepsBody := nestedMap["body"]
+						if hasNestedStepsBody {
+							if rawNestedStepsBody == nil {
+								return mcp.NewToolResultError(fmt.Sprintf("instructionSections[%d].steps[%d].body is required", i, j)), nil
+							}
+								vNestedStepsBody, ok := rawNestedStepsBody.(string)
+								if !ok || vNestedStepsBody == "" {
+									return mcp.NewToolResultError(fmt.Sprintf("instructionSections[%d].steps[%d].body is required", i, j)), nil
+								}
+								convertedNestedStepsBody := vNestedStepsBody
+								nestedValue.Body = convertedNestedStepsBody
+						} else if true {
+							return mcp.NewToolResultError(fmt.Sprintf("instructionSections[%d].steps[%d].body is required", i, j)), nil
+						}
+						valueStepsItems[j] = nestedValue
+					}
+					value.Steps = valueStepsItems
+				} else if true {
+					return mcp.NewToolResultError(fmt.Sprintf("instructionSections[%d].steps is required", i)), nil
+				}
+				instructionSectionsItems[i] = value
+			}
+			body.InstructionSections = instructionSectionsItems
+		} else if false {
+			return mcp.NewToolResultError("instructionSections is required"), nil
+		}
+		result, err := h.SpaceRecipesCreate(ctx, body, params)
+		if err != nil {
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- recipe_get ---
+
+func recipeGetTool() mcp.Tool {
+	return mcp.NewTool("recipe_get",
+		mcp.WithDescription("Get a recipe by ID. Obtain recipe IDs from recipe_list or recipe_search."),
+		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("recipeId", mcp.Required()),
+	)
+}
+
+func recipeGetHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		recipeId, ok := args["recipeId"].(string)
+		if !ok || recipeId == "" {
+			return mcp.NewToolResultError("recipeId is required"), nil
+		}
+		params := apigen.SpaceRecipesReadParams{SpaceSlug: spaceSlug, RecipeId: recipeId}
+		result, err := h.SpaceRecipesRead(ctx, params)
+		if err != nil {
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- recipe_update ---
+
+func recipeUpdateTool() mcp.Tool {
+	return mcp.NewTool("recipe_update",
+		mcp.WithDescription("Update a recipe. Nested collections replace their existing values when provided."),
+		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("recipeId", mcp.Required()),
+		mcp.WithString("name"),
+		mcp.WithString("description"),
+		withRawProperty("yield", false, map[string]any{
+			"type": []any{"object", "null"},
+			"properties": map[string]any{
+				"amount": map[string]any{
+					"type": "number",
+				},
+				"unit": map[string]any{
+					"type": "string",
+				},
+			},
+			"required": []string{"amount", "unit"},
+		}),
+		withRawProperty("prepMinutes", false, map[string]any{
+			"type": []any{"number", "null"},
+		}),
+		withRawProperty("cookMinutes", false, map[string]any{
+			"type": []any{"number", "null"},
+		}),
+		mcp.WithString("source"),
+		withRawProperty("sourceUrl", false, map[string]any{
+			"type": []any{"string", "null"},
+		}),
+		withRawProperty("tags", false, map[string]any{
+			"type": "array",
+			"items": map[string]any{
+				"type": "string",
+			},
+		}),
+		withRawProperty("ingredientSections", false, map[string]any{
+			"type": "array",
+			"items": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"title": map[string]any{
+						"type": "string",
+					},
+					"ingredients": map[string]any{
+						"type": "array",
+						"items": map[string]any{
+							"type": "object",
+							"properties": map[string]any{
+								"quantity": map[string]any{
+									"type": "number",
+								},
+								"quantityMax": map[string]any{
+									"type": "number",
+								},
+								"unit": map[string]any{
+									"type": "string",
+								},
+								"item": map[string]any{
+									"type": "string",
+								},
+								"preparation": map[string]any{
+									"type": "string",
+								},
+								"optional": map[string]any{
+									"type": "boolean",
+								},
+							},
+							"required": []string{"item"},
+						},
+					},
+				},
+				"required": []string{"ingredients"},
+			},
+		}),
+		withRawProperty("instructionSections", false, map[string]any{
+			"type": "array",
+			"items": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"title": map[string]any{
+						"type": "string",
+					},
+					"steps": map[string]any{
+						"type": "array",
+						"items": map[string]any{
+							"type": "object",
+							"properties": map[string]any{
+								"body": map[string]any{
+									"type": "string",
+								},
+							},
+							"required": []string{"body"},
+						},
+					},
+				},
+				"required": []string{"steps"},
+			},
+		}),
+	)
+}
+
+func recipeUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		recipeId, ok := args["recipeId"].(string)
+		if !ok || recipeId == "" {
+			return mcp.NewToolResultError("recipeId is required"), nil
+		}
+		params := apigen.SpaceRecipesUpdateParams{SpaceSlug: spaceSlug, RecipeId: recipeId}
+		body := &apigen.RecipeUpdate{}
+		rawName, hasName := args["name"]
+		if hasName {
+			if rawName == nil {
+				return mcp.NewToolResultError("name must not be null"), nil
+			}
+				vName, ok := rawName.(string)
+				if !ok {
+					return mcp.NewToolResultError("name must be a string"), nil
+				}
+				convertedName := vName
+				body.Name.SetTo(convertedName)
+		} else if false {
+			return mcp.NewToolResultError("name is required"), nil
+		}
+		rawDescription, hasDescription := args["description"]
+		if hasDescription {
+			if rawDescription == nil {
+				return mcp.NewToolResultError("description must not be null"), nil
+			}
+				vDescription, ok := rawDescription.(string)
+				if !ok {
+					return mcp.NewToolResultError("description must be a string"), nil
+				}
+				convertedDescription := vDescription
+				body.Description.SetTo(convertedDescription)
+		} else if false {
+			return mcp.NewToolResultError("description is required"), nil
+		}
+		rawYield, hasYield := args["yield"]
+		if hasYield {
+			if rawYield == nil {
+				body.Yield.SetToNull()
+			} else {
+				mYield, ok := rawYield.(map[string]any)
+				if !ok {
+					return mcp.NewToolResultError("yield must be an object"), nil
+				}
+				var valueYield apigen.RecipeYield
+				rawvalueYieldAmount, hasvalueYieldAmount := mYield["amount"]
+				if hasvalueYieldAmount {
+					if rawvalueYieldAmount == nil {
+						return mcp.NewToolResultError("yield.amount is required"), nil
+					}
+						vvalueYieldAmount, ok := rawvalueYieldAmount.(float64)
+						if !ok {
+							return mcp.NewToolResultError("yield.amount must be a number"), nil
+						}
+						convertedvalueYieldAmount := vvalueYieldAmount
+						valueYield.Amount = convertedvalueYieldAmount
+				} else if true {
+					return mcp.NewToolResultError("yield.amount is required"), nil
+				}
+				rawvalueYieldUnit, hasvalueYieldUnit := mYield["unit"]
+				if hasvalueYieldUnit {
+					if rawvalueYieldUnit == nil {
+						return mcp.NewToolResultError("yield.unit is required"), nil
+					}
+						vvalueYieldUnit, ok := rawvalueYieldUnit.(string)
+						if !ok || vvalueYieldUnit == "" {
+							return mcp.NewToolResultError("yield.unit is required"), nil
+						}
+						convertedvalueYieldUnit := vvalueYieldUnit
+						valueYield.Unit = convertedvalueYieldUnit
+				} else if true {
+					return mcp.NewToolResultError("yield.unit is required"), nil
+				}
+				body.Yield.SetTo(valueYield)
+			}
+		} else if false {
+			return mcp.NewToolResultError("yield is required"), nil
+		}
+		rawPrepMinutes, hasPrepMinutes := args["prepMinutes"]
+		if hasPrepMinutes {
+			if rawPrepMinutes == nil {
+				body.PrepMinutes.SetToNull()
+			} else {
+				vPrepMinutes, ok := rawPrepMinutes.(float64)
+				if !ok {
+					return mcp.NewToolResultError("prepMinutes must be a number"), nil
+				}
+				convertedPrepMinutes := int32(vPrepMinutes)
+				body.PrepMinutes.SetTo(convertedPrepMinutes)
+			}
+		} else if false {
+			return mcp.NewToolResultError("prepMinutes is required"), nil
+		}
+		rawCookMinutes, hasCookMinutes := args["cookMinutes"]
+		if hasCookMinutes {
+			if rawCookMinutes == nil {
+				body.CookMinutes.SetToNull()
+			} else {
+				vCookMinutes, ok := rawCookMinutes.(float64)
+				if !ok {
+					return mcp.NewToolResultError("cookMinutes must be a number"), nil
+				}
+				convertedCookMinutes := int32(vCookMinutes)
+				body.CookMinutes.SetTo(convertedCookMinutes)
+			}
+		} else if false {
+			return mcp.NewToolResultError("cookMinutes is required"), nil
+		}
+		rawSource, hasSource := args["source"]
+		if hasSource {
+			if rawSource == nil {
+				return mcp.NewToolResultError("source must not be null"), nil
+			}
+				vSource, ok := rawSource.(string)
+				if !ok {
+					return mcp.NewToolResultError("source must be a string"), nil
+				}
+				convertedSource := vSource
+				body.Source.SetTo(convertedSource)
+		} else if false {
+			return mcp.NewToolResultError("source is required"), nil
+		}
+		rawSourceUrl, hasSourceUrl := args["sourceUrl"]
+		if hasSourceUrl {
+			if rawSourceUrl == nil {
+				body.SourceUrl.SetToNull()
+			} else {
+				vSourceUrl, ok := rawSourceUrl.(string)
+				if !ok {
+					return mcp.NewToolResultError("sourceUrl must be a string"), nil
+				}
+				convertedSourceUrl := vSourceUrl
+				body.SourceUrl.SetTo(convertedSourceUrl)
+			}
+		} else if false {
+			return mcp.NewToolResultError("sourceUrl is required"), nil
+		}
+		rawTags, hasTags := args["tags"]
+		if hasTags {
+			if rawTags == nil {
+				return mcp.NewToolResultError("tags must be an array"), nil
+			}
+			rawTagsItems, ok := rawTags.([]any)
+			if !ok {
+				return mcp.NewToolResultError("tags must be an array"), nil
+			}
+			tagsItems := make([]string, len(rawTagsItems))
+			for i, raw := range rawTagsItems {
+				v, ok := raw.(string)
+				if !ok {
+					return mcp.NewToolResultError(fmt.Sprintf("tags[%d] must be a string", i)), nil
+				}
+				converted := v
+				tagsItems[i] = converted
+			}
+			body.Tags = tagsItems
+		} else if false {
+			return mcp.NewToolResultError("tags is required"), nil
+		}
+		rawIngredientSections, hasIngredientSections := args["ingredientSections"]
+		if hasIngredientSections {
+			if rawIngredientSections == nil {
+				return mcp.NewToolResultError("ingredientSections must be an array"), nil
+			}
+			rawIngredientSectionsItems, ok := rawIngredientSections.([]any)
+			if !ok {
+				return mcp.NewToolResultError("ingredientSections must be an array"), nil
+			}
+			ingredientSectionsItems := make([]apigen.RecipeIngredientSectionInput, len(rawIngredientSectionsItems))
+			for i, raw := range rawIngredientSectionsItems {
+				m, ok := raw.(map[string]any)
+				if !ok {
+					return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d] must be an object", i)), nil
+				}
+				var value apigen.RecipeIngredientSectionInput
+				rawvalueTitle, hasvalueTitle := m["title"]
+				if hasvalueTitle {
+					if rawvalueTitle == nil {
+						return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].title must not be null", i)), nil
+					}
+						vvalueTitle, ok := rawvalueTitle.(string)
+						if !ok {
+							return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].title must be a string", i)), nil
+						}
+						convertedvalueTitle := vvalueTitle
+						value.Title.SetTo(convertedvalueTitle)
+				} else if false {
+					return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].title is required", i)), nil
+				}
+				rawvalueIngredients, hasvalueIngredients := m["ingredients"]
+				if hasvalueIngredients {
+					if rawvalueIngredients == nil {
+						return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients must be an array", i)), nil
+					}
+					rawvalueIngredientsItems, ok := rawvalueIngredients.([]any)
+					if !ok {
+						return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients must be an array", i)), nil
+					}
+					valueIngredientsItems := make([]apigen.RecipeIngredientInput, len(rawvalueIngredientsItems))
+					for j, rawNested := range rawvalueIngredientsItems {
+						nestedMap, ok := rawNested.(map[string]any)
+						if !ok {
+							return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d] must be an object", i, j)), nil
+						}
+						var nestedValue apigen.RecipeIngredientInput
+						rawNestedIngredientsQuantity, hasNestedIngredientsQuantity := nestedMap["quantity"]
+						if hasNestedIngredientsQuantity {
+							if rawNestedIngredientsQuantity == nil {
+								return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].quantity must not be null", i, j)), nil
+							}
+								vNestedIngredientsQuantity, ok := rawNestedIngredientsQuantity.(float64)
+								if !ok {
+									return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].quantity must be a number", i, j)), nil
+								}
+								convertedNestedIngredientsQuantity := vNestedIngredientsQuantity
+								nestedValue.Quantity.SetTo(convertedNestedIngredientsQuantity)
+						} else if false {
+							return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].quantity is required", i, j)), nil
+						}
+						rawNestedIngredientsQuantityMax, hasNestedIngredientsQuantityMax := nestedMap["quantityMax"]
+						if hasNestedIngredientsQuantityMax {
+							if rawNestedIngredientsQuantityMax == nil {
+								return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].quantityMax must not be null", i, j)), nil
+							}
+								vNestedIngredientsQuantityMax, ok := rawNestedIngredientsQuantityMax.(float64)
+								if !ok {
+									return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].quantityMax must be a number", i, j)), nil
+								}
+								convertedNestedIngredientsQuantityMax := vNestedIngredientsQuantityMax
+								nestedValue.QuantityMax.SetTo(convertedNestedIngredientsQuantityMax)
+						} else if false {
+							return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].quantityMax is required", i, j)), nil
+						}
+						rawNestedIngredientsUnit, hasNestedIngredientsUnit := nestedMap["unit"]
+						if hasNestedIngredientsUnit {
+							if rawNestedIngredientsUnit == nil {
+								return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].unit must not be null", i, j)), nil
+							}
+								vNestedIngredientsUnit, ok := rawNestedIngredientsUnit.(string)
+								if !ok {
+									return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].unit must be a string", i, j)), nil
+								}
+								convertedNestedIngredientsUnit := vNestedIngredientsUnit
+								nestedValue.Unit.SetTo(convertedNestedIngredientsUnit)
+						} else if false {
+							return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].unit is required", i, j)), nil
+						}
+						rawNestedIngredientsItem, hasNestedIngredientsItem := nestedMap["item"]
+						if hasNestedIngredientsItem {
+							if rawNestedIngredientsItem == nil {
+								return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].item is required", i, j)), nil
+							}
+								vNestedIngredientsItem, ok := rawNestedIngredientsItem.(string)
+								if !ok || vNestedIngredientsItem == "" {
+									return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].item is required", i, j)), nil
+								}
+								convertedNestedIngredientsItem := vNestedIngredientsItem
+								nestedValue.Item = convertedNestedIngredientsItem
+						} else if true {
+							return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].item is required", i, j)), nil
+						}
+						rawNestedIngredientsPreparation, hasNestedIngredientsPreparation := nestedMap["preparation"]
+						if hasNestedIngredientsPreparation {
+							if rawNestedIngredientsPreparation == nil {
+								return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].preparation must not be null", i, j)), nil
+							}
+								vNestedIngredientsPreparation, ok := rawNestedIngredientsPreparation.(string)
+								if !ok {
+									return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].preparation must be a string", i, j)), nil
+								}
+								convertedNestedIngredientsPreparation := vNestedIngredientsPreparation
+								nestedValue.Preparation.SetTo(convertedNestedIngredientsPreparation)
+						} else if false {
+							return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].preparation is required", i, j)), nil
+						}
+						rawNestedIngredientsOptional, hasNestedIngredientsOptional := nestedMap["optional"]
+						if hasNestedIngredientsOptional {
+							if rawNestedIngredientsOptional == nil {
+								return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].optional must not be null", i, j)), nil
+							}
+								vNestedIngredientsOptional, ok := rawNestedIngredientsOptional.(bool)
+								if !ok {
+									return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].optional must be a boolean", i, j)), nil
+								}
+								convertedNestedIngredientsOptional := vNestedIngredientsOptional
+								nestedValue.Optional.SetTo(convertedNestedIngredientsOptional)
+						} else if false {
+							return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].optional is required", i, j)), nil
+						}
+						valueIngredientsItems[j] = nestedValue
+					}
+					value.Ingredients = valueIngredientsItems
+				} else if true {
+					return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients is required", i)), nil
+				}
+				ingredientSectionsItems[i] = value
+			}
+			body.IngredientSections = ingredientSectionsItems
+		} else if false {
+			return mcp.NewToolResultError("ingredientSections is required"), nil
+		}
+		rawInstructionSections, hasInstructionSections := args["instructionSections"]
+		if hasInstructionSections {
+			if rawInstructionSections == nil {
+				return mcp.NewToolResultError("instructionSections must be an array"), nil
+			}
+			rawInstructionSectionsItems, ok := rawInstructionSections.([]any)
+			if !ok {
+				return mcp.NewToolResultError("instructionSections must be an array"), nil
+			}
+			instructionSectionsItems := make([]apigen.RecipeInstructionSectionInput, len(rawInstructionSectionsItems))
+			for i, raw := range rawInstructionSectionsItems {
+				m, ok := raw.(map[string]any)
+				if !ok {
+					return mcp.NewToolResultError(fmt.Sprintf("instructionSections[%d] must be an object", i)), nil
+				}
+				var value apigen.RecipeInstructionSectionInput
+				rawvalueTitle, hasvalueTitle := m["title"]
+				if hasvalueTitle {
+					if rawvalueTitle == nil {
+						return mcp.NewToolResultError(fmt.Sprintf("instructionSections[%d].title must not be null", i)), nil
+					}
+						vvalueTitle, ok := rawvalueTitle.(string)
+						if !ok {
+							return mcp.NewToolResultError(fmt.Sprintf("instructionSections[%d].title must be a string", i)), nil
+						}
+						convertedvalueTitle := vvalueTitle
+						value.Title.SetTo(convertedvalueTitle)
+				} else if false {
+					return mcp.NewToolResultError(fmt.Sprintf("instructionSections[%d].title is required", i)), nil
+				}
+				rawvalueSteps, hasvalueSteps := m["steps"]
+				if hasvalueSteps {
+					if rawvalueSteps == nil {
+						return mcp.NewToolResultError(fmt.Sprintf("instructionSections[%d].steps must be an array", i)), nil
+					}
+					rawvalueStepsItems, ok := rawvalueSteps.([]any)
+					if !ok {
+						return mcp.NewToolResultError(fmt.Sprintf("instructionSections[%d].steps must be an array", i)), nil
+					}
+					valueStepsItems := make([]apigen.RecipeStepInput, len(rawvalueStepsItems))
+					for j, rawNested := range rawvalueStepsItems {
+						nestedMap, ok := rawNested.(map[string]any)
+						if !ok {
+							return mcp.NewToolResultError(fmt.Sprintf("instructionSections[%d].steps[%d] must be an object", i, j)), nil
+						}
+						var nestedValue apigen.RecipeStepInput
+						rawNestedStepsBody, hasNestedStepsBody := nestedMap["body"]
+						if hasNestedStepsBody {
+							if rawNestedStepsBody == nil {
+								return mcp.NewToolResultError(fmt.Sprintf("instructionSections[%d].steps[%d].body is required", i, j)), nil
+							}
+								vNestedStepsBody, ok := rawNestedStepsBody.(string)
+								if !ok || vNestedStepsBody == "" {
+									return mcp.NewToolResultError(fmt.Sprintf("instructionSections[%d].steps[%d].body is required", i, j)), nil
+								}
+								convertedNestedStepsBody := vNestedStepsBody
+								nestedValue.Body = convertedNestedStepsBody
+						} else if true {
+							return mcp.NewToolResultError(fmt.Sprintf("instructionSections[%d].steps[%d].body is required", i, j)), nil
+						}
+						valueStepsItems[j] = nestedValue
+					}
+					value.Steps = valueStepsItems
+				} else if true {
+					return mcp.NewToolResultError(fmt.Sprintf("instructionSections[%d].steps is required", i)), nil
+				}
+				instructionSectionsItems[i] = value
+			}
+			body.InstructionSections = instructionSectionsItems
+		} else if false {
+			return mcp.NewToolResultError("instructionSections is required"), nil
+		}
+		result, err := h.SpaceRecipesUpdate(ctx, body, params)
+		if err != nil {
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- recipe_delete ---
+
+func recipeDeleteTool() mcp.Tool {
+	return mcp.NewTool("recipe_delete",
+		mcp.WithDescription("Delete a recipe by ID."),
+		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("recipeId", mcp.Required()),
+	)
+}
+
+func recipeDeleteHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		recipeId, ok := args["recipeId"].(string)
+		if !ok || recipeId == "" {
+			return mcp.NewToolResultError("recipeId is required"), nil
+		}
+		params := apigen.SpaceRecipesDeleteParams{SpaceSlug: spaceSlug, RecipeId: recipeId}
+		if err := h.SpaceRecipesDelete(ctx, params); err != nil {
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
+		}
+		return mcp.NewToolResultText("ok"), nil
+	}
+}
+
+// --- recipe_search ---
+
+func recipeSearchTool() mcp.Tool {
+	return mcp.NewTool("recipe_search",
+		mcp.WithDescription("Search recipes visible to the current user across all spaces."),
+		mcp.WithString("q", mcp.Required()),
+		mcp.WithString("spaceSlug"),
+		mcp.WithNumber("limit"),
+	)
+}
+
+func recipeSearchHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		params := apigen.RecipesSearchParams{}
+		if v, ok := args["q"].(string); ok && v != "" {
+			convertedQ := v
+			params.Q = convertedQ
+		}
+		if v, ok := args["spaceSlug"].(string); ok && v != "" {
+			convertedSpaceSlug := v
+			params.SpaceSlug.SetTo(convertedSpaceSlug)
+		}
+		if v, ok := args["limit"].(float64); ok {
+			convertedLimit := int32(v)
+			params.Limit.SetTo(convertedLimit)
+		}
+		result, err := h.RecipesSearch(ctx, params)
+		if err != nil {
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
 // --- status_list ---
 
 func statusListTool() mcp.Tool {
@@ -2386,6 +3494,46 @@ func taskActivityListHandler(h Handlers) mcpserver.ToolHandlerFunc {
 			params.Limit.SetTo(convertedLimit)
 		}
 		result, err := h.SpaceTaskActivityList(ctx, params)
+		if err != nil {
+			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
+		}
+		return mustToolResultJSON(result), nil
+	}
+}
+
+// --- recipe_activity_list ---
+
+func recipeActivityListTool() mcp.Tool {
+	return mcp.NewTool("recipe_activity_list",
+		mcp.WithDescription("List activity log entries for a specific recipe."),
+		mcp.WithString("spaceSlug", mcp.Required()),
+		mcp.WithString("recipeId", mcp.Required()),
+		mcp.WithString("cursor", mcp.Description("Pagination cursor from a previous response.")),
+		mcp.WithNumber("limit", mcp.Description("Maximum number of items to return (1–100).")),
+	)
+}
+
+func recipeActivityListHandler(h Handlers) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		spaceSlug, ok := args["spaceSlug"].(string)
+		if !ok || spaceSlug == "" {
+			return mcp.NewToolResultError("spaceSlug is required"), nil
+		}
+		recipeId, ok := args["recipeId"].(string)
+		if !ok || recipeId == "" {
+			return mcp.NewToolResultError("recipeId is required"), nil
+		}
+		params := apigen.SpaceRecipeActivityListParams{SpaceSlug: spaceSlug, RecipeId: recipeId}
+		if v, ok := args["cursor"].(string); ok && v != "" {
+			convertedCursor := v
+			params.Cursor.SetTo(convertedCursor)
+		}
+		if v, ok := args["limit"].(float64); ok {
+			convertedLimit := int32(v)
+			params.Limit.SetTo(convertedLimit)
+		}
+		result, err := h.SpaceRecipeActivityList(ctx, params)
 		if err != nil {
 			return mcp.NewToolResultError(h.ConvertError(ctx, err)), nil
 		}

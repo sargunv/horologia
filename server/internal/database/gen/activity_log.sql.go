@@ -132,6 +132,55 @@ func (q *Queries) ListActivityLogByActor(ctx context.Context, arg ListActivityLo
 	return items, nil
 }
 
+const listActivityLogByRecipe = `-- name: ListActivityLogByRecipe :many
+SELECT id, space_slug, actor_id, token_id, token_name, entity_type, entity_id, action, created_at FROM activity_log
+WHERE entity_type = 'recipe' AND entity_id = $1 AND space_slug = $2 AND ($3::bigint = 0 OR id < $3)
+ORDER BY id DESC
+LIMIT $4
+`
+
+type ListActivityLogByRecipeParams struct {
+	EntityID  string
+	SpaceSlug string
+	Column3   int64
+	Limit     int32
+}
+
+func (q *Queries) ListActivityLogByRecipe(ctx context.Context, arg ListActivityLogByRecipeParams) ([]ActivityLog, error) {
+	rows, err := q.db.Query(ctx, listActivityLogByRecipe,
+		arg.EntityID,
+		arg.SpaceSlug,
+		arg.Column3,
+		arg.Limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ActivityLog{}
+	for rows.Next() {
+		var i ActivityLog
+		if err := rows.Scan(
+			&i.ID,
+			&i.SpaceSlug,
+			&i.ActorID,
+			&i.TokenID,
+			&i.TokenName,
+			&i.EntityType,
+			&i.EntityID,
+			&i.Action,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listActivityLogBySpace = `-- name: ListActivityLogBySpace :many
 SELECT id, space_slug, actor_id, token_id, token_name, entity_type, entity_id, action, created_at FROM activity_log
 WHERE space_slug = $1 AND ($2::bigint = 0 OR id < $2)

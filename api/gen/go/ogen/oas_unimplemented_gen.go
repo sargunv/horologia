@@ -34,6 +34,13 @@ func (UnimplementedHandler) AuthListTokens(ctx context.Context) (r *AuthTokenLis
 	return r, ht.ErrNotImplemented
 }
 
+// RecipesSearch implements Recipes_search operation.
+//
+// GET /recipes/search
+func (UnimplementedHandler) RecipesSearch(ctx context.Context, params RecipesSearchParams) (r *RecipeSearchResultList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // SpaceActivityList implements SpaceActivity_list operation.
 //
 // GET /spaces/{spaceSlug}/activity
@@ -66,6 +73,48 @@ func (UnimplementedHandler) SpaceMembersList(ctx context.Context, params SpaceMe
 //
 // PATCH /spaces/{spaceSlug}/members/{userId}
 func (UnimplementedHandler) SpaceMembersUpdate(ctx context.Context, req *SpaceMemberUpdate, params SpaceMembersUpdateParams) (r *SpaceMember, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SpaceRecipeActivityList implements SpaceRecipeActivity_list operation.
+//
+// GET /spaces/{spaceSlug}/recipes/{recipeId}/activity
+func (UnimplementedHandler) SpaceRecipeActivityList(ctx context.Context, params SpaceRecipeActivityListParams) (r *ActivityLogPage, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SpaceRecipesCreate implements SpaceRecipes_create operation.
+//
+// POST /spaces/{spaceSlug}/recipes
+func (UnimplementedHandler) SpaceRecipesCreate(ctx context.Context, req *RecipeCreate, params SpaceRecipesCreateParams) (r *Recipe, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SpaceRecipesDelete implements SpaceRecipes_delete operation.
+//
+// DELETE /spaces/{spaceSlug}/recipes/{recipeId}
+func (UnimplementedHandler) SpaceRecipesDelete(ctx context.Context, params SpaceRecipesDeleteParams) error {
+	return ht.ErrNotImplemented
+}
+
+// SpaceRecipesList implements SpaceRecipes_list operation.
+//
+// GET /spaces/{spaceSlug}/recipes
+func (UnimplementedHandler) SpaceRecipesList(ctx context.Context, params SpaceRecipesListParams) (r *RecipePage, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SpaceRecipesRead implements SpaceRecipes_read operation.
+//
+// GET /spaces/{spaceSlug}/recipes/{recipeId}
+func (UnimplementedHandler) SpaceRecipesRead(ctx context.Context, params SpaceRecipesReadParams) (r *Recipe, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SpaceRecipesUpdate implements SpaceRecipes_update operation.
+//
+// PATCH /spaces/{spaceSlug}/recipes/{recipeId}
+func (UnimplementedHandler) SpaceRecipesUpdate(ctx context.Context, req *RecipeUpdate, params SpaceRecipesUpdateParams) (r *Recipe, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

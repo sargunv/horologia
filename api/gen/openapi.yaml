@@ -9,6 +9,7 @@ tags:
   - name: SpaceMembers
   - name: Tags
   - name: Tasks
+  - name: Recipes
   - name: Task Statuses
   - name: Task Effort Levels
   - name: Task Priority Levels
@@ -227,6 +228,45 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Auth
+  /recipes/search:
+    get:
+      operationId: Recipes_search
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+          explode: false
+        - name: spaceSlug
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeSearchResultList'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Recipes
   /spaces:
     get:
       operationId: Spaces_list
@@ -490,6 +530,179 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - SpaceMembers
+  /spaces/{spaceSlug}/recipes:
+    get:
+      operationId: SpaceRecipes_list
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/PageParams.cursor'
+        - $ref: '#/components/parameters/PageParams.limit'
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipePage'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Recipes
+    post:
+      operationId: SpaceRecipes_create
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Recipes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeCreate'
+  /spaces/{spaceSlug}/recipes/{recipeId}:
+    get:
+      operationId: SpaceRecipes_read
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: recipeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Recipes
+    patch:
+      operationId: SpaceRecipes_update
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: recipeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Recipes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeUpdate'
+    delete:
+      operationId: SpaceRecipes_delete
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: recipeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Recipes
+  /spaces/{spaceSlug}/recipes/{recipeId}/activity:
+    get:
+      operationId: SpaceRecipeActivity_list
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: recipeId
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/PageParams.cursor'
+        - $ref: '#/components/parameters/PageParams.limit'
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityLogPage'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Activity
   /spaces/{spaceSlug}/tags:
     get:
       operationId: SpaceTags_list
@@ -1526,6 +1739,357 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AuthToken'
+    Recipe:
+      type: object
+      required:
+        - id
+        - spaceSlug
+        - name
+        - description
+        - yield
+        - prepMinutes
+        - cookMinutes
+        - source
+        - sourceUrl
+        - tags
+        - ingredientSections
+        - instructionSections
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+        spaceSlug:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        yield:
+          anyOf:
+            - $ref: '#/components/schemas/RecipeYield'
+            - type: 'null'
+        prepMinutes:
+          anyOf:
+            - type: integer
+              format: int32
+            - type: 'null'
+        cookMinutes:
+          anyOf:
+            - type: integer
+              format: int32
+            - type: 'null'
+        source:
+          type: string
+        sourceUrl:
+          anyOf:
+            - type: string
+            - type: 'null'
+        tags:
+          type: array
+          items:
+            type: string
+        ingredientSections:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeIngredientSection'
+        instructionSections:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeInstructionSection'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    RecipeCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 500
+        description:
+          type: string
+          maxLength: 10000
+        yield:
+          $ref: '#/components/schemas/RecipeYield'
+        prepMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+        cookMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+        source:
+          type: string
+          maxLength: 1000
+        sourceUrl:
+          type: string
+          maxLength: 2000
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 100
+        ingredientSections:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeIngredientSectionInput'
+          maxItems: 20
+        instructionSections:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeInstructionSectionInput'
+          maxItems: 20
+    RecipeIngredient:
+      type: object
+      required:
+        - quantity
+        - quantityMax
+        - unit
+        - item
+        - preparation
+        - optional
+      properties:
+        quantity:
+          anyOf:
+            - type: number
+              format: double
+            - type: 'null'
+        quantityMax:
+          anyOf:
+            - type: number
+              format: double
+            - type: 'null'
+        unit:
+          type: string
+        item:
+          type: string
+        preparation:
+          type: string
+        optional:
+          type: boolean
+    RecipeIngredientInput:
+      type: object
+      required:
+        - item
+      properties:
+        quantity:
+          type: number
+          format: double
+          minimum: 0.0001
+        quantityMax:
+          type: number
+          format: double
+          minimum: 0.0001
+        unit:
+          type: string
+          maxLength: 100
+        item:
+          type: string
+          minLength: 1
+          maxLength: 500
+        preparation:
+          type: string
+          maxLength: 500
+        optional:
+          type: boolean
+    RecipeIngredientSection:
+      type: object
+      required:
+        - title
+        - ingredients
+      properties:
+        title:
+          type: string
+        ingredients:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeIngredient'
+    RecipeIngredientSectionInput:
+      type: object
+      required:
+        - ingredients
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        ingredients:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeIngredientInput'
+          maxItems: 100
+    RecipeInstructionSection:
+      type: object
+      required:
+        - title
+        - steps
+      properties:
+        title:
+          type: string
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeStep'
+    RecipeInstructionSectionInput:
+      type: object
+      required:
+        - steps
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeStepInput'
+          maxItems: 100
+    RecipePage:
+      type: object
+      required:
+        - items
+        - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeSummary'
+        nextCursor:
+          anyOf:
+            - type: string
+            - type: 'null'
+    RecipeSearchResultList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeSummary'
+    RecipeStep:
+      type: object
+      required:
+        - body
+      properties:
+        body:
+          type: string
+    RecipeStepInput:
+      type: object
+      required:
+        - body
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 10000
+    RecipeSummary:
+      type: object
+      required:
+        - id
+        - spaceSlug
+        - name
+        - yield
+        - prepMinutes
+        - cookMinutes
+        - tags
+        - updatedAt
+      properties:
+        id:
+          type: string
+        spaceSlug:
+          type: string
+        name:
+          type: string
+        yield:
+          anyOf:
+            - $ref: '#/components/schemas/RecipeYield'
+            - type: 'null'
+        prepMinutes:
+          anyOf:
+            - type: integer
+              format: int32
+            - type: 'null'
+        cookMinutes:
+          anyOf:
+            - type: integer
+              format: int32
+            - type: 'null'
+        tags:
+          type: array
+          items:
+            type: string
+        updatedAt:
+          type: string
+          format: date-time
+    RecipeUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 500
+        description:
+          type: string
+          maxLength: 10000
+        yield:
+          anyOf:
+            - $ref: '#/components/schemas/RecipeYield'
+            - type: 'null'
+        prepMinutes:
+          anyOf:
+            - type: integer
+              format: int32
+            - type: 'null'
+          minimum: 0
+        cookMinutes:
+          anyOf:
+            - type: integer
+              format: int32
+            - type: 'null'
+          minimum: 0
+        source:
+          type: string
+          maxLength: 1000
+        sourceUrl:
+          anyOf:
+            - type: string
+            - type: 'null'
+          maxLength: 2000
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 100
+        ingredientSections:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeIngredientSectionInput'
+          maxItems: 20
+        instructionSections:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeInstructionSectionInput'
+          maxItems: 20
+    RecipeYield:
+      type: object
+      required:
+        - amount
+        - unit
+      properties:
+        amount:
+          type: number
+          format: double
+          minimum: 0.0001
+        unit:
+          type: string
+          minLength: 1
+          maxLength: 100
     Space:
       type: object
       required:

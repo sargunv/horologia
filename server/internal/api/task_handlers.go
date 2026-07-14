@@ -14,6 +14,7 @@ import (
 	"github.com/sargunv/horologia/server/internal/activitylog"
 	"github.com/sargunv/horologia/server/internal/auth"
 	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
+	"github.com/sargunv/horologia/server/internal/tagname"
 	"github.com/sargunv/horologia/server/internal/taskengine"
 	"github.com/sargunv/horologia/server/internal/types"
 )
@@ -569,11 +570,11 @@ func (h *Handler) SpaceTasksUpdate(ctx context.Context, req *apigen.TaskUpdate, 
 		// Fold tag names before diffing so case-only changes don't produce spurious diffs.
 		foldedOld := make([]string, len(oldNames))
 		for i, n := range oldNames {
-			foldedOld[i] = taskengine.FoldTagName(n)
+			foldedOld[i] = tagname.Fold(n)
 		}
 		foldedNew := make([]string, len(req.Tags))
 		for i, n := range req.Tags {
-			foldedNew[i] = taskengine.FoldTagName(n)
+			foldedNew[i] = tagname.Fold(n)
 		}
 		details = append(details, diffStringList("tag", foldedOld, foldedNew)...)
 	}
@@ -824,7 +825,7 @@ func (h *Handler) setTaskTags(ctx context.Context, q *dbgen.Queries, taskID int6
 		if err := validateTagName(name); err != nil {
 			return err
 		}
-		folded := taskengine.FoldTagName(name)
+		folded := tagname.Fold(name)
 		if _, ok := seen[folded]; ok {
 			continue
 		}

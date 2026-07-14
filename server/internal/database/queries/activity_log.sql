@@ -22,6 +22,12 @@ WHERE entity_type = 'task' AND entity_id = $1 AND space_slug = $2 AND ($3::bigin
 ORDER BY id DESC
 LIMIT $4;
 
+-- name: ListActivityLogByRecipe :many
+SELECT * FROM activity_log
+WHERE entity_type = 'recipe' AND entity_id = $1 AND space_slug = $2 AND ($3::bigint = 0 OR id < $3)
+ORDER BY id DESC
+LIMIT $4;
+
 -- name: ListActivityLogByActor :many
 SELECT al.* FROM activity_log al
 WHERE al.actor_id = $1

@@ -425,6 +425,54 @@ func TestMCPTaskDelete(t *testing.T) {
 	}
 }
 
+func TestMCPRecipeCreateAndUpdateNestedSections(t *testing.T) {
+	t.Parallel()
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+	createSpace(t, env, "home", "Home")
+
+	rpcResp := s.call(t, "recipe_create", map[string]any{
+		"spaceSlug": "home",
+		"name":      "MCP soup",
+		"yield": map[string]any{
+			"amount": float64(4),
+			"unit":   "bowls",
+		},
+		"ingredientSections": []any{
+			map[string]any{
+				"title": "Soup",
+				"ingredients": []any{
+					map[string]any{"quantity": float64(2), "unit": "cups", "item": "stock"},
+				},
+			},
+		},
+		"instructionSections": []any{
+			map[string]any{
+				"steps": []any{map[string]any{"body": "Simmer."}},
+			},
+		},
+	})
+	recipe := toolResultJSON(t, rpcResp)
+	id := jsonAs[string](t, recipe["id"])
+	if !strings.HasPrefix(id, "R") {
+		t.Fatalf("id = %v, want R-prefixed", id)
+	}
+	sections := jsonAs[[]any](t, recipe["ingredientSections"])
+	if len(sections) != 1 {
+		t.Fatalf("unexpected ingredient sections: %v", sections)
+	}
+
+	rpcResp = s.call(t, "recipe_update", map[string]any{
+		"spaceSlug":          "home",
+		"recipeId":           id,
+		"ingredientSections": []any{},
+	})
+	recipe = toolResultJSON(t, rpcResp)
+	if len(jsonAs[[]any](t, recipe["ingredientSections"])) != 0 {
+		t.Fatalf("nested replacement did not clear ingredients: %v", recipe)
+	}
+}
+
 // --- Space tools ---
 
 func TestMCPSpaceList(t *testing.T) {

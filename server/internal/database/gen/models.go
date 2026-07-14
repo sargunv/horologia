@@ -594,6 +594,22 @@ type User struct {
 	AppearanceDarkTheme  string
 }
 
+type VisibleRecipe struct {
+	ViewerUserID int64
+	ID           int64
+	SpaceSlug    string
+	Name         string
+	Description  string
+	YieldAmount  pgtype.Numeric
+	YieldUnit    pgtype.Text
+	PrepMinutes  pgtype.Int4
+	CookMinutes  pgtype.Int4
+	Source       string
+	SourceUrl    pgtype.Text
+	CreatedAt    pgtype.Timestamptz
+	UpdatedAt    pgtype.Timestamptz
+}
+
 type VisibleTask struct {
 	ViewerUserID           int64
 	ID                     int64

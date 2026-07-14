@@ -10,6 +10,7 @@ import (
 	"github.com/sargunv/horologia/server/internal/activitylog"
 	"github.com/sargunv/horologia/server/internal/database"
 	dbgen "github.com/sargunv/horologia/server/internal/database/gen"
+	"github.com/sargunv/horologia/server/internal/tagname"
 	"github.com/sargunv/horologia/server/internal/types"
 )
 
@@ -90,7 +91,7 @@ func SpawnTaskFromTemplate(
 		tag, err := q.EnsureTag(ctx, dbgen.EnsureTagParams{
 			SpaceSlug:  src.SpaceSlug,
 			Name:       name,
-			NameFolded: FoldTagName(name),
+			NameFolded: tagname.Fold(name),
 			CreatedAt:  nowTz,
 		})
 		if err != nil {

@@ -20,6 +20,10 @@ type Handler interface {
 	//
 	// GET /auth/tokens
 	AuthListTokens(ctx context.Context) (*AuthTokenList, error)
+	// RecipesSearch implements Recipes_search operation.
+	//
+	// GET /recipes/search
+	RecipesSearch(ctx context.Context, params RecipesSearchParams) (*RecipeSearchResultList, error)
 	// SpaceActivityList implements SpaceActivity_list operation.
 	//
 	// GET /spaces/{spaceSlug}/activity
@@ -40,6 +44,30 @@ type Handler interface {
 	//
 	// PATCH /spaces/{spaceSlug}/members/{userId}
 	SpaceMembersUpdate(ctx context.Context, req *SpaceMemberUpdate, params SpaceMembersUpdateParams) (*SpaceMember, error)
+	// SpaceRecipeActivityList implements SpaceRecipeActivity_list operation.
+	//
+	// GET /spaces/{spaceSlug}/recipes/{recipeId}/activity
+	SpaceRecipeActivityList(ctx context.Context, params SpaceRecipeActivityListParams) (*ActivityLogPage, error)
+	// SpaceRecipesCreate implements SpaceRecipes_create operation.
+	//
+	// POST /spaces/{spaceSlug}/recipes
+	SpaceRecipesCreate(ctx context.Context, req *RecipeCreate, params SpaceRecipesCreateParams) (*Recipe, error)
+	// SpaceRecipesDelete implements SpaceRecipes_delete operation.
+	//
+	// DELETE /spaces/{spaceSlug}/recipes/{recipeId}
+	SpaceRecipesDelete(ctx context.Context, params SpaceRecipesDeleteParams) error
+	// SpaceRecipesList implements SpaceRecipes_list operation.
+	//
+	// GET /spaces/{spaceSlug}/recipes
+	SpaceRecipesList(ctx context.Context, params SpaceRecipesListParams) (*RecipePage, error)
+	// SpaceRecipesRead implements SpaceRecipes_read operation.
+	//
+	// GET /spaces/{spaceSlug}/recipes/{recipeId}
+	SpaceRecipesRead(ctx context.Context, params SpaceRecipesReadParams) (*Recipe, error)
+	// SpaceRecipesUpdate implements SpaceRecipes_update operation.
+	//
+	// PATCH /spaces/{spaceSlug}/recipes/{recipeId}
+	SpaceRecipesUpdate(ctx context.Context, req *RecipeUpdate, params SpaceRecipesUpdateParams) (*Recipe, error)
 	// SpaceTagsCreate implements SpaceTags_create operation.
 	//
 	// POST /spaces/{spaceSlug}/tags
