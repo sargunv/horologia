@@ -160,7 +160,7 @@ export function GlobalSearchCombobox({ page = false }: { page?: boolean }) {
         >
           {deferredQuery.length === 0 ? (
             <div className="px-3 py-8 text-center text-sm text-base-content/60">
-              Search visible tasks and recipes
+              Search this space
             </div>
           ) : isFetching ? (
             <div className="flex items-center gap-2 px-3 py-3 text-sm text-base-content/60">
@@ -170,9 +170,7 @@ export function GlobalSearchCombobox({ page = false }: { page?: boolean }) {
           ) : error ? (
             <div className="px-3 py-3 text-sm text-error">{errorMessage(error)}</div>
           ) : results.length === 0 ? (
-            <div className="px-3 py-8 text-center text-sm text-base-content/60">
-              No matching tasks or recipes
-            </div>
+            <div className="px-3 py-8 text-center text-sm text-base-content/60">No matches</div>
           ) : (
             results.map((result, index) => {
               const Icon = result.kind === "task" ? ListChecks : CookingPot;

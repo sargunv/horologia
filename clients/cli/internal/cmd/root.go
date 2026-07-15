@@ -41,10 +41,10 @@ func newRootCmd(opts commandOptions) *cobra.Command {
 
 	rootCmd := &cobra.Command{
 		Use:   "horo",
-		Short: "Manage tasks, recipes, and spaces from the command line",
+		Short: "Manage Horologia from the command line",
 		Long: `Command-line client for the Horologia server.
 
-Run a subcommand to manage spaces, tasks, recipes, users, and authentication.
+Run a subcommand to manage content, spaces, users, and authentication.
 With no subcommand, prints this help text. Pass --json to any subcommand
 for machine-readable output.`,
 		SilenceUsage:  true,

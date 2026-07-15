@@ -25,7 +25,7 @@ unique across all spaces and is used to reference the space in other commands.`,
 
   # Create a space with a description
   horo space create --slug my-project --name "My Project" \
-    --description "Tracks all project tasks"`,
+    --description "Shared project information"`,
 		RunE: support.RunWithApp(flags, func(app *runtime.App, cmd *cobra.Command, args []string) error {
 			api, err := support.RequireAPI(app)
 			if err != nil {

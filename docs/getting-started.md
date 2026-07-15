@@ -49,7 +49,8 @@ horologia-server migrate status
 ## Next steps
 
 Once the server is running, log in at your `HOROLOGIA_PUBLIC_URL` with the owner credentials you
-configured above. From there you can create spaces, invite users, and start managing tasks.
+configured above. From there you can create spaces, invite users, and organize the information and
+routines that belong in each space.
 
 - Set up the [CLI](cli.md) for command-line access
 - Connect an [MCP](mcp.md) client for AI assistant integration

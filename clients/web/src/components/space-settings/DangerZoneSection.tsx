@@ -75,8 +75,9 @@ export function DangerZoneSection({ space }: { space: Pick<Space, "slug" | "name
             <AlertDialogHeader title="Delete space" />
             <AlertDialogDescription>
               This will permanently delete{" "}
-              <strong className="text-base-content">{space.name}</strong> and all of its tasks,
-              statuses, members, and activity. This action cannot be undone.
+              <strong className="text-base-content">{space.name}</strong>, including its content,
+              tags, members, and settings. Historical activity is retained. This action cannot be
+              undone.
             </AlertDialogDescription>
             <label className="flex flex-col gap-1">
               <span className="text-sm">

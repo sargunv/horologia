@@ -2,7 +2,7 @@
 
 ## Project
 
-Horologia is a self-hosted task manager.
+Horologia is a self-hosted application for organizing household information and routines.
 
 ## Roadmap
 

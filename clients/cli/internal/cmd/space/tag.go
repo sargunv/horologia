@@ -25,7 +25,7 @@ func newTagListCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list <space>",
 		Short: "List tags in a space",
-		Long:  `List all tags defined in the given space. Tags can be applied to tasks for filtering and organization.`,
+		Long:  `List all tags defined in the given space. Tags can be applied to items in the space for filtering and organization.`,
 		Example: `  # List tags in the "eng" space
   horo space tag list eng`,
 		Args: cobra.ExactArgs(1),
@@ -91,7 +91,7 @@ func newTagRenameCmd(flags *support.RootFlags) *cobra.Command {
 		Use:   "rename <space> <tag> <new-name>",
 		Short: "Rename a tag",
 		Long: `Rename an existing tag. The <tag> argument is the current name;
-<new-name> is the replacement. All tasks carrying this tag update automatically.`,
+<new-name> is the replacement. Everything carrying this tag updates automatically.`,
 		Example: `  # Rename "blocked" to "on-hold"
   horo space tag rename eng blocked on-hold`,
 		Args: cobra.ExactArgs(3),
@@ -126,7 +126,7 @@ func newTagDeleteCmd(flags *support.RootFlags) *cobra.Command {
 		Use:   "delete <space> <tag>",
 		Short: "Delete a tag",
 		Long: `Permanently delete a tag from the given space. This removes the tag
-from every task that carries it. This cannot be undone.`,
+from everything that carries it. This cannot be undone.`,
 		Example: `  # Delete the "blocked" tag
   horo space tag delete eng blocked`,
 		Args: cobra.ExactArgs(2),

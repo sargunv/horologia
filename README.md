@@ -1,17 +1,20 @@
 # Horologia
 
-A self-hosted task management application.
+A self-hosted application for organizing household information and routines.
 
 ## Features
 
 - Self-hosted web app. You own your data.
-- Task model optimized for personal or household use cases:
+- Spaces provide ownership and collaboration boundaries.
+- Tasks support personal and household workflows, including:
   - Completion-based recurrence scheduling
-  - Calendar-based recurrencescheduling
+  - Calendar-based recurrence scheduling
   - Rotating assignees
-  - Customizeable entries for status, effort, priority, etc.
-  - Task relations (depends, contains, relates, etc)
-- OIDC authentication with option to disable password login
+  - Customizable statuses, effort levels, and priorities
+  - Task relations such as depends, contains, and relates
+- Recipes with structured ingredient and instruction sections
+- Tags for organizing items within a space
+- Password and OIDC authentication
 - MCP server integration
 - CLI client (`horo`) for command-line access
 

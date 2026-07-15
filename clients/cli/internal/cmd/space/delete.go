@@ -12,8 +12,8 @@ func newDeleteCmd(flags *support.RootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "delete <space>",
 		Short: "Delete a space",
-		Long: `Permanently delete a space and all its tasks, tags, and configuration.
-This cannot be undone.`,
+		Long: `Permanently delete a space, including its content, tags, members, and
+configuration. Historical activity is retained. This cannot be undone.`,
 		Example: `  # Permanently remove a space and all its data
   horo space delete my-project`,
 		Args: cobra.ExactArgs(1),

@@ -106,7 +106,7 @@ export function TagsSection({ spaceSlug, tags }: { spaceSlug: string; tags: Tag[
     <SettingsSection
       icon={<Tags className="size-5" />}
       title="Tags"
-      description="Manage tags for organizing tasks."
+      description="Manage tags shared across this space."
     >
       <div className="flex flex-col gap-2">
         {tags.map((tag) => (
@@ -174,7 +174,7 @@ export function TagsSection({ spaceSlug, tags }: { spaceSlug: string; tags: Tag[
           <AlertDialogHeader title="Delete tag" />
           <AlertDialogDescription>
             This will remove the tag <strong className="text-base-content">{deleteTarget}</strong>{" "}
-            from all tasks that use it. This action cannot be undone.
+            from everything that uses it. This action cannot be undone.
           </AlertDialogDescription>
           {deleteMutation.error && <ErrorAlert message={deleteMutation.error.message} />}
           <AlertDialogFooter>

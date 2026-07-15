@@ -49,7 +49,7 @@ function SpacesPage() {
             <div>
               <p className="font-medium">No spaces yet</p>
               <p className="text-base-content/70 mt-1 text-sm">
-                Create your first space to start organizing tasks.
+                Create your first space to start organizing what belongs together.
               </p>
             </div>
             <SpaceLink to="/spaces/new" className="btn btn-primary mt-2">
