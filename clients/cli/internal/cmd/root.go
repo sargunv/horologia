@@ -11,6 +11,7 @@ import (
 	authcmd "github.com/sargunv/horologia/clients/cli/internal/cmd/auth"
 	configcmd "github.com/sargunv/horologia/clients/cli/internal/cmd/config"
 	foundationcmd "github.com/sargunv/horologia/clients/cli/internal/cmd/foundation"
+	recipecmd "github.com/sargunv/horologia/clients/cli/internal/cmd/recipe"
 	spacecmd "github.com/sargunv/horologia/clients/cli/internal/cmd/space"
 	"github.com/sargunv/horologia/clients/cli/internal/cmd/support"
 	taskcmd "github.com/sargunv/horologia/clients/cli/internal/cmd/task"
@@ -40,10 +41,10 @@ func newRootCmd(opts commandOptions) *cobra.Command {
 
 	rootCmd := &cobra.Command{
 		Use:   "horo",
-		Short: "Manage tasks and spaces from the command line",
+		Short: "Manage tasks, recipes, and spaces from the command line",
 		Long: `Command-line client for the Horologia server.
 
-Run a subcommand to manage spaces, tasks, users, and authentication.
+Run a subcommand to manage spaces, tasks, recipes, users, and authentication.
 With no subcommand, prints this help text. Pass --json to any subcommand
 for machine-readable output.`,
 		SilenceUsage:  true,
@@ -71,6 +72,7 @@ for machine-readable output.`,
 		authcmd.New(flags),
 		spacecmd.New(flags),
 		taskcmd.New(flags),
+		recipecmd.New(flags),
 		usercmd.New(flags),
 	)
 	return rootCmd

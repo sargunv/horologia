@@ -278,11 +278,14 @@ func TestUserMeUsesTokenAndNormalizesAPIBase(t *testing.T) {
 				t.Fatalf("authorization = %q, want %q", got, want)
 			}
 			writeJSON(t, w, http.StatusOK, runtime.User{
-				ID:          "U1",
-				Email:       "admin@localhost",
-				Name:        "Admin",
-				IsOwner:     true,
-				HasPassword: true,
+				ID:                   "U1",
+				Email:                "admin@localhost",
+				Name:                 "Admin",
+				IsOwner:              true,
+				HasPassword:          true,
+				AppearanceMode:       "system",
+				AppearanceLightTheme: "light",
+				AppearanceDarkTheme:  "dark",
 			})
 		default:
 			http.NotFound(w, r)
@@ -378,11 +381,14 @@ func TestAuthStatusWithServerChecksIdentity(t *testing.T) {
 		case "/api/users/me":
 			sawWhoami = true
 			writeJSON(t, w, http.StatusOK, runtime.User{
-				ID:          "U1",
-				Email:       "admin@localhost",
-				Name:        "Admin",
-				IsOwner:     true,
-				HasPassword: true,
+				ID:                   "U1",
+				Email:                "admin@localhost",
+				Name:                 "Admin",
+				IsOwner:              true,
+				HasPassword:          true,
+				AppearanceMode:       "system",
+				AppearanceLightTheme: "light",
+				AppearanceDarkTheme:  "dark",
 			})
 		default:
 			http.NotFound(w, r)
@@ -1188,13 +1194,16 @@ func TestTaskMineUsesCurrentUser(t *testing.T) {
 		case "/api/users/me":
 			sawWhoami = true
 			writeJSON(t, w, http.StatusOK, map[string]any{
-				"id":          "U1",
-				"email":       "admin@localhost",
-				"name":        "Admin",
-				"isOwner":     true,
-				"hasPassword": true,
-				"createdAt":   "2026-04-11T12:00:00Z",
-				"updatedAt":   "2026-04-11T12:00:00Z",
+				"id":                   "U1",
+				"email":                "admin@localhost",
+				"name":                 "Admin",
+				"isOwner":              true,
+				"hasPassword":          true,
+				"appearanceMode":       "system",
+				"appearanceLightTheme": "light",
+				"appearanceDarkTheme":  "dark",
+				"createdAt":            "2026-04-11T12:00:00Z",
+				"updatedAt":            "2026-04-11T12:00:00Z",
 			})
 		case "/api/users/U1/tasks":
 			sawTasks = true
@@ -1966,13 +1975,16 @@ func TestUserUpdateSendsOptionalFields(t *testing.T) {
 			}
 
 			writeJSON(t, w, http.StatusOK, map[string]any{
-				"id":          "U1",
-				"email":       "updated@example.com",
-				"name":        "Updated",
-				"isOwner":     false,
-				"hasPassword": true,
-				"createdAt":   "2026-04-11T12:00:00Z",
-				"updatedAt":   "2026-04-11T13:00:00Z",
+				"id":                   "U1",
+				"email":                "updated@example.com",
+				"name":                 "Updated",
+				"isOwner":              false,
+				"hasPassword":          true,
+				"appearanceMode":       "system",
+				"appearanceLightTheme": "light",
+				"appearanceDarkTheme":  "dark",
+				"createdAt":            "2026-04-11T12:00:00Z",
+				"updatedAt":            "2026-04-11T13:00:00Z",
 			})
 		default:
 			http.NotFound(w, r)
