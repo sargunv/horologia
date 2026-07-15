@@ -19,8 +19,8 @@
   "devDependencies": {
     "@typespec/compiler": "~1.13.0",
     "@typespec/http": "~1.13.0",
-    "typescript": "~6.0.3",
+    "typescript": "~7.0.2",
     "valibot": "^1.4.2",
-    "vite-plus": "^0.2.3"
+    "vite-plus": "^0.2.4"
   }
 }
