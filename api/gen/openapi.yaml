@@ -228,6 +228,33 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Auth
+  /recipes:
+    get:
+      operationId: Recipes_list
+      parameters:
+        - $ref: '#/components/parameters/PageParams.cursor'
+        - $ref: '#/components/parameters/PageParams.limit'
+        - name: spaceSlug
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipePage'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Recipes
   /recipes/search:
     get:
       operationId: Recipes_search
@@ -1749,8 +1776,6 @@ components:
         - yield
         - prepMinutes
         - cookMinutes
-        - source
-        - sourceUrl
         - tags
         - ingredientSections
         - instructionSections
@@ -1778,12 +1803,6 @@ components:
           anyOf:
             - type: integer
               format: int32
-            - type: 'null'
-        source:
-          type: string
-        sourceUrl:
-          anyOf:
-            - type: string
             - type: 'null'
         tags:
           type: array
@@ -1825,12 +1844,6 @@ components:
           type: integer
           format: int32
           minimum: 0
-        source:
-          type: string
-          maxLength: 1000
-        sourceUrl:
-          type: string
-          maxLength: 2000
         tags:
           type: array
           items:
@@ -1853,8 +1866,6 @@ components:
         - quantityMax
         - unit
         - item
-        - preparation
-        - optional
       properties:
         quantity:
           anyOf:
@@ -1870,10 +1881,6 @@ components:
           type: string
         item:
           type: string
-        preparation:
-          type: string
-        optional:
-          type: boolean
     RecipeIngredientInput:
       type: object
       required:
@@ -1894,11 +1901,6 @@ components:
           type: string
           minLength: 1
           maxLength: 500
-        preparation:
-          type: string
-          maxLength: 500
-        optional:
-          type: boolean
     RecipeIngredientSection:
       type: object
       required:
@@ -2053,14 +2055,6 @@ components:
               format: int32
             - type: 'null'
           minimum: 0
-        source:
-          type: string
-          maxLength: 1000
-        sourceUrl:
-          anyOf:
-            - type: string
-            - type: 'null'
-          maxLength: 2000
         tags:
           type: array
           items:

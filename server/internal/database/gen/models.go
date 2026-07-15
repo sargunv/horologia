@@ -442,8 +442,6 @@ type Recipe struct {
 	YieldUnit   pgtype.Text
 	PrepMinutes pgtype.Int4
 	CookMinutes pgtype.Int4
-	Source      string
-	SourceUrl   pgtype.Text
 	CreatedAt   pgtype.Timestamptz
 	UpdatedAt   pgtype.Timestamptz
 }
@@ -456,8 +454,6 @@ type RecipeIngredient struct {
 	QuantityMax pgtype.Numeric
 	Unit        string
 	Item        string
-	Preparation string
-	Optional    bool
 }
 
 type RecipeIngredientSection struct {
@@ -604,8 +600,6 @@ type VisibleRecipe struct {
 	YieldUnit    pgtype.Text
 	PrepMinutes  pgtype.Int4
 	CookMinutes  pgtype.Int4
-	Source       string
-	SourceUrl    pgtype.Text
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
 }

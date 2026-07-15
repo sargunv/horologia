@@ -4,6 +4,7 @@ import type { components } from "../api/schema.d.ts";
 import { notifyStaleData } from "./toaster.ts";
 
 type TaskUpdate = components["schemas"]["TaskUpdate"];
+type RecipeUpdate = components["schemas"]["RecipeUpdate"];
 
 /** Invalidate all user task list queries (for the "My Tasks" view). */
 export async function invalidateUserTaskLists(queryClient: QueryClient) {
@@ -12,6 +13,37 @@ export async function invalidateUserTaskLists(queryClient: QueryClient) {
       query.queryKey[0] === "users" &&
       query.queryKey[2] === "tasks" &&
       query.queryKey[3] === "list",
+  });
+}
+
+export async function invalidateRecipeLists(queryClient: QueryClient) {
+  await queryClient.invalidateQueries({ queryKey: ["recipes", "list"] });
+}
+
+export function useRecipePatch(spaceSlug: string, recipeId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: RecipeUpdate) => {
+      const { data, error } = await apiClient.PATCH("/spaces/{spaceSlug}/recipes/{recipeId}", {
+        params: { path: { spaceSlug, recipeId } },
+        body,
+      });
+      if (error) throw new Error(error.message ?? "Failed to update recipe");
+      return data;
+    },
+    onSuccess: async () => {
+      try {
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: ["spaces", spaceSlug, "recipes", recipeId],
+          }),
+          invalidateRecipeLists(queryClient),
+        ]);
+      } catch (err) {
+        console.error("Cache invalidation failed after mutation:", err);
+        notifyStaleData();
+      }
+    },
   });
 }
 

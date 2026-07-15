@@ -21,13 +21,11 @@ INSERT INTO recipes (
     yield_unit,
     prep_minutes,
     cook_minutes,
-    source,
-    source_url,
     created_at,
     updated_at
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-RETURNING id, space_slug, name, description, yield_amount, yield_unit, prep_minutes, cook_minutes, source, source_url, created_at, updated_at
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+RETURNING id, space_slug, name, description, yield_amount, yield_unit, prep_minutes, cook_minutes, created_at, updated_at
 `
 
 type CreateRecipeParams struct {
@@ -38,8 +36,6 @@ type CreateRecipeParams struct {
 	YieldUnit   pgtype.Text
 	PrepMinutes pgtype.Int4
 	CookMinutes pgtype.Int4
-	Source      string
-	SourceUrl   pgtype.Text
 	CreatedAt   pgtype.Timestamptz
 	UpdatedAt   pgtype.Timestamptz
 }
@@ -53,8 +49,6 @@ func (q *Queries) CreateRecipe(ctx context.Context, arg CreateRecipeParams) (Rec
 		arg.YieldUnit,
 		arg.PrepMinutes,
 		arg.CookMinutes,
-		arg.Source,
-		arg.SourceUrl,
 		arg.CreatedAt,
 		arg.UpdatedAt,
 	)
@@ -68,8 +62,6 @@ func (q *Queries) CreateRecipe(ctx context.Context, arg CreateRecipeParams) (Rec
 		&i.YieldUnit,
 		&i.PrepMinutes,
 		&i.CookMinutes,
-		&i.Source,
-		&i.SourceUrl,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -91,7 +83,7 @@ func (q *Queries) DeleteRecipe(ctx context.Context, arg DeleteRecipeParams) (pgc
 }
 
 const getRecipe = `-- name: GetRecipe :one
-SELECT id, space_slug, name, description, yield_amount, yield_unit, prep_minutes, cook_minutes, source, source_url, created_at, updated_at FROM recipes
+SELECT id, space_slug, name, description, yield_amount, yield_unit, prep_minutes, cook_minutes, created_at, updated_at FROM recipes
 WHERE id = $1 AND space_slug = $2
 `
 
@@ -112,8 +104,6 @@ func (q *Queries) GetRecipe(ctx context.Context, arg GetRecipeParams) (Recipe, e
 		&i.YieldUnit,
 		&i.PrepMinutes,
 		&i.CookMinutes,
-		&i.Source,
-		&i.SourceUrl,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -121,7 +111,7 @@ func (q *Queries) GetRecipe(ctx context.Context, arg GetRecipeParams) (Recipe, e
 }
 
 const getRecipeForUpdate = `-- name: GetRecipeForUpdate :one
-SELECT id, space_slug, name, description, yield_amount, yield_unit, prep_minutes, cook_minutes, source, source_url, created_at, updated_at FROM recipes
+SELECT id, space_slug, name, description, yield_amount, yield_unit, prep_minutes, cook_minutes, created_at, updated_at FROM recipes
 WHERE id = $1 AND space_slug = $2
 FOR UPDATE
 `
@@ -143,8 +133,6 @@ func (q *Queries) GetRecipeForUpdate(ctx context.Context, arg GetRecipeForUpdate
 		&i.YieldUnit,
 		&i.PrepMinutes,
 		&i.CookMinutes,
-		&i.Source,
-		&i.SourceUrl,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -152,7 +140,7 @@ func (q *Queries) GetRecipeForUpdate(ctx context.Context, arg GetRecipeForUpdate
 }
 
 const listRecipesBySpace = `-- name: ListRecipesBySpace :many
-SELECT id, space_slug, name, description, yield_amount, yield_unit, prep_minutes, cook_minutes, source, source_url, created_at, updated_at FROM recipes
+SELECT id, space_slug, name, description, yield_amount, yield_unit, prep_minutes, cook_minutes, created_at, updated_at FROM recipes
 WHERE
     space_slug = $1
     AND (
@@ -193,8 +181,91 @@ func (q *Queries) ListRecipesBySpace(ctx context.Context, arg ListRecipesBySpace
 			&i.YieldUnit,
 			&i.PrepMinutes,
 			&i.CookMinutes,
-			&i.Source,
-			&i.SourceUrl,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listVisibleRecipes = `-- name: ListVisibleRecipes :many
+SELECT
+    vr.id,
+    vr.space_slug,
+    vr.name,
+    vr.description,
+    vr.yield_amount,
+    vr.yield_unit,
+    vr.prep_minutes,
+    vr.cook_minutes,
+    vr.created_at,
+    vr.updated_at
+FROM visible_recipes vr
+WHERE
+    vr.viewer_user_id = $1
+    AND ($2::text = '' OR vr.space_slug = $2::text)
+    AND (
+        $3::bigint = 0
+        OR (vr.updated_at, vr.id) < (
+            $4::timestamptz,
+            $3::bigint
+        )
+    )
+ORDER BY vr.updated_at DESC, vr.id DESC
+LIMIT $5
+`
+
+type ListVisibleRecipesParams struct {
+	ViewerUserID    int64
+	SpaceSlug       string
+	CursorID        int64
+	CursorUpdatedAt pgtype.Timestamptz
+	Lim             int32
+}
+
+type ListVisibleRecipesRow struct {
+	ID          int64
+	SpaceSlug   string
+	Name        string
+	Description string
+	YieldAmount pgtype.Numeric
+	YieldUnit   pgtype.Text
+	PrepMinutes pgtype.Int4
+	CookMinutes pgtype.Int4
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+}
+
+func (q *Queries) ListVisibleRecipes(ctx context.Context, arg ListVisibleRecipesParams) ([]ListVisibleRecipesRow, error) {
+	rows, err := q.db.Query(ctx, listVisibleRecipes,
+		arg.ViewerUserID,
+		arg.SpaceSlug,
+		arg.CursorID,
+		arg.CursorUpdatedAt,
+		arg.Lim,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListVisibleRecipesRow{}
+	for rows.Next() {
+		var i ListVisibleRecipesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.SpaceSlug,
+			&i.Name,
+			&i.Description,
+			&i.YieldAmount,
+			&i.YieldUnit,
+			&i.PrepMinutes,
+			&i.CookMinutes,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -218,8 +289,6 @@ SELECT
     vr.yield_unit,
     vr.prep_minutes,
     vr.cook_minutes,
-    vr.source,
-    vr.source_url,
     vr.created_at,
     vr.updated_at
 FROM visible_recipes vr
@@ -267,8 +336,6 @@ type SearchVisibleRecipesRow struct {
 	YieldUnit   pgtype.Text
 	PrepMinutes pgtype.Int4
 	CookMinutes pgtype.Int4
-	Source      string
-	SourceUrl   pgtype.Text
 	CreatedAt   pgtype.Timestamptz
 	UpdatedAt   pgtype.Timestamptz
 }
@@ -297,8 +364,6 @@ func (q *Queries) SearchVisibleRecipes(ctx context.Context, arg SearchVisibleRec
 			&i.YieldUnit,
 			&i.PrepMinutes,
 			&i.CookMinutes,
-			&i.Source,
-			&i.SourceUrl,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -321,11 +386,9 @@ SET
     yield_unit = $4,
     prep_minutes = $5,
     cook_minutes = $6,
-    source = $7,
-    source_url = $8,
-    updated_at = $9
-WHERE id = $10 AND space_slug = $11
-RETURNING id, space_slug, name, description, yield_amount, yield_unit, prep_minutes, cook_minutes, source, source_url, created_at, updated_at
+    updated_at = $7
+WHERE id = $8 AND space_slug = $9
+RETURNING id, space_slug, name, description, yield_amount, yield_unit, prep_minutes, cook_minutes, created_at, updated_at
 `
 
 type UpdateRecipeParams struct {
@@ -335,8 +398,6 @@ type UpdateRecipeParams struct {
 	YieldUnit   pgtype.Text
 	PrepMinutes pgtype.Int4
 	CookMinutes pgtype.Int4
-	Source      string
-	SourceUrl   pgtype.Text
 	UpdatedAt   pgtype.Timestamptz
 	ID          int64
 	SpaceSlug   string
@@ -350,8 +411,6 @@ func (q *Queries) UpdateRecipe(ctx context.Context, arg UpdateRecipeParams) (Rec
 		arg.YieldUnit,
 		arg.PrepMinutes,
 		arg.CookMinutes,
-		arg.Source,
-		arg.SourceUrl,
 		arg.UpdatedAt,
 		arg.ID,
 		arg.SpaceSlug,
@@ -366,8 +425,6 @@ func (q *Queries) UpdateRecipe(ctx context.Context, arg UpdateRecipeParams) (Rec
 		&i.YieldUnit,
 		&i.PrepMinutes,
 		&i.CookMinutes,
-		&i.Source,
-		&i.SourceUrl,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

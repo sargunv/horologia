@@ -21,8 +21,8 @@ export interface ActivityFeedProps {
   memberMap?: Map<string, ActivityMember>;
   /** When true, each entry shows the space as context (for cross-space feeds) */
   showSpace?: boolean;
-  /** A denser, context-aware presentation for a task detail page. */
-  variant?: "default" | "compact" | "task";
+  /** A denser presentation, optionally contextualized to an entity detail page. */
+  variant?: "default" | "compact" | "task" | "recipe";
 }
 
 interface CompactActivityGroup {
@@ -31,6 +31,10 @@ interface CompactActivityGroup {
 }
 
 const COMPACT_GROUP_WINDOW_MS = 5 * 60 * 1000;
+
+function isOpaqueUpdate(detail: ActivityLogEntry["details"][number]): boolean {
+  return detail.from === null && detail.to === "updated";
+}
 
 function canGroupCompactEntries(newer: ActivityLogEntry, older: ActivityLogEntry): boolean {
   const olderDetails = new Map(older.details.map((detail) => [detail.field, detail]));
@@ -46,7 +50,11 @@ function canGroupCompactEntries(newer: ActivityLogEntry, older: ActivityLogEntry
     newer.spaceSlug === older.spaceSlug &&
     newer.details.every((detail) => {
       const olderDetail = olderDetails.get(detail.field);
-      return !olderDetail || olderDetail.to === detail.from;
+      return (
+        !olderDetail ||
+        olderDetail.to === detail.from ||
+        (isOpaqueUpdate(olderDetail) && isOpaqueUpdate(detail))
+      );
     }) &&
     new Date(newer.createdAt).getTime() - new Date(older.createdAt).getTime() <=
       COMPACT_GROUP_WINDOW_MS
@@ -152,6 +160,7 @@ function displayDetailValue(value: string): string {
 // ── Sub-components ──────────────────────────────────────────────────────────
 
 const TaskLink = createLink("a");
+const RecipeLink = createLink("a");
 const SpaceLink = createLink("a");
 
 function EntityRef({
@@ -173,6 +182,17 @@ function EntityRef({
       >
         {label}
       </TaskLink>
+    );
+  }
+  if (entityType === "recipe") {
+    return (
+      <RecipeLink
+        to="/spaces/$spaceSlug/recipes/$recipeId"
+        params={{ spaceSlug, recipeId: entityId }}
+        className="text-primary font-mono hover:underline"
+      >
+        {label}
+      </RecipeLink>
     );
   }
   if (entityType === "space") {
@@ -266,27 +286,34 @@ function CompactDetails({ details }: { details: ActivityLogEntry["details"] }) {
   );
 }
 
-function compactActionLabel(entry: ActivityLogEntry, taskContext: boolean): string {
+function compactActionLabel(
+  entry: ActivityLogEntry,
+  detailContext: "task" | "recipe" | null,
+): string {
   if (entry.action === "updated" && entry.details.length > 0) {
     const fields = entry.details.map((detail) => humanizeField(detail.field));
     if (fields.length === 1) return `updated ${fields[0]}`;
     if (fields.length === 2) return `updated ${fields[0]} and ${fields[1]}`;
     return `updated ${fields.slice(0, -1).join(", ")}, and ${fields.at(-1)}`;
   }
-  if (entry.action === "created") return taskContext ? "created this task" : "created";
-  if (entry.action === "deleted") return taskContext ? "deleted this task" : "deleted";
+  if (entry.action === "created") {
+    return detailContext ? `created this ${detailContext}` : "created";
+  }
+  if (entry.action === "deleted") {
+    return detailContext ? `deleted this ${detailContext}` : "deleted";
+  }
   return ACTION_LABEL[entry.action] ?? entry.action;
 }
 
 function CompactActivityEntry({
   group,
   memberMap,
-  taskContext,
+  detailContext,
   showSpace,
 }: {
   group: CompactActivityGroup;
   memberMap?: Map<string, ActivityMember> | undefined;
-  taskContext: boolean;
+  detailContext: "task" | "recipe" | null;
   showSpace?: boolean | undefined;
 }) {
   const { entry } = group;
@@ -303,8 +330,8 @@ function CompactActivityEntry({
             {actorLabel(entry, memberMap)}
           </span>
           <span className="text-base-content/70 min-w-0 truncate">
-            {compactActionLabel(entry, taskContext)}
-            {!taskContext && (
+            {compactActionLabel(entry, detailContext)}
+            {!detailContext && (
               <>
                 {entry.action === "updated" ? " on " : " "}
                 <EntityRef
@@ -414,7 +441,7 @@ export function ActivityFeed({
               key={group.entry.id}
               group={group}
               memberMap={memberMap}
-              taskContext={variant === "task"}
+              detailContext={variant === "task" || variant === "recipe" ? variant : null}
               showSpace={showSpace}
             />
           ))}

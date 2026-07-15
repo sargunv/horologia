@@ -7,12 +7,10 @@ INSERT INTO recipes (
     yield_unit,
     prep_minutes,
     cook_minutes,
-    source,
-    source_url,
     created_at,
     updated_at
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 RETURNING *;
 
 -- name: GetRecipe :one
@@ -44,15 +42,39 @@ SET
     yield_unit = $4,
     prep_minutes = $5,
     cook_minutes = $6,
-    source = $7,
-    source_url = $8,
-    updated_at = $9
-WHERE id = $10 AND space_slug = $11
+    updated_at = $7
+WHERE id = $8 AND space_slug = $9
 RETURNING *;
 
 -- name: DeleteRecipe :execresult
 DELETE FROM recipes
 WHERE id = $1 AND space_slug = $2;
+
+-- name: ListVisibleRecipes :many
+SELECT
+    vr.id,
+    vr.space_slug,
+    vr.name,
+    vr.description,
+    vr.yield_amount,
+    vr.yield_unit,
+    vr.prep_minutes,
+    vr.cook_minutes,
+    vr.created_at,
+    vr.updated_at
+FROM visible_recipes vr
+WHERE
+    vr.viewer_user_id = sqlc.arg(viewer_user_id)
+    AND (sqlc.arg(space_slug)::text = '' OR vr.space_slug = sqlc.arg(space_slug)::text)
+    AND (
+        sqlc.arg(cursor_id)::bigint = 0
+        OR (vr.updated_at, vr.id) < (
+            sqlc.arg(cursor_updated_at)::timestamptz,
+            sqlc.arg(cursor_id)::bigint
+        )
+    )
+ORDER BY vr.updated_at DESC, vr.id DESC
+LIMIT sqlc.arg(lim);
 
 -- name: SearchVisibleRecipes :many
 SELECT
@@ -64,8 +86,6 @@ SELECT
     vr.yield_unit,
     vr.prep_minutes,
     vr.cook_minutes,
-    vr.source,
-    vr.source_url,
     vr.created_at,
     vr.updated_at
 FROM visible_recipes vr

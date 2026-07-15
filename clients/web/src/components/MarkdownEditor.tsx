@@ -49,7 +49,7 @@ export function MarkdownEditor({
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ codeBlock: false }),
+      StarterKit.configure({ codeBlock: false, link: false }),
       CodeBlockLowlight.configure({ lowlight }),
       Link.configure({ openOnClick: false }),
       Placeholder.configure({ placeholder }),

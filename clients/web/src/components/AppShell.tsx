@@ -1,10 +1,10 @@
-import { createLink } from "@tanstack/react-router";
-import { CircleUser, House, Layers, LayoutGrid, Plus } from "lucide-react";
+import { createLink, useRouterState } from "@tanstack/react-router";
+import { CircleUser, CookingPot, Layers, LayoutGrid, ListChecks, Plus, Search } from "lucide-react";
 import type { ReactNode } from "react";
 import type { components } from "../api/schema.d.ts";
 import { Toaster } from "../ui/Toaster.tsx";
 import { TooltipProvider } from "../ui/Tooltip.tsx";
-import { TaskSearchCombobox } from "./task/TaskSearchCombobox.tsx";
+import { GlobalSearchCombobox } from "./GlobalSearchCombobox.tsx";
 import { UserMenu } from "./UserMenu.tsx";
 
 type User = components["schemas"]["User"];
@@ -40,21 +40,30 @@ function DesktopSidebar({ user, spaces }: { user: User; spaces: Space[] }) {
       </header>
 
       <div className="px-2 pt-2 pb-1">
-        <TaskSearchCombobox />
+        <GlobalSearchCombobox />
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto px-2 py-2">
-        <div className="space-y-0.5">
+        <nav aria-label="Library" className="space-y-0.5">
+          <div className={SECTION_LABEL}>Library</div>
           <NavAnchor
             to="/"
             className={SIDEBAR_LINK}
             activeProps={{ className: `${SIDEBAR_LINK} ${SIDEBAR_LINK_ACTIVE}` }}
             activeOptions={{ exact: true }}
           >
-            <House className="size-4" aria-hidden="true" />
-            <span className="flex-1 truncate">Home</span>
+            <ListChecks className="size-4" aria-hidden="true" />
+            <span className="flex-1 truncate">My tasks</span>
           </NavAnchor>
-        </div>
+          <NavAnchor
+            to="/recipes"
+            className={SIDEBAR_LINK}
+            activeProps={{ className: `${SIDEBAR_LINK} ${SIDEBAR_LINK_ACTIVE}` }}
+          >
+            <CookingPot className="size-4" aria-hidden="true" />
+            <span className="flex-1 truncate">Recipes</span>
+          </NavAnchor>
+        </nav>
 
         <nav aria-label="Spaces" className="space-y-0.5">
           <div className="flex items-center justify-between">
@@ -99,30 +108,35 @@ function DesktopSidebar({ user, spaces }: { user: User; spaces: Space[] }) {
 }
 
 function MobileBar() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const itemClass = (active: boolean) => `${MOBILE_LINK} ${active ? MOBILE_LINK_ACTIVE : ""}`;
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-base-300 bg-base-100 md:hidden">
       <NavAnchor
         to="/"
-        className={MOBILE_LINK}
-        activeProps={{ className: `${MOBILE_LINK} ${MOBILE_LINK_ACTIVE}` }}
-        activeOptions={{ exact: true }}
+        className={itemClass(
+          pathname === "/" || pathname.startsWith("/tasks/") || pathname === "/activity",
+        )}
       >
-        <House className="size-5" />
-        <span>Home</span>
+        <ListChecks className="size-5" />
+        <span>Tasks</span>
       </NavAnchor>
       <NavAnchor
-        to="/spaces"
-        className={MOBILE_LINK}
-        activeProps={{ className: `${MOBILE_LINK} ${MOBILE_LINK_ACTIVE}` }}
+        to="/library"
+        className={itemClass(
+          pathname.startsWith("/library") ||
+            pathname.startsWith("/recipes") ||
+            pathname.startsWith("/spaces"),
+        )}
       >
         <Layers className="size-5" />
-        <span>Spaces</span>
+        <span>Library</span>
       </NavAnchor>
-      <NavAnchor
-        to="/settings"
-        className={MOBILE_LINK}
-        activeProps={{ className: `${MOBILE_LINK} ${MOBILE_LINK_ACTIVE}` }}
-      >
+      <NavAnchor to="/search" className={itemClass(pathname.startsWith("/search"))}>
+        <Search className="size-5" />
+        <span>Search</span>
+      </NavAnchor>
+      <NavAnchor to="/settings" className={itemClass(pathname.startsWith("/settings"))}>
         <CircleUser className="size-5" />
         <span>Account</span>
       </NavAnchor>

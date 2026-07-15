@@ -129,13 +129,23 @@ func computeBulkDiff(oldNames, newNames []string) (added, removed []string) {
 	for _, n := range newNames {
 		newSet[n] = struct{}{}
 	}
+	seenAdded := make(map[string]struct{}, len(newNames))
 	for _, n := range newNames {
 		if _, ok := oldSet[n]; !ok {
+			if _, seen := seenAdded[n]; seen {
+				continue
+			}
+			seenAdded[n] = struct{}{}
 			added = append(added, n)
 		}
 	}
+	seenRemoved := make(map[string]struct{}, len(oldNames))
 	for _, n := range oldNames {
 		if _, ok := newSet[n]; !ok {
+			if _, seen := seenRemoved[n]; seen {
+				continue
+			}
+			seenRemoved[n] = struct{}{}
 			removed = append(removed, n)
 		}
 	}

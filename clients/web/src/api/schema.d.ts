@@ -138,6 +138,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/recipes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Recipes_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/recipes/search": {
         parameters: {
             query?: never;
@@ -630,8 +646,6 @@ export interface components {
             yield: components["schemas"]["RecipeYield"] | null;
             prepMinutes: number | null;
             cookMinutes: number | null;
-            source: string;
-            sourceUrl: string | null;
             tags: string[];
             ingredientSections: components["schemas"]["RecipeIngredientSection"][];
             instructionSections: components["schemas"]["RecipeInstructionSection"][];
@@ -648,8 +662,6 @@ export interface components {
             prepMinutes?: number;
             /** Format: int32 */
             cookMinutes?: number;
-            source?: string;
-            sourceUrl?: string;
             tags?: string[];
             ingredientSections?: components["schemas"]["RecipeIngredientSectionInput"][];
             instructionSections?: components["schemas"]["RecipeInstructionSectionInput"][];
@@ -659,8 +671,6 @@ export interface components {
             quantityMax: number | null;
             unit: string;
             item: string;
-            preparation: string;
-            optional: boolean;
         };
         RecipeIngredientInput: {
             /** Format: double */
@@ -669,8 +679,6 @@ export interface components {
             quantityMax?: number;
             unit?: string;
             item: string;
-            preparation?: string;
-            optional?: boolean;
         };
         RecipeIngredientSection: {
             title: string;
@@ -718,8 +726,6 @@ export interface components {
             yield?: components["schemas"]["RecipeYield"] | null;
             prepMinutes?: number | null;
             cookMinutes?: number | null;
-            source?: string;
-            sourceUrl?: string | null;
             tags?: string[];
             ingredientSections?: components["schemas"]["RecipeIngredientSectionInput"][];
             instructionSections?: components["schemas"]["RecipeInstructionSectionInput"][];
@@ -1234,6 +1240,41 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description An unexpected error response. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    Recipes_list: {
+        parameters: {
+            query?: {
+                /** @description Pagination cursor from a previous response. */
+                cursor?: components["parameters"]["PageParams.cursor"];
+                /** @description Maximum number of items to return (1–100). */
+                limit?: components["parameters"]["PageParams.limit"];
+                spaceSlug?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipePage"];
+                };
             };
             /** @description An unexpected error response. */
             default: {

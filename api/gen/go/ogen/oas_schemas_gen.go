@@ -1818,8 +1818,6 @@ type Recipe struct {
 	Yield               NilRecipeYield             `json:"yield"`
 	PrepMinutes         NilInt32                   `json:"prepMinutes"`
 	CookMinutes         NilInt32                   `json:"cookMinutes"`
-	Source              string                     `json:"source"`
-	SourceUrl           NilString                  `json:"sourceUrl"`
 	Tags                []string                   `json:"tags"`
 	IngredientSections  []RecipeIngredientSection  `json:"ingredientSections"`
 	InstructionSections []RecipeInstructionSection `json:"instructionSections"`
@@ -1860,16 +1858,6 @@ func (s *Recipe) GetPrepMinutes() NilInt32 {
 // GetCookMinutes returns the value of CookMinutes.
 func (s *Recipe) GetCookMinutes() NilInt32 {
 	return s.CookMinutes
-}
-
-// GetSource returns the value of Source.
-func (s *Recipe) GetSource() string {
-	return s.Source
-}
-
-// GetSourceUrl returns the value of SourceUrl.
-func (s *Recipe) GetSourceUrl() NilString {
-	return s.SourceUrl
 }
 
 // GetTags returns the value of Tags.
@@ -1932,16 +1920,6 @@ func (s *Recipe) SetCookMinutes(val NilInt32) {
 	s.CookMinutes = val
 }
 
-// SetSource sets the value of Source.
-func (s *Recipe) SetSource(val string) {
-	s.Source = val
-}
-
-// SetSourceUrl sets the value of SourceUrl.
-func (s *Recipe) SetSourceUrl(val NilString) {
-	s.SourceUrl = val
-}
-
 // SetTags sets the value of Tags.
 func (s *Recipe) SetTags(val []string) {
 	s.Tags = val
@@ -1974,8 +1952,6 @@ type RecipeCreate struct {
 	Yield               OptRecipeYield                  `json:"yield"`
 	PrepMinutes         OptInt32                        `json:"prepMinutes"`
 	CookMinutes         OptInt32                        `json:"cookMinutes"`
-	Source              OptString                       `json:"source"`
-	SourceUrl           OptString                       `json:"sourceUrl"`
 	Tags                []string                        `json:"tags"`
 	IngredientSections  []RecipeIngredientSectionInput  `json:"ingredientSections"`
 	InstructionSections []RecipeInstructionSectionInput `json:"instructionSections"`
@@ -2004,16 +1980,6 @@ func (s *RecipeCreate) GetPrepMinutes() OptInt32 {
 // GetCookMinutes returns the value of CookMinutes.
 func (s *RecipeCreate) GetCookMinutes() OptInt32 {
 	return s.CookMinutes
-}
-
-// GetSource returns the value of Source.
-func (s *RecipeCreate) GetSource() OptString {
-	return s.Source
-}
-
-// GetSourceUrl returns the value of SourceUrl.
-func (s *RecipeCreate) GetSourceUrl() OptString {
-	return s.SourceUrl
 }
 
 // GetTags returns the value of Tags.
@@ -2056,16 +2022,6 @@ func (s *RecipeCreate) SetCookMinutes(val OptInt32) {
 	s.CookMinutes = val
 }
 
-// SetSource sets the value of Source.
-func (s *RecipeCreate) SetSource(val OptString) {
-	s.Source = val
-}
-
-// SetSourceUrl sets the value of SourceUrl.
-func (s *RecipeCreate) SetSourceUrl(val OptString) {
-	s.SourceUrl = val
-}
-
 // SetTags sets the value of Tags.
 func (s *RecipeCreate) SetTags(val []string) {
 	s.Tags = val
@@ -2087,8 +2043,6 @@ type RecipeIngredient struct {
 	QuantityMax NilFloat64 `json:"quantityMax"`
 	Unit        string     `json:"unit"`
 	Item        string     `json:"item"`
-	Preparation string     `json:"preparation"`
-	Optional    bool       `json:"optional"`
 }
 
 // GetQuantity returns the value of Quantity.
@@ -2111,16 +2065,6 @@ func (s *RecipeIngredient) GetItem() string {
 	return s.Item
 }
 
-// GetPreparation returns the value of Preparation.
-func (s *RecipeIngredient) GetPreparation() string {
-	return s.Preparation
-}
-
-// GetOptional returns the value of Optional.
-func (s *RecipeIngredient) GetOptional() bool {
-	return s.Optional
-}
-
 // SetQuantity sets the value of Quantity.
 func (s *RecipeIngredient) SetQuantity(val NilFloat64) {
 	s.Quantity = val
@@ -2141,24 +2085,12 @@ func (s *RecipeIngredient) SetItem(val string) {
 	s.Item = val
 }
 
-// SetPreparation sets the value of Preparation.
-func (s *RecipeIngredient) SetPreparation(val string) {
-	s.Preparation = val
-}
-
-// SetOptional sets the value of Optional.
-func (s *RecipeIngredient) SetOptional(val bool) {
-	s.Optional = val
-}
-
 // Ref: #/components/schemas/RecipeIngredientInput
 type RecipeIngredientInput struct {
 	Quantity    OptFloat64 `json:"quantity"`
 	QuantityMax OptFloat64 `json:"quantityMax"`
 	Unit        OptString  `json:"unit"`
 	Item        string     `json:"item"`
-	Preparation OptString  `json:"preparation"`
-	Optional    OptBool    `json:"optional"`
 }
 
 // GetQuantity returns the value of Quantity.
@@ -2181,16 +2113,6 @@ func (s *RecipeIngredientInput) GetItem() string {
 	return s.Item
 }
 
-// GetPreparation returns the value of Preparation.
-func (s *RecipeIngredientInput) GetPreparation() OptString {
-	return s.Preparation
-}
-
-// GetOptional returns the value of Optional.
-func (s *RecipeIngredientInput) GetOptional() OptBool {
-	return s.Optional
-}
-
 // SetQuantity sets the value of Quantity.
 func (s *RecipeIngredientInput) SetQuantity(val OptFloat64) {
 	s.Quantity = val
@@ -2209,16 +2131,6 @@ func (s *RecipeIngredientInput) SetUnit(val OptString) {
 // SetItem sets the value of Item.
 func (s *RecipeIngredientInput) SetItem(val string) {
 	s.Item = val
-}
-
-// SetPreparation sets the value of Preparation.
-func (s *RecipeIngredientInput) SetPreparation(val OptString) {
-	s.Preparation = val
-}
-
-// SetOptional sets the value of Optional.
-func (s *RecipeIngredientInput) SetOptional(val OptBool) {
-	s.Optional = val
 }
 
 // Ref: #/components/schemas/RecipeIngredientSection
@@ -2495,8 +2407,6 @@ type RecipeUpdate struct {
 	Yield               OptNilRecipeYield               `json:"yield"`
 	PrepMinutes         OptNilInt32                     `json:"prepMinutes"`
 	CookMinutes         OptNilInt32                     `json:"cookMinutes"`
-	Source              OptString                       `json:"source"`
-	SourceUrl           OptNilString                    `json:"sourceUrl"`
 	Tags                []string                        `json:"tags"`
 	IngredientSections  []RecipeIngredientSectionInput  `json:"ingredientSections"`
 	InstructionSections []RecipeInstructionSectionInput `json:"instructionSections"`
@@ -2525,16 +2435,6 @@ func (s *RecipeUpdate) GetPrepMinutes() OptNilInt32 {
 // GetCookMinutes returns the value of CookMinutes.
 func (s *RecipeUpdate) GetCookMinutes() OptNilInt32 {
 	return s.CookMinutes
-}
-
-// GetSource returns the value of Source.
-func (s *RecipeUpdate) GetSource() OptString {
-	return s.Source
-}
-
-// GetSourceUrl returns the value of SourceUrl.
-func (s *RecipeUpdate) GetSourceUrl() OptNilString {
-	return s.SourceUrl
 }
 
 // GetTags returns the value of Tags.
@@ -2575,16 +2475,6 @@ func (s *RecipeUpdate) SetPrepMinutes(val OptNilInt32) {
 // SetCookMinutes sets the value of CookMinutes.
 func (s *RecipeUpdate) SetCookMinutes(val OptNilInt32) {
 	s.CookMinutes = val
-}
-
-// SetSource sets the value of Source.
-func (s *RecipeUpdate) SetSource(val OptString) {
-	s.Source = val
-}
-
-// SetSourceUrl sets the value of SourceUrl.
-func (s *RecipeUpdate) SetSourceUrl(val OptNilString) {
-	s.SourceUrl = val
 }
 
 // SetTags sets the value of Tags.

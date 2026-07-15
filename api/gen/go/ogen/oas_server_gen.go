@@ -20,6 +20,10 @@ type Handler interface {
 	//
 	// GET /auth/tokens
 	AuthListTokens(ctx context.Context) (*AuthTokenList, error)
+	// RecipesList implements Recipes_list operation.
+	//
+	// GET /recipes
+	RecipesList(ctx context.Context, params RecipesListParams) (*RecipePage, error)
 	// RecipesSearch implements Recipes_search operation.
 	//
 	// GET /recipes/search

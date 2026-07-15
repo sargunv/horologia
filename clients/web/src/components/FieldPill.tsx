@@ -10,6 +10,8 @@ interface FieldPillProps extends Omit<
   icon?: ReactNode;
   label: string;
   value?: string | null;
+  /** Keep the field name visible when the value alone would be ambiguous. */
+  showLabelWithValue?: boolean;
   /**
    * Render as a plain `<button>` (ref/props forwarded) instead of the default
    * `DropdownMenuTrigger`. Use when composing with non-DropdownMenu trigger
@@ -36,7 +38,7 @@ interface FieldPillProps extends Omit<
  * trigger's own `asChild` slot.
  */
 export const FieldPill = forwardRef<HTMLButtonElement, FieldPillProps>(function FieldPill(
-  { icon, label, value, asChild, className, ...rest },
+  { icon, label, value, showLabelWithValue, asChild, className, ...rest },
   ref,
 ) {
   const hasValue = value != null;
@@ -46,10 +48,11 @@ export const FieldPill = forwardRef<HTMLButtonElement, FieldPillProps>(function 
     className,
   );
   const ariaLabel = value ? `${label}: ${value}` : label;
+  const displayValue = value && showLabelWithValue ? `${label} ${value}` : (value ?? label);
   const body = (
     <>
       {icon}
-      <span className="whitespace-nowrap">{value ?? label}</span>
+      <span className="whitespace-nowrap">{displayValue}</span>
       <ChevronDown className="size-3 opacity-60" aria-hidden="true" />
     </>
   );

@@ -10,11 +10,9 @@ INSERT INTO recipe_ingredients (
     quantity,
     quantity_max,
     unit,
-    item,
-    preparation,
-    optional
+    item
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
+VALUES ($1, $2, $3, $4, $5, $6);
 
 -- name: ListRecipeIngredientRows :many
 SELECT
@@ -26,9 +24,7 @@ SELECT
     ri.quantity,
     ri.quantity_max,
     ri.unit,
-    ri.item,
-    ri.preparation,
-    ri.optional
+    ri.item
 FROM recipe_ingredient_sections ris
 LEFT JOIN recipe_ingredients ri ON ri.section_id = ris.id
 WHERE ris.recipe_id = $1

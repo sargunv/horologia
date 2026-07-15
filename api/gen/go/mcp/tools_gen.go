@@ -2055,8 +2055,6 @@ func recipeCreateTool() mcp.Tool {
 		}),
 		mcp.WithNumber("prepMinutes"),
 		mcp.WithNumber("cookMinutes"),
-		mcp.WithString("source"),
-		mcp.WithString("sourceUrl"),
 		withRawProperty("tags", false, map[string]any{
 			"type": "array",
 			"items": map[string]any{
@@ -2087,12 +2085,6 @@ func recipeCreateTool() mcp.Tool {
 								},
 								"item": map[string]any{
 									"type": "string",
-								},
-								"preparation": map[string]any{
-									"type": "string",
-								},
-								"optional": map[string]any{
-									"type": "boolean",
 								},
 							},
 							"required": []string{"item"},
@@ -2236,34 +2228,6 @@ func recipeCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		} else if false {
 			return mcp.NewToolResultError("cookMinutes is required"), nil
 		}
-		rawSource, hasSource := args["source"]
-		if hasSource {
-			if rawSource == nil {
-				return mcp.NewToolResultError("source must not be null"), nil
-			}
-				vSource, ok := rawSource.(string)
-				if !ok {
-					return mcp.NewToolResultError("source must be a string"), nil
-				}
-				convertedSource := vSource
-				body.Source.SetTo(convertedSource)
-		} else if false {
-			return mcp.NewToolResultError("source is required"), nil
-		}
-		rawSourceUrl, hasSourceUrl := args["sourceUrl"]
-		if hasSourceUrl {
-			if rawSourceUrl == nil {
-				return mcp.NewToolResultError("sourceUrl must not be null"), nil
-			}
-				vSourceUrl, ok := rawSourceUrl.(string)
-				if !ok {
-					return mcp.NewToolResultError("sourceUrl must be a string"), nil
-				}
-				convertedSourceUrl := vSourceUrl
-				body.SourceUrl.SetTo(convertedSourceUrl)
-		} else if false {
-			return mcp.NewToolResultError("sourceUrl is required"), nil
-		}
 		rawTags, hasTags := args["tags"]
 		if hasTags {
 			if rawTags == nil {
@@ -2387,34 +2351,6 @@ func recipeCreateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 								nestedValue.Item = convertedNestedIngredientsItem
 						} else if true {
 							return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].item is required", i, j)), nil
-						}
-						rawNestedIngredientsPreparation, hasNestedIngredientsPreparation := nestedMap["preparation"]
-						if hasNestedIngredientsPreparation {
-							if rawNestedIngredientsPreparation == nil {
-								return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].preparation must not be null", i, j)), nil
-							}
-								vNestedIngredientsPreparation, ok := rawNestedIngredientsPreparation.(string)
-								if !ok {
-									return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].preparation must be a string", i, j)), nil
-								}
-								convertedNestedIngredientsPreparation := vNestedIngredientsPreparation
-								nestedValue.Preparation.SetTo(convertedNestedIngredientsPreparation)
-						} else if false {
-							return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].preparation is required", i, j)), nil
-						}
-						rawNestedIngredientsOptional, hasNestedIngredientsOptional := nestedMap["optional"]
-						if hasNestedIngredientsOptional {
-							if rawNestedIngredientsOptional == nil {
-								return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].optional must not be null", i, j)), nil
-							}
-								vNestedIngredientsOptional, ok := rawNestedIngredientsOptional.(bool)
-								if !ok {
-									return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].optional must be a boolean", i, j)), nil
-								}
-								convertedNestedIngredientsOptional := vNestedIngredientsOptional
-								nestedValue.Optional.SetTo(convertedNestedIngredientsOptional)
-						} else if false {
-							return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].optional is required", i, j)), nil
 						}
 						valueIngredientsItems[j] = nestedValue
 					}
@@ -2565,10 +2501,6 @@ func recipeUpdateTool() mcp.Tool {
 		withRawProperty("cookMinutes", false, map[string]any{
 			"type": []any{"number", "null"},
 		}),
-		mcp.WithString("source"),
-		withRawProperty("sourceUrl", false, map[string]any{
-			"type": []any{"string", "null"},
-		}),
 		withRawProperty("tags", false, map[string]any{
 			"type": "array",
 			"items": map[string]any{
@@ -2599,12 +2531,6 @@ func recipeUpdateTool() mcp.Tool {
 								},
 								"item": map[string]any{
 									"type": "string",
-								},
-								"preparation": map[string]any{
-									"type": "string",
-								},
-								"optional": map[string]any{
-									"type": "boolean",
 								},
 							},
 							"required": []string{"item"},
@@ -2755,35 +2681,6 @@ func recipeUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 		} else if false {
 			return mcp.NewToolResultError("cookMinutes is required"), nil
 		}
-		rawSource, hasSource := args["source"]
-		if hasSource {
-			if rawSource == nil {
-				return mcp.NewToolResultError("source must not be null"), nil
-			}
-				vSource, ok := rawSource.(string)
-				if !ok {
-					return mcp.NewToolResultError("source must be a string"), nil
-				}
-				convertedSource := vSource
-				body.Source.SetTo(convertedSource)
-		} else if false {
-			return mcp.NewToolResultError("source is required"), nil
-		}
-		rawSourceUrl, hasSourceUrl := args["sourceUrl"]
-		if hasSourceUrl {
-			if rawSourceUrl == nil {
-				body.SourceUrl.SetToNull()
-			} else {
-				vSourceUrl, ok := rawSourceUrl.(string)
-				if !ok {
-					return mcp.NewToolResultError("sourceUrl must be a string"), nil
-				}
-				convertedSourceUrl := vSourceUrl
-				body.SourceUrl.SetTo(convertedSourceUrl)
-			}
-		} else if false {
-			return mcp.NewToolResultError("sourceUrl is required"), nil
-		}
 		rawTags, hasTags := args["tags"]
 		if hasTags {
 			if rawTags == nil {
@@ -2907,34 +2804,6 @@ func recipeUpdateHandler(h Handlers) mcpserver.ToolHandlerFunc {
 								nestedValue.Item = convertedNestedIngredientsItem
 						} else if true {
 							return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].item is required", i, j)), nil
-						}
-						rawNestedIngredientsPreparation, hasNestedIngredientsPreparation := nestedMap["preparation"]
-						if hasNestedIngredientsPreparation {
-							if rawNestedIngredientsPreparation == nil {
-								return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].preparation must not be null", i, j)), nil
-							}
-								vNestedIngredientsPreparation, ok := rawNestedIngredientsPreparation.(string)
-								if !ok {
-									return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].preparation must be a string", i, j)), nil
-								}
-								convertedNestedIngredientsPreparation := vNestedIngredientsPreparation
-								nestedValue.Preparation.SetTo(convertedNestedIngredientsPreparation)
-						} else if false {
-							return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].preparation is required", i, j)), nil
-						}
-						rawNestedIngredientsOptional, hasNestedIngredientsOptional := nestedMap["optional"]
-						if hasNestedIngredientsOptional {
-							if rawNestedIngredientsOptional == nil {
-								return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].optional must not be null", i, j)), nil
-							}
-								vNestedIngredientsOptional, ok := rawNestedIngredientsOptional.(bool)
-								if !ok {
-									return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].optional must be a boolean", i, j)), nil
-								}
-								convertedNestedIngredientsOptional := vNestedIngredientsOptional
-								nestedValue.Optional.SetTo(convertedNestedIngredientsOptional)
-						} else if false {
-							return mcp.NewToolResultError(fmt.Sprintf("ingredientSections[%d].ingredients[%d].optional is required", i, j)), nil
 						}
 						valueIngredientsItems[j] = nestedValue
 					}

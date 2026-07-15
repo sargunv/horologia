@@ -28,14 +28,12 @@ func TestRecipeCRUDSearchAndActivity(t *testing.T) {
         "yield":{"amount":4,"unit":"servings"},
         "prepMinutes":10,
         "cookMinutes":20,
-        "source":"Family cookbook",
-        "sourceUrl":"https://example.com/pasta",
         "tags":["Dinner","dinner","Quick"],
         "ingredientSections":[{
             "title":"Pasta",
             "ingredients":[
                 {"quantity":1,"unit":"lb","item":"spaghetti"},
-                {"quantity":2,"quantityMax":3,"unit":"cups","item":"tomatoes","preparation":"chopped","optional":true}
+                {"quantity":2,"quantityMax":3,"unit":"cups","item":"tomatoes"}
             ]
         }],
         "instructionSections":[{
@@ -103,6 +101,26 @@ func TestRecipeCRUDSearchAndActivity(t *testing.T) {
 	}
 	if len(jsonAs[[]any](t, cleared["instructionSections"])) != 1 {
 		t.Fatalf("omitted instructions were not preserved: %v", cleared)
+	}
+	updatedAtBeforeNoOp := jsonAs[string](t, cleared["updatedAt"])
+
+	resp = doRequest(t, env, http.MethodPatch, "/spaces/"+space+"/recipes/"+id, `{
+        "name":"Fresh Tomato Pasta",
+        "yield":null,
+        "prepMinutes":10,
+        "cookMinutes":20,
+        "tags":[],
+        "ingredientSections":[],
+        "instructionSections":[{
+            "title":"Cook",
+            "steps":[{"body":"Boil the pasta."},{"body":"Add the tomatoes."}]
+        }]
+    }`)
+	assertStatus(t, resp, http.StatusOK)
+	var unchanged map[string]any
+	readJSON(t, resp, &unchanged)
+	if unchanged["updatedAt"] != updatedAtBeforeNoOp {
+		t.Fatalf("no-op patch changed updatedAt from %v to %v", updatedAtBeforeNoOp, unchanged["updatedAt"])
 	}
 
 	resp = doRequest(t, env, http.MethodGet, "/recipes/search?q="+url.QueryEscape(id), "")
@@ -194,6 +212,20 @@ func TestRecipePaginationVisibilityAndScopes(t *testing.T) {
 	}
 
 	viewerToken, _ := createAndAddMember(t, env, visibleSpace, testEmail(t, "recipe-viewer"), "Viewer", "pass1234", "viewer")
+	resp = doRequestAs(t, env, viewerToken, http.MethodGet, "/recipes?limit=2", "")
+	assertStatus(t, resp, http.StatusOK)
+	var visiblePage map[string]any
+	readJSON(t, resp, &visiblePage)
+	if len(jsonAs[[]any](t, visiblePage["items"])) != 2 || visiblePage["nextCursor"] == nil {
+		t.Fatalf("unexpected visible recipe page: %v", visiblePage)
+	}
+	resp = doRequestAs(t, env, viewerToken, http.MethodGet, "/recipes?spaceSlug="+visibleSpace, "")
+	assertStatus(t, resp, http.StatusOK)
+	readJSON(t, resp, &visiblePage)
+	if len(jsonAs[[]any](t, visiblePage["items"])) != 3 {
+		t.Fatalf("global list leaked or omitted recipes: %v", visiblePage)
+	}
+
 	resp = doRequestAs(t, env, viewerToken, http.MethodGet, "/recipes/search?q=soup", "")
 	assertStatus(t, resp, http.StatusOK)
 	var search map[string]any

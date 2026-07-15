@@ -16,8 +16,6 @@ model RecipeIngredient {
   quantityMax: float64 | null;
   unit: string;
   item: string;
-  preparation: string;
-  optional: boolean;
 }
 
 model RecipeIngredientInput {
@@ -25,8 +23,6 @@ model RecipeIngredientInput {
   @minValue(0.0001) quantityMax?: float64;
   @maxLength(100) unit?: string;
   @minLength(1) @maxLength(500) item: string;
-  @maxLength(500) preparation?: string;
-  optional?: boolean;
 }
 
 model RecipeIngredientSection {
@@ -65,8 +61,6 @@ model Recipe {
   yield: RecipeYield | null;
   prepMinutes: int32 | null;
   cookMinutes: int32 | null;
-  source: string;
-  sourceUrl: string | null;
   tags: string[];
   ingredientSections: RecipeIngredientSection[];
   instructionSections: RecipeInstructionSection[];
@@ -91,8 +85,6 @@ model RecipeCreate {
   yield?: RecipeYield;
   @minValue(0) prepMinutes?: int32;
   @minValue(0) cookMinutes?: int32;
-  @maxLength(1000) source?: string;
-  @maxLength(2000) sourceUrl?: string;
   @maxItems(100) tags?: string[];
   @maxItems(20) ingredientSections?: RecipeIngredientSectionInput[];
   @maxItems(20) instructionSections?: RecipeInstructionSectionInput[];
@@ -104,8 +96,6 @@ model RecipeUpdate {
   yield?: RecipeYield | null;
   @minValue(0) prepMinutes?: int32 | null;
   @minValue(0) cookMinutes?: int32 | null;
-  @maxLength(1000) source?: string;
-  @maxLength(2000) sourceUrl?: string | null;
   @maxItems(100) tags?: string[];
   @maxItems(20) ingredientSections?: RecipeIngredientSectionInput[];
   @maxItems(20) instructionSections?: RecipeInstructionSectionInput[];
@@ -162,6 +152,9 @@ interface SpaceRecipes {
 @route("/recipes")
 @tag("Recipes")
 interface Recipes {
+  @get
+  list(...PageParams, @query spaceSlug?: string): RecipePage | ApiError;
+
   @mcpTool(
     "recipe_search",
     "Search recipes visible to the current user across all spaces."

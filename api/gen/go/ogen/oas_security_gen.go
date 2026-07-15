@@ -37,6 +37,7 @@ var operationRolesBearerAuth = map[string][]string{
 	AuthCreateTokenOperation:                []string{},
 	AuthDeleteTokenOperation:                []string{},
 	AuthListTokensOperation:                 []string{},
+	RecipesListOperation:                    []string{},
 	RecipesSearchOperation:                  []string{},
 	SpaceActivityListOperation:              []string{},
 	SpaceMembersCreateOperation:             []string{},

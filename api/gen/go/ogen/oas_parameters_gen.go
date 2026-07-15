@@ -80,6 +80,174 @@ func decodeAuthDeleteTokenParams(args [1]string, argsEscaped bool, r *http.Reque
 	return params, nil
 }
 
+// RecipesListParams is parameters of Recipes_list operation.
+type RecipesListParams struct {
+	// Pagination cursor from a previous response.
+	Cursor OptString `json:",omitempty,omitzero"`
+	// Maximum number of items to return (1–100).
+	Limit     OptInt32  `json:",omitempty,omitzero"`
+	SpaceSlug OptString `json:",omitempty,omitzero"`
+}
+
+func unpackRecipesListParams(packed middleware.Parameters) (params RecipesListParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "cursor",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Cursor = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "limit",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Limit = v.(OptInt32)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "spaceSlug",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.SpaceSlug = v.(OptString)
+		}
+	}
+	return params
+}
+
+func decodeRecipesListParams(args [0]string, argsEscaped bool, r *http.Request) (params RecipesListParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode query: cursor.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "cursor",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotCursorVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotCursorVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Cursor.SetTo(paramsDotCursorVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "cursor",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: limit.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "limit",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotLimitVal int32
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt32(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotLimitVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Limit.SetTo(paramsDotLimitVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "limit",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: spaceSlug.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "spaceSlug",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotSpaceSlugVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotSpaceSlugVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.SpaceSlug.SetTo(paramsDotSpaceSlugVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "spaceSlug",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // RecipesSearchParams is parameters of Recipes_search operation.
 type RecipesSearchParams struct {
 	Q         string

@@ -28,11 +28,9 @@ INSERT INTO recipe_ingredients (
     quantity,
     quantity_max,
     unit,
-    item,
-    preparation,
-    optional
+    item
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+VALUES ($1, $2, $3, $4, $5, $6)
 `
 
 type InsertRecipeIngredientParams struct {
@@ -42,8 +40,6 @@ type InsertRecipeIngredientParams struct {
 	QuantityMax pgtype.Numeric
 	Unit        string
 	Item        string
-	Preparation string
-	Optional    bool
 }
 
 func (q *Queries) InsertRecipeIngredient(ctx context.Context, arg InsertRecipeIngredientParams) error {
@@ -54,8 +50,6 @@ func (q *Queries) InsertRecipeIngredient(ctx context.Context, arg InsertRecipeIn
 		arg.QuantityMax,
 		arg.Unit,
 		arg.Item,
-		arg.Preparation,
-		arg.Optional,
 	)
 	return err
 }
@@ -94,9 +88,7 @@ SELECT
     ri.quantity,
     ri.quantity_max,
     ri.unit,
-    ri.item,
-    ri.preparation,
-    ri.optional
+    ri.item
 FROM recipe_ingredient_sections ris
 LEFT JOIN recipe_ingredients ri ON ri.section_id = ris.id
 WHERE ris.recipe_id = $1
@@ -113,8 +105,6 @@ type ListRecipeIngredientRowsRow struct {
 	QuantityMax        pgtype.Numeric
 	Unit               pgtype.Text
 	Item               pgtype.Text
-	Preparation        pgtype.Text
-	Optional           pgtype.Bool
 }
 
 func (q *Queries) ListRecipeIngredientRows(ctx context.Context, recipeID int64) ([]ListRecipeIngredientRowsRow, error) {
@@ -136,8 +126,6 @@ func (q *Queries) ListRecipeIngredientRows(ctx context.Context, recipeID int64) 
 			&i.QuantityMax,
 			&i.Unit,
 			&i.Item,
-			&i.Preparation,
-			&i.Optional,
 		); err != nil {
 			return nil, err
 		}

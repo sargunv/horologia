@@ -59,6 +59,26 @@ describe("groupCompactActivityEntries", () => {
     ]);
   });
 
+  it("groups repeated opaque recipe collection updates", () => {
+    const details = [{ field: "ingredients", from: null, to: "updated" }];
+    const groups = groupCompactActivityEntries([
+      update("newest", "2026-07-11T12:02:00Z", null, "updated", {
+        entityType: "recipe",
+        entityId: "R1",
+        details,
+      }),
+      update("oldest", "2026-07-11T12:00:00Z", null, "updated", {
+        entityType: "recipe",
+        entityId: "R1",
+        details,
+      }),
+    ]);
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0]!.count).toBe(2);
+    expect(groups[0]!.entry.details).toEqual(details);
+  });
+
   it("does not group across actors, discontinuous values, or the time window", () => {
     const groups = groupCompactActivityEntries([
       update("newest", "2026-07-11T12:20:00Z", "third", "fourth"),

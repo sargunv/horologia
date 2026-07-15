@@ -34,6 +34,13 @@ func (UnimplementedHandler) AuthListTokens(ctx context.Context) (r *AuthTokenLis
 	return r, ht.ErrNotImplemented
 }
 
+// RecipesList implements Recipes_list operation.
+//
+// GET /recipes
+func (UnimplementedHandler) RecipesList(ctx context.Context, params RecipesListParams) (r *RecipePage, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // RecipesSearch implements Recipes_search operation.
 //
 // GET /recipes/search

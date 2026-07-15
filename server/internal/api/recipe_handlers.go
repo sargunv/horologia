@@ -165,8 +165,6 @@ func fetchRecipeIngredientSections(ctx context.Context, q *dbgen.Queries, recipe
 			QuantityMax: quantityMax,
 			Unit:        row.Unit.String,
 			Item:        row.Item.String,
-			Preparation: row.Preparation.String,
-			Optional:    row.Optional.Bool,
 		})
 	}
 	return sections, nil
@@ -225,8 +223,6 @@ func (h *Handler) fetchRecipe(ctx context.Context, q *dbgen.Queries, id int64, s
 		Yield:               yield,
 		PrepMinutes:         nilInt32FromDB(recipe.PrepMinutes),
 		CookMinutes:         nilInt32FromDB(recipe.CookMinutes),
-		Source:              recipe.Source,
-		SourceUrl:           nilStringFromDB(recipe.SourceUrl),
 		Tags:                tagNames,
 		IngredientSections:  ingredientSections,
 		InstructionSections: instructionSections,
@@ -313,6 +309,52 @@ func validateRecipeCollections(ingredientSections []apigen.RecipeIngredientSecti
 	return nil
 }
 
+func optionalFloatMatches(input apigen.OptFloat64, existing apigen.NilFloat64) bool {
+	inputValue, inputSet := input.Get()
+	existingValue, existingSet := existing.Get()
+	return inputSet == existingSet && (!inputSet || inputValue == existingValue)
+}
+
+func recipeIngredientSectionsEqual(input []apigen.RecipeIngredientSectionInput, existing []apigen.RecipeIngredientSection) bool {
+	if len(input) != len(existing) {
+		return false
+	}
+	for sectionIndex, inputSection := range input {
+		existingSection := existing[sectionIndex]
+		if inputSection.Title.Or("") != existingSection.Title || len(inputSection.Ingredients) != len(existingSection.Ingredients) {
+			return false
+		}
+		for ingredientIndex, inputIngredient := range inputSection.Ingredients {
+			existingIngredient := existingSection.Ingredients[ingredientIndex]
+			if !optionalFloatMatches(inputIngredient.Quantity, existingIngredient.Quantity) ||
+				!optionalFloatMatches(inputIngredient.QuantityMax, existingIngredient.QuantityMax) ||
+				inputIngredient.Unit.Or("") != existingIngredient.Unit ||
+				inputIngredient.Item != existingIngredient.Item {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func recipeInstructionSectionsEqual(input []apigen.RecipeInstructionSectionInput, existing []apigen.RecipeInstructionSection) bool {
+	if len(input) != len(existing) {
+		return false
+	}
+	for sectionIndex, inputSection := range input {
+		existingSection := existing[sectionIndex]
+		if inputSection.Title.Or("") != existingSection.Title || len(inputSection.Steps) != len(existingSection.Steps) {
+			return false
+		}
+		for stepIndex, inputStep := range inputSection.Steps {
+			if inputStep.Body != existingSection.Steps[stepIndex].Body {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 func setRecipeIngredientSections(ctx context.Context, q *dbgen.Queries, recipeID int64, sections []apigen.RecipeIngredientSectionInput) error {
 	if err := q.DeleteRecipeIngredientSections(ctx, recipeID); err != nil {
 		return err
@@ -347,8 +389,6 @@ func setRecipeIngredientSections(ctx context.Context, q *dbgen.Queries, recipeID
 				QuantityMax: quantityMax,
 				Unit:        ingredient.Unit.Or(""),
 				Item:        ingredient.Item,
-				Preparation: ingredient.Preparation.Or(""),
-				Optional:    ingredient.Optional.Or(false),
 			}); err != nil {
 				return err
 			}
@@ -464,8 +504,6 @@ func (h *Handler) SpaceRecipesCreate(ctx context.Context, req *apigen.RecipeCrea
 		YieldUnit:   yieldUnit,
 		PrepMinutes: prepMinutes,
 		CookMinutes: cookMinutes,
-		Source:      req.Source.Or(""),
-		SourceUrl:   optStringToDB(req.SourceUrl),
 		CreatedAt:   types.Timestamptz(now),
 		UpdatedAt:   types.Timestamptz(now),
 	})
@@ -525,6 +563,43 @@ func (h *Handler) SpaceRecipesList(ctx context.Context, params apigen.SpaceRecip
 		return nil, err
 	}
 	items, nextCursor, err := paginate(rows, limit, func(rows []dbgen.Recipe) ([]apigen.RecipeSummary, error) {
+		return h.enrichRecipeSummaries(ctx, q, rows)
+	}, encodeRecipeListCursor)
+	if err != nil {
+		return nil, err
+	}
+	return &apigen.RecipePage{Items: items, NextCursor: nextCursor}, nil
+}
+
+func (h *Handler) RecipesList(ctx context.Context, params apigen.RecipesListParams) (*apigen.RecipePage, error) {
+	if err := h.requireScope(ctx, "recipes:read"); err != nil {
+		return nil, err
+	}
+	user := auth.UserFromContext(ctx)
+	if user == nil {
+		return nil, forbidden("authentication required")
+	}
+	cursor, err := decodeRecipeListCursor(params.Cursor)
+	if err != nil {
+		return nil, badRequest(err.Error())
+	}
+	limit := clampLimit(params.Limit)
+	q := dbgen.New(h.Pool)
+	rows, err := q.ListVisibleRecipes(ctx, dbgen.ListVisibleRecipesParams{
+		ViewerUserID:    user.ID,
+		SpaceSlug:       params.SpaceSlug.Or(""),
+		CursorID:        cursor.ID,
+		CursorUpdatedAt: cursor.UpdatedAt,
+		Lim:             limit + 1,
+	})
+	if err != nil {
+		return nil, err
+	}
+	recipes := make([]dbgen.Recipe, len(rows))
+	for i, row := range rows {
+		recipes[i] = dbgen.Recipe(row)
+	}
+	items, nextCursor, err := paginate(recipes, limit, func(rows []dbgen.Recipe) ([]apigen.RecipeSummary, error) {
 		return h.enrichRecipeSummaries(ctx, q, rows)
 	}, encodeRecipeListCursor)
 	if err != nil {
@@ -654,25 +729,19 @@ func (h *Handler) SpaceRecipesUpdate(ctx context.Context, req *apigen.RecipeUpda
 	description := req.Description.Or(existing.Description)
 	prepMinutes := mergeOptionalInt32(req.PrepMinutes, existing.PrepMinutes)
 	cookMinutes := mergeOptionalInt32(req.CookMinutes, existing.CookMinutes)
-	source := req.Source.Or(existing.Source)
-	sourceURL := optNilStringToDB(req.SourceUrl, existing.SourceUrl)
-	now := time.Now()
-	if _, err := q.UpdateRecipe(ctx, dbgen.UpdateRecipeParams{
-		Name:        name,
-		Description: description,
-		YieldAmount: yieldAmount,
-		YieldUnit:   yieldUnit,
-		PrepMinutes: prepMinutes,
-		CookMinutes: cookMinutes,
-		Source:      source,
-		SourceUrl:   sourceURL,
-		UpdatedAt:   types.Timestamptz(now),
-		ID:          id,
-		SpaceSlug:   params.SpaceSlug,
-	}); err != nil {
-		return nil, err
+	yieldChanged := false
+	if req.Yield.IsSet() {
+		existingYield, err := recipeYieldFromDB(existing.YieldAmount, existing.YieldUnit)
+		if err != nil {
+			return nil, err
+		}
+		updatedYield, err := recipeYieldFromDB(yieldAmount, yieldUnit)
+		if err != nil {
+			return nil, err
+		}
+		yieldChanged = existingYield != updatedYield
 	}
-
+	now := time.Now()
 	details := make([]activitylog.Detail, 0)
 	if name != existing.Name {
 		details = append(details, activitylog.Detail{Field: "name", From: new(existing.Name), To: new(name)})
@@ -680,32 +749,38 @@ func (h *Handler) SpaceRecipesUpdate(ctx context.Context, req *apigen.RecipeUpda
 	if description != existing.Description {
 		details = append(details, activitylog.Detail{Field: "description", From: new(existing.Description), To: new(description)})
 	}
-	if source != existing.Source {
-		details = append(details, activitylog.Detail{Field: "source", From: new(existing.Source), To: new(source)})
-	}
-	if req.Yield.IsSet() {
+	if yieldChanged {
 		details = append(details, activitylog.Detail{Field: "yield", To: new("updated")})
 	}
-	if req.PrepMinutes.IsSet() {
+	if req.PrepMinutes.IsSet() && prepMinutes != existing.PrepMinutes {
 		details = append(details, activitylog.Detail{Field: "prep_minutes", To: new("updated")})
 	}
-	if req.CookMinutes.IsSet() {
+	if req.CookMinutes.IsSet() && cookMinutes != existing.CookMinutes {
 		details = append(details, activitylog.Detail{Field: "cook_minutes", To: new("updated")})
 	}
-	if req.SourceUrl.IsSet() {
-		details = append(details, activitylog.Detail{Field: "source_url", To: new("updated")})
-	}
 	if req.IngredientSections != nil {
-		if err := setRecipeIngredientSections(ctx, q, id, req.IngredientSections); err != nil {
+		existingSections, err := fetchRecipeIngredientSections(ctx, q, id)
+		if err != nil {
 			return nil, err
 		}
-		details = append(details, activitylog.Detail{Field: "ingredients", To: new("updated")})
+		if !recipeIngredientSectionsEqual(req.IngredientSections, existingSections) {
+			if err := setRecipeIngredientSections(ctx, q, id, req.IngredientSections); err != nil {
+				return nil, err
+			}
+			details = append(details, activitylog.Detail{Field: "ingredients", To: new("updated")})
+		}
 	}
 	if req.InstructionSections != nil {
-		if err := setRecipeInstructionSections(ctx, q, id, req.InstructionSections); err != nil {
+		existingSections, err := fetchRecipeInstructionSections(ctx, q, id)
+		if err != nil {
 			return nil, err
 		}
-		details = append(details, activitylog.Detail{Field: "instructions", To: new("updated")})
+		if !recipeInstructionSectionsEqual(req.InstructionSections, existingSections) {
+			if err := setRecipeInstructionSections(ctx, q, id, req.InstructionSections); err != nil {
+				return nil, err
+			}
+			details = append(details, activitylog.Detail{Field: "instructions", To: new("updated")})
+		}
 	}
 	if req.Tags != nil {
 		oldTags, err := q.ListTagNamesByRecipe(ctx, id)
@@ -720,12 +795,28 @@ func (h *Handler) SpaceRecipesUpdate(ctx context.Context, req *apigen.RecipeUpda
 		for i, tag := range req.Tags {
 			foldedNew[i] = tagname.Fold(tag)
 		}
-		details = append(details, diffStringList("tag", foldedOld, foldedNew)...)
-		if err := setRecipeTags(ctx, q, id, params.SpaceSlug, req.Tags, now); err != nil {
-			return nil, err
+		tagDetails := diffStringList("tag", foldedOld, foldedNew)
+		if len(tagDetails) > 0 {
+			if err := setRecipeTags(ctx, q, id, params.SpaceSlug, req.Tags, now); err != nil {
+				return nil, err
+			}
+			details = append(details, tagDetails...)
 		}
 	}
 	if len(details) > 0 {
+		if _, err := q.UpdateRecipe(ctx, dbgen.UpdateRecipeParams{
+			Name:        name,
+			Description: description,
+			YieldAmount: yieldAmount,
+			YieldUnit:   yieldUnit,
+			PrepMinutes: prepMinutes,
+			CookMinutes: cookMinutes,
+			UpdatedAt:   types.Timestamptz(now),
+			ID:          id,
+			SpaceSlug:   params.SpaceSlug,
+		}); err != nil {
+			return nil, err
+		}
 		if err := activitylog.Log(ctx, tx, activitylog.Entry{
 			SpaceSlug:  params.SpaceSlug,
 			EntityType: activitylog.EntityRecipe,

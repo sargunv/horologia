@@ -1,6 +1,6 @@
 import { useSuspenseInfiniteQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createLink } from "@tanstack/react-router";
-import { Activity, ChevronDown, ListChecks, Plus, Settings } from "lucide-react";
+import { ChevronDown, ListChecks, Plus } from "lucide-react";
 import { useMemo } from "react";
 import {
   spaceEffortLevelsQueryOptions,
@@ -9,11 +9,9 @@ import {
   spaceTaskStatusesQueryOptions,
   spaceTasksInfiniteQueryOptions,
 } from "../../lib/queries.ts";
-import { TooltipContent, TooltipRoot, TooltipTrigger } from "../../ui/Tooltip.tsx";
+import { SpaceListPaneHeader } from "../SpaceListPaneHeader.tsx";
 import { TaskRow } from "./TaskRow.tsx";
 
-const SettingsLink = createLink("a");
-const ActivityLink = createLink("a");
 const CreateTaskLink = createLink("a");
 
 export function TaskListPane({ spaceSlug }: { spaceSlug: string }) {
@@ -36,37 +34,7 @@ export function TaskListPane({ spaceSlug }: { spaceSlug: string }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <h2 className="truncate text-lg font-semibold">{space.name}</h2>
-        <div className="flex shrink-0 items-center gap-1">
-          <TooltipRoot>
-            <TooltipTrigger asChild>
-              <ActivityLink
-                to="/spaces/$spaceSlug/activity"
-                params={{ spaceSlug }}
-                className="btn btn-soft btn-square btn-sm"
-                aria-label="Activity"
-              >
-                <Activity className="size-4" aria-hidden="true" />
-              </ActivityLink>
-            </TooltipTrigger>
-            <TooltipContent>Activity</TooltipContent>
-          </TooltipRoot>
-          <TooltipRoot>
-            <TooltipTrigger asChild>
-              <SettingsLink
-                to="/spaces/$spaceSlug/settings"
-                params={{ spaceSlug }}
-                className="btn btn-soft btn-square btn-sm"
-                aria-label="Settings"
-              >
-                <Settings className="size-4" aria-hidden="true" />
-              </SettingsLink>
-            </TooltipTrigger>
-            <TooltipContent>Settings</TooltipContent>
-          </TooltipRoot>
-        </div>
-      </div>
+      <SpaceListPaneHeader spaceSlug={spaceSlug} name={space.name} />
 
       <CreateTaskLink
         to="/spaces/$spaceSlug/tasks/new"

@@ -9,6 +9,7 @@ const (
 	AuthCreateTokenOperation                OperationName = "AuthCreateToken"
 	AuthDeleteTokenOperation                OperationName = "AuthDeleteToken"
 	AuthListTokensOperation                 OperationName = "AuthListTokens"
+	RecipesListOperation                    OperationName = "RecipesList"
 	RecipesSearchOperation                  OperationName = "RecipesSearch"
 	SpaceActivityListOperation              OperationName = "SpaceActivityList"
 	SpaceMembersCreateOperation             OperationName = "SpaceMembersCreate"

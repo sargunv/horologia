@@ -2948,14 +2948,6 @@ func (s *Recipe) encodeFields(e *jx.Encoder) {
 		s.CookMinutes.Encode(e)
 	}
 	{
-		e.FieldStart("source")
-		e.Str(s.Source)
-	}
-	{
-		e.FieldStart("sourceUrl")
-		s.SourceUrl.Encode(e)
-	}
-	{
 		e.FieldStart("tags")
 		e.ArrStart()
 		for _, elem := range s.Tags {
@@ -2989,7 +2981,7 @@ func (s *Recipe) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfRecipe = [14]string{
+var jsonFieldsNameOfRecipe = [12]string{
 	0:  "id",
 	1:  "spaceSlug",
 	2:  "name",
@@ -2997,13 +2989,11 @@ var jsonFieldsNameOfRecipe = [14]string{
 	4:  "yield",
 	5:  "prepMinutes",
 	6:  "cookMinutes",
-	7:  "source",
-	8:  "sourceUrl",
-	9:  "tags",
-	10: "ingredientSections",
-	11: "instructionSections",
-	12: "createdAt",
-	13: "updatedAt",
+	7:  "tags",
+	8:  "ingredientSections",
+	9:  "instructionSections",
+	10: "createdAt",
+	11: "updatedAt",
 }
 
 // Decode decodes Recipe from json.
@@ -3093,30 +3083,8 @@ func (s *Recipe) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"cookMinutes\"")
 			}
-		case "source":
-			requiredBitSet[0] |= 1 << 7
-			if err := func() error {
-				v, err := d.Str()
-				s.Source = string(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"source\"")
-			}
-		case "sourceUrl":
-			requiredBitSet[1] |= 1 << 0
-			if err := func() error {
-				if err := s.SourceUrl.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"sourceUrl\"")
-			}
 		case "tags":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				s.Tags = make([]string, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -3136,7 +3104,7 @@ func (s *Recipe) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"tags\"")
 			}
 		case "ingredientSections":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				s.IngredientSections = make([]RecipeIngredientSection, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -3154,7 +3122,7 @@ func (s *Recipe) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"ingredientSections\"")
 			}
 		case "instructionSections":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				s.InstructionSections = make([]RecipeInstructionSection, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -3172,7 +3140,7 @@ func (s *Recipe) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"instructionSections\"")
 			}
 		case "createdAt":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -3184,7 +3152,7 @@ func (s *Recipe) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"createdAt\"")
 			}
 		case "updatedAt":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -3206,7 +3174,7 @@ func (s *Recipe) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00111111,
+		0b00001111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -3290,18 +3258,6 @@ func (s *RecipeCreate) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.Source.Set {
-			e.FieldStart("source")
-			s.Source.Encode(e)
-		}
-	}
-	{
-		if s.SourceUrl.Set {
-			e.FieldStart("sourceUrl")
-			s.SourceUrl.Encode(e)
-		}
-	}
-	{
 		if s.Tags != nil {
 			e.FieldStart("tags")
 			e.ArrStart()
@@ -3333,17 +3289,15 @@ func (s *RecipeCreate) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfRecipeCreate = [10]string{
+var jsonFieldsNameOfRecipeCreate = [8]string{
 	0: "name",
 	1: "description",
 	2: "yield",
 	3: "prepMinutes",
 	4: "cookMinutes",
-	5: "source",
-	6: "sourceUrl",
-	7: "tags",
-	8: "ingredientSections",
-	9: "instructionSections",
+	5: "tags",
+	6: "ingredientSections",
+	7: "instructionSections",
 }
 
 // Decode decodes RecipeCreate from json.
@@ -3351,7 +3305,7 @@ func (s *RecipeCreate) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode RecipeCreate to nil")
 	}
-	var requiredBitSet [2]uint8
+	var requiredBitSet [1]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -3406,26 +3360,6 @@ func (s *RecipeCreate) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"cookMinutes\"")
-			}
-		case "source":
-			if err := func() error {
-				s.Source.Reset()
-				if err := s.Source.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"source\"")
-			}
-		case "sourceUrl":
-			if err := func() error {
-				s.SourceUrl.Reset()
-				if err := s.SourceUrl.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"sourceUrl\"")
 			}
 		case "tags":
 			if err := func() error {
@@ -3489,9 +3423,8 @@ func (s *RecipeCreate) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [2]uint8{
+	for i, mask := range [1]uint8{
 		0b00000001,
-		0b00000000,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -3562,23 +3495,13 @@ func (s *RecipeIngredient) encodeFields(e *jx.Encoder) {
 		e.FieldStart("item")
 		e.Str(s.Item)
 	}
-	{
-		e.FieldStart("preparation")
-		e.Str(s.Preparation)
-	}
-	{
-		e.FieldStart("optional")
-		e.Bool(s.Optional)
-	}
 }
 
-var jsonFieldsNameOfRecipeIngredient = [6]string{
+var jsonFieldsNameOfRecipeIngredient = [4]string{
 	0: "quantity",
 	1: "quantityMax",
 	2: "unit",
 	3: "item",
-	4: "preparation",
-	5: "optional",
 }
 
 // Decode decodes RecipeIngredient from json.
@@ -3634,30 +3557,6 @@ func (s *RecipeIngredient) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"item\"")
 			}
-		case "preparation":
-			requiredBitSet[0] |= 1 << 4
-			if err := func() error {
-				v, err := d.Str()
-				s.Preparation = string(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"preparation\"")
-			}
-		case "optional":
-			requiredBitSet[0] |= 1 << 5
-			if err := func() error {
-				v, err := d.Bool()
-				s.Optional = bool(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"optional\"")
-			}
 		default:
 			return d.Skip()
 		}
@@ -3668,7 +3567,7 @@ func (s *RecipeIngredient) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00111111,
+		0b00001111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -3745,27 +3644,13 @@ func (s *RecipeIngredientInput) encodeFields(e *jx.Encoder) {
 		e.FieldStart("item")
 		e.Str(s.Item)
 	}
-	{
-		if s.Preparation.Set {
-			e.FieldStart("preparation")
-			s.Preparation.Encode(e)
-		}
-	}
-	{
-		if s.Optional.Set {
-			e.FieldStart("optional")
-			s.Optional.Encode(e)
-		}
-	}
 }
 
-var jsonFieldsNameOfRecipeIngredientInput = [6]string{
+var jsonFieldsNameOfRecipeIngredientInput = [4]string{
 	0: "quantity",
 	1: "quantityMax",
 	2: "unit",
 	3: "item",
-	4: "preparation",
-	5: "optional",
 }
 
 // Decode decodes RecipeIngredientInput from json.
@@ -3818,26 +3703,6 @@ func (s *RecipeIngredientInput) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"item\"")
-			}
-		case "preparation":
-			if err := func() error {
-				s.Preparation.Reset()
-				if err := s.Preparation.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"preparation\"")
-			}
-		case "optional":
-			if err := func() error {
-				s.Optional.Reset()
-				if err := s.Optional.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"optional\"")
 			}
 		default:
 			return d.Skip()
@@ -5067,18 +4932,6 @@ func (s *RecipeUpdate) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.Source.Set {
-			e.FieldStart("source")
-			s.Source.Encode(e)
-		}
-	}
-	{
-		if s.SourceUrl.Set {
-			e.FieldStart("sourceUrl")
-			s.SourceUrl.Encode(e)
-		}
-	}
-	{
 		if s.Tags != nil {
 			e.FieldStart("tags")
 			e.ArrStart()
@@ -5110,17 +4963,15 @@ func (s *RecipeUpdate) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfRecipeUpdate = [10]string{
+var jsonFieldsNameOfRecipeUpdate = [8]string{
 	0: "name",
 	1: "description",
 	2: "yield",
 	3: "prepMinutes",
 	4: "cookMinutes",
-	5: "source",
-	6: "sourceUrl",
-	7: "tags",
-	8: "ingredientSections",
-	9: "instructionSections",
+	5: "tags",
+	6: "ingredientSections",
+	7: "instructionSections",
 }
 
 // Decode decodes RecipeUpdate from json.
@@ -5180,26 +5031,6 @@ func (s *RecipeUpdate) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"cookMinutes\"")
-			}
-		case "source":
-			if err := func() error {
-				s.Source.Reset()
-				if err := s.Source.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"source\"")
-			}
-		case "sourceUrl":
-			if err := func() error {
-				s.SourceUrl.Reset()
-				if err := s.SourceUrl.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"sourceUrl\"")
 			}
 		case "tags":
 			if err := func() error {

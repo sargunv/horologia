@@ -179,6 +179,85 @@ export const spaceTaskQueryOptions = (spaceSlug: string, taskId: string) =>
     },
   });
 
+export const recipesInfiniteQueryOptions = (spaceSlug?: string) => {
+  const initialPageParam: string | null = null;
+  return infiniteQueryOptions({
+    queryKey: ["recipes", "list", spaceSlug ?? "all"],
+    queryFn: async ({ pageParam }: { pageParam: string | null }) => {
+      const { data, error } = await apiClient.GET("/recipes", {
+        params: {
+          query: {
+            ...(spaceSlug ? { spaceSlug } : {}),
+            ...(pageParam ? { cursor: pageParam } : {}),
+            limit: 50,
+          },
+        },
+      });
+      if (error) throw error;
+      return data;
+    },
+    initialPageParam,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+  });
+};
+
+export const recipeQueryOptions = (spaceSlug: string, recipeId: string) =>
+  queryOptions({
+    queryKey: ["spaces", spaceSlug, "recipes", recipeId],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET("/spaces/{spaceSlug}/recipes/{recipeId}", {
+        params: { path: { spaceSlug, recipeId } },
+      });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+export const recipeActivityInfiniteQueryOptions = (spaceSlug: string, recipeId: string) => {
+  const initialPageParam: string | null = null;
+  return infiniteQueryOptions({
+    queryKey: ["spaces", spaceSlug, "recipes", recipeId, "activity"],
+    queryFn: async ({ pageParam }: { pageParam: string | null }) => {
+      const { data, error } = await apiClient.GET(
+        "/spaces/{spaceSlug}/recipes/{recipeId}/activity",
+        {
+          params: {
+            path: { spaceSlug, recipeId },
+            query: { ...(pageParam ? { cursor: pageParam } : {}), limit: 50 },
+          },
+        },
+      );
+      if (error) throw error;
+      return data;
+    },
+    initialPageParam,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+  });
+};
+
+export const recipeSearchQueryOptions = ({
+  query,
+  spaceSlug,
+  limit = 10,
+}: {
+  query: string;
+  spaceSlug?: string;
+  limit?: number;
+}) =>
+  queryOptions({
+    queryKey: ["recipes", "search", query, spaceSlug ?? null, limit],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET("/recipes/search", {
+        params: {
+          query: { q: query, ...(spaceSlug ? { spaceSlug } : {}), limit },
+        },
+      });
+      if (error) throw error;
+      return data.items;
+    },
+    staleTime: 10_000,
+  });
+
 export const userTasksInfiniteQueryOptions = (userId: string) => {
   const initialPageParam: string | null = null;
   return infiniteQueryOptions({
