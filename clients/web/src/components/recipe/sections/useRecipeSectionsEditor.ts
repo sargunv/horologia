@@ -1,5 +1,5 @@
 import type { DragEndEvent } from "@dnd-kit/core";
-import { type KeyboardEvent, useEffect, useState } from "react";
+import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { moveKeyed } from "../../../lib/keyedCollections.ts";
 import { useRecipePatch } from "../../../lib/mutations.ts";
 import { parseIngredientQuantity } from "../../../lib/recipeInputs.ts";
@@ -84,9 +84,14 @@ export function useRecipeSectionsEditor(recipe: Recipe): {
   const [draft, setDraft] = useState(() => recipeSectionsDraft(recipe));
   const [editing, setEditing] = useState<EditingTarget>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const authoritativeRecipeRef = useRef(recipe);
 
   useEffect(() => {
-    if (editing === null && !mutation.isPending) {
+    const authoritative = authoritativeRecipeRef.current;
+    const incomingIsCurrent =
+      recipe.id !== authoritative.id || recipe.updatedAt >= authoritative.updatedAt;
+    if (editing === null && !mutation.isPending && incomingIsCurrent) {
+      authoritativeRecipeRef.current = recipe;
       setDraft((current) => recipeSectionsDraft(recipe, current));
     }
   }, [editing, mutation.isPending, recipe]);
@@ -99,7 +104,7 @@ export function useRecipeSectionsEditor(recipe: Recipe): {
   }
 
   function cancel() {
-    setDraft((current) => recipeSectionsDraft(recipe, current));
+    setDraft((current) => recipeSectionsDraft(authoritativeRecipeRef.current, current));
     setValidationError(null);
     mutation.reset();
     setEditing(null);
@@ -118,9 +123,11 @@ export function useRecipeSectionsEditor(recipe: Recipe): {
   ) {
     setValidationError(null);
     const input = ingredientSectionsInput(sections);
-    const persisted = ingredientSectionsInput(recipeSectionsDraft(recipe).ingredientSections);
+    const persisted = ingredientSectionsInput(
+      recipeSectionsDraft(authoritativeRecipeRef.current).ingredientSections,
+    );
     if (JSON.stringify(input) === JSON.stringify(persisted)) {
-      setDraft((current) => recipeSectionsDraft(recipe, current));
+      setDraft((current) => recipeSectionsDraft(authoritativeRecipeRef.current, current));
       mutation.reset();
       setEditing(null);
       return;
@@ -130,12 +137,13 @@ export function useRecipeSectionsEditor(recipe: Recipe): {
       { ingredientSections: input },
       {
         onSuccess: (updated) => {
+          authoritativeRecipeRef.current = updated;
           setDraft((current) => recipeSectionsDraft(updated, current));
           setEditing(null);
         },
         onError: () => {
           if (rollbackOnError) {
-            setDraft((current) => recipeSectionsDraft(recipe, current));
+            setDraft((current) => recipeSectionsDraft(authoritativeRecipeRef.current, current));
             setEditing(null);
           }
         },
@@ -149,9 +157,11 @@ export function useRecipeSectionsEditor(recipe: Recipe): {
   ) {
     setValidationError(null);
     const input = instructionSectionsInput(sections);
-    const persisted = instructionSectionsInput(recipeSectionsDraft(recipe).instructionSections);
+    const persisted = instructionSectionsInput(
+      recipeSectionsDraft(authoritativeRecipeRef.current).instructionSections,
+    );
     if (JSON.stringify(input) === JSON.stringify(persisted)) {
-      setDraft((current) => recipeSectionsDraft(recipe, current));
+      setDraft((current) => recipeSectionsDraft(authoritativeRecipeRef.current, current));
       mutation.reset();
       setEditing(null);
       return;
@@ -161,12 +171,13 @@ export function useRecipeSectionsEditor(recipe: Recipe): {
       { instructionSections: input },
       {
         onSuccess: (updated) => {
+          authoritativeRecipeRef.current = updated;
           setDraft((current) => recipeSectionsDraft(updated, current));
           setEditing(null);
         },
         onError: () => {
           if (rollbackOnError) {
-            setDraft((current) => recipeSectionsDraft(recipe, current));
+            setDraft((current) => recipeSectionsDraft(authoritativeRecipeRef.current, current));
             setEditing(null);
           }
         },

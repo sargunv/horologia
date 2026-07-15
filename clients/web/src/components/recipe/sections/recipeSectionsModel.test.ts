@@ -2,15 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   ingredientSectionsInput,
   insertIngredient,
-  insertInstructionSection,
-  insertStep,
   instructionSectionsInput,
   recipeSectionsDraft,
   removeIngredient,
   removeStep,
-  updateIngredient,
-  updateInstructionSectionTitle,
-  updateStep,
   type IngredientSectionDraft,
   type InstructionSectionDraft,
   type Recipe,
@@ -77,12 +72,6 @@ describe("ingredient section operations", () => {
     },
   ];
 
-  it("updates an ingredient by stable keys", () => {
-    const updated = updateIngredient(sections(), "second", "tomato", { item: "crushed tomatoes" });
-    expect(updated[0]!.ingredients[0]!.item).toBe("salt");
-    expect(updated[1]!.ingredients[0]!.item).toBe("crushed tomatoes");
-  });
-
   it("removes an empty untitled section with its last ingredient", () => {
     expect(removeIngredient(sections(), "first", "salt").map((section) => section.key)).toEqual([
       "second",
@@ -120,24 +109,10 @@ describe("instruction section operations", () => {
     { key: "finish", title: "Finish", steps: [] },
   ];
 
-  it("updates steps and section titles by stable keys", () => {
-    const withStep = updateStep(sections(), "default", "simmer", "Simmer gently.");
-    const updated = updateInstructionSectionTitle(withStep, "finish", "To serve");
-    expect(updated[0]!.steps[0]!.body).toBe("Simmer gently.");
-    expect(updated[1]!.title).toBe("To serve");
-  });
-
   it("removes an empty untitled section with its last step", () => {
     expect(removeStep(sections(), "default", "simmer").map((section) => section.key)).toEqual([
       "finish",
     ]);
-  });
-
-  it("adds sections and steps with stable keys", () => {
-    const withSection = insertInstructionSection([]);
-    const withStep = insertStep(withSection.sections, withSection.sectionKey);
-    expect(withStep.sections[0]!.key).toBe(withSection.sectionKey);
-    expect(withStep.sections[0]!.steps[0]!.key).toBe(withStep.itemKey);
   });
 
   it("trims instruction input", () => {

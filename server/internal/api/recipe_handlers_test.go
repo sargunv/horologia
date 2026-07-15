@@ -1,10 +1,14 @@
 package api_test
 
 import (
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/sargunv/horologia/server/internal/types"
 )
 
 func createRecipe(t *testing.T, env *testEnv, spaceSlug, body string) map[string]any {
@@ -148,7 +152,7 @@ func TestRecipeCRUDSearchAndActivity(t *testing.T) {
 	assertStatusClose(t, doRequest(t, env, http.MethodGet, "/spaces/"+space+"/recipes/"+id, ""), http.StatusNotFound)
 }
 
-func TestRecipeValidationIsTransactional(t *testing.T) {
+func TestRecipeValidationAndTransactionRollback(t *testing.T) {
 	t.Parallel()
 	env := setupTestServer(t)
 	space := testSlug(t, "home")
@@ -166,6 +170,24 @@ func TestRecipeValidationIsTransactional(t *testing.T) {
 	readJSON(t, resp, &page)
 	if len(jsonAs[[]any](t, page["items"])) != 0 {
 		t.Fatalf("invalid recipe was persisted: %v", page)
+	}
+
+	// Tag validation happens after the recipe and nested collections have been inserted. The
+	// invalid tag must roll the whole transaction back rather than leaving a partial recipe.
+	rollbackName := "Rollback " + space
+	resp = doRequest(t, env, http.MethodPost, "/spaces/"+space+"/recipes", `{
+		"name":"`+rollbackName+`",
+		"tags":[""],
+		"ingredientSections":[{"ingredients":[{"quantity":1,"unit":"cup","item":"stock"}]}]
+	}`)
+	assertStatusClose(t, resp, http.StatusBadRequest)
+
+	var count int
+	if err := env.pool.QueryRow(t.Context(), `SELECT count(*) FROM recipes WHERE space_slug = $1 AND name = $2`, space, rollbackName).Scan(&count); err != nil {
+		t.Fatalf("count rolled-back recipes: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("transaction left %d partial recipes, want 0", count)
 	}
 }
 
@@ -233,9 +255,211 @@ func TestRecipePaginationVisibilityAndScopes(t *testing.T) {
 	if len(jsonAs[[]any](t, search["items"])) != 3 {
 		t.Fatalf("search leaked or omitted recipes: %v", search)
 	}
+	resp = doRequest(t, env, http.MethodGet, "/recipes/search?q=soup&spaceSlug="+visibleSpace, "")
+	assertStatus(t, resp, http.StatusOK)
+	readJSON(t, resp, &search)
+	if len(jsonAs[[]any](t, search["items"])) != 3 {
+		t.Fatalf("space-filtered search returned the wrong recipes: %v", search)
+	}
 	assertStatusClose(t, doRequestAs(t, env, viewerToken, http.MethodPost, "/spaces/"+visibleSpace+"/recipes", `{"name":"Nope"}`), http.StatusForbidden)
 
 	oauthReadToken := createOAuthAccessTokenForBearerUser(t, env, viewerToken, "recipes:read")
 	assertStatusClose(t, doRequestAs(t, env, oauthReadToken, http.MethodGet, "/spaces/"+visibleSpace+"/recipes", ""), http.StatusOK)
 	assertStatusClose(t, doRequestAs(t, env, oauthReadToken, http.MethodPost, "/spaces/"+visibleSpace+"/recipes", `{"name":"Nope"}`), http.StatusForbidden)
+	oauthWriteToken := createOAuthAccessTokenForBearerUser(t, env, env.Token, "recipes:write")
+	assertStatusClose(t, doRequestAs(t, env, oauthWriteToken, http.MethodPost, "/spaces/"+visibleSpace+"/recipes", `{"name":"OAuth recipe"}`), http.StatusCreated)
+}
+
+func TestRecipeSpaceIsolationAndCascade(t *testing.T) {
+	t.Parallel()
+	env := setupTestServer(t)
+	spaceA := testSlug(t, "space-a")
+	spaceB := testSlug(t, "space-b")
+	createSpace(t, env, spaceA, "Space A")
+	createSpace(t, env, spaceB, "Space B")
+	recipe := createRecipe(t, env, spaceB, `{"name":"Secret soup"}`)
+	id := jsonAs[string](t, recipe["id"])
+
+	assertStatusClose(t, doRequest(t, env, http.MethodGet, "/spaces/"+spaceA+"/recipes/"+id, ""), http.StatusNotFound)
+	assertStatusClose(t, doRequest(t, env, http.MethodPatch, "/spaces/"+spaceA+"/recipes/"+id, `{"name":"Hacked"}`), http.StatusNotFound)
+	assertStatusClose(t, doRequest(t, env, http.MethodDelete, "/spaces/"+spaceA+"/recipes/"+id, ""), http.StatusNotFound)
+	assertStatusClose(t, doRequest(t, env, http.MethodGet, "/spaces/"+spaceB+"/recipes/"+id, ""), http.StatusOK)
+
+	dbID, err := types.ParseRecipeID(id)
+	if err != nil {
+		t.Fatalf("parse recipe ID: %v", err)
+	}
+	assertStatusClose(t, doRequest(t, env, http.MethodDelete, "/spaces/"+spaceB, ""), http.StatusNoContent)
+	var count int
+	if err := env.pool.QueryRow(t.Context(), `SELECT count(*) FROM recipes WHERE id = $1`, dbID).Scan(&count); err != nil {
+		t.Fatalf("count recipes after space deletion: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("space deletion left %d recipes, want 0", count)
+	}
+}
+
+func TestConcurrentRecipePatchPreservesDisjointFields(t *testing.T) {
+	t.Parallel()
+	env := setupTestServer(t)
+	space := testSlug(t, "concurrent")
+	createSpace(t, env, space, "Concurrent")
+	created := createRecipe(t, env, space, `{"name":"Old name","description":"Old description"}`)
+	id := jsonAs[string](t, created["id"])
+	dbID, err := types.ParseRecipeID(id)
+	if err != nil {
+		t.Fatalf("parse recipe ID: %v", err)
+	}
+
+	tx, err := env.pool.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("begin lock transaction: %v", err)
+	}
+	defer func() { _ = tx.Rollback(t.Context()) }()
+	if _, err := tx.Exec(t.Context(), `SELECT id FROM recipes WHERE id = $1 AND space_slug = $2 FOR UPDATE`, dbID, space); err != nil {
+		t.Fatalf("lock recipe row: %v", err)
+	}
+
+	type patchResult struct {
+		status int
+		body   string
+		err    error
+	}
+	patchDone := make(chan patchResult, 1)
+	go func() {
+		req, requestErr := http.NewRequestWithContext(t.Context(), http.MethodPatch, env.Server.URL+"/spaces/"+space+"/recipes/"+id, strings.NewReader(`{"description":"Concurrent description"}`))
+		if requestErr != nil {
+			patchDone <- patchResult{err: requestErr}
+			return
+		}
+		req.Header.Set("Authorization", "Bearer "+env.Token)
+		req.Header.Set("Content-Type", "application/json")
+		resp, requestErr := http.DefaultClient.Do(req)
+		if requestErr != nil {
+			patchDone <- patchResult{err: requestErr}
+			return
+		}
+		defer func() { _ = resp.Body.Close() }()
+		body, requestErr := io.ReadAll(resp.Body)
+		patchDone <- patchResult{status: resp.StatusCode, body: string(body), err: requestErr}
+	}()
+	time.Sleep(100 * time.Millisecond)
+
+	if _, err := tx.Exec(t.Context(), `UPDATE recipes SET name = $1 WHERE id = $2 AND space_slug = $3`, "Concurrent name", dbID, space); err != nil {
+		t.Fatalf("update name while patch is waiting: %v", err)
+	}
+	if err := tx.Commit(t.Context()); err != nil {
+		t.Fatalf("commit lock transaction: %v", err)
+	}
+
+	patched := <-patchDone
+	if patched.err != nil {
+		t.Fatalf("patch: %v", patched.err)
+	}
+	if patched.status != http.StatusOK {
+		t.Fatalf("patch status = %d, want %d; body: %s", patched.status, http.StatusOK, patched.body)
+	}
+	resp := doRequest(t, env, http.MethodGet, "/spaces/"+space+"/recipes/"+id, "")
+	assertStatus(t, resp, http.StatusOK)
+	var fetched map[string]any
+	readJSON(t, resp, &fetched)
+	if fetched["name"] != "Concurrent name" || fetched["description"] != "Concurrent description" {
+		t.Fatalf("concurrent patches were not preserved: %v", fetched)
+	}
+}
+
+func TestRecipeActivityDetailsAndDeletion(t *testing.T) {
+	t.Parallel()
+	env := setupTestServer(t)
+	space := testSlug(t, "activity")
+	createSpace(t, env, space, "Activity")
+	created := createRecipe(t, env, space, `{
+		"name":"Old soup",
+		"tags":["Dinner"],
+		"ingredientSections":[{"ingredients":[{"quantity":1,"unit":"cup","item":"stock"}]}],
+		"instructionSections":[{"steps":[{"body":"Simmer."}]}]
+	}`)
+	id := jsonAs[string](t, created["id"])
+
+	assertStatusClose(t, doRequest(t, env, http.MethodPatch, "/spaces/"+space+"/recipes/"+id, `{
+		"name":"New soup",
+		"prepMinutes":10,
+		"tags":["Dinner","Quick"],
+		"ingredientSections":[{"ingredients":[{"quantity":2,"unit":"cups","item":"stock"}]}],
+		"instructionSections":[{"steps":[{"body":"Boil."}]}]
+	}`), http.StatusOK)
+	assertStatusClose(t, doRequest(t, env, http.MethodPatch, "/spaces/"+space+"/recipes/"+id, `{"name":"New soup"}`), http.StatusOK)
+
+	items := activityItems(t, env, "/spaces/"+space+"/recipes/"+id+"/activity")
+	if len(items) != 2 {
+		t.Fatalf("got %d recipe activity entries, want 2", len(items))
+	}
+	updateDetails := entryDetails(t, entryMap(t, items[0]))
+	nameDetail := findDetail(t, updateDetails, "name")
+	if nameDetail["from"] != "Old soup" || nameDetail["to"] != "New soup" {
+		t.Fatalf("name activity = %v, want Old soup -> New soup", nameDetail)
+	}
+	for _, field := range []string{"prep_minutes", "ingredients", "instructions"} {
+		if detail := findDetail(t, updateDetails, field); detail["to"] != "updated" {
+			t.Fatalf("%s activity = %v, want updated", field, detail)
+		}
+	}
+	tagDetail := findDetail(t, updateDetails, "tag")
+	if tagDetail["from"] != nil || tagDetail["to"] != "quick" {
+		t.Fatalf("tag activity = %v, want added quick", tagDetail)
+	}
+	createName := findDetail(t, entryDetails(t, entryMap(t, items[1])), "name")
+	if createName["from"] != nil || createName["to"] != "Old soup" {
+		t.Fatalf("create name activity = %v", createName)
+	}
+
+	assertStatusClose(t, doRequest(t, env, http.MethodDelete, "/spaces/"+space+"/recipes/"+id, ""), http.StatusNoContent)
+	items = activityItems(t, env, "/spaces/"+space+"/activity")
+	var deleteEntry map[string]any
+	for _, item := range items {
+		entry := entryMap(t, item)
+		if entry["entityType"] == "recipe" && entry["entityId"] == id && entry["action"] == "deleted" {
+			deleteEntry = entry
+			break
+		}
+	}
+	if deleteEntry == nil {
+		t.Fatal("space activity did not retain the deleted recipe entry")
+	}
+	deleteName := findDetail(t, entryDetails(t, deleteEntry), "name")
+	if deleteName["from"] != "New soup" || deleteName["to"] != nil {
+		t.Fatalf("delete name activity = %v", deleteName)
+	}
+}
+
+func TestRecipeTagLifecycle(t *testing.T) {
+	t.Parallel()
+	env := setupTestServer(t)
+	space := testSlug(t, "tags")
+	createSpace(t, env, space, "Tags")
+	assertStatusClose(t, doRequest(t, env, http.MethodPost, "/spaces/"+space+"/tags", `{"name":"Dinner"}`), http.StatusCreated)
+	created := createRecipe(t, env, space, `{"name":"Soup","tags":["dinner","DINNER"]}`)
+	id := jsonAs[string](t, created["id"])
+	tags := jsonAs[[]any](t, created["tags"])
+	if len(tags) != 1 || tags[0] != "Dinner" {
+		t.Fatalf("created recipe tags = %v, want Dinner", tags)
+	}
+
+	assertStatusClose(t, doRequest(t, env, http.MethodPatch, "/spaces/"+space+"/tags/Dinner", `{"name":"Supper"}`), http.StatusOK)
+	resp := doRequest(t, env, http.MethodGet, "/spaces/"+space+"/recipes/"+id, "")
+	assertStatus(t, resp, http.StatusOK)
+	var fetched map[string]any
+	readJSON(t, resp, &fetched)
+	tags = jsonAs[[]any](t, fetched["tags"])
+	if len(tags) != 1 || tags[0] != "Supper" {
+		t.Fatalf("renamed recipe tags = %v, want Supper", tags)
+	}
+
+	assertStatusClose(t, doRequest(t, env, http.MethodDelete, "/spaces/"+space+"/tags/Supper", ""), http.StatusNoContent)
+	resp = doRequest(t, env, http.MethodGet, "/spaces/"+space+"/recipes/"+id, "")
+	assertStatus(t, resp, http.StatusOK)
+	readJSON(t, resp, &fetched)
+	if len(jsonAs[[]any](t, fetched["tags"])) != 0 {
+		t.Fatalf("deleted tag remained attached to recipe: %v", fetched["tags"])
+	}
 }

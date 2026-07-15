@@ -151,6 +151,34 @@ Both must be re-run when you add new TypeSpec types or new/changed SQL queries. 
   `notifyStaleData()` on failure — a thrown invalidation turns a successful mutation into a
   misleading error alert otherwise. See the hooks in `lib/mutations.ts` for the canonical shape.
 
+## Automated Testing
+
+- Prefer valuable behavioral coverage over test count. Tests should protect a user-visible contract,
+  a security or ownership boundary, a concurrency/transaction guarantee, or nontrivial
+  transformation/state-machine behavior.
+- Prefer integration tests when they can cover the behavior at its real boundary. Server handler
+  tests should exercise HTTP through a real PostgreSQL database; do not add database or handler unit
+  tests that merely repeat those assertions.
+- Keep focused unit tests for behavior that integration tests cannot express cleanly, such as input
+  grammars, ordering algorithms, and asynchronous editor state machines. Do not test trivial
+  mapping/filtering helpers or implementation structure.
+- For partial updates, cover omitted-versus-null semantics, no-op suppression, concurrent disjoint
+  writes, and cross-space isolation where applicable.
+- A test described as transactional must fail after at least one write has occurred and assert that
+  the earlier writes rolled back. Validation rejected before a transaction begins is a validation
+  test, not a transaction test.
+- Thin generated or transport adapters (for example MCP tools) need one representative test for
+  novel schema conversion plus a shared registration/contract test. Do not duplicate the full HTTP
+  CRUD suite at every transport layer.
+- CLI tests should execute commands against `httptest` servers and assert request/response behavior.
+  Unit-test only nontrivial CLI parsing or collection algorithms that are not already covered by a
+  command-level test.
+- Shared UI state machinery should be tested once at the shared abstraction. Component-specific
+  tests should cover only behavior introduced by that component.
+- `mise run test` is the final test entrypoint and must execute every package test task. Package
+  tasks are useful while iterating, but final verification must also run the root task so broken
+  orchestration cannot hide a package suite.
+
 ## Manual Testing
 
 Use `playwright-cli` for web automation. Run `playwright-cli --help` for available commands.

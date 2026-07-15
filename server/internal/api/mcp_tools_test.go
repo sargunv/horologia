@@ -73,20 +73,17 @@ func newMCPSessionWithToken(t *testing.T, env *testEnv, token string) *mcpSessio
 	}
 }
 
-// call sends a JSON-RPC tools/call request and returns the parsed JSON-RPC response.
-func (s *mcpSession) call(t *testing.T, toolName string, args map[string]any) map[string]any {
+// request sends an initialized JSON-RPC request and returns the parsed response.
+func (s *mcpSession) request(t *testing.T, method string, params map[string]any) map[string]any {
 	t.Helper()
 	body, err := json.Marshal(map[string]any{
 		"jsonrpc": "2.0",
 		"id":      2,
-		"method":  "tools/call",
-		"params": map[string]any{
-			"name":      toolName,
-			"arguments": args,
-		},
+		"method":  method,
+		"params":  params,
 	})
 	if err != nil {
-		t.Fatalf("marshal tools/call body: %v", err)
+		t.Fatalf("marshal %s body: %v", method, err)
 	}
 
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/mcp", bytes.NewReader(body))
@@ -102,7 +99,7 @@ func (s *mcpSession) call(t *testing.T, toolName string, args map[string]any) ma
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("MCP call %s: status %d, want 200", toolName, resp.StatusCode)
+		t.Fatalf("MCP request %s: status %d, want 200", method, resp.StatusCode)
 	}
 
 	// The response may be SSE (text/event-stream) or plain JSON.
@@ -121,15 +118,24 @@ func (s *mcpSession) call(t *testing.T, toolName string, args map[string]any) ma
 			}
 		}
 		if result == nil {
-			t.Fatalf("MCP call %s: no JSON-RPC response in SSE body: %s", toolName, raw)
+			t.Fatalf("MCP request %s: no JSON-RPC response in SSE body: %s", method, raw)
 		}
 	} else {
 		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			t.Fatalf("MCP call %s: decode JSON: %v", toolName, err)
+			t.Fatalf("MCP request %s: decode JSON: %v", method, err)
 		}
 	}
 
 	return result
+}
+
+// call sends a JSON-RPC tools/call request and returns the parsed JSON-RPC response.
+func (s *mcpSession) call(t *testing.T, toolName string, args map[string]any) map[string]any {
+	t.Helper()
+	return s.request(t, "tools/call", map[string]any{
+		"name":      toolName,
+		"arguments": args,
+	})
 }
 
 // mcpResultText extracts the raw text and isError flag from an MCP JSON-RPC response.
@@ -470,6 +476,33 @@ func TestMCPRecipeCreateAndUpdateNestedSections(t *testing.T) {
 	recipe = toolResultJSON(t, rpcResp)
 	if len(jsonAs[[]any](t, recipe["ingredientSections"])) != 0 {
 		t.Fatalf("nested replacement did not clear ingredients: %v", recipe)
+	}
+}
+
+func TestMCPRecipeToolsRegistered(t *testing.T) {
+	t.Parallel()
+	env := setupTestServer(t)
+	s := newMCPSession(t, env)
+	rpcResp := s.request(t, "tools/list", map[string]any{})
+	result := jsonAs[map[string]any](t, rpcResp["result"])
+	tools := jsonAs[[]any](t, result["tools"])
+	found := make(map[string]bool, len(tools))
+	for _, value := range tools {
+		tool := jsonAs[map[string]any](t, value)
+		found[jsonAs[string](t, tool["name"])] = true
+	}
+	for _, name := range []string{
+		"recipe_list",
+		"recipe_create",
+		"recipe_get",
+		"recipe_update",
+		"recipe_delete",
+		"recipe_search",
+		"recipe_activity_list",
+	} {
+		if !found[name] {
+			t.Errorf("MCP tool %q is not registered", name)
+		}
 	}
 }
 

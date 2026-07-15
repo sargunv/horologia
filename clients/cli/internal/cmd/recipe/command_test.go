@@ -175,6 +175,65 @@ func TestRecipeCreateParsesConvenienceValues(t *testing.T) {
 	}
 }
 
+func TestRecipeReadCommandsPassQueryParameters(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/spaces/home/recipes":
+			if got, want := r.URL.Query().Get("cursor"), "next-1"; got != want {
+				t.Fatalf("list cursor = %q, want %q", got, want)
+			}
+			if got, want := r.URL.Query().Get("limit"), "5"; got != want {
+				t.Fatalf("list limit = %q, want %q", got, want)
+			}
+			writeRecipeJSON(t, w, map[string]any{"items": []any{}, "nextCursor": "next-2"})
+		case "/api/recipes/search":
+			if got, want := r.URL.Query().Get("q"), "tomato soup"; got != want {
+				t.Fatalf("search query = %q, want %q", got, want)
+			}
+			if got, want := r.URL.Query().Get("spaceSlug"), "home"; got != want {
+				t.Fatalf("search space = %q, want %q", got, want)
+			}
+			if got, want := r.URL.Query().Get("limit"), "7"; got != want {
+				t.Fatalf("search limit = %q, want %q", got, want)
+			}
+			writeRecipeJSON(t, w, map[string]any{"items": []any{}})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	stdout := executeRecipe(t, srv.URL, "list", "home", "--cursor", "next-1", "--limit", "5")
+	var page map[string]any
+	if err := json.Unmarshal([]byte(stdout), &page); err != nil {
+		t.Fatalf("decode list output: %v", err)
+	}
+	if got, want := page["nextCursor"], "next-2"; got != want {
+		t.Fatalf("next cursor = %#v, want %#v", got, want)
+	}
+	executeRecipe(t, srv.URL, "search", " tomato soup ", "--space", "home", "--limit", "7")
+}
+
+func TestRecipeUpdateClearsNullableFields(t *testing.T) {
+	var patch map[string]any
+	srv := newRecipeServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPatch {
+			t.Fatalf("method = %s, want PATCH", r.Method)
+		}
+		decodeJSONBody(t, r, &patch)
+		writeRecipeJSON(t, w, recipeResponse(nil, nil))
+	})
+	defer srv.Close()
+
+	executeRecipe(t, srv.URL, "update", "home", "R1", "--clear-yield", "--clear-prep", "--clear-cook")
+	for _, field := range []string{"yield", "prepMinutes", "cookMinutes"} {
+		value, present := patch[field]
+		if !present || value != nil {
+			t.Fatalf("%s = %#v (present %v), want explicit null", field, value, present)
+		}
+	}
+}
+
 func newRecipeServer(t *testing.T, handler http.HandlerFunc) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

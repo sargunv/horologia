@@ -62,17 +62,6 @@ func TestParseDuration(t *testing.T) {
 	}
 }
 
-func TestMoveAtUsesFinalPosition(t *testing.T) {
-	items := []string{"A", "B", "C"}
-	got, err := moveAt(items, 2, 0)
-	if err != nil {
-		t.Fatalf("move item: %v", err)
-	}
-	if want := []string{"C", "A", "B"}; !reflect.DeepEqual(got, want) {
-		t.Fatalf("moveAt result = %#v, want %#v", got, want)
-	}
-}
-
 func float64Pointer(value float64) *float64 {
 	return &value
 }

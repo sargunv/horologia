@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  formatDuration,
-  parseDurationInput,
-  parseIngredientQuantity,
-  parseYieldInput,
-} from "./recipeInputs.ts";
+import { parseDurationInput, parseIngredientQuantity, parseYieldInput } from "./recipeInputs.ts";
 
 describe("parseDurationInput", () => {
   it.each([
@@ -19,12 +14,6 @@ describe("parseDurationInput", () => {
 
   it.each(["", "soon", "1h later", "1.2m"])("rejects %s", (input) => {
     expect(parseDurationInput(input)).toBeNull();
-  });
-});
-
-describe("formatDuration", () => {
-  it("formats mixed hours and minutes", () => {
-    expect(formatDuration(135)).toBe("2h 15m");
   });
 });
 

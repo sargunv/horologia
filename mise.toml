@@ -46,15 +46,15 @@ postinstall = [
 
 [tasks.generate]
 description = "Run all code generation"
-depends = ["//*:generate"]
+depends = ["//api:generate", "//server:generate", "//clients/web:generate"]
 
 [tasks.build]
 description = "Build all packages"
-depends = ["//*:build"]
+depends = ["//api:build", "//server:build", "//clients/cli:build", "//clients/web:build"]
 
 [tasks.test]
 description = "Run all tests"
-depends = ["//*:test"]
+depends = ["//server:test", "//clients/cli:test", "//clients/web:test"]
 
 [tasks.check]
 description = "Run all checks"
