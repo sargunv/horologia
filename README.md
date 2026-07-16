@@ -28,7 +28,4 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
 
 ## License
 
-The CLI client (`clients/cli/`) is licensed under the [MIT](LICENSE-MIT) license.
-
-The server components (`server/`, `clients/web/`) are licensed under the
-[AGPL-3.0](LICENSE-AGPL-3.0) license.
+Horologia is licensed under the [AGPL-3.0](LICENSE-AGPL-3.0) license.

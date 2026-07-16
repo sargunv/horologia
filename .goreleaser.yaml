@@ -43,7 +43,7 @@ archives:
   - id: horologia-cli
     ids: [horologia-cli]
     formats: [tar.gz]
-    files: [LICENSE-MIT]
+    files: [LICENSE-AGPL-3.0]
     name_template: >-
       horologia-cli_
       {{- .Version }}_
