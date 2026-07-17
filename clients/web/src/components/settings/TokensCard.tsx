@@ -1,10 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Check, Copy, KeyRound, TriangleAlert } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { apiClient } from "../../api/client.ts";
+import { useSettingsCommands } from "../../lib/mutations.ts";
 import { authTokensQueryOptions } from "../../lib/queries.ts";
-import { notifyStaleData } from "../../lib/toaster.ts";
 import {
   AlertDialogAction,
   AlertDialogCancel,
@@ -26,7 +25,7 @@ import { ErrorAlert } from "../space-settings/ErrorAlert.tsx";
 import { SettingsSection } from "../space-settings/SettingsSection.tsx";
 
 export function TokensCard() {
-  const queryClient = useQueryClient();
+  const commands = useSettingsCommands();
   const { data: tokens } = useQuery(authTokensQueryOptions);
 
   const apiTokens = tokens?.filter((t) => t.kind === "api") ?? [];
@@ -45,39 +44,16 @@ export function TokensCard() {
   } | null>(null);
 
   const createMutation = useMutation({
-    mutationFn: async (name: string) => {
-      const { data, error } = await apiClient.POST("/auth/tokens", {
-        body: { name },
-      });
-      if (error) throw new Error(error.message ?? "Failed to create token");
-      return data;
-    },
-    onSuccess: async (data) => {
+    mutationFn: (name: string) => commands.createToken(name),
+    onSuccess: (data) => {
       setRevealedToken(data.token);
       setTokenName("");
-      try {
-        await queryClient.invalidateQueries({ queryKey: [window.location.origin, "authTokens"] });
-      } catch (err) {
-        console.error("Cache invalidation failed after mutation:", err);
-        notifyStaleData();
-      }
     },
   });
 
   const revokeMutation = useMutation({
-    mutationFn: async (tokenId: string) => {
-      const { error } = await apiClient.DELETE("/auth/tokens/{tokenId}", {
-        params: { path: { tokenId } },
-      });
-      if (error) throw new Error(error.message ?? "Failed to revoke token");
-    },
-    onSuccess: async () => {
-      try {
-        await queryClient.invalidateQueries({ queryKey: [window.location.origin, "authTokens"] });
-      } catch (err) {
-        console.error("Cache invalidation failed after mutation:", err);
-        notifyStaleData();
-      }
+    mutationFn: (tokenId: string) => commands.revokeToken(tokenId),
+    onSuccess: () => {
       setRevokeTarget(null);
     },
   });

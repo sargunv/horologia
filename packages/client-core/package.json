@@ -10,6 +10,7 @@
     "./auth": "./src/auth/session.ts",
     "./commands/tasks": "./src/commands/tasks.ts",
     "./commands/library": "./src/commands/library.ts",
+    "./commands/settings": "./src/commands/settings.ts",
     "./schema": "./src/api/schema.d.ts",
     "./queries": "./src/queries/createQueries.ts",
     "./runtime": "./src/runtime/queryClient.ts",

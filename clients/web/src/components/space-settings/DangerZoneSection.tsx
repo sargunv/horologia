@@ -1,10 +1,9 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
-import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
-import { notifyStaleData } from "../../lib/toaster.ts";
+import { useLibraryCommands } from "../../lib/mutations.ts";
 import {
   AlertDialogAction,
   AlertDialogCancel,
@@ -22,7 +21,7 @@ type Space = components["schemas"]["Space"];
 
 export function DangerZoneSection({ space }: { space: Pick<Space, "slug" | "name"> }) {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const commands = useLibraryCommands();
 
   const [open, setOpen] = useState(false);
   const [confirmation, setConfirmation] = useState("");
@@ -30,20 +29,8 @@ export function DangerZoneSection({ space }: { space: Pick<Space, "slug" | "name
   const confirmed = confirmation.trim() === space.slug;
 
   const deleteMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await apiClient.DELETE("/spaces/{spaceSlug}", {
-        params: { path: { spaceSlug: space.slug } },
-      });
-      if (error) throw new Error(error.message ?? "Failed to delete space");
-    },
+    mutationFn: () => commands.deleteSpace(space.slug),
     onSuccess: async () => {
-      try {
-        queryClient.removeQueries({ queryKey: [window.location.origin, "spaces", space.slug] });
-        await queryClient.invalidateQueries({ queryKey: [window.location.origin, "spaces"] });
-      } catch (err) {
-        console.error("Cache invalidation failed after mutation:", err);
-        notifyStaleData();
-      }
       await navigate({ to: "/spaces" });
     },
   });

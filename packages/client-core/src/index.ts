@@ -2,6 +2,7 @@ export * from "./api/client";
 export * from "./auth/session";
 export * from "./commands/tasks";
 export * from "./commands/library";
+export * from "./commands/settings";
 export * from "./domain/dates";
 export * from "./domain/keyedCollections";
 export * from "./domain/queuedAutosave";

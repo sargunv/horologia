@@ -43,6 +43,16 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
     },
   });
 
+  const serverInfoQueryOptions = queryOptions({
+    queryKey: [serverId, "serverInfo"],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET("/server-info");
+      if (error) throw error;
+      return data;
+    },
+    staleTime: Infinity,
+  });
+
   const usersQueryOptions = queryOptions({
     queryKey: [serverId, "users"],
     queryFn: async () => {
@@ -382,6 +392,7 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
     authConfigQueryOptions,
     linkPendingQueryOptions,
     currentUserQueryOptions,
+    serverInfoQueryOptions,
     usersQueryOptions,
     userQueryOptions,
     spacesQueryOptions,

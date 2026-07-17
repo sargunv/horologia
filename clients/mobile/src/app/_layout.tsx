@@ -28,6 +28,7 @@ export default function RootLayout() {
             />
             <Stack.Screen name="recipe/new" options={{ title: "New recipe" }} />
             <Stack.Screen name="space/[spaceSlug]" options={{ title: "Space" }} />
+            <Stack.Screen name="space/[spaceSlug]/settings" options={{ title: "Space settings" }} />
             <Stack.Screen name="space/new" options={{ title: "New space" }} />
             <Stack.Screen name="oauth/callback" options={{ title: "Sign in" }} />
           </Stack>

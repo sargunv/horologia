@@ -39,6 +39,16 @@ function SpaceDetail({ client, serverId, spaceSlug }: { client: HorologiaClient;
           <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: "/task/new", params: { spaceSlug } })} style={styles.button}>
             <Text style={styles.buttonText}>New task</Text>
           </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() =>
+              router.push({ pathname: "/space/[spaceSlug]/settings", params: { spaceSlug } })
+            }
+            style={styles.settingsButton}
+            testID="space-settings-link"
+          >
+            <Text style={styles.settingsText}>Settings</Text>
+          </Pressable>
         </View>
         <Section title="Tasks">
           {taskItems.map((task) => (
@@ -81,6 +91,8 @@ const styles = StyleSheet.create({
   detail: { color: colors.muted, fontSize: 14, marginTop: 4 },
   button: { backgroundColor: colors.accent, borderRadius: 13, paddingHorizontal: 14, paddingVertical: 11 },
   buttonText: { color: colors.surface, fontWeight: "700" },
+  settingsButton: { borderRadius: 13, paddingHorizontal: 12, paddingVertical: 11 },
+  settingsText: { color: colors.accent, fontWeight: "700" },
   section: { backgroundColor: colors.surface, borderRadius: 17, gap: 4, padding: 16 },
   sectionHeader: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginBottom: 5 },
   sectionTitle: { color: colors.ink, fontSize: 20, fontWeight: "700" },

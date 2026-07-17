@@ -14,14 +14,12 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { ListChecks, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
-import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
 import { STATUS_SUGGESTED_ICONS } from "../../lib/level-icons.ts";
-import { spaceTaskStatusesQueryOptions } from "../../lib/queries.ts";
-import { notifyStaleData } from "../../lib/toaster.ts";
+import { useSettingsCommands } from "../../lib/mutations.ts";
 import { SortableNameRow } from "./OrderedNameListForm.tsx";
 import { ErrorAlert } from "./ErrorAlert.tsx";
 import { SettingsSection } from "./SettingsSection.tsx";
@@ -109,8 +107,7 @@ function TaskStatusesForm({
   spaceSlug: string;
   taskStatuses: TaskStatus[];
 }) {
-  const queryClient = useQueryClient();
-  const queryKey = spaceTaskStatusesQueryOptions(spaceSlug).queryKey;
+  const commands = useSettingsCommands();
 
   const [initialItems, setInitialItems] = useState(() => toItems(taskStatuses, "initial"));
   const [intermediateItems, setIntermediateItems] = useState(() =>
@@ -120,24 +117,12 @@ function TaskStatusesForm({
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const saveMutation = useMutation({
-    mutationFn: async (items: { name: string; category: TaskStatusCategory; icon?: string }[]) => {
-      const { data, error } = await apiClient.PUT("/spaces/{spaceSlug}/task-statuses", {
-        params: { path: { spaceSlug } },
-        body: { items },
-      });
-      if (error) throw new Error(error.message ?? "Failed to update task statuses");
-      return data;
-    },
-    onSuccess: async (data) => {
+    mutationFn: (items: { name: string; category: TaskStatusCategory; icon?: string }[]) =>
+      commands.replaceTaskStatuses(spaceSlug, items),
+    onSuccess: (data) => {
       setInitialItems((prev) => toItems(data.items, "initial", prev));
       setIntermediateItems((prev) => toItems(data.items, "intermediate", prev));
       setCompletionItems((prev) => toItems(data.items, "completion", prev));
-      try {
-        await queryClient.invalidateQueries({ queryKey });
-      } catch (err) {
-        console.error("Cache invalidation failed after mutation:", err);
-        notifyStaleData();
-      }
     },
   });
 

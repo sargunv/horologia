@@ -1,7 +1,7 @@
 import { SignalHigh } from "lucide-react";
-import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
 import { PRIORITY_SUGGESTED_ICONS } from "../../lib/level-icons.ts";
+import { useSettingsCommands } from "../../lib/mutations.ts";
 import { spacePriorityLevelsQueryOptions } from "../../lib/queries.ts";
 import { OrderedNameListForm } from "./OrderedNameListForm.tsx";
 import { SettingsSection } from "./SettingsSection.tsx";
@@ -15,6 +15,7 @@ export function PriorityLevelsSection({
   spaceSlug: string;
   priorityLevels: TaskPriorityLevel[];
 }) {
+  const commands = useSettingsCommands();
   return (
     <SettingsSection
       icon={<SignalHigh className="size-5" />}
@@ -25,15 +26,7 @@ export function PriorityLevelsSection({
         key={priorityLevels.map((l) => `${l.name}:${l.icon ?? ""}`).join(",")}
         items={priorityLevels}
         queryKey={spacePriorityLevelsQueryOptions(spaceSlug).queryKey}
-        mutationFn={async (items) => {
-          const { data, error } = await apiClient.PUT("/spaces/{spaceSlug}/task-priority-levels", {
-            params: { path: { spaceSlug } },
-            body: { items },
-          });
-          if (error) throw new Error(error.message ?? "Failed to update priority levels");
-          if (!data) throw new Error("Failed to update priority levels");
-          return data;
-        }}
+        mutationFn={(items) => commands.replacePriorityLevels(spaceSlug, items)}
         itemLabel="Priority level"
         showIcons
         suggestedIcons={PRIORITY_SUGGESTED_ICONS}

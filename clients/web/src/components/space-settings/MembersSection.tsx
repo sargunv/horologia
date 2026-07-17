@@ -1,11 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Command } from "cmdk";
 import { Check, UserPlus, Users, X } from "lucide-react";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
+import { useSettingsCommands } from "../../lib/mutations.ts";
 import { usersQueryOptions } from "../../lib/queries.ts";
-import { notifyStaleData } from "../../lib/toaster.ts";
 import { ErrorAlert } from "./ErrorAlert.tsx";
 import { SettingsSection } from "./SettingsSection.tsx";
 
@@ -84,7 +83,7 @@ function MemberRow({
   isAdmin: boolean;
   isSelf: boolean;
 }) {
-  const queryClient = useQueryClient();
+  const commands = useSettingsCommands();
   const [confirmingRemove, setConfirmingRemove] = useState(false);
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -95,42 +94,12 @@ function MemberRow({
   }, [confirmingRemove]);
 
   const roleMutation = useMutation({
-    mutationFn: async (newRole: SpaceRole) => {
-      const { error } = await apiClient.PATCH("/spaces/{spaceSlug}/members/{userId}", {
-        params: { path: { spaceSlug, userId: member.userId } },
-        body: { role: newRole },
-      });
-      if (error) throw new Error(error.message ?? "Failed to update role");
-    },
-    onSuccess: async () => {
-      try {
-        await queryClient.invalidateQueries({
-          queryKey: [window.location.origin, "spaces", spaceSlug, "members"],
-        });
-      } catch (err) {
-        console.error("Cache invalidation failed after mutation:", err);
-        notifyStaleData();
-      }
-    },
+    mutationFn: (newRole: SpaceRole) =>
+      commands.updateMember(spaceSlug, member.userId, { role: newRole }),
   });
 
   const removeMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await apiClient.DELETE("/spaces/{spaceSlug}/members/{userId}", {
-        params: { path: { spaceSlug, userId: member.userId } },
-      });
-      if (error) throw new Error(error.message ?? "Failed to remove member");
-    },
-    onSuccess: async () => {
-      try {
-        await queryClient.invalidateQueries({
-          queryKey: [window.location.origin, "spaces", spaceSlug, "members"],
-        });
-      } catch (err) {
-        console.error("Cache invalidation failed after mutation:", err);
-        notifyStaleData();
-      }
-    },
+    mutationFn: () => commands.deleteMember(spaceSlug, member.userId),
     onSettled: () => {
       setConfirmingRemove(false);
     },
@@ -222,7 +191,7 @@ function MemberRow({
 }
 
 function AddMemberForm({ spaceSlug, members }: { spaceSlug: string; members: SpaceMember[] }) {
-  const queryClient = useQueryClient();
+  const commands = useSettingsCommands();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState("");
   const [role, setRole] = useState<SpaceRole>("member");
@@ -247,25 +216,12 @@ function AddMemberForm({ spaceSlug, members }: { spaceSlug: string; members: Spa
   }, [availableUsers, inputValue]);
 
   const addMutation = useMutation({
-    mutationFn: async (body: { userId: string; role: SpaceRole }) => {
-      const { error } = await apiClient.POST("/spaces/{spaceSlug}/members", {
-        params: { path: { spaceSlug } },
-        body,
-      });
-      if (error) throw new Error(error.message ?? "Failed to add member");
-    },
-    onSuccess: async () => {
+    mutationFn: (body: { userId: string; role: SpaceRole }) =>
+      commands.createMember(spaceSlug, body),
+    onSuccess: () => {
       setSelectedUserId(null);
       setInputValue("");
       setRole("member");
-      try {
-        await queryClient.invalidateQueries({
-          queryKey: [window.location.origin, "spaces", spaceSlug, "members"],
-        });
-      } catch (err) {
-        console.error("Cache invalidation failed after mutation:", err);
-        notifyStaleData();
-      }
     },
   });
 

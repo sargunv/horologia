@@ -1,5 +1,6 @@
 import { createTaskCommands } from "@horologia/client-core/commands/tasks";
 import { createLibraryCommands } from "@horologia/client-core/commands/library";
+import { createSettingsCommands } from "@horologia/client-core/commands/settings";
 import { type QueryClient, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../api/client.ts";
 import type { components } from "../api/schema.d.ts";
@@ -57,26 +58,42 @@ export function useTaskPatch(spaceSlug: string, taskId: string) {
 
 export function useUserPatch(userId: string) {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (body: components["schemas"]["UserUpdate"]) => {
-      const { data, error } = await apiClient.PATCH("/users/{userId}", {
-        params: { path: { userId } },
-        body,
-      });
-      if (error) throw new Error(error.message ?? "Failed to update user");
-      return data;
+  const commands = createSettingsCommands({
+    serverId: window.location.origin,
+    apiClient,
+    queryClient,
+    onCacheError(error) {
+      console.error("Cache invalidation failed after mutation:", error);
+      notifyStaleData();
     },
-    onSuccess: async () => {
-      try {
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: [window.location.origin, "users", userId] }),
-          queryClient.invalidateQueries({ queryKey: [window.location.origin, "users"] }),
-          queryClient.invalidateQueries({ queryKey: [window.location.origin, "currentUser"] }),
-        ]);
-      } catch (err) {
-        console.error("Cache invalidation failed after mutation:", err);
-        notifyStaleData();
-      }
+  });
+  return useMutation({
+    mutationFn: (body: components["schemas"]["UserUpdate"]) => commands.updateUser(userId, body),
+  });
+}
+
+export function useSettingsCommands() {
+  const queryClient = useQueryClient();
+  return createSettingsCommands({
+    serverId: window.location.origin,
+    apiClient,
+    queryClient,
+    onCacheError(error) {
+      console.error("Cache invalidation failed after mutation:", error);
+      notifyStaleData();
+    },
+  });
+}
+
+export function useLibraryCommands() {
+  const queryClient = useQueryClient();
+  return createLibraryCommands({
+    serverId: window.location.origin,
+    apiClient,
+    queryClient,
+    onCacheError(error) {
+      console.error("Cache invalidation failed after mutation:", error);
+      notifyStaleData();
     },
   });
 }

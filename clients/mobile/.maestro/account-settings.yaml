@@ -1,0 +1,34 @@
+appId: dev.horologia.mobile
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "(My Tasks|Library|Account settings)"
+    timeout: 20000
+- tapOn: "Account tab"
+- extendedWaitUntil:
+    visible: "Account settings"
+    timeout: 20000
+- assertVisible: "Profile"
+- assertVisible: "Appearance"
+- tapOn: "Dark"
+- tapOn: "System"
+- scrollUntilVisible:
+    element: "API tokens"
+    direction: DOWN
+    timeout: 20000
+- assertVisible: "Manage API tokens on web"
+- scrollUntilVisible:
+    element: "API version"
+    direction: DOWN
+    timeout: 20000
+- assertVisible: "API version"
+- scrollUntilVisible:
+    element: "Delete account"
+    direction: DOWN
+    timeout: 20000
+- assertVisible: "Delete account"
+- scrollUntilVisible:
+    element: "Sign out securely"
+    direction: DOWN
+    timeout: 20000
+- assertVisible: "Sign out securely"

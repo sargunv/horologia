@@ -1,10 +1,8 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { Check, Pencil, Plus, Tags, Trash2, X } from "lucide-react";
 import { useState } from "react";
-import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
-import { spaceTagsQueryOptions } from "../../lib/queries.ts";
-import { notifyStaleData } from "../../lib/toaster.ts";
+import { useSettingsCommands } from "../../lib/mutations.ts";
 import {
   AlertDialogAction,
   AlertDialogCancel,
@@ -20,8 +18,7 @@ import { SettingsSection } from "./SettingsSection.tsx";
 type Tag = components["schemas"]["Tag"];
 
 export function TagsSection({ spaceSlug, tags }: { spaceSlug: string; tags: Tag[] }) {
-  const queryClient = useQueryClient();
-  const queryKey = spaceTagsQueryOptions(spaceSlug).queryKey;
+  const commands = useSettingsCommands();
 
   const [adding, setAdding] = useState(false);
   const [newTagName, setNewTagName] = useState("");
@@ -29,41 +26,17 @@ export function TagsSection({ spaceSlug, tags }: { spaceSlug: string; tags: Tag[
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const createMutation = useMutation({
-    mutationFn: async (name: string) => {
-      const { data, error } = await apiClient.POST("/spaces/{spaceSlug}/tags", {
-        params: { path: { spaceSlug } },
-        body: { name },
-      });
-      if (error) throw new Error(error.message ?? "Failed to create tag");
-      return data;
-    },
-    onSuccess: async () => {
+    mutationFn: (name: string) => commands.createTag(spaceSlug, name),
+    onSuccess: () => {
       setAdding(false);
       setNewTagName("");
-      try {
-        await queryClient.invalidateQueries({ queryKey });
-      } catch (err) {
-        console.error("Cache invalidation failed after mutation:", err);
-        notifyStaleData();
-      }
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (tagName: string) => {
-      const { error } = await apiClient.DELETE("/spaces/{spaceSlug}/tags/{tagName}", {
-        params: { path: { spaceSlug, tagName } },
-      });
-      if (error) throw new Error(error.message ?? "Failed to delete tag");
-    },
-    onSuccess: async () => {
+    mutationFn: (tagName: string) => commands.deleteTag(spaceSlug, tagName),
+    onSuccess: () => {
       setDeleteTarget(null);
-      try {
-        await queryClient.invalidateQueries({ queryKey });
-      } catch (err) {
-        console.error("Cache invalidation failed after mutation:", err);
-        notifyStaleData();
-      }
     },
   });
 
@@ -114,7 +87,6 @@ export function TagsSection({ spaceSlug, tags }: { spaceSlug: string; tags: Tag[
             key={tag.name}
             spaceSlug={spaceSlug}
             tag={tag}
-            queryKey={queryKey}
             onDeleteRequest={setDeleteTarget}
           />
         ))}
@@ -202,35 +174,21 @@ export function TagsSection({ spaceSlug, tags }: { spaceSlug: string; tags: Tag[
 function TagRow({
   spaceSlug,
   tag,
-  queryKey,
   onDeleteRequest,
 }: {
   spaceSlug: string;
   tag: Tag;
-  queryKey: readonly string[];
   onDeleteRequest: (tagName: string) => void;
 }) {
-  const queryClient = useQueryClient();
+  const commands = useSettingsCommands();
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(tag.name);
 
   const renameMutation = useMutation({
-    mutationFn: async ({ oldName, newName }: { oldName: string; newName: string }) => {
-      const { data, error } = await apiClient.PATCH("/spaces/{spaceSlug}/tags/{tagName}", {
-        params: { path: { spaceSlug, tagName: oldName } },
-        body: { name: newName },
-      });
-      if (error) throw new Error(error.message ?? "Failed to rename tag");
-      return data;
-    },
-    onSuccess: async () => {
+    mutationFn: ({ oldName, newName }: { oldName: string; newName: string }) =>
+      commands.updateTag(spaceSlug, oldName, newName),
+    onSuccess: () => {
       setEditing(false);
-      try {
-        await queryClient.invalidateQueries({ queryKey });
-      } catch (err) {
-        console.error("Cache invalidation failed after mutation:", err);
-        notifyStaleData();
-      }
     },
   });
 
