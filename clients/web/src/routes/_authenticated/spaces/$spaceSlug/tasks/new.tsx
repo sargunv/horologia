@@ -1,3 +1,4 @@
+import { createTaskCommands } from "@horologia/client-core/commands/tasks";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, createLink, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ChevronRight } from "lucide-react";
@@ -24,25 +25,19 @@ function CreateTaskPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
+  const commands = createTaskCommands({
+    serverId: window.location.origin,
+    apiClient,
+    queryClient,
+    onCacheError(error) {
+      console.error("Cache invalidation failed after mutation:", error);
+      notifyStaleData();
+    },
+  });
 
   const createMutation = useMutation({
-    mutationFn: async (body: { title: string }) => {
-      const { data, error } = await apiClient.POST("/spaces/{spaceSlug}/tasks", {
-        params: { path: { spaceSlug } },
-        body,
-      });
-      if (error) throw new Error(error.message ?? "Failed to create task");
-      return data;
-    },
+    mutationFn: (body: { title: string }) => commands.create(spaceSlug, body),
     onSuccess: async (data) => {
-      try {
-        await queryClient.invalidateQueries({
-          queryKey: [window.location.origin, "spaces", spaceSlug, "tasks", "list"],
-        });
-      } catch (err) {
-        console.error("Cache invalidation failed after mutation:", err);
-        notifyStaleData();
-      }
       await navigate({
         to: "/spaces/$spaceSlug/tasks/$taskId",
         params: { spaceSlug, taskId: data.id },

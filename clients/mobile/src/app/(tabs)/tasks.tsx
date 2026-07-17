@@ -167,9 +167,19 @@ function AuthenticatedTasks(props: {
                     : `${tasks.length} tasks assigned to you`}
                 </Text>
               </View>
-              {query.isFetching && !query.isFetchingNextPage ? (
-                <ActivityIndicator accessibilityLabel="Refreshing tasks" />
-              ) : null}
+              <View style={styles.headerActions}>
+                {query.isFetching && !query.isFetchingNextPage ? (
+                  <ActivityIndicator accessibilityLabel="Refreshing tasks" />
+                ) : null}
+                <Pressable
+                  accessibilityLabel="Create task"
+                  accessibilityRole="button"
+                  onPress={() => router.push("/task/new")}
+                  style={styles.addButton}
+                >
+                  <Text style={styles.addButtonText}>＋</Text>
+                </Pressable>
+              </View>
             </View>
             {showingCache ? (
               <View accessibilityRole="alert" style={styles.staleBanner}>
@@ -246,6 +256,16 @@ const styles = StyleSheet.create({
   header: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
   heading: { color: colors.ink, fontSize: 30, fontWeight: "700", letterSpacing: -0.7 },
   subheading: { color: colors.muted, fontSize: 14, marginTop: 3 },
+  headerActions: { alignItems: "center", flexDirection: "row", gap: 10 },
+  addButton: {
+    alignItems: "center",
+    backgroundColor: colors.accent,
+    borderRadius: 999,
+    height: 42,
+    justifyContent: "center",
+    width: 42,
+  },
+  addButtonText: { color: colors.surface, fontSize: 23, fontWeight: "500", lineHeight: 26 },
   staleBanner: { backgroundColor: colors.accentSoft, borderRadius: 12, marginTop: 12, padding: 10 },
   staleText: { color: colors.accent, fontSize: 13, fontWeight: "600" },
   row: {

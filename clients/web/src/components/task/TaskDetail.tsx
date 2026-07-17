@@ -1,3 +1,4 @@
+import { createTaskCommands } from "@horologia/client-core/commands/tasks";
 import {
   useMutation,
   useQueryClient,
@@ -22,7 +23,7 @@ import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
 import { useSpaceMemberMap } from "../../lib/hooks.ts";
 import { getIcon } from "../../lib/level-icons.ts";
-import { invalidateUserTaskLists, useTaskPatch } from "../../lib/mutations.ts";
+import { useTaskPatch } from "../../lib/mutations.ts";
 import {
   spaceEffortLevelsQueryOptions,
   spaceMembersQueryOptions,
@@ -79,29 +80,19 @@ function TaskActions({
 }) {
   const queryClient = useQueryClient();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const commands = createTaskCommands({
+    serverId: window.location.origin,
+    apiClient,
+    queryClient,
+    onCacheError(error) {
+      console.error("Cache invalidation failed after mutation:", error);
+      notifyStaleData();
+    },
+  });
 
   const deleteMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await apiClient.DELETE("/spaces/{spaceSlug}/tasks/{taskId}", {
-        params: { path: { spaceSlug, taskId } },
-      });
-      if (error) throw new Error(error.message ?? "Failed to delete task");
-    },
-    onSuccess: async () => {
-      queryClient.removeQueries({
-        queryKey: [window.location.origin, "spaces", spaceSlug, "tasks", taskId],
-      });
-      try {
-        await Promise.all([
-          queryClient.invalidateQueries({
-            queryKey: [window.location.origin, "spaces", spaceSlug, "tasks", "list"],
-          }),
-          invalidateUserTaskLists(queryClient),
-        ]);
-      } catch (err) {
-        console.error("Cache invalidation failed after mutation:", err);
-        notifyStaleData();
-      }
+    mutationFn: () => commands.delete(spaceSlug, taskId),
+    onSuccess: () => {
       onDeleteSuccess();
     },
   });

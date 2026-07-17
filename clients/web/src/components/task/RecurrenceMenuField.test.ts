@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   buildRRule,
   describeRule,
-  parseDurationInput,
+  parseRecurrenceDurationInput as parseDurationInput,
   parseRRule,
-} from "./RecurrenceMenuField.tsx";
+} from "@horologia/client-core/domain/recurrence";
 
 describe("parseRRule", () => {
   it("returns defaults for null input", () => {

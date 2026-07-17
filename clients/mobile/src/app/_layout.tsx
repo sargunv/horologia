@@ -19,6 +19,9 @@ export default function RootLayout() {
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="task/[spaceSlug]/[taskId]" options={{ title: "Task" }} />
+            <Stack.Screen name="task/[spaceSlug]/[taskId]/edit" options={{ title: "Edit task" }} />
+            <Stack.Screen name="task/new" options={{ title: "New task" }} />
+            <Stack.Screen name="recipe/[spaceSlug]/[recipeId]" options={{ title: "Recipe" }} />
             <Stack.Screen name="oauth/callback" options={{ title: "Sign in" }} />
           </Stack>
           <StatusBar style="auto" />

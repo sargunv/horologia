@@ -1,7 +1,17 @@
 import { Calendar, Check, ChevronRight, RefreshCw, X } from "lucide-react";
-import parseDuration from "parse-duration";
 import { type ReactNode, useMemo } from "react";
-import { RRule, Weekday } from "rrule";
+import {
+  buildRRule,
+  describeRecurrenceMonthDays as describeMonthDays,
+  describeRule,
+  parseRecurrenceDurationInput as parseDurationInput,
+  parseRRule,
+  type ParsedRecurrenceRule,
+  type RecurrenceFrequency,
+  RECURRENCE_MONTH_LABELS as MONTH_LABELS,
+  RECURRENCE_ORDINAL_LABELS as ORDINAL_LABELS,
+  type WeekdayCode,
+} from "@horologia/client-core/domain/recurrence";
 import type { components } from "../../api/schema.d.ts";
 import { addDays, formatDateDisplay, parseDateInput, toISODate } from "../../lib/dates.ts";
 import { useTaskPatch } from "../../lib/mutations.ts";
@@ -22,7 +32,8 @@ import { ErrorAlert } from "../space-settings/ErrorAlert.tsx";
 
 type TaskRecurrenceType = components["schemas"]["TaskRecurrenceType"];
 
-type FreqCode = "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
+type FreqCode = RecurrenceFrequency;
+type ParsedRule = ParsedRecurrenceRule;
 
 const RECURRENCE_TYPE_LABELS: Record<TaskRecurrenceType, string> = {
   one_off: "One-off",
@@ -38,15 +49,7 @@ const TYPES_WITH_RULE = new Set<TaskRecurrenceType>([
   "fixed_accumulating",
 ]);
 
-const FREQ_LABELS: Record<FreqCode, { singular: string; plural: string }> = {
-  DAILY: { singular: "day", plural: "days" },
-  WEEKLY: { singular: "week", plural: "weeks" },
-  MONTHLY: { singular: "month", plural: "months" },
-  YEARLY: { singular: "year", plural: "years" },
-};
-
 const WEEKDAY_CODES = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"] as const;
-type WeekdayCode = (typeof WEEKDAY_CODES)[number];
 
 const WEEKDAY_LABELS: Record<WeekdayCode, string> = {
   MO: "Monday",
@@ -68,38 +71,6 @@ const WEEKDAY_SHORT_LABELS: Record<WeekdayCode, string> = {
   SU: "Su",
 };
 
-const RRULE_WEEKDAY: Record<WeekdayCode, Weekday> = {
-  MO: RRule.MO,
-  TU: RRule.TU,
-  WE: RRule.WE,
-  TH: RRule.TH,
-  FR: RRule.FR,
-  SA: RRule.SA,
-  SU: RRule.SU,
-};
-
-const RRULE_FREQ_TO_CODE: Partial<Record<number, FreqCode>> = {
-  [RRule.DAILY]: "DAILY",
-  [RRule.WEEKLY]: "WEEKLY",
-  [RRule.MONTHLY]: "MONTHLY",
-  [RRule.YEARLY]: "YEARLY",
-};
-
-const FREQ_TO_RRULE: Record<FreqCode, number> = {
-  DAILY: RRule.DAILY,
-  WEEKLY: RRule.WEEKLY,
-  MONTHLY: RRule.MONTHLY,
-  YEARLY: RRule.YEARLY,
-};
-
-const ORDINAL_LABELS: Record<number, string> = {
-  1: "1st",
-  2: "2nd",
-  3: "3rd",
-  4: "4th",
-  [-1]: "Last",
-};
-
 const DAY_NUMBERS = Array.from({ length: 31 }, (_, i) => i + 1);
 
 const ORDINALS = [1, 2, 3, 4, -1] as const;
@@ -119,223 +90,9 @@ const MONTH_SHORT_LABELS = [
   "Dec",
 ];
 
-const MONTH_LABELS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
-
 // Toggle chip button classes for freq-specific grid selectors
 const CHIP_ON = "bg-primary text-primary-content";
 const CHIP_OFF = "bg-base-200 text-base-content hover:bg-base-300";
-
-// ─── RRULE Parsing ──────────────────────────────────────────────────────────
-
-export interface ParsedRule {
-  freq: FreqCode;
-  interval: number;
-  byweekday: WeekdayCode[];
-  bymonthday: number[];
-  nthWeekday: { ordinal: number; weekday: WeekdayCode }[];
-  bymonth: number[];
-  until: string | null;
-  parseError: boolean;
-}
-
-function toArray<T>(value: T | T[]): T[] {
-  return Array.isArray(value) ? value : [value];
-}
-
-export function parseRRule(rruleStr: string | null): ParsedRule {
-  const defaults: ParsedRule = {
-    freq: "WEEKLY",
-    interval: 1,
-    byweekday: [],
-    bymonthday: [],
-    nthWeekday: [],
-    bymonth: [],
-    until: null,
-    parseError: false,
-  };
-
-  if (!rruleStr) return defaults;
-
-  try {
-    const normalized = rruleStr.startsWith("RRULE:") ? rruleStr : `RRULE:${rruleStr}`;
-    const rule = RRule.fromString(normalized);
-    const opts = rule.origOptions;
-
-    const freq = RRULE_FREQ_TO_CODE[opts.freq ?? RRule.WEEKLY] ?? "WEEKLY";
-    const interval = opts.interval ?? 1;
-    const byweekday: WeekdayCode[] = [];
-    const bymonthday: number[] = [];
-    const nthWeekday: ParsedRule["nthWeekday"] = [];
-
-    if (opts.byweekday) {
-      for (const w of toArray(opts.byweekday)) {
-        if (w instanceof Weekday) {
-          if (w.n !== undefined && w.n !== 0) {
-            const code = WEEKDAY_CODES[w.weekday];
-            if (code) nthWeekday.push({ ordinal: w.n, weekday: code });
-          } else {
-            const code = WEEKDAY_CODES[w.weekday];
-            if (code) byweekday.push(code);
-          }
-        }
-      }
-    }
-
-    if (opts.bymonthday) {
-      bymonthday.push(...toArray(opts.bymonthday));
-    }
-
-    const bymonth: number[] = opts.bymonth ? toArray(opts.bymonth) : [];
-
-    let until: string | null = null;
-    if (opts.until) {
-      const d = opts.until;
-      until = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
-    }
-
-    return {
-      freq,
-      interval,
-      byweekday,
-      bymonthday,
-      nthWeekday,
-      bymonth,
-      until,
-      parseError: false,
-    };
-  } catch {
-    return { ...defaults, parseError: true };
-  }
-}
-
-export function buildRRule(parsed: ParsedRule): string {
-  const options: ConstructorParameters<typeof RRule>[0] = {
-    freq: FREQ_TO_RRULE[parsed.freq],
-  };
-  if (parsed.interval !== 1) options.interval = parsed.interval;
-  if (parsed.freq === "WEEKLY" && parsed.byweekday.length > 0) {
-    options.byweekday = parsed.byweekday.map((d) => RRULE_WEEKDAY[d]);
-  }
-  if ((parsed.freq === "MONTHLY" || parsed.freq === "YEARLY") && parsed.nthWeekday.length > 0) {
-    options.byweekday = parsed.nthWeekday.map((nw) => RRULE_WEEKDAY[nw.weekday].nth(nw.ordinal));
-  } else if (
-    (parsed.freq === "MONTHLY" || parsed.freq === "YEARLY") &&
-    parsed.bymonthday.length > 0
-  ) {
-    options.bymonthday = parsed.bymonthday;
-  }
-  if (parsed.freq === "YEARLY" && parsed.bymonth.length > 0) {
-    options.bymonth = parsed.bymonth;
-  }
-  if (parsed.until) {
-    options.until = new Date(parsed.until + "T00:00:00Z");
-  }
-  return new RRule(options).toString();
-}
-
-// ─── Duration Parsing ───────────────────────────────────────────────────────
-
-const MS_DAY = 86400000;
-const MS_WEEK = 604800000;
-const MS_MONTH = 2629800000;
-const MS_YEAR = 31557600000;
-
-export interface ParsedDuration {
-  freq: FreqCode;
-  interval: number;
-  label: string;
-}
-
-function formatFreqLabel(freq: FreqCode, interval: number): string {
-  const { singular, plural } = FREQ_LABELS[freq];
-  return `Every ${interval} ${interval === 1 ? singular : plural}`;
-}
-
-export function parseDurationInput(input: string): ParsedDuration | null {
-  const ms = parseDuration(input);
-  if (ms == null || ms <= 0) return null;
-
-  if (ms >= MS_YEAR && ms % MS_YEAR === 0) {
-    const n = Math.round(ms / MS_YEAR);
-    return { freq: "YEARLY", interval: n, label: formatFreqLabel("YEARLY", n) };
-  }
-  if (ms >= MS_MONTH && ms % MS_MONTH === 0) {
-    const n = Math.round(ms / MS_MONTH);
-    return {
-      freq: "MONTHLY",
-      interval: n,
-      label: formatFreqLabel("MONTHLY", n),
-    };
-  }
-  if (ms >= MS_WEEK && ms % MS_WEEK === 0) {
-    const n = Math.round(ms / MS_WEEK);
-    return { freq: "WEEKLY", interval: n, label: formatFreqLabel("WEEKLY", n) };
-  }
-  if (ms >= MS_DAY && ms % MS_DAY === 0) {
-    const n = Math.round(ms / MS_DAY);
-    return { freq: "DAILY", interval: n, label: formatFreqLabel("DAILY", n) };
-  }
-
-  const days = Math.round(ms / MS_DAY);
-  if (days > 0) {
-    return { freq: "DAILY", interval: days, label: formatFreqLabel("DAILY", days) };
-  }
-
-  return null;
-}
-
-// ─── Display Helpers ────────────────────────────────────────────────────────
-
-function describeMonthDays(bymonthday: number[]): string {
-  const hasLast = bymonthday.includes(-1);
-  const positives = bymonthday.filter((d) => d > 0).sort((a, b) => a - b);
-  const parts: string[] = [];
-  if (positives.length > 0) parts.push(...positives.map(String));
-  if (hasLast) parts.push("last");
-  return parts.join(", ");
-}
-
-export function describeRule(parsed: ParsedRule): string {
-  const labels = FREQ_LABELS[parsed.freq];
-  const unit = parsed.interval === 1 ? labels.singular : labels.plural;
-  let desc = parsed.interval === 1 ? `Every ${unit}` : `Every ${parsed.interval} ${unit}`;
-
-  if (parsed.freq === "WEEKLY" && parsed.byweekday.length > 0) {
-    desc += ` on ${parsed.byweekday.map((d) => WEEKDAY_LABELS[d].slice(0, 3)).join(", ")}`;
-  }
-  if (parsed.freq === "MONTHLY" || parsed.freq === "YEARLY") {
-    if (parsed.nthWeekday.length > 0) {
-      const nthParts = parsed.nthWeekday.map((nw) => {
-        const ordLabel = ORDINAL_LABELS[nw.ordinal] ?? String(nw.ordinal);
-        return `${ordLabel} ${WEEKDAY_LABELS[nw.weekday]}`;
-      });
-      desc += ` on the ${nthParts.join(", ")}`;
-    } else if (parsed.bymonthday.length > 0) {
-      desc += ` on day ${describeMonthDays(parsed.bymonthday)}`;
-    }
-  }
-  if (parsed.freq === "YEARLY" && parsed.bymonth.length > 0) {
-    desc += ` in ${parsed.bymonth.map((m) => MONTH_LABELS[m - 1]).join(", ")}`;
-  }
-  if (parsed.until) {
-    desc += ` until ${parsed.until}`;
-  }
-
-  return desc;
-}
 
 function getDisplayValue(
   recurrenceType: TaskRecurrenceType,
