@@ -24,5 +24,21 @@ class HorologiaAndroidWidgetModule : Module() {
       }
       Unit
     }
+
+    AsyncFunction("clearSnapshot") {
+      val context = requireNotNull(appContext.reactContext)
+      context
+        .getSharedPreferences(MyTasksWidget.PREFERENCES_NAME, 0)
+        .edit()
+        .remove(MyTasksWidget.SNAPSHOT_KEY)
+        .apply()
+
+      appContext.backgroundCoroutineScope.launch {
+        GlanceAppWidgetManager(context)
+          .getGlanceIds(MyTasksWidget::class.java)
+          .forEach { MyTasksWidget().update(context, it) }
+      }
+      Unit
+    }
   }
 }

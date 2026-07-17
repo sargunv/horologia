@@ -28,6 +28,12 @@ type Handler interface {
 	//
 	// GET /recipes/search
 	RecipesSearch(ctx context.Context, params RecipesSearchParams) (*RecipeSearchResultList, error)
+	// ServerInfoGet implements ServerInfo_get operation.
+	//
+	// Read the API compatibility version and optional client capabilities.
+	//
+	// GET /server-info
+	ServerInfoGet(ctx context.Context) (*ServerInfoResponse, error)
 	// SpaceActivityList implements SpaceActivity_list operation.
 	//
 	// GET /spaces/{spaceSlug}/activity

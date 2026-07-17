@@ -1,0 +1,6 @@
+appId: dev.horologia.mobile
+---
+- launchApp
+- tapOn: "Account tab"
+- tapOn: "Sign out securely"
+- assertVisible: "Server address"

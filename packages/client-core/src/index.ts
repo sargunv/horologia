@@ -1,4 +1,5 @@
 export * from "./api/client";
+export * from "./auth/session";
 export * from "./domain/dates";
 export * from "./domain/keyedCollections";
 export * from "./domain/queuedAutosave";
@@ -7,4 +8,5 @@ export * from "./domain/staleness";
 export * from "./queries/createQueries";
 export * from "./runtime/queryClient";
 export * from "./servers/serverProfile";
+export * from "./servers/serverInfo";
 export * from "./widgets/widgetSnapshot";

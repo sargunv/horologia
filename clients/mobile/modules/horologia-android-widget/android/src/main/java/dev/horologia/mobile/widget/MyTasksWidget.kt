@@ -97,7 +97,7 @@ class MyTasksWidget : GlanceAppWidget() {
       context
         .getSharedPreferences(PREFERENCES_NAME, 0)
         .getString(SNAPSHOT_KEY, null)
-        ?: return WidgetSnapshot.demo
+        ?: return WidgetSnapshot.signedOut
 
     return runCatching {
         val root = JSONObject(value)
@@ -113,20 +113,13 @@ class MyTasksWidget : GlanceAppWidget() {
           }
         )
       }
-      .getOrDefault(WidgetSnapshot.demo)
+      .getOrDefault(WidgetSnapshot.signedOut)
   }
 }
 
 private data class WidgetSnapshot(val tasks: List<WidgetTask>) {
   companion object {
-    val demo =
-      WidgetSnapshot(
-        listOf(
-          WidgetTask("1", "home", "Water the herbs"),
-          WidgetTask("2", "home", "Change the air filter"),
-          WidgetTask("3", "kitchen", "Plan next week's meals"),
-        )
-      )
+    val signedOut = WidgetSnapshot(emptyList())
   }
 }
 

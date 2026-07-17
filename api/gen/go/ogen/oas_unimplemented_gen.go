@@ -48,6 +48,15 @@ func (UnimplementedHandler) RecipesSearch(ctx context.Context, params RecipesSea
 	return r, ht.ErrNotImplemented
 }
 
+// ServerInfoGet implements ServerInfo_get operation.
+//
+// Read the API compatibility version and optional client capabilities.
+//
+// GET /server-info
+func (UnimplementedHandler) ServerInfoGet(ctx context.Context) (r *ServerInfoResponse, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // SpaceActivityList implements SpaceActivity_list operation.
 //
 // GET /spaces/{spaceSlug}/activity

@@ -2518,6 +2518,87 @@ func (s *RecipeYield) SetUnit(val string) {
 	s.Unit = val
 }
 
+// Ref: #/components/schemas/ServerCapability
+type ServerCapability string
+
+const (
+	ServerCapabilityOAuth21Pkce       ServerCapability = "oauth-2.1-pkce"
+	ServerCapabilityWidgetSnapshotsV1 ServerCapability = "widget-snapshots-v1"
+)
+
+// AllValues returns all ServerCapability values.
+func (ServerCapability) AllValues() []ServerCapability {
+	return []ServerCapability{
+		ServerCapabilityOAuth21Pkce,
+		ServerCapabilityWidgetSnapshotsV1,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ServerCapability) MarshalText() ([]byte, error) {
+	switch s {
+	case ServerCapabilityOAuth21Pkce:
+		return []byte(s), nil
+	case ServerCapabilityWidgetSnapshotsV1:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ServerCapability) UnmarshalText(data []byte) error {
+	switch ServerCapability(data) {
+	case ServerCapabilityOAuth21Pkce:
+		*s = ServerCapabilityOAuth21Pkce
+		return nil
+	case ServerCapabilityWidgetSnapshotsV1:
+		*s = ServerCapabilityWidgetSnapshotsV1
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/ServerInfoResponse
+type ServerInfoResponse struct {
+	ApiVersion   ServerInfoResponseApiVersion `json:"apiVersion"`
+	Capabilities []ServerCapability           `json:"capabilities"`
+}
+
+// GetApiVersion returns the value of ApiVersion.
+func (s *ServerInfoResponse) GetApiVersion() ServerInfoResponseApiVersion {
+	return s.ApiVersion
+}
+
+// GetCapabilities returns the value of Capabilities.
+func (s *ServerInfoResponse) GetCapabilities() []ServerCapability {
+	return s.Capabilities
+}
+
+// SetApiVersion sets the value of ApiVersion.
+func (s *ServerInfoResponse) SetApiVersion(val ServerInfoResponseApiVersion) {
+	s.ApiVersion = val
+}
+
+// SetCapabilities sets the value of Capabilities.
+func (s *ServerInfoResponse) SetCapabilities(val []ServerCapability) {
+	s.Capabilities = val
+}
+
+type ServerInfoResponseApiVersion float64
+
+const (
+	ServerInfoResponseApiVersion1 ServerInfoResponseApiVersion = 1
+)
+
+// AllValues returns all ServerInfoResponseApiVersion values.
+func (ServerInfoResponseApiVersion) AllValues() []ServerInfoResponseApiVersion {
+	return []ServerInfoResponseApiVersion{
+		ServerInfoResponseApiVersion1,
+	}
+}
+
 // Ref: #/components/schemas/Space
 type Space struct {
 	Slug        string    `json:"slug"`

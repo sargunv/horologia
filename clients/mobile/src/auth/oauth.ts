@@ -109,6 +109,23 @@ export async function completeMobileAuthorization(
   return response;
 }
 
+export async function revokeMobileToken(
+  serverBaseUrl: string,
+  token: string,
+  tokenTypeHint: "access_token" | "refresh_token",
+): Promise<void> {
+  const response = await fetch(resolveServerUrl(serverBaseUrl, "oauth/revoke"), {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: "horologia-mobile",
+      token,
+      token_type_hint: tokenTypeHint,
+    }).toString(),
+  });
+  if (!response.ok) throw new Error("Token revocation failed");
+}
+
 function createDiscovery(serverBaseUrl: string) {
   return {
     authorizationEndpoint: resolveServerUrl(serverBaseUrl, "oauth/authorize"),

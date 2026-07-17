@@ -1,156 +1,150 @@
-import { Button, Column, Host, Row, Spacer, Text } from "@expo/ui";
-import { createWidgetSnapshotV1 } from "@horologia/client-core";
-import { useRouter } from "expo-router";
-import { useEffect } from "react";
-import {
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text as NativeText,
-  useColorScheme,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { Redirect, useRouter } from "expo-router";
+import { useState } from "react";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { NativeFeatureProof } from "@/components/native-feature-proof";
-import { OAuthSpikeCard } from "@/components/oauth-spike-card";
-import { publishWidgetSnapshot } from "@/widgets/publishWidgetSnapshot";
+import { useSession } from "@/auth/session-context";
+import { colors } from "@/design/tokens";
 
-const DEMO_TASKS = [
-  { id: "1", spaceSlug: "home", title: "Water the herbs", detail: "Today · Home" },
-  { id: "2", spaceSlug: "home", title: "Change the air filter", detail: "Overdue · Home" },
-  { id: "3", spaceSlug: "kitchen", title: "Plan next week's meals", detail: "Kitchen" },
-] as const;
-
-export default function MyTasksScreen() {
+export default function OnboardingScreen() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const { width } = useWindowDimensions();
-  const expanded = width >= 700;
-  const primaryText = colorScheme === "dark" ? "#F3F5F4" : "#17201B";
-  const secondaryText = colorScheme === "dark" ? "#B9C2BC" : "#59655E";
+  const session = useSession();
+  const [serverUrl, setServerUrl] = useState("http://localhost:8080");
 
-  useEffect(() => {
-    void publishWidgetSnapshot(
-      createWidgetSnapshotV1({
-        serverId: "local-spike",
-        accountId: "demo",
-        generatedAt: new Date().toISOString(),
-        tasks: DEMO_TASKS.map((task) => ({
-          id: task.id,
-          spaceSlug: task.spaceSlug,
-          title: task.title,
-          due: null,
-          status: "open",
-        })),
-      }),
-    ).catch((error: unknown) => {
-      console.error("Unable to publish the widget snapshot", error);
-    });
-  }, []);
+  if (session.status === "signed-in") return <Redirect href="/(tabs)/tasks" />;
 
+  const busy = session.status === "restoring" || session.status === "authorizing";
   return (
-    <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
-      <View style={[styles.layout, expanded && styles.expandedLayout]}>
-        <View style={styles.listPane}>
-          <FlatList
-            data={DEMO_TASKS}
-            keyExtractor={(task) => task.id}
-            contentContainerStyle={styles.list}
-            ListHeaderComponent={
-              <View style={styles.listHeader}>
-                <View style={styles.nativeHeader}>
-                  <Host matchContents={{ vertical: true }}>
-                    <Column spacing={8}>
-                      <Row alignment="center" spacing={10}>
-                        <Text textStyle={{ color: primaryText, fontSize: 28, fontWeight: "bold" }}>
-                          My Tasks
-                        </Text>
-                        <Spacer />
-                        <Button label="Refresh" variant="text" onPress={() => undefined} />
-                      </Row>
-                      <Text textStyle={{ color: secondaryText }}>
-                        A native Expo UI foundation shared with the web client core.
-                      </Text>
-                    </Column>
-                  </Host>
-                </View>
-                <NativeFeatureProof />
-                <OAuthSpikeCard />
-              </View>
-            }
-            renderItem={({ item }) => (
-              <Pressable
-                accessibilityLabel={`${item.title}, ${item.detail}`}
-                accessibilityRole="button"
-                style={({ pressed }) => [styles.taskButton, pressed && styles.taskButtonPressed]}
-                onPress={() =>
-                  router.push({
-                    pathname: "/task/[spaceSlug]/[taskId]",
-                    params: { spaceSlug: item.spaceSlug, taskId: item.id },
-                  })
-                }
-              >
-                <View style={styles.taskRow}>
-                  <View style={styles.taskText}>
-                    <NativeText style={[styles.taskTitle, { color: primaryText }]}>
-                      {item.title}
-                    </NativeText>
-                    <NativeText style={[styles.taskDetail, { color: secondaryText }]}>
-                      {item.detail}
-                    </NativeText>
-                  </View>
-                  <NativeText style={[styles.chevron, { color: secondaryText }]}>›</NativeText>
-                </View>
-              </Pressable>
-            )}
-          />
-        </View>
-        {expanded ? (
-          <View style={styles.detailPane}>
-            <NativeText style={[styles.detailTitle, { color: primaryText }]}>
-              Choose a task
-            </NativeText>
-            <NativeText style={[styles.detailCopy, { color: secondaryText }]}>
-              The expanded layout keeps the list visible while showing task details.
-            </NativeText>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.content}>
+        <Text accessibilityRole="header" style={styles.eyebrow}>
+          HOROLOGIA
+        </Text>
+        <Text style={styles.title}>Your household, close at hand.</Text>
+        <Text style={styles.copy}>
+          Connect securely to your self-hosted server. Your address stays on this device.
+        </Text>
+        {session.profile ? (
+          <View style={styles.serverCard}>
+            <Text style={styles.serverLabel}>Ready to connect</Text>
+            <Text style={styles.serverName}>{session.profile.displayName}</Text>
+            <PrimaryButton
+              disabled={busy}
+              label={busy ? "Opening sign-in…" : "Continue to sign in"}
+              onPress={() => void session.signIn().then(() => router.replace("/(tabs)/tasks"))}
+            />
           </View>
+        ) : (
+          <View style={styles.form}>
+            <Text style={styles.label}>Server address</Text>
+            <TextInput
+              accessibilityLabel="Server address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              onChangeText={setServerUrl}
+              placeholder="https://home.example.com"
+              returnKeyType="go"
+              style={styles.input}
+              value={serverUrl}
+            />
+            <PrimaryButton
+              disabled={busy}
+              label={busy ? "Checking server…" : "Connect"}
+              onPress={() => void session.connect(serverUrl)}
+            />
+          </View>
+        )}
+        {busy ? <ActivityIndicator accessibilityLabel="Working" /> : null}
+        {session.detail ? (
+          <Text accessibilityLiveRegion="polite" style={styles.error}>
+            {session.detail}
+          </Text>
+        ) : null}
+        {session.status === "error" ? (
+          <Pressable accessibilityRole="button" onPress={() => void session.recover()}>
+            <Text style={styles.retry}>Try again</Text>
+          </Pressable>
         ) : null}
       </View>
     </SafeAreaView>
   );
 }
 
+function PrimaryButton(props: { disabled: boolean; label: string; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      disabled={props.disabled}
+      onPress={() => props.onPress()}
+      style={({ pressed }) => [
+        styles.button,
+        pressed && styles.pressed,
+        props.disabled && styles.disabled,
+      ]}
+    >
+      <Text style={styles.buttonLabel}>{props.label}</Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  layout: { flex: 1 },
-  expandedLayout: { flexDirection: "row" },
-  listPane: { flex: 1, minWidth: 320 },
-  listHeader: { gap: 8, marginBottom: 12 },
-  nativeHeader: { paddingHorizontal: 20, paddingVertical: 16 },
-  list: { gap: 8, padding: 12, paddingBottom: 32 },
-  taskButton: { borderRadius: 14 },
-  taskButtonPressed: { backgroundColor: "rgba(90,110,98,0.12)" },
-  taskRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    minHeight: 64,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  taskText: { flex: 1, gap: 4 },
-  taskTitle: { fontSize: 17, fontWeight: "600" },
-  taskDetail: { fontSize: 14 },
-  chevron: { fontSize: 28, opacity: 0.65 },
-  detailPane: {
-    alignItems: "center",
-    borderLeftColor: "rgba(128,128,128,0.25)",
-    borderLeftWidth: StyleSheet.hairlineWidth,
-    flex: 1.25,
+  safeArea: { backgroundColor: colors.canvas, flex: 1 },
+  content: {
+    alignSelf: "center",
+    flex: 1,
     justifyContent: "center",
-    padding: 32,
+    maxWidth: 520,
+    padding: 28,
+    width: "100%",
   },
-  detailTitle: { fontSize: 28, fontWeight: "700", marginBottom: 8 },
-  detailCopy: { fontSize: 16, maxWidth: 360, textAlign: "center" },
+  eyebrow: {
+    color: colors.accent,
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 2,
+    marginBottom: 12,
+  },
+  title: {
+    color: colors.ink,
+    fontSize: 38,
+    fontWeight: "700",
+    letterSpacing: -1.1,
+    lineHeight: 43,
+  },
+  copy: { color: colors.muted, fontSize: 17, lineHeight: 25, marginBottom: 30, marginTop: 14 },
+  form: { gap: 12 },
+  label: { color: colors.ink, fontSize: 14, fontWeight: "600" },
+  input: {
+    backgroundColor: colors.surface,
+    borderColor: colors.outline,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    color: colors.ink,
+    fontSize: 17,
+    minHeight: 52,
+    paddingHorizontal: 16,
+  },
+  button: {
+    alignItems: "center",
+    backgroundColor: colors.accent,
+    borderRadius: 14,
+    justifyContent: "center",
+    minHeight: 52,
+    paddingHorizontal: 18,
+  },
+  buttonLabel: { color: "#FFFFFF", fontSize: 17, fontWeight: "700" },
+  pressed: { opacity: 0.76 },
+  disabled: { opacity: 0.55 },
+  serverCard: { backgroundColor: colors.surface, borderRadius: 20, gap: 12, padding: 20 },
+  serverLabel: { color: colors.muted, fontSize: 13, fontWeight: "600" },
+  serverName: { color: colors.ink, fontSize: 22, fontWeight: "700" },
+  error: { color: colors.danger, fontSize: 14, lineHeight: 20, marginTop: 18, textAlign: "center" },
+  retry: {
+    color: colors.accent,
+    fontSize: 16,
+    fontWeight: "600",
+    padding: 12,
+    textAlign: "center",
+  },
 });

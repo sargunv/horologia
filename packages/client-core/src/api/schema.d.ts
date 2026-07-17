@@ -170,6 +170,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/server-info": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Read the API compatibility version and optional client capabilities. */
+    get: operations["ServerInfo_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/spaces": {
     parameters: {
       query?: never;
@@ -743,6 +760,13 @@ export interface components {
       /** Format: double */
       amount: number;
       unit: string;
+    };
+    /** @enum {string} */
+    ServerCapability: "oauth-2.1-pkce" | "widget-snapshots-v1";
+    ServerInfoResponse: {
+      /** @enum {number} */
+      apiVersion: 1;
+      capabilities: components["schemas"]["ServerCapability"][];
     };
     Space: {
       slug: string;
@@ -1331,6 +1355,35 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["RecipeSearchResultList"];
+        };
+      };
+      /** @description An unexpected error response. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ApiError"];
+        };
+      };
+    };
+  };
+  ServerInfo_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The request has succeeded. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ServerInfoResponse"];
         };
       };
       /** @description An unexpected error response. */

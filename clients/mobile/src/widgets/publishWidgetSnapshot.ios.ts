@@ -11,3 +11,12 @@ export async function publishWidgetSnapshot(snapshot: WidgetSnapshotV1): Promise
     spaceSlug: nextTask?.spaceSlug ?? "",
   });
 }
+
+export async function clearWidgetSnapshot(): Promise<void> {
+  MyTasksWidget.updateSnapshot({
+    count: 0,
+    nextTaskId: "",
+    nextTaskTitle: "Sign in to see your tasks",
+    spaceSlug: "",
+  });
+}

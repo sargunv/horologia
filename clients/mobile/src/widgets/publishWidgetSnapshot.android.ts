@@ -5,3 +5,7 @@ import HorologiaAndroidWidget from "../../modules/horologia-android-widget/src/H
 export async function publishWidgetSnapshot(snapshot: WidgetSnapshotV1): Promise<void> {
   await HorologiaAndroidWidget.publishSnapshot(JSON.stringify(snapshot));
 }
+
+export async function clearWidgetSnapshot(): Promise<void> {
+  await HorologiaAndroidWidget.clearSnapshot();
+}
