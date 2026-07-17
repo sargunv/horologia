@@ -46,7 +46,7 @@ export function UserDangerZoneCard({
         await navigate({ to: "/login" });
       } else {
         try {
-          await queryClient.invalidateQueries({ queryKey: ["users"] });
+          await queryClient.invalidateQueries({ queryKey: [window.location.origin, "users"] });
         } catch (err) {
           console.error("Cache invalidation failed after mutation:", err);
           notifyStaleData();

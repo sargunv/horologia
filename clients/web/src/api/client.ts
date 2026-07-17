@@ -1,36 +1,19 @@
-import createClient from "openapi-fetch";
-import type { paths } from "./schema.d.ts";
+import { createHorologiaClient, getApiErrorMessage } from "@horologia/client-core/api";
 
-export const apiClient = createClient<paths>({
+export const apiClient = createHorologiaClient({
   baseUrl: "/api",
   credentials: "include",
+  onUnauthorized() {
+    window.dispatchEvent(new CustomEvent("horologia:unauthorized"));
+  },
 });
 
-export const appClient = createClient<paths>({
+export const appClient = createHorologiaClient({
   baseUrl: "",
   credentials: "include",
+  onUnauthorized() {
+    window.dispatchEvent(new CustomEvent("horologia:unauthorized"));
+  },
 });
 
-for (const client of [apiClient, appClient]) {
-  client.use({
-    onResponse({ response }) {
-      if (response.status === 401) {
-        window.dispatchEvent(new CustomEvent("horologia:unauthorized"));
-      }
-      return response;
-    },
-  });
-}
-
-export function getApiErrorMessage(error: unknown, fallback: string): string {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "message" in error &&
-    typeof error.message === "string" &&
-    error.message.length > 0
-  ) {
-    return error.message;
-  }
-  return fallback;
-}
+export { getApiErrorMessage };

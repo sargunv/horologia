@@ -7,7 +7,7 @@ import { SettingsSection } from "../space-settings/SettingsSection.tsx";
 const HealthSchema = v.object({ status: v.string() });
 
 const healthQueryOptions = queryOptions({
-  queryKey: ["health"],
+  queryKey: [window.location.origin, "health"],
   queryFn: async () => {
     const res = await fetch("/healthz");
     if (!res.ok) return { status: "error" };

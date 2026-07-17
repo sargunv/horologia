@@ -78,7 +78,14 @@ function TaskPickerSubMenu({
     isFetching: isInitialFetching,
     error: initialError,
   } = useQuery({
-    queryKey: ["spaces", spaceSlug, "tasks", "relation-picker", currentTaskId],
+    queryKey: [
+      window.location.origin,
+      "spaces",
+      spaceSlug,
+      "tasks",
+      "relation-picker",
+      currentTaskId,
+    ],
     queryFn: async () => {
       const { data, error } = await apiClient.GET("/spaces/{spaceSlug}/tasks", {
         params: {

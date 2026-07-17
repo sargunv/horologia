@@ -38,8 +38,8 @@ export function DangerZoneSection({ space }: { space: Pick<Space, "slug" | "name
     },
     onSuccess: async () => {
       try {
-        queryClient.removeQueries({ queryKey: ["spaces", space.slug] });
-        await queryClient.invalidateQueries({ queryKey: ["spaces"] });
+        queryClient.removeQueries({ queryKey: [window.location.origin, "spaces", space.slug] });
+        await queryClient.invalidateQueries({ queryKey: [window.location.origin, "spaces"] });
       } catch (err) {
         console.error("Cache invalidation failed after mutation:", err);
         notifyStaleData();

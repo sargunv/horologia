@@ -56,7 +56,7 @@ export function TokensCard() {
       setRevealedToken(data.token);
       setTokenName("");
       try {
-        await queryClient.invalidateQueries({ queryKey: ["authTokens"] });
+        await queryClient.invalidateQueries({ queryKey: [window.location.origin, "authTokens"] });
       } catch (err) {
         console.error("Cache invalidation failed after mutation:", err);
         notifyStaleData();
@@ -73,7 +73,7 @@ export function TokensCard() {
     },
     onSuccess: async () => {
       try {
-        await queryClient.invalidateQueries({ queryKey: ["authTokens"] });
+        await queryClient.invalidateQueries({ queryKey: [window.location.origin, "authTokens"] });
       } catch (err) {
         console.error("Cache invalidation failed after mutation:", err);
         notifyStaleData();

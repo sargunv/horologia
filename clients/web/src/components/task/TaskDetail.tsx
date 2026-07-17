@@ -89,12 +89,12 @@ function TaskActions({
     },
     onSuccess: async () => {
       queryClient.removeQueries({
-        queryKey: ["spaces", spaceSlug, "tasks", taskId],
+        queryKey: [window.location.origin, "spaces", spaceSlug, "tasks", taskId],
       });
       try {
         await Promise.all([
           queryClient.invalidateQueries({
-            queryKey: ["spaces", spaceSlug, "tasks", "list"],
+            queryKey: [window.location.origin, "spaces", spaceSlug, "tasks", "list"],
           }),
           invalidateUserTaskLists(queryClient),
         ]);

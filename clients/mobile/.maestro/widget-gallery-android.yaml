@@ -1,0 +1,18 @@
+appId: dev.horologia.mobile
+---
+- launchApp
+- pressKey: Home
+- longPressOn:
+    point: "50%,65%"
+- assertVisible: Widgets
+- tapOn: Widgets
+- tapOn: Browse
+- tapOn: Search
+- inputText: Horologia
+- extendedWaitUntil:
+    visible: Horologia
+    timeout: 10000
+- tapOn: Horologia
+- extendedWaitUntil:
+    visible: My Tasks
+    timeout: 10000

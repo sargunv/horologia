@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "@horologia/client-core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./api": "./src/api/client.ts",
+    "./schema": "./src/api/schema.d.ts",
+    "./queries": "./src/queries/createQueries.ts",
+    "./runtime": "./src/runtime/queryClient.ts",
+    "./domain/dates": "./src/domain/dates.ts",
+    "./domain/keyed-collections": "./src/domain/keyedCollections.ts",
+    "./domain/queued-autosave": "./src/domain/queuedAutosave.ts",
+    "./domain/recipe-inputs": "./src/domain/recipeInputs.ts",
+    "./domain/staleness": "./src/domain/staleness.ts",
+    "./servers": "./src/servers/serverProfile.ts"
+  },
+  "scripts": {
+    "check": "vp check --no-fmt",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.101.2",
+    "chrono-node": "^2.9.1",
+    "openapi-fetch": "^0.17.0",
+    "rrule": "^2.8.1"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.13.0",
+    "typescript": "^6.0.3",
+    "vite-plus": "^0.2.3",
+    "vitest": "^4.1.9"
+  }
+}

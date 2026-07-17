@@ -38,7 +38,7 @@ function NewSpacePage() {
     },
     onSuccess: async (data) => {
       try {
-        await queryClient.invalidateQueries({ queryKey: ["spaces"] });
+        await queryClient.invalidateQueries({ queryKey: [window.location.origin, "spaces"] });
       } catch (err) {
         console.error("Cache invalidation failed after mutation:", err);
         notifyStaleData();

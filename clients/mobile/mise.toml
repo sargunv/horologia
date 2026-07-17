@@ -1,0 +1,31 @@
+[tasks.dev]
+description = "Start the Expo development server"
+run = "pnpm exec expo start --dev-client"
+
+[tasks.ios]
+description = "Build and run the iOS app"
+run = "pnpm exec expo run:ios --device"
+
+[tasks.android]
+description = "Build and run the Android app"
+run = "pnpm exec expo run:android"
+
+[tasks.generate]
+description = "Generate native projects from repository-owned Expo configuration"
+run = "pnpm exec expo prebuild --clean --no-install"
+
+[tasks.check]
+description = "Type-check and lint the mobile app"
+run = "pnpm exec vp check --no-fmt"
+
+[tasks.test]
+description = "Run mobile unit tests"
+run = "pnpm exec vitest run --passWithNoTests"
+
+[tasks.build]
+description = "Type-check the mobile app"
+run = "pnpm exec tsc --noEmit"
+
+[tasks.e2e]
+description = "Run mobile end-to-end tests"
+run = "pnpm exec maestro test .maestro"

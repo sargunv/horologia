@@ -69,7 +69,9 @@ function RecipeActions({
       if (error) throw new Error(error.message ?? "Failed to delete recipe");
     },
     onSuccess: async () => {
-      queryClient.removeQueries({ queryKey: ["spaces", spaceSlug, "recipes", recipeId] });
+      queryClient.removeQueries({
+        queryKey: [window.location.origin, "spaces", spaceSlug, "recipes", recipeId],
+      });
       try {
         await invalidateRecipeLists(queryClient);
       } catch (err) {

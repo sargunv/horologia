@@ -1,0 +1,18 @@
+[tasks.generate]
+description = "Generate the portable TypeScript API contract"
+depends = ["//api:build"]
+sources = ["../../api/gen/openapi.yaml"]
+outputs = ["src/api/schema.d.ts"]
+run = [
+  "pnpm exec openapi-typescript ../../api/gen/openapi.yaml -o src/api/schema.d.ts",
+  "dprint fmt src/api/schema.d.ts",
+]
+
+[tasks.build]
+description = "Type-check the shared client runtime"
+depends = ["generate"]
+run = "pnpm exec tsc --noEmit"
+
+[tasks.test]
+description = "Run shared client runtime tests"
+run = "pnpm exec vitest run"

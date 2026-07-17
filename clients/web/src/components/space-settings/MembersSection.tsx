@@ -105,7 +105,7 @@ function MemberRow({
     onSuccess: async () => {
       try {
         await queryClient.invalidateQueries({
-          queryKey: ["spaces", spaceSlug, "members"],
+          queryKey: [window.location.origin, "spaces", spaceSlug, "members"],
         });
       } catch (err) {
         console.error("Cache invalidation failed after mutation:", err);
@@ -124,7 +124,7 @@ function MemberRow({
     onSuccess: async () => {
       try {
         await queryClient.invalidateQueries({
-          queryKey: ["spaces", spaceSlug, "members"],
+          queryKey: [window.location.origin, "spaces", spaceSlug, "members"],
         });
       } catch (err) {
         console.error("Cache invalidation failed after mutation:", err);
@@ -260,7 +260,7 @@ function AddMemberForm({ spaceSlug, members }: { spaceSlug: string; members: Spa
       setRole("member");
       try {
         await queryClient.invalidateQueries({
-          queryKey: ["spaces", spaceSlug, "members"],
+          queryKey: [window.location.origin, "spaces", spaceSlug, "members"],
         });
       } catch (err) {
         console.error("Cache invalidation failed after mutation:", err);

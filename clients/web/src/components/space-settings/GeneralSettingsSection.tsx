@@ -49,9 +49,9 @@ function GeneralSettingsForm({ space }: { space: Pick<Space, "slug" | "name" | "
     onSuccess: async (data) => {
       try {
         if (data.slug !== space.slug) {
-          queryClient.removeQueries({ queryKey: ["spaces", space.slug] });
+          queryClient.removeQueries({ queryKey: [window.location.origin, "spaces", space.slug] });
         }
-        await queryClient.invalidateQueries({ queryKey: ["spaces"] });
+        await queryClient.invalidateQueries({ queryKey: [window.location.origin, "spaces"] });
       } catch (err) {
         console.error("Cache invalidation failed after mutation:", err);
         notifyStaleData();

@@ -1,7 +1,14 @@
 experimental_monorepo_root = true
 
 [monorepo]
-config_roots = ["api", "clients/cli", "clients/web", "server"]
+config_roots = [
+  "api",
+  "clients/cli",
+  "clients/mobile",
+  "clients/web",
+  "packages/client-core",
+  "server",
+]
 
 [env]
 _.file = ".env.local"
@@ -25,6 +32,8 @@ corepack = true
 dprint = "0.53.0"
 go = "1.26.1"
 goreleaser = "2.14.3"
+java = "temurin-21.0.11+10.0.LTS"
+maestro = "cli-2.6.1"
 node = "24.14.1"
 hk = "1.38.0"
 golangci-lint = "2.11.3"
@@ -46,15 +55,33 @@ postinstall = [
 
 [tasks.generate]
 description = "Run all code generation"
-depends = ["//api:generate", "//server:generate", "//clients/web:generate"]
+depends = [
+  "//api:generate",
+  "//server:generate",
+  "//packages/client-core:generate",
+  "//clients/web:generate",
+]
 
 [tasks.build]
 description = "Build all packages"
-depends = ["//api:build", "//server:build", "//clients/cli:build", "//clients/web:build"]
+depends = [
+  "//api:build",
+  "//server:build",
+  "//clients/cli:build",
+  "//packages/client-core:build",
+  "//clients/mobile:build",
+  "//clients/web:build",
+]
 
 [tasks.test]
 description = "Run all tests"
-depends = ["//server:test", "//clients/cli:test", "//clients/web:test"]
+depends = [
+  "//server:test",
+  "//clients/cli:test",
+  "//packages/client-core:test",
+  "//clients/mobile:test",
+  "//clients/web:test",
+]
 
 [tasks.check]
 description = "Run all checks"

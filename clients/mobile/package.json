@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "@horologia/mobile",
+  "main": "expo-router/entry",
+  "version": "0.0.0",
+  "dependencies": {
+    "@expo/ui": "~57.0.6",
+    "@horologia/client-core": "workspace:*",
+    "@tanstack/react-query": "^5.101.2",
+    "expo": "~57.0.6",
+    "expo-auth-session": "~57.0.3",
+    "expo-constants": "~57.0.5",
+    "expo-crypto": "~57.0.1",
+    "expo-dev-client": "~57.0.6",
+    "expo-haptics": "~57.0.1",
+    "expo-linking": "~57.0.3",
+    "expo-router": "~57.0.6",
+    "expo-secure-store": "~57.0.1",
+    "expo-splash-screen": "~57.0.4",
+    "expo-sqlite": "~57.0.1",
+    "expo-status-bar": "~57.0.1",
+    "expo-system-ui": "~57.0.1",
+    "expo-web-browser": "~57.0.1",
+    "expo-widgets": "~57.0.5",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.0",
+    "react-native-gesture-handler": "~2.32.0",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "4.25.2"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3",
+    "vite-plus": "^0.2.3",
+    "vitest": "^4.1.9"
+  },
+  "scripts": {
+    "start": "expo start --dev-client",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "check": "vp check --no-fmt",
+    "test": "vitest run"
+  },
+  "private": true
+}

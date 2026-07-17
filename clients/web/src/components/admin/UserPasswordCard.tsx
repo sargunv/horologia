@@ -38,8 +38,8 @@ function usePasswordMutation(userId: string) {
     onSuccess: async () => {
       try {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["users", userId] }),
-          queryClient.invalidateQueries({ queryKey: ["users"] }),
+          queryClient.invalidateQueries({ queryKey: [window.location.origin, "users", userId] }),
+          queryClient.invalidateQueries({ queryKey: [window.location.origin, "users"] }),
         ]);
       } catch (err) {
         console.error("Cache invalidation failed after mutation:", err);

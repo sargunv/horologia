@@ -10,14 +10,15 @@ type RecipeUpdate = components["schemas"]["RecipeUpdate"];
 export async function invalidateUserTaskLists(queryClient: QueryClient) {
   await queryClient.invalidateQueries({
     predicate: (query) =>
-      query.queryKey[0] === "users" &&
-      query.queryKey[2] === "tasks" &&
-      query.queryKey[3] === "list",
+      query.queryKey[0] === window.location.origin &&
+      query.queryKey[1] === "users" &&
+      query.queryKey[3] === "tasks" &&
+      query.queryKey[4] === "list",
   });
 }
 
 export async function invalidateRecipeLists(queryClient: QueryClient) {
-  await queryClient.invalidateQueries({ queryKey: ["recipes", "list"] });
+  await queryClient.invalidateQueries({ queryKey: [window.location.origin, "recipes", "list"] });
 }
 
 export function useRecipePatch(spaceSlug: string, recipeId: string) {
@@ -35,7 +36,7 @@ export function useRecipePatch(spaceSlug: string, recipeId: string) {
       try {
         await Promise.all([
           queryClient.invalidateQueries({
-            queryKey: ["spaces", spaceSlug, "recipes", recipeId],
+            queryKey: [window.location.origin, "spaces", spaceSlug, "recipes", recipeId],
           }),
           invalidateRecipeLists(queryClient),
         ]);
@@ -61,8 +62,12 @@ export function useTaskPatch(spaceSlug: string, taskId: string) {
     onSuccess: async () => {
       try {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", taskId] }),
-          queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", "list"] }),
+          queryClient.invalidateQueries({
+            queryKey: [window.location.origin, "spaces", spaceSlug, "tasks", taskId],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [window.location.origin, "spaces", spaceSlug, "tasks", "list"],
+          }),
           invalidateUserTaskLists(queryClient),
         ]);
       } catch (err) {
@@ -87,9 +92,9 @@ export function useUserPatch(userId: string) {
     onSuccess: async () => {
       try {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["users", userId] }),
-          queryClient.invalidateQueries({ queryKey: ["users"] }),
-          queryClient.invalidateQueries({ queryKey: ["currentUser"] }),
+          queryClient.invalidateQueries({ queryKey: [window.location.origin, "users", userId] }),
+          queryClient.invalidateQueries({ queryKey: [window.location.origin, "users"] }),
+          queryClient.invalidateQueries({ queryKey: [window.location.origin, "currentUser"] }),
         ]);
       } catch (err) {
         console.error("Cache invalidation failed after mutation:", err);
@@ -116,8 +121,12 @@ export function useAddRelation(spaceSlug: string, taskId: string) {
     onSuccess: async () => {
       try {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", taskId] }),
-          queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", "list"] }),
+          queryClient.invalidateQueries({
+            queryKey: [window.location.origin, "spaces", spaceSlug, "tasks", taskId],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [window.location.origin, "spaces", spaceSlug, "tasks", "list"],
+          }),
           invalidateUserTaskLists(queryClient),
         ]);
       } catch (err) {
@@ -149,8 +158,12 @@ export function useDeleteRelation(spaceSlug: string, taskId: string) {
     onSuccess: async () => {
       try {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", taskId] }),
-          queryClient.invalidateQueries({ queryKey: ["spaces", spaceSlug, "tasks", "list"] }),
+          queryClient.invalidateQueries({
+            queryKey: [window.location.origin, "spaces", spaceSlug, "tasks", taskId],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [window.location.origin, "spaces", spaceSlug, "tasks", "list"],
+          }),
           invalidateUserTaskLists(queryClient),
         ]);
       } catch (err) {

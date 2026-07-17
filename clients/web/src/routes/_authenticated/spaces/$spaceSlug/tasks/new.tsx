@@ -37,7 +37,7 @@ function CreateTaskPage() {
     onSuccess: async (data) => {
       try {
         await queryClient.invalidateQueries({
-          queryKey: ["spaces", spaceSlug, "tasks", "list"],
+          queryKey: [window.location.origin, "spaces", spaceSlug, "tasks", "list"],
         });
       } catch (err) {
         console.error("Cache invalidation failed after mutation:", err);

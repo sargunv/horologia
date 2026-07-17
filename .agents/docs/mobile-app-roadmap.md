@@ -1,6 +1,6 @@
 # Horologia Expo app roadmap
 
-Status: accepted direction; implementation has not started\
+Status: implementation in progress\
 Planning baseline: July 2026, Expo SDK 57\
 Targets now: iPhone/iPad, Android phones/tablets/foldables, and the iPad build on Apple-silicon Macs
 
@@ -452,6 +452,18 @@ Milestones are ordered by risk and product value, not by estimated duration. Do 
 parity port until the widget and native UI assumptions have survived Milestone 0.
 
 ### Milestone 0 — architecture spike
+
+Implementation record (July 2026): the spike selected Continuous Native Generation. A clean
+`expo prebuild` recreates both native projects and their widget targets from repository-owned
+configuration and local-module sources. Two consecutive generations produced identical source and
+configuration files except for opaque UUIDs allocated by the `expo-widgets` Xcode-project plugin;
+both generated projects build without source edits. Those non-semantic UUIDs are intentionally not
+made into repository state by committing generated native directories.
+
+The user explicitly deferred the iPad-app-on-Apple-silicon-Mac execution checklist until the Apple
+development certificates and App Group profiles are configured. The unsigned Mac-destination compile
+succeeds, so this is isolated from the iPhone/iPad Simulator and Android Emulator gates and does not
+defer adaptive iPad Simulator coverage.
 
 Build one disposable-but-reusable vertical slice in the installed iOS Simulator and Android Emulator
 environments:
