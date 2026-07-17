@@ -1,0 +1,40 @@
+appId: dev.horologia.mobile
+---
+- launchApp
+- runFlow:
+    when:
+      visible: "Open in.*Horologia.*"
+    commands:
+      - tapOn: "Cancel"
+- runFlow:
+    when:
+      visible: "New recipe"
+    commands:
+      - tapOn: "(tabs)"
+- extendedWaitUntil:
+    visible: "(My Tasks|Library)"
+    timeout: 20000
+- tapOn: "Library tab"
+- extendedWaitUntil:
+    visible: "Library"
+    timeout: 20000
+- assertVisible: "Spaces"
+- assertVisible: "Recipes"
+- tapOn: "New recipe"
+- extendedWaitUntil:
+    visible: "New recipe"
+    timeout: 20000
+- assertVisible: "Space"
+- assertVisible: "Recipe"
+- assertVisible: "Ingredients"
+- tapOn: "(tabs)"
+- tapOn: "Library tab"
+- extendedWaitUntil:
+    visible: ".*Home.*"
+    timeout: 20000
+- tapOn: ".*Home.*"
+- extendedWaitUntil:
+    visible: "Tasks"
+    timeout: 20000
+- assertVisible: "Recipes"
+- assertVisible: "Activity"

@@ -14,7 +14,7 @@ import {
 } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useSession } from "@/auth/session-context";
@@ -114,6 +114,10 @@ function TaskDetail(props: {
       router.replace("/(tabs)/tasks");
     },
   });
+  const shareUrl = new URL(
+    `spaces/${encodeURIComponent(props.spaceSlug)}/tasks/${encodeURIComponent(props.taskId)}`,
+    `${props.profile.baseUrl.replace(/\/+$/u, "")}/`,
+  ).toString();
   if (query.isPending) return <ScreenState loading title="Loading task" />;
   if (query.isError) {
     return (
@@ -143,6 +147,9 @@ function TaskDetail(props: {
           params: { spaceSlug: props.spaceSlug, taskId: props.taskId },
         })
       }
+      onShare={() =>
+        void Share.share({ title: query.data.title, message: shareUrl, url: shareUrl })
+      }
       relationKind={relationKind}
       relationSearch={relationSearch}
       removeRelation={removeRelation}
@@ -167,6 +174,7 @@ function TaskReadView({
   deleteTask,
   notice,
   onEdit,
+  onShare,
   onDelete,
 }: {
   task: Task;
@@ -191,6 +199,7 @@ function TaskReadView({
   deleteTask: UseMutationResult<void, Error, void, unknown>;
   notice: string | null;
   onEdit: () => void;
+  onShare: () => void;
   onDelete: () => void;
 }) {
   return (
@@ -205,6 +214,9 @@ function TaskReadView({
           <View style={styles.actions}>
             <Pressable accessibilityRole="button" onPress={onEdit} style={styles.secondaryButton}>
               <Text style={styles.secondaryButtonText}>Edit</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={onShare} style={styles.linkButton}>
+              <Text style={styles.linkButtonText}>Share</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -375,6 +387,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   secondaryButtonText: { color: colors.surface, fontSize: 14, fontWeight: "700" },
+  linkButton: { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10 },
+  linkButtonText: { color: colors.accent, fontSize: 14, fontWeight: "700" },
   deleteButton: { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10 },
   deleteButtonText: { color: colors.danger, fontSize: 14, fontWeight: "700" },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 10 },

@@ -22,6 +22,13 @@ export default function RootLayout() {
             <Stack.Screen name="task/[spaceSlug]/[taskId]/edit" options={{ title: "Edit task" }} />
             <Stack.Screen name="task/new" options={{ title: "New task" }} />
             <Stack.Screen name="recipe/[spaceSlug]/[recipeId]" options={{ title: "Recipe" }} />
+            <Stack.Screen
+              name="recipe/[spaceSlug]/[recipeId]/edit"
+              options={{ title: "Edit recipe" }}
+            />
+            <Stack.Screen name="recipe/new" options={{ title: "New recipe" }} />
+            <Stack.Screen name="space/[spaceSlug]" options={{ title: "Space" }} />
+            <Stack.Screen name="space/new" options={{ title: "New space" }} />
             <Stack.Screen name="oauth/callback" options={{ title: "Sign in" }} />
           </Stack>
           <StatusBar style="auto" />

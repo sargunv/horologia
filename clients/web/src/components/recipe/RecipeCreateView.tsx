@@ -1,10 +1,10 @@
+import { createLibraryCommands } from "@horologia/client-core/commands/library";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { apiClient } from "../../api/client.ts";
 import { AnchorLink } from "../../lib/links.ts";
-import { invalidateRecipeLists } from "../../lib/mutations.ts";
 import { spaceQueryOptions } from "../../lib/queries.ts";
 import { notifyStaleData } from "../../lib/toaster.ts";
 import { DetailPaneHeader, DETAIL_PANE_TITLE_CLASS } from "../DetailPaneHeader.tsx";
@@ -15,22 +15,18 @@ export function RecipeCreateView({ spaceSlug, scoped }: { spaceSlug: string; sco
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [name, setName] = useState("");
-  const createMutation = useMutation({
-    mutationFn: async (recipeName: string) => {
-      const { data, error } = await apiClient.POST("/spaces/{spaceSlug}/recipes", {
-        params: { path: { spaceSlug } },
-        body: { name: recipeName },
-      });
-      if (error) throw new Error(error.message ?? "Failed to create recipe");
-      return data;
+  const commands = createLibraryCommands({
+    serverId: window.location.origin,
+    apiClient,
+    queryClient,
+    onCacheError(error) {
+      console.error("Cache invalidation failed after mutation:", error);
+      notifyStaleData();
     },
+  });
+  const createMutation = useMutation({
+    mutationFn: (recipeName: string) => commands.createRecipe(spaceSlug, { name: recipeName }),
     onSuccess: async (recipe) => {
-      try {
-        await invalidateRecipeLists(queryClient);
-      } catch (err) {
-        console.error("Cache invalidation failed after mutation:", err);
-        notifyStaleData();
-      }
       if (scoped) {
         await navigate({
           to: "/spaces/$spaceSlug/recipes/$recipeId",

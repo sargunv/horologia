@@ -1,0 +1,68 @@
+appId: dev.horologia.mobile
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "(My Tasks|Library|New recipe)"
+    timeout: 20000
+- openLink: "horologia://recipe/new"
+- runFlow:
+    when:
+      visible: "Open in.*Horologia.*"
+    commands:
+      - tapOn: "Open"
+- extendedWaitUntil:
+    visible: "New recipe"
+    timeout: 20000
+- tapOn:
+    id: "recipe-name-input"
+- inputText: "Mobile flatbread"
+- pressKey: ENTER
+- tapOn:
+    id: "recipe-description-input"
+- inputText: "A **tested** mobile recipe."
+- tapOn: "New recipe"
+- scrollUntilVisible:
+    element: "Create recipe"
+    direction: DOWN
+    timeout: 20000
+    speed: 80
+    visibilityPercentage: 90
+    centerElement: true
+- tapOn: "Create recipe"
+- extendedWaitUntil:
+    visible: "Mobile flatbread"
+    timeout: 20000
+- assertVisible: "A .*tested.* mobile recipe."
+- tapOn: "Edit"
+- tapOn:
+    id: "recipe-name-input"
+- eraseText: 100
+- inputText: "Mobile flatbread verified"
+- pressKey: ENTER
+- scrollUntilVisible:
+    element: "Save recipe"
+    direction: DOWN
+    timeout: 20000
+    speed: 80
+    visibilityPercentage: 90
+    centerElement: true
+- tapOn: "Save recipe"
+- extendedWaitUntil:
+    visible: "Mobile flatbread verified.*"
+    timeout: 20000
+- tapOn: "Delete"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn: "DELETE"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          text: "Delete"
+          index: 1
+- extendedWaitUntil:
+    visible: "Library"
+    timeout: 20000

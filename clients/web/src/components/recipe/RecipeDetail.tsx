@@ -1,3 +1,4 @@
+import { createLibraryCommands } from "@horologia/client-core/commands/library";
 import {
   useMutation,
   useQueryClient,
@@ -10,7 +11,7 @@ import { toast } from "sonner";
 import { apiClient } from "../../api/client.ts";
 import type { components } from "../../api/schema.d.ts";
 import { useSpaceMemberMap } from "../../lib/hooks.ts";
-import { invalidateRecipeLists, useRecipePatch } from "../../lib/mutations.ts";
+import { useRecipePatch } from "../../lib/mutations.ts";
 import { recipeActivityInfiniteQueryOptions, recipeQueryOptions } from "../../lib/queries.ts";
 import {
   formatDuration,
@@ -61,23 +62,18 @@ function RecipeActions({
 }) {
   const queryClient = useQueryClient();
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const deleteMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await apiClient.DELETE("/spaces/{spaceSlug}/recipes/{recipeId}", {
-        params: { path: { spaceSlug, recipeId } },
-      });
-      if (error) throw new Error(error.message ?? "Failed to delete recipe");
+  const commands = createLibraryCommands({
+    serverId: window.location.origin,
+    apiClient,
+    queryClient,
+    onCacheError(error) {
+      console.error("Cache invalidation failed after mutation:", error);
+      notifyStaleData();
     },
-    onSuccess: async () => {
-      queryClient.removeQueries({
-        queryKey: [window.location.origin, "spaces", spaceSlug, "recipes", recipeId],
-      });
-      try {
-        await invalidateRecipeLists(queryClient);
-      } catch (err) {
-        console.error("Cache invalidation failed after mutation:", err);
-        notifyStaleData();
-      }
+  });
+  const deleteMutation = useMutation({
+    mutationFn: () => commands.deleteRecipe(spaceSlug, recipeId),
+    onSuccess: () => {
       onDeleteSuccess();
     },
   });

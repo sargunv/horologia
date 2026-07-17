@@ -1,4 +1,5 @@
 import { createTaskCommands } from "@horologia/client-core/commands/tasks";
+import { createLibraryCommands } from "@horologia/client-core/commands/library";
 import { type QueryClient, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../api/client.ts";
 import type { components } from "../api/schema.d.ts";
@@ -24,28 +25,17 @@ export async function invalidateRecipeLists(queryClient: QueryClient) {
 
 export function useRecipePatch(spaceSlug: string, recipeId: string) {
   const queryClient = useQueryClient();
+  const commands = createLibraryCommands({
+    serverId: window.location.origin,
+    apiClient,
+    queryClient,
+    onCacheError(error) {
+      console.error("Cache invalidation failed after mutation:", error);
+      notifyStaleData();
+    },
+  });
   return useMutation({
-    mutationFn: async (body: RecipeUpdate) => {
-      const { data, error } = await apiClient.PATCH("/spaces/{spaceSlug}/recipes/{recipeId}", {
-        params: { path: { spaceSlug, recipeId } },
-        body,
-      });
-      if (error) throw new Error(error.message ?? "Failed to update recipe");
-      return data;
-    },
-    onSuccess: async () => {
-      try {
-        await Promise.all([
-          queryClient.invalidateQueries({
-            queryKey: [window.location.origin, "spaces", spaceSlug, "recipes", recipeId],
-          }),
-          invalidateRecipeLists(queryClient),
-        ]);
-      } catch (err) {
-        console.error("Cache invalidation failed after mutation:", err);
-        notifyStaleData();
-      }
-    },
+    mutationFn: (body: RecipeUpdate) => commands.updateRecipe(spaceSlug, recipeId, body),
   });
 }
 
