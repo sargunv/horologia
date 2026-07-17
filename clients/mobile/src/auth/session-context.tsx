@@ -19,6 +19,7 @@ import {
 import { authorizeMobile, revokeMobileToken } from "@/auth/oauth";
 import {
   attachActiveAccount,
+  clearCachedMyTasks,
   clearActiveAccount,
   loadActiveAccount,
   saveActiveServer,
@@ -160,6 +161,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
             ]);
           }
           await deleteCredentials(key);
+          await clearCachedMyTasks(currentProfile.id, currentAccountId);
         }
         await Promise.all([clearActiveAccount(), clearWidgetSnapshot()]);
         setClient(null);

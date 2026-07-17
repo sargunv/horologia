@@ -8,13 +8,7 @@ appId: dev.horologia.mobile
     visible: Edit
     timeout: 10000
 - tapOn: Edit
-- extendedWaitUntil:
-    visible: Add Widget
-    timeout: 10000
 - tapOn: Add Widget
-- extendedWaitUntil:
-    visible: Search Widgets
-    timeout: 10000
 - tapOn: Search Widgets
 - inputText: Horologia
 - extendedWaitUntil:
@@ -26,11 +20,19 @@ appId: dev.horologia.mobile
 - extendedWaitUntil:
     visible: " Add Widget"
     timeout: 10000
+- swipe:
+    start: "80%,50%"
+    end: "20%,50%"
+    duration: 500
+- swipe:
+    start: "80%,50%"
+    end: "20%,50%"
+    duration: 500
 - tapOn: " Add Widget"
 - extendedWaitUntil:
     visible: Done
     timeout: 30000
 - tapOn: Done
 - extendedWaitUntil:
-    visible: Take bins to the curb
+    visible: Water the herbs
     timeout: 30000

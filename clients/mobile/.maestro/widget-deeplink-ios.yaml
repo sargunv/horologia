@@ -6,10 +6,10 @@ appId: dev.horologia.mobile
     end: "10%,50%"
     duration: 500
 - extendedWaitUntil:
-    visible: Water the herbs
+    visible: Take bins to the curb
     timeout: 30000
-- tapOn: Water the herbs
+- tapOn: Take bins to the curb
 - extendedWaitUntil:
-    visible: Task 1
+    visible: Put recycling and trash out before dusk.
     timeout: 30000
-- assertVisible: "Space: home"
+- assertVisible: "Task ID · T3"

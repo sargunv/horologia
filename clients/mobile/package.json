@@ -1,8 +1,16 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
   "name": "@horologia/mobile",
-  "main": "expo-router/entry",
   "version": "0.0.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start --dev-client",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "check": "vp check --no-fmt",
+    "test": "vitest run"
+  },
   "dependencies": {
     "@expo/ui": "~57.0.6",
     "@horologia/client-core": "workspace:*",
@@ -34,13 +42,5 @@
     "typescript": "~6.0.3",
     "vite-plus": "^0.2.3",
     "vitest": "^4.1.9"
-  },
-  "scripts": {
-    "start": "expo start --dev-client",
-    "android": "expo run:android",
-    "ios": "expo run:ios",
-    "check": "vp check --no-fmt",
-    "test": "vitest run"
-  },
-  "private": true
+  }
 }

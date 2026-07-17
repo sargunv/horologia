@@ -39,7 +39,6 @@ export function createHorologiaClient({
     client.use({
       onResponse({ response }) {
         if (response.status === 401) onUnauthorized();
-        return response;
       },
     });
   }

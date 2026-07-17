@@ -25,6 +25,9 @@ import androidx.glance.text.TextStyle
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import org.json.JSONObject
 
 class MyTasksWidget : GlanceAppWidget() {
@@ -69,7 +72,7 @@ class MyTasksWidget : GlanceAppWidget() {
           ),
       )
       Text(
-        text = snapshot.tasks.size.toString(),
+        text = if (snapshot.signedIn) snapshot.tasks.size.toString() else "—",
         style =
           TextStyle(
             color = ColorProvider(Color(0xFF2F6D4B), Color(0xFF79D39D)),
@@ -78,7 +81,9 @@ class MyTasksWidget : GlanceAppWidget() {
           ),
       )
       Text(
-        text = nextTask?.title ?: "You're all caught up",
+        text =
+          if (!snapshot.signedIn) "Sign in to see your tasks"
+          else nextTask?.title ?: "You're all caught up",
         style = TextStyle(color = ColorProvider(Color(0xFF26322A), Color(0xFFD6DED8))),
       )
       if (size.width >= 250.dp) {
@@ -88,6 +93,18 @@ class MyTasksWidget : GlanceAppWidget() {
             style = TextStyle(color = ColorProvider(Color(0xFF455149), Color(0xFFB7C2BA))),
           )
         }
+      }
+      if (size.height >= 180.dp) {
+        Text(
+          text =
+            if (snapshot.signedIn) snapshotFreshness(snapshot.generatedAt)
+            else "Open Horologia to sign in",
+          style =
+            TextStyle(
+              color = ColorProvider(Color(0xFF66736B), Color(0xFF9BA89F)),
+              fontSize = 11.sp,
+            ),
+        )
       }
     }
   }
@@ -103,23 +120,48 @@ class MyTasksWidget : GlanceAppWidget() {
         val root = JSONObject(value)
         val tasks = root.getJSONArray("tasks")
         WidgetSnapshot(
-          List(tasks.length()) { index ->
+          signedIn = true,
+          generatedAt = root.getString("generatedAt"),
+          tasks = List(tasks.length()) { index ->
             val task = tasks.getJSONObject(index)
             WidgetTask(
               id = task.getString("id"),
               spaceSlug = task.getString("spaceSlug"),
               title = task.getString("title"),
             )
-          }
+          },
         )
       }
       .getOrDefault(WidgetSnapshot.signedOut)
   }
 }
 
-private data class WidgetSnapshot(val tasks: List<WidgetTask>) {
+private fun formatGeneratedAt(value: String): String =
+  runCatching {
+      DateTimeFormatter.ofPattern("h:mm a")
+        .withZone(ZoneId.systemDefault())
+        .format(Instant.parse(value))
+    }
+    .getOrDefault("recently")
+
+private fun snapshotFreshness(value: String): String =
+  runCatching {
+      val generatedAt = Instant.parse(value)
+      if (generatedAt.isBefore(Instant.now().minusSeconds(24 * 60 * 60))) {
+        "Saved tasks may be out of date"
+      } else {
+        "Saved ${formatGeneratedAt(value)}"
+      }
+    }
+    .getOrDefault("Saved tasks may be out of date")
+
+private data class WidgetSnapshot(
+  val signedIn: Boolean,
+  val generatedAt: String,
+  val tasks: List<WidgetTask>,
+) {
   companion object {
-    val signedOut = WidgetSnapshot(emptyList())
+    val signedOut = WidgetSnapshot(signedIn = false, generatedAt = "", tasks = emptyList())
   }
 }
 
