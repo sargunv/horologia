@@ -22,16 +22,16 @@
     "expo-status-bar": "~57.0.1",
     "expo-system-ui": "~57.0.1",
     "expo-web-browser": "~57.0.1",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
     "react-native": "0.86.0",
-    "react-native-gesture-handler": "~2.32.0",
-    "react-native-safe-area-context": "~5.7.0",
-    "react-native-screens": "4.25.2"
+    "react-native-gesture-handler": "~3.0.2",
+    "react-native-safe-area-context": "~5.8.0",
+    "react-native-screens": "4.26.2"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
-    "typescript": "~6.0.3",
+    "typescript": "~7.0.2",
     "vite-plus": "^0.2.4",
     "vitest": "^4.1.9"
   }
