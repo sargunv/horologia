@@ -16,6 +16,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { namedItemsValidationError } from "@horologia/client-core/domain/task-settings";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { GripVertical, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -83,17 +84,7 @@ export function OrderedNameListForm({
   });
 
   function validate(itemsToValidate: NamedItem[]): string | null {
-    for (const item of itemsToValidate) {
-      const trimmed = item.name.trim();
-      if (trimmed.length === 0) return `All ${itemLabel.toLowerCase()}s must have a name.`;
-      if (trimmed.length > 100) return `${itemLabel} names must be 100 characters or fewer.`;
-    }
-    const names = itemsToValidate.map((i) => i.name.trim().toLowerCase());
-    const uniqueNames = new Set(names);
-    if (uniqueNames.size !== names.length) return `${itemLabel} names must be unique.`;
-    if (itemsToValidate.length < minItems)
-      return `There must be at least ${minItems} ${itemLabel.toLowerCase()}${minItems === 1 ? "" : "s"}.`;
-    return null;
+    return namedItemsValidationError(itemsToValidate, itemLabel, minItems);
   }
 
   function saveIfChanged(nextItems: NamedItem[]) {

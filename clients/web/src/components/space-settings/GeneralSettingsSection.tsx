@@ -1,10 +1,9 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { SquareKanban } from "lucide-react";
 import { type FormEvent, useState } from "react";
-import { apiClient } from "../../api/client.ts";
-import type { components } from "../../api/schema.d.ts";
-import { notifyStaleData } from "../../lib/toaster.ts";
+import type { components } from "@horologia/client-core/schema";
+import { useLibraryCommands } from "../../lib/mutations.ts";
 import { ErrorAlert } from "./ErrorAlert.tsx";
 import { SettingsSection } from "./SettingsSection.tsx";
 
@@ -28,7 +27,7 @@ export function GeneralSettingsSection({
 
 function GeneralSettingsForm({ space }: { space: Pick<Space, "slug" | "name" | "description"> }) {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const commands = useLibraryCommands();
 
   const [name, setName] = useState(space.name);
   const [slug, setSlug] = useState(space.slug);
@@ -38,24 +37,9 @@ function GeneralSettingsForm({ space }: { space: Pick<Space, "slug" | "name" | "
     name !== space.name || slug !== space.slug || description !== space.description;
 
   const updateMutation = useMutation({
-    mutationFn: async (body: { name?: string; slug?: string; description?: string }) => {
-      const { data, error } = await apiClient.PATCH("/spaces/{spaceSlug}", {
-        params: { path: { spaceSlug: space.slug } },
-        body,
-      });
-      if (error) throw new Error(error.message ?? "Failed to update space");
-      return data;
-    },
+    mutationFn: (body: { name?: string; slug?: string; description?: string }) =>
+      commands.updateSpace(space.slug, body),
     onSuccess: async (data) => {
-      try {
-        if (data.slug !== space.slug) {
-          queryClient.removeQueries({ queryKey: [window.location.origin, "spaces", space.slug] });
-        }
-        await queryClient.invalidateQueries({ queryKey: [window.location.origin, "spaces"] });
-      } catch (err) {
-        console.error("Cache invalidation failed after mutation:", err);
-        notifyStaleData();
-      }
       if (data.slug !== space.slug) {
         await navigate({ to: "/spaces/$spaceSlug/settings", params: { spaceSlug: data.slug } });
       }

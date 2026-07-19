@@ -1,8 +1,8 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
-import { apiClient } from "../../api/client.ts";
+import { useSettingsCommands } from "../../lib/mutations.ts";
 import {
   AlertDialogAction,
   AlertDialogCancel,
@@ -17,20 +17,14 @@ import { ErrorAlert } from "../space-settings/ErrorAlert.tsx";
 import { SettingsSection } from "../space-settings/SettingsSection.tsx";
 
 export function DangerZoneCard({ userId, email }: { userId: string; email: string }) {
-  const queryClient = useQueryClient();
+  const commands = useSettingsCommands();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [confirmation, setConfirmation] = useState("");
 
   const deleteMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await apiClient.DELETE("/users/{userId}", {
-        params: { path: { userId } },
-      });
-      if (error) throw new Error(error.message ?? "Failed to delete account");
-    },
+    mutationFn: () => commands.deleteUser(userId),
     onSuccess: async () => {
-      queryClient.clear();
       await navigate({ to: "/login" });
     },
   });

@@ -1,8 +1,8 @@
 import type { DragEndEvent } from "@dnd-kit/core";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
-import { moveKeyed } from "../../../lib/keyedCollections.ts";
+import { moveKeyed } from "@horologia/client-core/domain/keyed-collections";
 import { useRecipePatch } from "../../../lib/mutations.ts";
-import { parseIngredientQuantity } from "../../../lib/recipeInputs.ts";
+import { parseIngredientQuantity } from "@horologia/client-core/domain/recipe-inputs";
 import { readSortableData } from "./recipeSectionDnd.ts";
 import {
   findIngredient,

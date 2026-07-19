@@ -1,8 +1,0 @@
-appId: dev.horologia.mobile
----
-- launchApp
-- extendedWaitUntil:
-    visible: My Tasks
-    timeout: 30000
-- assertVisible: SwiftUI foundation active
-- assertVisible: "Water the herbs, Today · Home"

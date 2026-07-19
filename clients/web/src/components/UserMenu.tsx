@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createLink, useNavigate } from "@tanstack/react-router";
 import { ChevronsUpDown } from "lucide-react";
 import { appClient } from "../api/client.ts";
-import type { components } from "../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 import {
   DropdownMenuContent,
   DropdownMenuItem,

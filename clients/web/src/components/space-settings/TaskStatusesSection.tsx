@@ -14,14 +14,13 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { taskStatusesValidationError } from "@horologia/client-core/domain/task-settings";
+import { useMutation } from "@tanstack/react-query";
 import { ListChecks, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
-import { apiClient } from "../../api/client.ts";
-import type { components } from "../../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 import { STATUS_SUGGESTED_ICONS } from "../../lib/level-icons.ts";
-import { spaceTaskStatusesQueryOptions } from "../../lib/queries.ts";
-import { notifyStaleData } from "../../lib/toaster.ts";
+import { useSettingsCommands } from "../../lib/mutations.ts";
 import { SortableNameRow } from "./OrderedNameListForm.tsx";
 import { ErrorAlert } from "./ErrorAlert.tsx";
 import { SettingsSection } from "./SettingsSection.tsx";
@@ -109,8 +108,7 @@ function TaskStatusesForm({
   spaceSlug: string;
   taskStatuses: TaskStatus[];
 }) {
-  const queryClient = useQueryClient();
-  const queryKey = spaceTaskStatusesQueryOptions(spaceSlug).queryKey;
+  const commands = useSettingsCommands();
 
   const [initialItems, setInitialItems] = useState(() => toItems(taskStatuses, "initial"));
   const [intermediateItems, setIntermediateItems] = useState(() =>
@@ -120,24 +118,12 @@ function TaskStatusesForm({
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const saveMutation = useMutation({
-    mutationFn: async (items: { name: string; category: TaskStatusCategory; icon?: string }[]) => {
-      const { data, error } = await apiClient.PUT("/spaces/{spaceSlug}/task-statuses", {
-        params: { path: { spaceSlug } },
-        body: { items },
-      });
-      if (error) throw new Error(error.message ?? "Failed to update task statuses");
-      return data;
-    },
-    onSuccess: async (data) => {
+    mutationFn: (items: { name: string; category: TaskStatusCategory; icon?: string }[]) =>
+      commands.replaceTaskStatuses(spaceSlug, items),
+    onSuccess: (data) => {
       setInitialItems((prev) => toItems(data.items, "initial", prev));
       setIntermediateItems((prev) => toItems(data.items, "intermediate", prev));
       setCompletionItems((prev) => toItems(data.items, "completion", prev));
-      try {
-        await queryClient.invalidateQueries({ queryKey });
-      } catch (err) {
-        console.error("Cache invalidation failed after mutation:", err);
-        notifyStaleData();
-      }
     },
   });
 
@@ -146,18 +132,7 @@ function TaskStatusesForm({
     intermediate: StatusItem[],
     completion: StatusItem[],
   ): string | null {
-    const allItems = [...initial, ...intermediate, ...completion];
-    for (const item of allItems) {
-      const trimmed = item.name.trim();
-      if (trimmed.length === 0) return "All statuses must have a name.";
-      if (trimmed.length > 100) return "Status names must be 100 characters or fewer.";
-    }
-    const names = allItems.map((i) => i.name.trim().toLowerCase());
-    const uniqueNames = new Set(names);
-    if (uniqueNames.size !== names.length) return "Status names must be unique.";
-    if (initial.length !== 1) return "There must be exactly one initial status.";
-    if (completion.length < 1) return "There must be at least one completion status.";
-    return null;
+    return taskStatusesValidationError([...initial, ...intermediate, ...completion]);
   }
 
   function handleCategorySave(category: TaskStatusCategory, updatedItems: StatusItem[]) {

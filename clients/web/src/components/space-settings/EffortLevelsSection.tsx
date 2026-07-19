@@ -1,7 +1,7 @@
 import { Gauge } from "lucide-react";
-import { apiClient } from "../../api/client.ts";
-import type { components } from "../../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 import { EFFORT_SUGGESTED_ICONS } from "../../lib/level-icons.ts";
+import { useSettingsCommands } from "../../lib/mutations.ts";
 import { spaceEffortLevelsQueryOptions } from "../../lib/queries.ts";
 import { OrderedNameListForm } from "./OrderedNameListForm.tsx";
 import { SettingsSection } from "./SettingsSection.tsx";
@@ -15,6 +15,7 @@ export function EffortLevelsSection({
   spaceSlug: string;
   effortLevels: TaskEffortLevel[];
 }) {
+  const commands = useSettingsCommands();
   return (
     <SettingsSection
       icon={<Gauge className="size-5" />}
@@ -25,15 +26,7 @@ export function EffortLevelsSection({
         key={effortLevels.map((l) => `${l.name}:${l.icon ?? ""}`).join(",")}
         items={effortLevels}
         queryKey={spaceEffortLevelsQueryOptions(spaceSlug).queryKey}
-        mutationFn={async (items) => {
-          const { data, error } = await apiClient.PUT("/spaces/{spaceSlug}/task-effort-levels", {
-            params: { path: { spaceSlug } },
-            body: { items },
-          });
-          if (error) throw new Error(error.message ?? "Failed to update effort levels");
-          if (!data) throw new Error("Failed to update effort levels");
-          return data;
-        }}
+        mutationFn={(items) => commands.replaceEffortLevels(spaceSlug, items)}
         itemLabel="Effort level"
         showIcons
         suggestedIcons={EFFORT_SUGGESTED_ICONS}

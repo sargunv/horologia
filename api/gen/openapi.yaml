@@ -4,6 +4,7 @@ info:
   version: 0.0.0
 tags:
   - name: Auth
+  - name: Server
   - name: Users
   - name: Spaces
   - name: SpaceMembers
@@ -294,6 +295,28 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Recipes
+  /server-info:
+    get:
+      operationId: ServerInfo_get
+      description: Read the API compatibility version and optional client capabilities.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerInfoResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Server
+      security:
+        - {}
   /spaces:
     get:
       operationId: Spaces_list
@@ -2084,6 +2107,24 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+    ServerCapability:
+      type: string
+      enum:
+        - oauth-2.1-pkce
+    ServerInfoResponse:
+      type: object
+      required:
+        - apiVersion
+        - capabilities
+      properties:
+        apiVersion:
+          type: number
+          enum:
+            - 1
+        capabilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServerCapability'
     Space:
       type: object
       required:

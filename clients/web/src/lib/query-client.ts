@@ -1,1 +1,3 @@
-export { queryClient } from "@horologia/client-core/runtime";
+import { createQueryClient } from "@horologia/client-core/runtime";
+
+export const queryClient = createQueryClient();

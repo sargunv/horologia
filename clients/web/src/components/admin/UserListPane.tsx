@@ -1,5 +1,5 @@
 import { Plus } from "lucide-react";
-import type { components } from "../../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 import { Card } from "../../ui/Card.tsx";
 
 type User = components["schemas"]["User"];

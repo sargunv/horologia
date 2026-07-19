@@ -7,8 +7,12 @@ description = "Build and run the iOS app"
 run = "pnpm exec expo run:ios --device"
 
 [tasks.android]
-description = "Build and run the Android app"
-run = "pnpm exec expo run:android"
+description = "Build and run the Android app (boots the selected AVD if it's not running)"
+run = "pnpm exec expo run:android --device"
+
+[tasks.android-tunnel]
+description = "Forward emulator localhost to the dev server and OIDC provider (required for sign-in on the emulator; re-run after every emulator boot)"
+run = "adb reverse tcp:{{env.SERVER_PORT}} tcp:{{env.SERVER_PORT}} && adb reverse tcp:{{env.OIDC_PORT}} tcp:{{env.OIDC_PORT}}"
 
 [tasks.generate]
 description = "Generate native projects from repository-owned Expo configuration"
@@ -25,7 +29,3 @@ run = "pnpm exec vitest run --passWithNoTests"
 [tasks.build]
 description = "Type-check the mobile app"
 run = "pnpm exec tsc --noEmit"
-
-[tasks.e2e]
-description = "Run mobile end-to-end tests"
-run = "pnpm exec maestro test .maestro"

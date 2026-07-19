@@ -1,9 +1,4 @@
-import {
-  useMutation,
-  useQueryClient,
-  useSuspenseInfiniteQuery,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useMutation, useSuspenseInfiniteQuery, useSuspenseQuery } from "@tanstack/react-query";
 import {
   Activity,
   Check,
@@ -18,11 +13,10 @@ import {
   X,
 } from "lucide-react";
 import { type ReactNode, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { apiClient } from "../../api/client.ts";
-import type { components } from "../../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 import { useSpaceMemberMap } from "../../lib/hooks.ts";
 import { getIcon } from "../../lib/level-icons.ts";
-import { invalidateUserTaskLists, useTaskPatch } from "../../lib/mutations.ts";
+import { useTaskCommands, useTaskPatch } from "../../lib/mutations.ts";
 import {
   spaceEffortLevelsQueryOptions,
   spaceMembersQueryOptions,
@@ -31,7 +25,6 @@ import {
   spaceTaskStatusesQueryOptions,
   taskActivityInfiniteQueryOptions,
 } from "../../lib/queries.ts";
-import { notifyStaleData } from "../../lib/toaster.ts";
 import { useMenuSearch } from "../../lib/useMenuSearch.ts";
 import { toast } from "sonner";
 import {
@@ -77,31 +70,12 @@ function TaskActions({
   taskId: string;
   onDeleteSuccess: () => void;
 }) {
-  const queryClient = useQueryClient();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const commands = useTaskCommands();
 
   const deleteMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await apiClient.DELETE("/spaces/{spaceSlug}/tasks/{taskId}", {
-        params: { path: { spaceSlug, taskId } },
-      });
-      if (error) throw new Error(error.message ?? "Failed to delete task");
-    },
-    onSuccess: async () => {
-      queryClient.removeQueries({
-        queryKey: [window.location.origin, "spaces", spaceSlug, "tasks", taskId],
-      });
-      try {
-        await Promise.all([
-          queryClient.invalidateQueries({
-            queryKey: [window.location.origin, "spaces", spaceSlug, "tasks", "list"],
-          }),
-          invalidateUserTaskLists(queryClient),
-        ]);
-      } catch (err) {
-        console.error("Cache invalidation failed after mutation:", err);
-        notifyStaleData();
-      }
+    mutationFn: () => commands.delete(spaceSlug, taskId),
+    onSuccess: () => {
       onDeleteSuccess();
     },
   });

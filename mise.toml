@@ -19,6 +19,13 @@ SERVER_PORT = "{{env.SERVER_PORT | default(value='8080')}}"
 HOROLOGIA_SERVER = "http://localhost:{{env.SERVER_PORT | default(value='8080')}}"
 WEB_PORT = "{{env.WEB_PORT | default(value='5173')}}"
 TILT_PORT = "{{env.TILT_PORT | default(value='10350')}}"
+# Android SDK location for expo run:android (build + emulator discovery).
+# Resolves per-OS; override by setting ANDROID_HOME in your shell or .env.local.
+_.path = [
+  "{% if env.ANDROID_HOME is defined %}{{ env.ANDROID_HOME }}{% elif os() == \"macos\" %}{{ env.HOME }}/Library/Android/sdk{% elif os() == \"linux\" %}{{ env.HOME }}/Android/Sdk{% elif os() == \"windows\" %}{{ env.LOCALAPPDATA }}/Android/Sdk{% endif %}/emulator",
+  "{% if env.ANDROID_HOME is defined %}{{ env.ANDROID_HOME }}{% elif os() == \"macos\" %}{{ env.HOME }}/Library/Android/sdk{% elif os() == \"linux\" %}{{ env.HOME }}/Android/Sdk{% elif os() == \"windows\" %}{{ env.LOCALAPPDATA }}/Android/Sdk{% endif %}/platform-tools",
+]
+ANDROID_HOME = "{% if env.ANDROID_HOME is defined %}{{ env.ANDROID_HOME }}{% elif os() == \"macos\" %}{{ env.HOME }}/Library/Android/sdk{% elif os() == \"linux\" %}{{ env.HOME }}/Android/Sdk{% elif os() == \"windows\" %}{{ env.LOCALAPPDATA }}/Android/Sdk{% endif %}"
 
 [settings]
 experimental = true
@@ -33,7 +40,6 @@ dprint = "0.53.0"
 go = "1.26.1"
 goreleaser = "2.14.3"
 java = "temurin-21.0.11+10.0.LTS"
-maestro = "cli-2.6.1"
 node = "24.14.1"
 hk = "1.38.0"
 golangci-lint = "2.11.3"

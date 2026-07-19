@@ -4,10 +4,6 @@
 
 Horologia is a self-hosted application for organizing household information and routines.
 
-## Roadmap
-
-Progress is tracked in Linear (project: Horologia).
-
 ## Development
 
 This project uses `mise` for tooling and task orchestration. Run `mise tasks` to see all available
@@ -42,9 +38,13 @@ PostgreSQL is managed by mise and started automatically by Tilt. Data is stored 
 - ./server — Go backend service and API implementation.
 - ./clients/web — React SPA served by the backend. Built on Tailwind v4 + daisyUI 5, with primitives
   in `clients/web/src/ui/` that wrap Radix UI (umbrella), cmdk, Ark UI (TagsInput only), and sonner.
+- ./clients/mobile — Expo app for iPhone, iPad, and adaptive Android devices, with WidgetKit and
+  Glance widgets.
 - ./clients/cli — Go CLI client (binary: `horo`).
+- ./packages/client-core — Portable TypeScript API, query, command, domain, and widget behavior
+  shared by web and mobile.
 
-## Conventions
+## Go Conventions
 
 - Never use `context.Background()` when a context is available from a caller (e.g. `cmd.Context()`,
   function parameter). Thread contexts through from the top.
@@ -55,14 +55,15 @@ PostgreSQL is managed by mise and started automatically by Tilt. Data is stored 
 
 ## Codegen Pipeline
 
-Changes flow through two codegen steps — run `mise run generate` after any of these:
+Run `mise run generate` after changing TypeSpec or SQL queries. The pipeline is:
 
 1. **TypeSpec** (`api/src/*.tsp`) → `api/gen/openapi.yaml`
-2. **ogen** consumes the OpenAPI YAML → `api/gen/go/ogen/`
-3. **sqlc** (`server/internal/database/queries/*.sql`) → `server/internal/database/gen/`
+2. **ogen** consumes OpenAPI → `api/gen/go/ogen/`
+3. **openapi-typescript** consumes OpenAPI → `packages/client-core/src/api/schema.d.ts`
+4. **sqlc** (`server/internal/database/queries/*.sql`) → `server/internal/database/gen/`
 
-Both must be re-run when you add new TypeSpec types or new/changed SQL queries. The order in
-`mise run generate` handles this correctly.
+The root task runs these in dependency order. Web and mobile must consume the client-core schema
+rather than maintaining separate handwritten or generated API response types.
 
 ## DB Migration Patterns
 
@@ -110,16 +111,13 @@ Both must be re-run when you add new TypeSpec types or new/changed SQL queries. 
 - The app's design system lives in `clients/web/src/ui/`. Import UI primitives from there first;
   only drop down to Radix / cmdk / Ark directly when the primitive doesn't cover the case, and if
   you do it more than once, add a wrapper in `clients/web/src/ui/`.
-- Primitives in use: `Dialog`, `DropdownMenu` (+ `DropdownMenuSub*`), `Tooltip`, `Tabs`, `Avatar`,
-  `TagsInput`, `Toaster`. Plus `surface.ts` (shared overlay classes `SURFACE`, `SURFACE_MOTION`,
-  `MENU_ITEM`) and `cx.ts` (tiny classname combiner).
 - Searchable menus: compose `DropdownMenuRoot` + `FieldPill` (trigger) +
   `components/SearchableMenuContent.tsx` + `lib/useMenuSearch.ts`. See `TaskDetail.tsx` / the task
   menu fields for the canonical pattern.
 - Mutation toasts: `notifyStaleData()` from `lib/toaster.ts` covers "mutation succeeded but cache
   invalidation failed." For other toasts, import `toast` from `sonner` directly.
 
-### Styling
+### Web App Styling
 
 - Lean on daisyUI's defaults (`btn`, `input`, `textarea`, `select`, `badge`, `alert`, `menu`,
   `loading loading-spinner`, `avatar`, `card`). Don't reinvent what daisyUI already provides.
@@ -134,8 +132,6 @@ Both must be re-run when you add new TypeSpec types or new/changed SQL queries. 
 - Don't add a project-wide `:focus-visible` rule — daisyUI components ship their own and a global
   override fights with them. Add focus outlines inline on the few custom-styled elements that need
   them (sidebar links, etc.).
-- Use `/frontend-design` when building new UI. Prefer restraint: match the feel of existing pages
-  before reaching for bolder choices.
 
 ### Router
 
@@ -151,6 +147,33 @@ Both must be re-run when you add new TypeSpec types or new/changed SQL queries. 
   `notifyStaleData()` on failure — a thrown invalidation turns a successful mutation into a
   misleading error alert otherwise. See the hooks in `lib/mutations.ts` for the canonical shape.
 
+## Shared Client Architecture
+
+- `packages/client-core` owns portable API behavior, query keys/options, commands, validation,
+  domain transformations, and widget projections shared by web and mobile.
+- When portable behavior is needed, implement or extract it in client-core and migrate web in the
+  same change. Do not create parallel mobile implementations or compatibility re-export shims.
+- Keep DOM, Expo, React Native, router, toast, and native-platform types out of client-core. Prefer
+  a narrow adapter at a real platform boundary over a leaky shared abstraction.
+- Query, credential, persistence, deep-link, and widget state must remain scoped by `serverId` and,
+  where relevant, `accountId`. Repository APIs take explicit server context; do not introduce a
+  singleton server URL even while the UI exposes only one active server.
+- Writes go through client-core command boundaries and succeed only after server acceptance. Do not
+  add offline-write machinery yet, but preserve the boundary for a future outbox.
+
+## Mobile App Conventions
+
+- `clients/mobile` uses Expo Router and Expo UI. Build presentation from native SwiftUI/Compose
+  controls through `@expo/ui`; prefer platform-specific implementations when native idioms differ.
+  Avoid bespoke React Native visual skins and lowest-common-denominator abstractions.
+- Nonvisual React Native platform APIs are fine. A custom React Native, DOM, or native-module island
+  should represent a contained Expo UI capability gap, not a parallel design system.
+- Keep the app adaptive across iPhone, iPad, Android phone/tablet/foldable, and resizable windows.
+- Native projects use Continuous Native Generation. Keep `clients/mobile/ios` and
+  `clients/mobile/android` generated and untracked; native customization belongs in `app.config.ts`,
+  config plugins, widget sources, or local Expo modules. Verify relevant native changes from a clean
+  prebuild.
+
 ## Automated Testing
 
 - Prefer valuable behavioral coverage over test count. Tests should protect a user-visible contract,
@@ -162,22 +185,12 @@ Both must be re-run when you add new TypeSpec types or new/changed SQL queries. 
 - Keep focused unit tests for behavior that integration tests cannot express cleanly, such as input
   grammars, ordering algorithms, and asynchronous editor state machines. Do not test trivial
   mapping/filtering helpers or implementation structure.
-- For partial updates, cover omitted-versus-null semantics, no-op suppression, concurrent disjoint
-  writes, and cross-space isolation where applicable.
-- A test described as transactional must fail after at least one write has occurred and assert that
-  the earlier writes rolled back. Validation rejected before a transaction begins is a validation
-  test, not a transaction test.
-- Thin generated or transport adapters (for example MCP tools) need one representative test for
-  novel schema conversion plus a shared registration/contract test. Do not duplicate the full HTTP
-  CRUD suite at every transport layer.
 - CLI tests should execute commands against `httptest` servers and assert request/response behavior.
   Unit-test only nontrivial CLI parsing or collection algorithms that are not already covered by a
   command-level test.
 - Shared UI state machinery should be tested once at the shared abstraction. Component-specific
   tests should cover only behavior introduced by that component.
-- `mise run test` is the final test entrypoint and must execute every package test task. Package
-  tasks are useful while iterating, but final verification must also run the root task so broken
-  orchestration cannot hide a package suite.
+- `mise run test` is the final test entrypoint and must execute every package test task.
 
 ## Manual Testing
 
@@ -189,8 +202,3 @@ Use `vhs` for recording CLI demos. Run `vhs --help` for details.
 
 `mise run dev` starts all services (postgres, server, web). The server bootstraps the default admin
 user (`admin@localhost` / `password`) on first run via `HOROLOGIA_INIT_OWNER_*`.
-
-### Capturing UI evidence
-
-After implementing UI changes, capture a walkthrough video before committing to verify the feature
-works end-to-end and provide visual evidence for the PR.

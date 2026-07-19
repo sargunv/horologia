@@ -1,37 +1,36 @@
 import { describe, expect, it } from "vitest";
 
-import { createWidgetSnapshotV1 } from "./widgetSnapshot.ts";
+import { projectMyTasksWidgetSnapshot } from "./widgetSnapshot.ts";
 
-describe("createWidgetSnapshotV1", () => {
-  it("creates a server- and account-scoped display snapshot", () => {
+describe("projectMyTasksWidgetSnapshot", () => {
+  it("keeps ordered display fields and strips full task data", () => {
     expect(
-      createWidgetSnapshotV1({
-        serverId: "server-1",
-        accountId: "account-1",
+      projectMyTasksWidgetSnapshot({
+        serverId: "server-a",
+        accountId: "account-a",
         generatedAt: "2026-07-17T00:00:00.000Z",
+        hasMore: true,
+        limit: 1,
         tasks: [
           {
-            id: "task-1",
+            id: "first",
             spaceSlug: "home",
-            title: "Water the herbs",
-            due: null,
+            title: "First",
+            due: { at: "2026-07-18" },
             status: "open",
           },
+          { id: "second", spaceSlug: "home", title: "Second", due: null, status: "open" },
         ],
       }),
     ).toEqual({
       version: 1,
-      serverId: "server-1",
-      accountId: "account-1",
+      serverId: "server-a",
+      accountId: "account-a",
       generatedAt: "2026-07-17T00:00:00.000Z",
+      taskCount: 2,
+      hasMore: true,
       tasks: [
-        {
-          id: "task-1",
-          spaceSlug: "home",
-          title: "Water the herbs",
-          due: null,
-          status: "open",
-        },
+        { id: "first", spaceSlug: "home", title: "First", due: "2026-07-18", status: "open" },
       ],
     });
   });

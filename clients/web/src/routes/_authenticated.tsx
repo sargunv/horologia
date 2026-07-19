@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect } from "react";
-import type { components } from "../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 import { AppShell } from "../components/AppShell.tsx";
 import { currentUserQueryOptions, spacesQueryOptions } from "../lib/queries.ts";
 import { useTheme } from "../lib/theme.tsx";

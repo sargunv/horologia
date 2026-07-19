@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { Calendar, Hash, Mail, Shield, User as UserIcon } from "lucide-react";
-import type { components } from "../../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 import { useUserPatch } from "../../lib/mutations.ts";
 import { ErrorAlert } from "../space-settings/ErrorAlert.tsx";
 import { SettingsSection } from "../space-settings/SettingsSection.tsx";

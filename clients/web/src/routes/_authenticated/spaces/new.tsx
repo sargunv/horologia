@@ -1,9 +1,9 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { slugifySpaceName } from "@horologia/client-core/domain/space-slug";
+import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, createLink, useNavigate } from "@tanstack/react-router";
 import { CircleAlert } from "lucide-react";
 import { type FormEvent, useState } from "react";
-import { apiClient } from "../../../api/client.ts";
-import { notifyStaleData } from "../../../lib/toaster.ts";
+import { useLibraryCommands } from "../../../lib/mutations.ts";
 import { Card } from "../../../ui/Card.tsx";
 
 export const Route = createFileRoute("/_authenticated/spaces/new")({
@@ -12,37 +12,19 @@ export const Route = createFileRoute("/_authenticated/spaces/new")({
 
 const CancelLink = createLink("a");
 
-// Keep in sync with backend: api/src/spaces.tsp (SpaceCreate/SpaceUpdate slug @pattern)
-function toSlug(name: string): string {
-  return name
-    .toLocaleLowerCase()
-    .replace(/[^\p{L}0-9]+/gu, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 100);
-}
-
 function NewSpacePage() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugEdited, setSlugEdited] = useState(false);
   const [description, setDescription] = useState("");
+  const commands = useLibraryCommands();
 
   const createMutation = useMutation({
-    mutationFn: async (body: { name: string; slug: string; description?: string }) => {
-      const { data, error } = await apiClient.POST("/spaces", { body });
-      if (error) throw new Error(error.message ?? "Failed to create space");
-      return data;
-    },
-    onSuccess: async (data) => {
-      try {
-        await queryClient.invalidateQueries({ queryKey: [window.location.origin, "spaces"] });
-      } catch (err) {
-        console.error("Cache invalidation failed after mutation:", err);
-        notifyStaleData();
-      }
+    mutationFn: (body: { name: string; slug: string; description?: string }) =>
+      commands.createSpace(body),
+    onSuccess: (data) => {
       void navigate({ to: "/spaces/$spaceSlug", params: { spaceSlug: data.slug } });
     },
   });
@@ -50,7 +32,7 @@ function NewSpacePage() {
   function handleNameChange(value: string) {
     setName(value);
     if (!slugEdited) {
-      setSlug(toSlug(value));
+      setSlug(slugifySpaceName(value));
     }
   }
 

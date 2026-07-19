@@ -1,8 +1,7 @@
-import { MutationCache, QueryClient } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
 
 export function createQueryClient(): QueryClient {
   return new QueryClient({
-    mutationCache: new MutationCache(),
     defaultOptions: {
       queries: {
         staleTime: 30_000,
@@ -16,5 +15,3 @@ export function createQueryClient(): QueryClient {
     },
   });
 }
-
-export const queryClient = createQueryClient();

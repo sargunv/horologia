@@ -1,7 +1,7 @@
 import { Check, Moon, Palette, Sun } from "lucide-react";
 import { useCallback, useEffect, useRef, type PointerEvent } from "react";
 import { toast } from "sonner";
-import type { components } from "../../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 import { useUserPatch } from "../../lib/mutations.ts";
 import {
   darkThemes,

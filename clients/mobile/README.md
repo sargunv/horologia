@@ -11,3 +11,5 @@ Use the repository tasks:
 - `mise run //clients/mobile:generate`
 - `mise run //clients/mobile:check`
 - `mise run //clients/mobile:test`
+
+Widget changes require native iOS and Android builds. Launcher placement is verified manually.

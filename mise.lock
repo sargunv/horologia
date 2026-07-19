@@ -104,9 +104,9 @@ checksum = "sha256:fe695f9d215e9a2e3dd0ca7f56435ab4df24f5504b83865e3d295df36e88d
 url = "https://conda.anaconda.org/conda-forge/linux-aarch64/tzcode-2026c-h80f16a2_0.conda"
 checksum = "sha256:fcef14bea0f429876f814f8c33344a190fd2f108fecf6e4f6a57fda4617f1bb1"
 
-[conda-packages.linux-arm64.tzdata-2025c-hc9c84f9_1]
-url = "https://conda.anaconda.org/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda"
-checksum = "sha256:1d30098909076af33a35017eed6f2953af1c769e273a0626a04722ac4acaba3c"
+[conda-packages.linux-arm64.tzdata-2026c-h151e31d_0]
+url = "https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda"
+checksum = "sha256:b928c30ddcb0e3f544c6eade8352737e6e610e263276b90232db6a578ef899d8"
 
 [conda-packages.linux-arm64."zstd-1.5.7-h85ac4a6_6"]
 url = "https://conda.anaconda.org/conda-forge/linux-aarch64/zstd-1.5.7-h85ac4a6_6.conda"
@@ -216,9 +216,9 @@ checksum = "sha256:fe695f9d215e9a2e3dd0ca7f56435ab4df24f5504b83865e3d295df36e88d
 url = "https://conda.anaconda.org/conda-forge/linux-aarch64/tzcode-2026c-h80f16a2_0.conda"
 checksum = "sha256:fcef14bea0f429876f814f8c33344a190fd2f108fecf6e4f6a57fda4617f1bb1"
 
-[conda-packages.linux-arm64-musl.tzdata-2025c-hc9c84f9_1]
-url = "https://conda.anaconda.org/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda"
-checksum = "sha256:1d30098909076af33a35017eed6f2953af1c769e273a0626a04722ac4acaba3c"
+[conda-packages.linux-arm64-musl.tzdata-2026c-h151e31d_0]
+url = "https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda"
+checksum = "sha256:b928c30ddcb0e3f544c6eade8352737e6e610e263276b90232db6a578ef899d8"
 
 [conda-packages.linux-arm64-musl."zstd-1.5.7-h85ac4a6_6"]
 url = "https://conda.anaconda.org/conda-forge/linux-aarch64/zstd-1.5.7-h85ac4a6_6.conda"
@@ -304,9 +304,9 @@ checksum = "sha256:a77010528efb4b548ac2a4484eaf7e1c3907f2aec86123ed9c5212ae44502
 url = "https://conda.anaconda.org/conda-forge/osx-arm64/tzcode-2026c-h1a92334_0.conda"
 checksum = "sha256:fdfb259d47f3f4ef24f3b20709d60ef84366269c19fd83df4c31d67375c73705"
 
-[conda-packages.macos-arm64.tzdata-2025c-hc9c84f9_1]
-url = "https://conda.anaconda.org/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda"
-checksum = "sha256:1d30098909076af33a35017eed6f2953af1c769e273a0626a04722ac4acaba3c"
+[conda-packages.macos-arm64.tzdata-2026c-h151e31d_0]
+url = "https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda"
+checksum = "sha256:b928c30ddcb0e3f544c6eade8352737e6e610e263276b90232db6a578ef899d8"
 
 [conda-packages.macos-arm64."zstd-1.5.7-hbf9d68e_6"]
 url = "https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hbf9d68e_6.conda"
@@ -392,9 +392,9 @@ checksum = "sha256:4614af680aa0920e82b953fece85a03007e0719c3399f13d7de64176874b8
 url = "https://conda.anaconda.org/conda-forge/osx-64/tzcode-2026c-ha3d0635_0.conda"
 checksum = "sha256:75b1c960b6fe4edd021b04cc0008afa05aa4bc5d22bc40394bf47d1f58758643"
 
-[conda-packages.macos-x64.tzdata-2025c-hc9c84f9_1]
-url = "https://conda.anaconda.org/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda"
-checksum = "sha256:1d30098909076af33a35017eed6f2953af1c769e273a0626a04722ac4acaba3c"
+[conda-packages.macos-x64.tzdata-2026c-h151e31d_0]
+url = "https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda"
+checksum = "sha256:b928c30ddcb0e3f544c6eade8352737e6e610e263276b90232db6a578ef899d8"
 
 [conda-packages.macos-x64."zstd-1.5.7-h3eecb57_6"]
 url = "https://conda.anaconda.org/conda-forge/osx-64/zstd-1.5.7-h3eecb57_6.conda"
@@ -499,7 +499,7 @@ conda_deps = [
     "liblzma-5.8.3-he30d5cf_0",
     "openssl-3.6.3-h546c87b_0",
     "tzcode-2026c-h80f16a2_0",
-    "tzdata-2025c-hc9c84f9_1",
+    "tzdata-2026c-h151e31d_0",
     "zstd-1.5.7-h85ac4a6_6",
     "_openmp_mutex-4.5-20_gnu",
     "libgomp-15.2.0-h8acb6b2_19",
@@ -533,7 +533,7 @@ conda_deps = [
     "liblzma-5.8.3-he30d5cf_0",
     "openssl-3.6.3-h546c87b_0",
     "tzcode-2026c-h80f16a2_0",
-    "tzdata-2025c-hc9c84f9_1",
+    "tzdata-2026c-h151e31d_0",
     "zstd-1.5.7-h85ac4a6_6",
     "_openmp_mutex-4.5-20_gnu",
     "libgomp-15.2.0-h8acb6b2_19",
@@ -563,7 +563,7 @@ conda_deps = [
     "liblzma-5.8.3-h8088a28_0",
     "openssl-3.6.3-hd24854e_0",
     "tzcode-2026c-h1a92334_0",
-    "tzdata-2025c-hc9c84f9_1",
+    "tzdata-2026c-h151e31d_0",
     "zstd-1.5.7-hbf9d68e_6",
     "libcxx-22.1.8-h55c6f16_0",
     "libiconv-1.18-h23cfdf5_2",
@@ -591,7 +591,7 @@ conda_deps = [
     "liblzma-5.8.3-hbb4bfdb_0",
     "openssl-3.6.3-hc881268_0",
     "tzcode-2026c-ha3d0635_0",
-    "tzdata-2025c-hc9c84f9_1",
+    "tzdata-2026c-h151e31d_0",
     "zstd-1.5.7-h3eecb57_6",
     "libcxx-22.1.8-h19cb2f5_0",
     "libiconv-1.18-h57a12c2_2",
@@ -860,45 +860,6 @@ url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0
 checksum = "sha256:d3625e7cadf23787ea540229544b6e2ab494b3b54da1801879e583e1dfee0a64"
 url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.11%2B10/OpenJDK21U-jdk_x64_windows_hotspot_21.0.11_10.zip"
 
-[[tools.maestro]]
-version = "cli-2.6.1"
-backend = "github:mobile-dev-inc/maestro"
-
-[tools.maestro."platforms.linux-arm64"]
-checksum = "sha256:3440825f514f537c6a96bcf5de995780c2a4a7f83a43208fdc95d4f1fecfad3b"
-url = "https://github.com/mobile-dev-inc/Maestro/releases/download/cli-2.6.1/maestro.zip"
-url_api = "https://api.github.com/repos/mobile-dev-inc/Maestro/releases/assets/445637237"
-
-[tools.maestro."platforms.linux-arm64-musl"]
-checksum = "sha256:3440825f514f537c6a96bcf5de995780c2a4a7f83a43208fdc95d4f1fecfad3b"
-url = "https://github.com/mobile-dev-inc/Maestro/releases/download/cli-2.6.1/maestro.zip"
-url_api = "https://api.github.com/repos/mobile-dev-inc/Maestro/releases/assets/445637237"
-
-[tools.maestro."platforms.linux-x64"]
-checksum = "sha256:3440825f514f537c6a96bcf5de995780c2a4a7f83a43208fdc95d4f1fecfad3b"
-url = "https://github.com/mobile-dev-inc/Maestro/releases/download/cli-2.6.1/maestro.zip"
-url_api = "https://api.github.com/repos/mobile-dev-inc/Maestro/releases/assets/445637237"
-
-[tools.maestro."platforms.linux-x64-musl"]
-checksum = "sha256:3440825f514f537c6a96bcf5de995780c2a4a7f83a43208fdc95d4f1fecfad3b"
-url = "https://github.com/mobile-dev-inc/Maestro/releases/download/cli-2.6.1/maestro.zip"
-url_api = "https://api.github.com/repos/mobile-dev-inc/Maestro/releases/assets/445637237"
-
-[tools.maestro."platforms.macos-arm64"]
-checksum = "sha256:3440825f514f537c6a96bcf5de995780c2a4a7f83a43208fdc95d4f1fecfad3b"
-url = "https://github.com/mobile-dev-inc/Maestro/releases/download/cli-2.6.1/maestro.zip"
-url_api = "https://api.github.com/repos/mobile-dev-inc/Maestro/releases/assets/445637237"
-
-[tools.maestro."platforms.macos-x64"]
-checksum = "sha256:3440825f514f537c6a96bcf5de995780c2a4a7f83a43208fdc95d4f1fecfad3b"
-url = "https://github.com/mobile-dev-inc/Maestro/releases/download/cli-2.6.1/maestro.zip"
-url_api = "https://api.github.com/repos/mobile-dev-inc/Maestro/releases/assets/445637237"
-
-[tools.maestro."platforms.windows-x64"]
-checksum = "sha256:3440825f514f537c6a96bcf5de995780c2a4a7f83a43208fdc95d4f1fecfad3b"
-url = "https://github.com/mobile-dev-inc/Maestro/releases/download/cli-2.6.1/maestro.zip"
-url_api = "https://api.github.com/repos/mobile-dev-inc/Maestro/releases/assets/445637237"
-
 [[tools.node]]
 version = "24.14.1"
 backend = "core:node"
@@ -1021,33 +982,40 @@ backend = "aqua:charmbracelet/vhs"
 checksum = "sha256:af782cddbf844a377df6ea41c0e72339393fa021be3f6cb70a2f47d48675d92b"
 url = "https://github.com/charmbracelet/vhs/releases/download/v0.11.0/vhs_0.11.0_Linux_arm64.tar.gz"
 url_api = "https://api.github.com/repos/charmbracelet/vhs/releases/assets/370996180"
+provenance = "cosign"
 
 [tools.vhs."platforms.linux-arm64-musl"]
 checksum = "sha256:af782cddbf844a377df6ea41c0e72339393fa021be3f6cb70a2f47d48675d92b"
 url = "https://github.com/charmbracelet/vhs/releases/download/v0.11.0/vhs_0.11.0_Linux_arm64.tar.gz"
 url_api = "https://api.github.com/repos/charmbracelet/vhs/releases/assets/370996180"
+provenance = "cosign"
 
 [tools.vhs."platforms.linux-x64"]
 checksum = "sha256:99cb634587eaae0473c1ea377db80c3a048c27f99fe0a7febb1a1e8cb7ee5009"
 url = "https://github.com/charmbracelet/vhs/releases/download/v0.11.0/vhs_0.11.0_Linux_x86_64.tar.gz"
 url_api = "https://api.github.com/repos/charmbracelet/vhs/releases/assets/370996187"
+provenance = "cosign"
 
 [tools.vhs."platforms.linux-x64-musl"]
 checksum = "sha256:99cb634587eaae0473c1ea377db80c3a048c27f99fe0a7febb1a1e8cb7ee5009"
 url = "https://github.com/charmbracelet/vhs/releases/download/v0.11.0/vhs_0.11.0_Linux_x86_64.tar.gz"
 url_api = "https://api.github.com/repos/charmbracelet/vhs/releases/assets/370996187"
+provenance = "cosign"
 
 [tools.vhs."platforms.macos-arm64"]
 checksum = "sha256:eec91ee450ba50b6d4fce2800593b2ac5fdd88a73056367d2c3b870ee44de3f7"
 url = "https://github.com/charmbracelet/vhs/releases/download/v0.11.0/vhs_0.11.0_Darwin_arm64.tar.gz"
 url_api = "https://api.github.com/repos/charmbracelet/vhs/releases/assets/370996182"
+provenance = "cosign"
 
 [tools.vhs."platforms.macos-x64"]
 checksum = "sha256:dd5c86c1cec1cf9ebd5ac6cf8119efcb731f055bbe7c7010408c741ee7770f64"
 url = "https://github.com/charmbracelet/vhs/releases/download/v0.11.0/vhs_0.11.0_Darwin_x86_64.tar.gz"
 url_api = "https://api.github.com/repos/charmbracelet/vhs/releases/assets/370996174"
+provenance = "cosign"
 
 [tools.vhs."platforms.windows-x64"]
 checksum = "sha256:e3d87403b25e1e88addec6548bdbfdbee772a5c313c9f6f96c495b8e163f18ba"
 url = "https://github.com/charmbracelet/vhs/releases/download/v0.11.0/vhs_0.11.0_Windows_x86_64.zip"
 url_api = "https://api.github.com/repos/charmbracelet/vhs/releases/assets/370996186"
+provenance = "cosign"

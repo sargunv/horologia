@@ -11,6 +11,7 @@ const (
 	AuthListTokensOperation                 OperationName = "AuthListTokens"
 	RecipesListOperation                    OperationName = "RecipesList"
 	RecipesSearchOperation                  OperationName = "RecipesSearch"
+	ServerInfoGetOperation                  OperationName = "ServerInfoGet"
 	SpaceActivityListOperation              OperationName = "SpaceActivityList"
 	SpaceMembersCreateOperation             OperationName = "SpaceMembersCreate"
 	SpaceMembersDeleteOperation             OperationName = "SpaceMembersDelete"

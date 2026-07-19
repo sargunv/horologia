@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { components } from "../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 import { groupCompactActivityEntries } from "./ActivityFeed.tsx";
 
 type ActivityLogEntry = components["schemas"]["ActivityLogEntry"];

@@ -1,144 +1,72 @@
-import { type QueryClient, useMutation, useQueryClient } from "@tanstack/react-query";
+import { createTaskCommands } from "@horologia/client-core/commands/tasks";
+import { createLibraryCommands } from "@horologia/client-core/commands/library";
+import { createSettingsCommands } from "@horologia/client-core/commands/settings";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../api/client.ts";
-import type { components } from "../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 import { notifyStaleData } from "./toaster.ts";
 
 type TaskUpdate = components["schemas"]["TaskUpdate"];
 type RecipeUpdate = components["schemas"]["RecipeUpdate"];
 
-/** Invalidate all user task list queries (for the "My Tasks" view). */
-export async function invalidateUserTaskLists(queryClient: QueryClient) {
-  await queryClient.invalidateQueries({
-    predicate: (query) =>
-      query.queryKey[0] === window.location.origin &&
-      query.queryKey[1] === "users" &&
-      query.queryKey[3] === "tasks" &&
-      query.queryKey[4] === "list",
-  });
-}
-
-export async function invalidateRecipeLists(queryClient: QueryClient) {
-  await queryClient.invalidateQueries({ queryKey: [window.location.origin, "recipes", "list"] });
+function useCommandContext() {
+  const queryClient = useQueryClient();
+  return {
+    serverId: window.location.origin,
+    apiClient,
+    queryClient,
+    onCacheError(error: unknown) {
+      console.error("Cache invalidation failed after mutation:", error);
+      notifyStaleData();
+    },
+  };
 }
 
 export function useRecipePatch(spaceSlug: string, recipeId: string) {
-  const queryClient = useQueryClient();
+  const commands = useLibraryCommands();
   return useMutation({
-    mutationFn: async (body: RecipeUpdate) => {
-      const { data, error } = await apiClient.PATCH("/spaces/{spaceSlug}/recipes/{recipeId}", {
-        params: { path: { spaceSlug, recipeId } },
-        body,
-      });
-      if (error) throw new Error(error.message ?? "Failed to update recipe");
-      return data;
-    },
-    onSuccess: async () => {
-      try {
-        await Promise.all([
-          queryClient.invalidateQueries({
-            queryKey: [window.location.origin, "spaces", spaceSlug, "recipes", recipeId],
-          }),
-          invalidateRecipeLists(queryClient),
-        ]);
-      } catch (err) {
-        console.error("Cache invalidation failed after mutation:", err);
-        notifyStaleData();
-      }
-    },
+    mutationFn: (body: RecipeUpdate) => commands.updateRecipe(spaceSlug, recipeId, body),
   });
 }
 
 export function useTaskPatch(spaceSlug: string, taskId: string) {
-  const queryClient = useQueryClient();
+  const commands = useTaskCommands();
   return useMutation({
-    mutationFn: async (body: TaskUpdate) => {
-      const { data, error } = await apiClient.PATCH("/spaces/{spaceSlug}/tasks/{taskId}", {
-        params: { path: { spaceSlug, taskId } },
-        body,
-      });
-      if (error) throw new Error(error.message ?? "Failed to update task");
-      return data;
-    },
-    onSuccess: async () => {
-      try {
-        await Promise.all([
-          queryClient.invalidateQueries({
-            queryKey: [window.location.origin, "spaces", spaceSlug, "tasks", taskId],
-          }),
-          queryClient.invalidateQueries({
-            queryKey: [window.location.origin, "spaces", spaceSlug, "tasks", "list"],
-          }),
-          invalidateUserTaskLists(queryClient),
-        ]);
-      } catch (err) {
-        console.error("Cache invalidation failed after mutation:", err);
-        notifyStaleData();
-      }
-    },
+    mutationFn: (body: TaskUpdate) => commands.update(spaceSlug, taskId, body),
   });
 }
 
 export function useUserPatch(userId: string) {
-  const queryClient = useQueryClient();
+  const commands = useSettingsCommands();
   return useMutation({
-    mutationFn: async (body: components["schemas"]["UserUpdate"]) => {
-      const { data, error } = await apiClient.PATCH("/users/{userId}", {
-        params: { path: { userId } },
-        body,
-      });
-      if (error) throw new Error(error.message ?? "Failed to update user");
-      return data;
-    },
-    onSuccess: async () => {
-      try {
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: [window.location.origin, "users", userId] }),
-          queryClient.invalidateQueries({ queryKey: [window.location.origin, "users"] }),
-          queryClient.invalidateQueries({ queryKey: [window.location.origin, "currentUser"] }),
-        ]);
-      } catch (err) {
-        console.error("Cache invalidation failed after mutation:", err);
-        notifyStaleData();
-      }
-    },
+    mutationFn: (body: components["schemas"]["UserUpdate"]) => commands.updateUser(userId, body),
   });
+}
+
+export function useSettingsCommands() {
+  return createSettingsCommands(useCommandContext());
+}
+
+export function useLibraryCommands() {
+  return createLibraryCommands(useCommandContext());
+}
+
+export function useTaskCommands() {
+  return createTaskCommands(useCommandContext());
 }
 
 type TaskRelationCreate = components["schemas"]["TaskRelationCreate"];
 type TaskRelationKind = components["schemas"]["TaskRelationKind"];
 
 export function useAddRelation(spaceSlug: string, taskId: string) {
-  const queryClient = useQueryClient();
+  const commands = useTaskCommands();
   return useMutation({
-    mutationFn: async (body: TaskRelationCreate) => {
-      const { data, error } = await apiClient.POST("/spaces/{spaceSlug}/tasks/{taskId}/relations", {
-        params: { path: { spaceSlug, taskId } },
-        body,
-      });
-      if (error) throw new Error(error.message ?? "Failed to add relation");
-      return data;
-    },
-    onSuccess: async () => {
-      try {
-        await Promise.all([
-          queryClient.invalidateQueries({
-            queryKey: [window.location.origin, "spaces", spaceSlug, "tasks", taskId],
-          }),
-          queryClient.invalidateQueries({
-            queryKey: [window.location.origin, "spaces", spaceSlug, "tasks", "list"],
-          }),
-          invalidateUserTaskLists(queryClient),
-        ]);
-      } catch (err) {
-        console.error("Cache invalidation failed after mutation:", err);
-        notifyStaleData();
-      }
-    },
+    mutationFn: (body: TaskRelationCreate) => commands.addRelation(spaceSlug, taskId, body),
   });
 }
 
 export function useDeleteRelation(spaceSlug: string, taskId: string) {
-  const queryClient = useQueryClient();
+  const commands = useTaskCommands();
   return useMutation({
     mutationFn: async ({
       kind,
@@ -146,30 +74,6 @@ export function useDeleteRelation(spaceSlug: string, taskId: string) {
     }: {
       kind: TaskRelationKind;
       relatedTaskId: string;
-    }) => {
-      const { error } = await apiClient.DELETE(
-        "/spaces/{spaceSlug}/tasks/{taskId}/relations/{kind}/{relatedTaskId}",
-        {
-          params: { path: { spaceSlug, taskId, kind, relatedTaskId } },
-        },
-      );
-      if (error) throw new Error(error.message ?? "Failed to remove relation");
-    },
-    onSuccess: async () => {
-      try {
-        await Promise.all([
-          queryClient.invalidateQueries({
-            queryKey: [window.location.origin, "spaces", spaceSlug, "tasks", taskId],
-          }),
-          queryClient.invalidateQueries({
-            queryKey: [window.location.origin, "spaces", spaceSlug, "tasks", "list"],
-          }),
-          invalidateUserTaskLists(queryClient),
-        ]);
-      } catch (err) {
-        console.error("Cache invalidation failed after mutation:", err);
-        notifyStaleData();
-      }
-    },
+    }) => commands.deleteRelation(spaceSlug, taskId, kind, relatedTaskId),
   });
 }

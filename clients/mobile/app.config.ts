@@ -37,23 +37,10 @@ const config: ExpoConfig = {
         imageWidth: 76,
       },
     ],
-    [
-      "expo-widgets",
-      {
-        widgets: [
-          {
-            name: "MyTasksWidget",
-            displayName: "My Tasks",
-            description: "See the household tasks that need your attention.",
-            supportedFamilies: ["systemSmall", "systemMedium", "systemLarge"],
-          },
-        ],
-      },
-    ],
   ],
   experiments: {
-    typedRoutes: true,
     reactCompiler: true,
+    typedRoutes: true,
   },
 };
 

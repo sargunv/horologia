@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { spaceMembersQueryOptions } from "./queries.ts";
-import type { components } from "../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 
 type SpaceMember = components["schemas"]["SpaceMember"];
 

@@ -1,4 +1,4 @@
-import type { components } from "../../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 import { ErrorAlert } from "../space-settings/ErrorAlert.tsx";
 import { IngredientSections } from "./sections/IngredientSections.tsx";
 import { InstructionSections } from "./sections/InstructionSections.tsx";

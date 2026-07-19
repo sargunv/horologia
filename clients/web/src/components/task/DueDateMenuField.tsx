@@ -1,7 +1,12 @@
 import { Calendar, Check, ChevronRight, Clock, X } from "lucide-react";
 import { type ReactNode, useMemo } from "react";
-import type { components } from "../../api/schema.d.ts";
-import { addDays, formatDateDisplay, parseDateInput, toISODate } from "../../lib/dates.ts";
+import {
+  addDays,
+  formatDateDisplay,
+  parseDateInput,
+  toISODate,
+} from "@horologia/client-core/domain/dates";
+import type { components } from "@horologia/client-core/schema";
 import { useTaskPatch } from "../../lib/mutations.ts";
 import { useMenuSearch } from "../../lib/useMenuSearch.ts";
 import {

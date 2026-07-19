@@ -66,7 +66,11 @@ export async function authorizeMobile(serverBaseUrl: string): Promise<TokenRespo
 
   const result = await request.promptAsync(discovery, { url: authorizationUrl });
   if (result.type !== "success") {
-    throw new Error(`Authorization did not complete: ${result.type}`);
+    throw new Error(
+      result.type === "dismiss"
+        ? "Sign-in was cancelled before it finished."
+        : `Authorization did not complete: ${result.type}`,
+    );
   }
 
   const code = result.params["code"];
@@ -77,7 +81,7 @@ export async function authorizeMobile(serverBaseUrl: string): Promise<TokenRespo
   return completeMobileAuthorization(code, result.params["state"]);
 }
 
-export async function completeMobileAuthorization(
+async function completeMobileAuthorization(
   code: string,
   returnedState: string | undefined,
 ): Promise<TokenResponse> {
@@ -85,6 +89,7 @@ export async function completeMobileAuthorization(
   if (!serialized) {
     throw new Error("The authorization request is no longer available");
   }
+  await SecureStore.deleteItemAsync(pendingAuthorizationKey);
   const pending: unknown = JSON.parse(serialized);
   if (!isPendingAuthorization(pending)) {
     throw new Error("The pending authorization request is invalid");
@@ -105,8 +110,24 @@ export async function completeMobileAuthorization(
     },
     discovery,
   );
-  await SecureStore.deleteItemAsync(pendingAuthorizationKey);
   return response;
+}
+
+export async function revokeMobileToken(
+  serverBaseUrl: string,
+  token: string,
+  tokenTypeHint: "access_token" | "refresh_token",
+): Promise<void> {
+  const response = await fetch(resolveServerUrl(serverBaseUrl, "oauth/revoke"), {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: "horologia-mobile",
+      token,
+      token_type_hint: tokenTypeHint,
+    }).toString(),
+  });
+  if (!response.ok) throw new Error("Token revocation failed");
 }
 
 function createDiscovery(serverBaseUrl: string) {

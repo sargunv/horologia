@@ -3,7 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import { apiClient } from "../../api/client.ts";
-import type { components } from "../../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 import { notifyStaleData } from "../../lib/toaster.ts";
 import {
   AlertDialogAction,
