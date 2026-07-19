@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { Check, Pencil, Plus, Tags, Trash2, X } from "lucide-react";
 import { useState } from "react";
-import type { components } from "../../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 import { useSettingsCommands } from "../../lib/mutations.ts";
 import {
   AlertDialogAction,

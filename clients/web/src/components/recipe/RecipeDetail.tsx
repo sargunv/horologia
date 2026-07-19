@@ -1,25 +1,17 @@
-import { createLibraryCommands } from "@horologia/client-core/commands/library";
-import {
-  useMutation,
-  useQueryClient,
-  useSuspenseInfiniteQuery,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useMutation, useSuspenseInfiniteQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Activity, Clock3, CookingPot, Copy, Ellipsis, Trash2, X } from "lucide-react";
 import { type ReactNode, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { apiClient } from "../../api/client.ts";
-import type { components } from "../../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 import { useSpaceMemberMap } from "../../lib/hooks.ts";
-import { useRecipePatch } from "../../lib/mutations.ts";
+import { useLibraryCommands, useRecipePatch } from "../../lib/mutations.ts";
 import { recipeActivityInfiniteQueryOptions, recipeQueryOptions } from "../../lib/queries.ts";
 import {
   formatDuration,
   formatYield,
   parseDurationInput,
   parseYieldInput,
-} from "../../lib/recipeInputs.ts";
-import { notifyStaleData } from "../../lib/toaster.ts";
+} from "@horologia/client-core/domain/recipe-inputs";
 import { useMenuSearch } from "../../lib/useMenuSearch.ts";
 import {
   AlertDialogAction,
@@ -60,17 +52,8 @@ function RecipeActions({
   recipeId: string;
   onDeleteSuccess: () => void;
 }) {
-  const queryClient = useQueryClient();
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const commands = createLibraryCommands({
-    serverId: window.location.origin,
-    apiClient,
-    queryClient,
-    onCacheError(error) {
-      console.error("Cache invalidation failed after mutation:", error);
-      notifyStaleData();
-    },
-  });
+  const commands = useLibraryCommands();
   const deleteMutation = useMutation({
     mutationFn: () => commands.deleteRecipe(spaceSlug, recipeId),
     onSuccess: () => {

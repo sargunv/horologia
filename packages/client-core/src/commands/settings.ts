@@ -1,32 +1,16 @@
-import type { QueryClient } from "@tanstack/react-query";
-
-import { getApiErrorMessage, type HorologiaClient } from "../api/client";
+import { getApiErrorMessage } from "../api/client";
 import type { components } from "../api/schema.d.ts";
+import { createQueryKeys } from "../queries/queryKeys";
+import { type CommandContext, synchronizeCache } from "./context";
 
-export interface SettingsCommandContext {
-  serverId: string;
-  apiClient: HorologiaClient;
-  queryClient: QueryClient;
-  onCacheError?(error: unknown): void;
-}
+export function createSettingsCommands(context: CommandContext) {
+  const keys = createQueryKeys(context.serverId);
 
-export function createSettingsCommands(context: SettingsCommandContext) {
   async function synchronize(queryKeys: readonly (readonly unknown[])[]) {
-    try {
-      await Promise.all(
-        queryKeys.map((queryKey) => context.queryClient.invalidateQueries({ queryKey })),
-      );
-    } catch (error) {
-      context.onCacheError?.(error);
-    }
+    await synchronizeCache(context, () =>
+      Promise.all(queryKeys.map((queryKey) => context.queryClient.invalidateQueries({ queryKey }))),
+    );
   }
-
-  const spaceKey = (spaceSlug: string, resource: string) => [
-    context.serverId,
-    "spaces",
-    spaceSlug,
-    resource,
-  ];
 
   return {
     async updateUser(userId: string, body: components["schemas"]["UserUpdate"]) {
@@ -35,11 +19,7 @@ export function createSettingsCommands(context: SettingsCommandContext) {
         body,
       });
       if (error) throw new Error(getApiErrorMessage(error, "Failed to update account"));
-      await synchronize([
-        [context.serverId, "currentUser"],
-        [context.serverId, "users"],
-        [context.serverId, "users", userId],
-      ]);
+      await synchronize([keys.currentUser, keys.users, keys.user(userId)]);
       return data;
     },
 
@@ -56,7 +36,7 @@ export function createSettingsCommands(context: SettingsCommandContext) {
         body: { name },
       });
       if (error) throw new Error(getApiErrorMessage(error, "Failed to create API token"));
-      await synchronize([[context.serverId, "authTokens"]]);
+      await synchronize([keys.authTokens]);
       return data;
     },
 
@@ -65,7 +45,7 @@ export function createSettingsCommands(context: SettingsCommandContext) {
         params: { path: { tokenId } },
       });
       if (error) throw new Error(getApiErrorMessage(error, "Failed to revoke API token"));
-      await synchronize([[context.serverId, "authTokens"]]);
+      await synchronize([keys.authTokens]);
     },
 
     async createMember(spaceSlug: string, body: components["schemas"]["SpaceMemberCreate"]) {
@@ -74,7 +54,7 @@ export function createSettingsCommands(context: SettingsCommandContext) {
         body,
       });
       if (error) throw new Error(getApiErrorMessage(error, "Failed to add member"));
-      await synchronize([spaceKey(spaceSlug, "members")]);
+      await synchronize([keys.spaceMembers(spaceSlug)]);
       return data;
     },
 
@@ -88,7 +68,7 @@ export function createSettingsCommands(context: SettingsCommandContext) {
         { params: { path: { spaceSlug, userId } }, body },
       );
       if (error) throw new Error(getApiErrorMessage(error, "Failed to update member"));
-      await synchronize([spaceKey(spaceSlug, "members")]);
+      await synchronize([keys.spaceMembers(spaceSlug)]);
       return data;
     },
 
@@ -97,7 +77,7 @@ export function createSettingsCommands(context: SettingsCommandContext) {
         params: { path: { spaceSlug, userId } },
       });
       if (error) throw new Error(getApiErrorMessage(error, "Failed to remove member"));
-      await synchronize([spaceKey(spaceSlug, "members")]);
+      await synchronize([keys.spaceMembers(spaceSlug)]);
     },
 
     async replaceTaskStatuses(
@@ -109,7 +89,7 @@ export function createSettingsCommands(context: SettingsCommandContext) {
         body: { items },
       });
       if (error) throw new Error(getApiErrorMessage(error, "Failed to update task statuses"));
-      await synchronize([spaceKey(spaceSlug, "taskStatuses")]);
+      await synchronize([keys.spaceTaskStatuses(spaceSlug)]);
       return data;
     },
 
@@ -122,7 +102,7 @@ export function createSettingsCommands(context: SettingsCommandContext) {
         { params: { path: { spaceSlug } }, body: { items } },
       );
       if (error) throw new Error(getApiErrorMessage(error, "Failed to update effort levels"));
-      await synchronize([spaceKey(spaceSlug, "effortLevels")]);
+      await synchronize([keys.spaceEffortLevels(spaceSlug)]);
       return data;
     },
 
@@ -135,7 +115,7 @@ export function createSettingsCommands(context: SettingsCommandContext) {
         { params: { path: { spaceSlug } }, body: { items } },
       );
       if (error) throw new Error(getApiErrorMessage(error, "Failed to update priority levels"));
-      await synchronize([spaceKey(spaceSlug, "priorityLevels")]);
+      await synchronize([keys.spacePriorityLevels(spaceSlug)]);
       return data;
     },
 
@@ -145,7 +125,7 @@ export function createSettingsCommands(context: SettingsCommandContext) {
         body: { name },
       });
       if (error) throw new Error(getApiErrorMessage(error, "Failed to create tag"));
-      await synchronize([spaceKey(spaceSlug, "tags")]);
+      await synchronize([keys.spaceTags(spaceSlug)]);
       return data;
     },
 
@@ -155,7 +135,7 @@ export function createSettingsCommands(context: SettingsCommandContext) {
         body: { name },
       });
       if (error) throw new Error(getApiErrorMessage(error, "Failed to rename tag"));
-      await synchronize([spaceKey(spaceSlug, "tags")]);
+      await synchronize([keys.spaceTags(spaceSlug)]);
       return data;
     },
 
@@ -164,9 +144,7 @@ export function createSettingsCommands(context: SettingsCommandContext) {
         params: { path: { spaceSlug, tagName } },
       });
       if (error) throw new Error(getApiErrorMessage(error, "Failed to delete tag"));
-      await synchronize([spaceKey(spaceSlug, "tags")]);
+      await synchronize([keys.spaceTags(spaceSlug)]);
     },
   };
 }
-
-export type SettingsCommands = ReturnType<typeof createSettingsCommands>;

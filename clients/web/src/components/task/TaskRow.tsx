@@ -1,9 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { useMemo } from "react";
-import type { components } from "../../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 import { useSpaceMemberMap } from "../../lib/hooks.ts";
 import { getIcon } from "../../lib/level-icons.ts";
-import { computeStaleness } from "../../lib/staleness.ts";
+import { computeStaleness } from "@horologia/client-core/domain/staleness";
 import { Avatar } from "../../ui/Avatar.tsx";
 
 type Task = components["schemas"]["Task"];

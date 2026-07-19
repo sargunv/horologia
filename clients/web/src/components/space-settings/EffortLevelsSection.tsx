@@ -1,5 +1,5 @@
 import { Gauge } from "lucide-react";
-import type { components } from "../../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 import { EFFORT_SUGGESTED_ICONS } from "../../lib/level-icons.ts";
 import { useSettingsCommands } from "../../lib/mutations.ts";
 import { spaceEffortLevelsQueryOptions } from "../../lib/queries.ts";

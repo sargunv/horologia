@@ -5,7 +5,8 @@ import MyTasksWidget from "../../widgets/MyTasksWidget";
 export async function publishWidgetSnapshot(snapshot: WidgetSnapshotV1): Promise<void> {
   const nextTask = snapshot.tasks[0];
   MyTasksWidget.updateSnapshot({
-    count: snapshot.tasks.length,
+    count: snapshot.taskCount,
+    hasMore: snapshot.hasMore,
     generatedAt: new Date(snapshot.generatedAt).toLocaleTimeString(undefined, {
       hour: "numeric",
       minute: "2-digit",
@@ -22,6 +23,7 @@ export async function publishWidgetSnapshot(snapshot: WidgetSnapshotV1): Promise
 export async function clearWidgetSnapshot(): Promise<void> {
   MyTasksWidget.updateSnapshot({
     count: 0,
+    hasMore: false,
     generatedAt: "",
     nextTaskId: "",
     nextTaskTitle: "Sign in to see your tasks",

@@ -14,10 +14,11 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { taskStatusesValidationError } from "@horologia/client-core/domain/task-settings";
 import { useMutation } from "@tanstack/react-query";
 import { ListChecks, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
-import type { components } from "../../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 import { STATUS_SUGGESTED_ICONS } from "../../lib/level-icons.ts";
 import { useSettingsCommands } from "../../lib/mutations.ts";
 import { SortableNameRow } from "./OrderedNameListForm.tsx";
@@ -131,18 +132,7 @@ function TaskStatusesForm({
     intermediate: StatusItem[],
     completion: StatusItem[],
   ): string | null {
-    const allItems = [...initial, ...intermediate, ...completion];
-    for (const item of allItems) {
-      const trimmed = item.name.trim();
-      if (trimmed.length === 0) return "All statuses must have a name.";
-      if (trimmed.length > 100) return "Status names must be 100 characters or fewer.";
-    }
-    const names = allItems.map((i) => i.name.trim().toLowerCase());
-    const uniqueNames = new Set(names);
-    if (uniqueNames.size !== names.length) return "Status names must be unique.";
-    if (initial.length !== 1) return "There must be exactly one initial status.";
-    if (completion.length < 1) return "There must be at least one completion status.";
-    return null;
+    return taskStatusesValidationError([...initial, ...intermediate, ...completion]);
   }
 
   function handleCategorySave(category: TaskStatusCategory, updatedItems: StatusItem[]) {

@@ -42,7 +42,7 @@ function AuthenticatedEditor({
   taskId: string;
 }) {
   const queries = useMemo(
-    () => createQueries({ serverId: profile.id, apiClient: client, appClient: client }),
+    () => createQueries({ serverId: profile.id, apiClient: client }),
     [client, profile.id],
   );
   const taskQuery = useQuery(queries.spaceTaskQueryOptions(spaceSlug, taskId));

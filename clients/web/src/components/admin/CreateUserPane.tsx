@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, UserPlus } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { apiClient } from "../../api/client.ts";
-import type { components } from "../../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 import { notifyStaleData } from "../../lib/toaster.ts";
 import { ErrorAlert } from "../space-settings/ErrorAlert.tsx";
 import { SettingsSection } from "../space-settings/SettingsSection.tsx";

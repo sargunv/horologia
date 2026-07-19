@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { ChevronRight, Link2, X } from "lucide-react";
 import { type ReactNode, useDeferredValue, useMemo } from "react";
 import { apiClient } from "../../api/client.ts";
-import type { components } from "../../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 import { useAddRelation, useDeleteRelation } from "../../lib/mutations.ts";
 import { taskSearchQueryOptions } from "../../lib/queries.ts";
 import { useMenuSearch } from "../../lib/useMenuSearch.ts";

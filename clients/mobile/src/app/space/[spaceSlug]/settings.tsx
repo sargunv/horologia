@@ -7,15 +7,15 @@ import {
 } from "@horologia/client-core";
 import type { components } from "@horologia/client-core/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Button, Column, Text } from "@expo/ui";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Alert } from "react-native";
 
 import { useSession } from "@/auth/session-context";
-import { ActionButton, ChoiceChips, FormField, FormSection } from "@/components/forms";
+import { FormField, FormPicker, FormSection } from "@/components/forms";
+import { NativeFormScreen } from "@/components/native-screen";
 import { ScreenState } from "@/components/screen-state";
-import { colors } from "@/design/tokens";
 import { parseLevels, parseStatuses } from "@/features/settings/ordered-input";
 
 type Schema = components["schemas"];
@@ -47,7 +47,7 @@ function SpaceSettings({
   spaceSlug: string;
 }) {
   const queries = useMemo(
-    () => createQueries({ serverId: profile.id, apiClient: client, appClient: client }),
+    () => createQueries({ serverId: profile.id, apiClient: client }),
     [client, profile.id],
   );
   const space = useQuery(queries.spaceQueryOptions(spaceSlug));
@@ -129,16 +129,14 @@ function SettingsContent(props: {
     mutationFn: () => library.deleteSpace(props.space.slug),
     onSuccess: () => router.replace("/(tabs)/library"),
   });
+  const statusValue = serializeStatuses(props.statuses);
+  const effortValue = serializeLevels(props.effort);
+  const priorityValue = serializeLevels(props.priority);
   return (
-    <SafeAreaView edges={["left", "right", "bottom"]} style={styles.safeArea}>
-      <ScrollView
-        automaticallyAdjustKeyboardInsets
-        contentContainerStyle={styles.scroll}
-        keyboardDismissMode="on-drag"
-        keyboardShouldPersistTaps="handled"
-      >
-        <Text accessibilityRole="header" style={styles.heading}>Space settings</Text>
-        <Text style={styles.detail}>{props.space.name} · permissions are enforced by the server.</Text>
+    <NativeFormScreen>
+        <FormSection title="Space settings">
+          <Text>{`${props.space.name} · permissions are enforced by the server.`}</Text>
+        </FormSection>
         <GeneralEditor
           key={props.space.updatedAt}
           commands={library}
@@ -160,28 +158,30 @@ function SettingsContent(props: {
           <>
             <OrderedEditor
               hint="name | initial, intermediate, or completion | optional icon"
-              initialValue={props.statuses.map((item) => `${item.name} | ${item.category} | ${item.icon}`).join("\n")}
+              initialValue={statusValue}
+              key={statusValue}
               label="Statuses"
               save={(value) => settings.replaceTaskStatuses(props.space.slug, parseStatuses(value))}
             />
             <OrderedEditor
               hint="name | optional icon"
-              initialValue={props.effort.map((item) => `${item.name} | ${item.icon}`).join("\n")}
+              initialValue={effortValue}
+              key={effortValue}
               label="Effort levels"
               save={(value) => settings.replaceEffortLevels(props.space.slug, parseLevels(value))}
             />
             <OrderedEditor
               hint="name | optional icon"
-              initialValue={props.priority.map((item) => `${item.name} | ${item.icon}`).join("\n")}
+              initialValue={priorityValue}
+              key={priorityValue}
               label="Priority levels"
               save={(value) => settings.replacePriorityLevels(props.space.slug, parseLevels(value))}
             />
             <TagsEditor commands={settings} spaceSlug={props.space.slug} tags={props.tags} />
             <FormSection title="Danger zone">
-              <Text style={styles.detail}>Delete this space and all of its current content.</Text>
+              <Text>Delete this space and all of its current content.</Text>
               {deletion.error ? <ErrorText message={deletion.error.message} /> : null}
-              <ActionButton
-                destructive
+              <Button
                 disabled={deletion.isPending}
                 label={deletion.isPending ? "Deleting…" : "Delete space"}
                 onPress={() =>
@@ -190,15 +190,15 @@ function SettingsContent(props: {
                     { text: "Delete", style: "destructive", onPress: () => deletion.mutate() },
                   ])
                 }
+                variant="text"
               />
             </FormSection>
           </>
         ) : (
-          <Text style={styles.detail}>An administrator can change workflow settings and tags.</Text>
+          <Text>An administrator can change workflow settings and tags.</Text>
         )}
-        {notice ? <Text style={styles.notice}>{notice}</Text> : null}
-      </ScrollView>
-    </SafeAreaView>
+        {notice ? <Text>{notice}</Text> : null}
+    </NativeFormScreen>
   );
 }
 
@@ -227,10 +227,11 @@ function GeneralEditor({
       <FormField editable={isAdmin} label="Description" multiline onChangeText={setDescription} value={description} />
       {mutation.error ? <ErrorText message={mutation.error.message} /> : null}
       {isAdmin ? (
-        <ActionButton
+        <Button
           disabled={!name.trim() || !slug.trim() || mutation.isPending}
           label={mutation.isPending ? "Saving…" : "Save general settings"}
           onPress={() => mutation.mutate()}
+          variant="filled"
         />
       ) : null}
     </FormSection>
@@ -274,17 +275,17 @@ function MembersEditor({
         />
       ))}
       {isAdmin && available.length ? (
-        <View style={styles.subsection}>
-          <ChoiceChips
+        <Column spacing={8}>
+          <FormPicker
             label="Person"
             onChange={setUserId}
             options={available.map((user) => ({ value: user.id, label: user.name }))}
             value={selectedUserId}
           />
-          <ChoiceChips label="Role" onChange={setRole} options={ROLES} value={role} />
+          <FormPicker label="Role" onChange={setRole} options={ROLES} value={role} />
           {add.error ? <ErrorText message={add.error.message} /> : null}
-          <ActionButton disabled={!selectedUserId || add.isPending} label={add.isPending ? "Adding…" : "Add member"} onPress={() => add.mutate()} />
-        </View>
+          <Button disabled={!selectedUserId || add.isPending} label={add.isPending ? "Adding…" : "Add member"} onPress={() => add.mutate()} variant="filled" />
+        </Column>
       ) : null}
     </FormSection>
   );
@@ -308,26 +309,25 @@ function MemberRow({
   });
   const remove = useMutation({ mutationFn: () => commands.deleteMember(spaceSlug, member.userId) });
   return (
-    <View style={styles.memberRow}>
-      <Text style={styles.rowTitle}>{member.userName}{isSelf ? " (you)" : ""}</Text>
-      <Text style={styles.meta}>{member.userEmail}</Text>
+    <Column spacing={8}>
+      <Text>{`${member.userName}${isSelf ? " (you)" : ""}`}</Text>
+      <Text>{member.userEmail}</Text>
       {isAdmin ? (
         <>
-          <ChoiceChips label={`Role for ${member.userName}`} onChange={(value) => update.mutate(value)} options={ROLES} value={member.role} />
-          <Pressable
-            accessibilityRole="button"
+          <FormPicker label={`Role for ${member.userName}`} onChange={(value) => update.mutate(value)} options={ROLES} value={member.role} />
+          <Button
             disabled={remove.isPending}
+            label={remove.isPending ? "Removing…" : "Remove"}
             onPress={() => Alert.alert("Remove member?", member.userName, [
               { text: "Cancel", style: "cancel" },
               { text: "Remove", style: "destructive", onPress: () => remove.mutate() },
             ])}
-          >
-            <Text style={styles.dangerLink}>Remove</Text>
-          </Pressable>
+            variant="text"
+          />
         </>
-      ) : <Text style={styles.meta}>{member.role}</Text>}
+      ) : <Text>{member.role}</Text>}
       {update.error || remove.error ? <ErrorText message={(update.error ?? remove.error)?.message ?? "Member update failed"} /> : null}
-    </View>
+    </Column>
   );
 }
 
@@ -346,10 +346,10 @@ function OrderedEditor({
   const mutation = useMutation({ mutationFn: () => save(value) });
   return (
     <FormSection title={label}>
-      <Text style={styles.detail}>One per line in display order: {hint}.</Text>
+      <Text>{`One per line in display order: ${hint}.`}</Text>
       <FormField label={label} multiline onChangeText={setValue} value={value} />
       {mutation.error ? <ErrorText message={mutation.error.message} /> : null}
-      <ActionButton disabled={mutation.isPending} label={mutation.isPending ? "Saving…" : `Save ${label.toLowerCase()}`} onPress={() => mutation.mutate()} />
+      <Button disabled={mutation.isPending} label={mutation.isPending ? "Saving…" : `Save ${label.toLowerCase()}`} onPress={() => mutation.mutate()} variant="filled" />
     </FormSection>
   );
 }
@@ -363,9 +363,9 @@ function TagsEditor({ commands, spaceSlug, tags }: { commands: SettingsCommands;
   return (
     <FormSection title="Tags">
       {tags.map((tag) => <TagRow commands={commands} key={tag.name} spaceSlug={spaceSlug} tag={tag} />)}
-      <FormField label="New tag" onChangeText={setName} testID="new-tag-input" value={name} />
+      <FormField label="New tag" onChangeText={setName} value={name} />
       {create.error ? <ErrorText message={create.error.message} /> : null}
-      <ActionButton disabled={!name.trim() || create.isPending} label={create.isPending ? "Adding…" : "Add tag"} onPress={() => create.mutate()} />
+      <Button disabled={!name.trim() || create.isPending} label={create.isPending ? "Adding…" : "Add tag"} onPress={() => create.mutate()} variant="filled" />
     </FormSection>
   );
 }
@@ -375,42 +375,40 @@ function TagRow({ commands, spaceSlug, tag }: { commands: SettingsCommands; spac
   const rename = useMutation({ mutationFn: () => commands.updateTag(spaceSlug, tag.name, name.trim()) });
   const remove = useMutation({ mutationFn: () => commands.deleteTag(spaceSlug, tag.name) });
   return (
-    <View style={styles.tagRow}>
+    <Column spacing={8}>
       <FormField label={`Tag ${tag.name}`} onChangeText={setName} value={name} />
-      <View style={styles.inlineActions}>
-        <Pressable
-          accessibilityLabel={`Rename tag ${tag.name}`}
-          accessibilityRole="button"
-          onPress={() => rename.mutate()}
-        ><Text style={styles.link}>Rename</Text></Pressable>
-        <Pressable
-          accessibilityLabel={`Delete tag ${tag.name}`}
-          accessibilityRole="button"
-          onPress={() => remove.mutate()}
-        ><Text style={styles.dangerLink}>Delete</Text></Pressable>
-      </View>
+      <Button
+        disabled={!name.trim() || name.trim() === tag.name || rename.isPending || remove.isPending}
+        label={rename.isPending ? "Renaming…" : `Rename ${tag.name}`}
+        onPress={() => rename.mutate()}
+        variant="filled"
+      />
+      <Button
+        disabled={remove.isPending || rename.isPending}
+        label={remove.isPending ? "Deleting…" : `Delete ${tag.name}`}
+        onPress={() =>
+          Alert.alert("Delete tag?", tag.name, [
+            { text: "Cancel", style: "cancel" },
+            { text: "Delete", style: "destructive", onPress: () => remove.mutate() },
+          ])
+        }
+        variant="text"
+      />
       {rename.error || remove.error ? <ErrorText message={(rename.error ?? remove.error)?.message ?? "Tag update failed"} /> : null}
-    </View>
+    </Column>
   );
 }
 
 function ErrorText({ message }: { message: string }) {
-  return <Text accessibilityRole="alert" style={styles.error}>{message}</Text>;
+  return <Text>{message}</Text>;
 }
 
-const styles = StyleSheet.create({
-  safeArea: { backgroundColor: colors.canvas, flex: 1 },
-  scroll: { alignSelf: "center", gap: 14, maxWidth: 800, padding: 18, paddingBottom: 54, width: "100%" },
-  heading: { color: colors.ink, fontSize: 30, fontWeight: "700" },
-  detail: { color: colors.muted, fontSize: 14, lineHeight: 20 },
-  subsection: { borderTopColor: colors.outline, borderTopWidth: StyleSheet.hairlineWidth, gap: 12, paddingTop: 14 },
-  memberRow: { borderBottomColor: colors.outline, borderBottomWidth: StyleSheet.hairlineWidth, gap: 8, paddingBottom: 13 },
-  rowTitle: { color: colors.ink, fontSize: 16, fontWeight: "600" },
-  meta: { color: colors.muted, fontSize: 13 },
-  tagRow: { borderBottomColor: colors.outline, borderBottomWidth: StyleSheet.hairlineWidth, gap: 8, paddingBottom: 12 },
-  inlineActions: { flexDirection: "row", gap: 20 },
-  link: { color: colors.accent, fontSize: 14, fontWeight: "700" },
-  dangerLink: { color: colors.danger, fontSize: 14, fontWeight: "700", paddingVertical: 4 },
-  error: { color: colors.danger, fontSize: 13, fontWeight: "600", lineHeight: 18 },
-  notice: { color: colors.accent, fontSize: 13, fontWeight: "600" },
-});
+function serializeStatuses(items: Schema["TaskStatus"][]): string {
+  return items.map((item) => `${item.name} | ${item.category} | ${item.icon}`).join("\n");
+}
+
+function serializeLevels(
+  items: Array<Schema["TaskEffortLevel"] | Schema["TaskPriorityLevel"]>,
+): string {
+  return items.map((item) => `${item.name} | ${item.icon}`).join("\n");
+}

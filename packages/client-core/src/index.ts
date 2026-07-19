@@ -12,6 +12,7 @@ export * from "./domain/recipeDraft";
 export * from "./domain/staleness";
 export * from "./domain/spaceSlug";
 export * from "./domain/taskDraft";
+export * from "./domain/taskSettings";
 export * from "./queries/createQueries";
 export * from "./runtime/queryClient";
 export * from "./servers/serverProfile";

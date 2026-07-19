@@ -10,17 +10,16 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
-  type UseMutationResult,
 } from "@tanstack/react-query";
+import { Button, ListItem, Text } from "@expo/ui";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { Alert, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Alert, Share } from "react-native";
 
 import { useSession } from "@/auth/session-context";
-import { ChoiceChips, FormField } from "@/components/forms";
+import { FormField, FormPicker, FormSection } from "@/components/forms";
+import { NativeFormScreen } from "@/components/native-screen";
 import { ScreenState } from "@/components/screen-state";
-import { colors } from "@/design/tokens";
 import { refreshMyTasksWidget } from "@/widgets/refreshTaskWidget";
 
 type Task = components["schemas"]["Task"];
@@ -60,7 +59,6 @@ function TaskDetail(props: {
       createQueries({
         serverId: props.profile.id,
         apiClient: props.client,
-        appClient: props.client,
       }),
     [props.client, props.profile.id],
   );
@@ -129,107 +127,43 @@ function TaskDetail(props: {
       />
     );
   }
+  const task = query.data;
+  const activityEntries = activity.data?.pages.flatMap((page) => page.items) ?? [];
   return (
-    <TaskReadView
-      activity={activity.data?.pages.flatMap((page) => page.items) ?? []}
-      addRelation={addRelation}
-      deleteTask={deleteTask}
-      notice={notice}
-      onDelete={() =>
-        Alert.alert("Delete task?", "This cannot be undone.", [
-          { text: "Cancel", style: "cancel" },
-          { text: "Delete", style: "destructive", onPress: () => deleteTask.mutate() },
-        ])
-      }
-      onEdit={() =>
-        router.push({
-          pathname: "/task/[spaceSlug]/[taskId]/edit",
-          params: { spaceSlug: props.spaceSlug, taskId: props.taskId },
-        })
-      }
-      onShare={() =>
-        void Share.share({ title: query.data.title, message: shareUrl, url: shareUrl })
-      }
-      relationKind={relationKind}
-      relationSearch={relationSearch}
-      removeRelation={removeRelation}
-      searchResults={search.data ?? []}
-      setRelationKind={setRelationKind}
-      setRelationSearch={setRelationSearch}
-      task={query.data}
-    />
-  );
-}
-
-function TaskReadView({
-  task,
-  activity,
-  relationSearch,
-  relationKind,
-  searchResults,
-  setRelationSearch,
-  setRelationKind,
-  addRelation,
-  removeRelation,
-  deleteTask,
-  notice,
-  onEdit,
-  onShare,
-  onDelete,
-}: {
-  task: Task;
-  activity: components["schemas"]["ActivityLogEntry"][];
-  relationSearch: string;
-  relationKind: TaskRelationKind;
-  searchResults: components["schemas"]["TaskSearchResult"][];
-  setRelationSearch: (value: string) => void;
-  setRelationKind: (value: TaskRelationKind) => void;
-  addRelation: UseMutationResult<
-    components["schemas"]["TaskRelation"],
-    Error,
-    string,
-    unknown
-  >;
-  removeRelation: UseMutationResult<
-    void,
-    Error,
-    { kind: TaskRelationKind; relatedTaskId: string },
-    unknown
-  >;
-  deleteTask: UseMutationResult<void, Error, void, unknown>;
-  notice: string | null;
-  onEdit: () => void;
-  onShare: () => void;
-  onDelete: () => void;
-}) {
-  return (
-    <SafeAreaView edges={["left", "right", "bottom"]} style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <View style={styles.hero}>
-          <Text style={styles.space}>{task.spaceSlug.toUpperCase()}</Text>
-          <Text accessibilityRole="header" style={styles.title}>
-            {task.title}
-          </Text>
-          <Text style={styles.status}>{task.status}</Text>
-          <View style={styles.actions}>
-            <Pressable accessibilityRole="button" onPress={onEdit} style={styles.secondaryButton}>
-              <Text style={styles.secondaryButtonText}>Edit</Text>
-            </Pressable>
-            <Pressable accessibilityRole="button" onPress={onShare} style={styles.linkButton}>
-              <Text style={styles.linkButtonText}>Share</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              disabled={deleteTask.isPending}
-              onPress={onDelete}
-              style={styles.deleteButton}
-            >
-              <Text style={styles.deleteButtonText}>Delete</Text>
-            </Pressable>
-          </View>
-        </View>
-        {task.description ? <Section label="Description" value={task.description} /> : null}
-        <View style={styles.grid}>
+    <NativeFormScreen>
+        <FormSection title={task.title}>
+          <Text>{`${task.spaceSlug} · ${task.status}`}</Text>
+          <Button
+            label="Edit"
+            onPress={() =>
+              router.push({
+                pathname: "/task/[spaceSlug]/[taskId]/edit",
+                params: { spaceSlug: props.spaceSlug, taskId: props.taskId },
+              })
+            }
+            variant="filled"
+          />
+          <Button
+            label="Share"
+            onPress={() =>
+              void Share.share({ title: task.title, message: shareUrl, url: shareUrl })
+            }
+            variant="filled"
+          />
+          <Button
+            disabled={deleteTask.isPending}
+            label={deleteTask.isPending ? "Deleting…" : "Delete"}
+            onPress={() =>
+              Alert.alert("Delete task?", "This cannot be undone.", [
+                { text: "Cancel", style: "cancel" },
+                { text: "Delete", style: "destructive", onPress: () => deleteTask.mutate() },
+              ])
+            }
+            variant="text"
+          />
+        </FormSection>
+        <FormSection title="Details">
+          {task.description ? <Text>{task.description}</Text> : null}
           <Property label="Due" value={task.due?.at ?? "No due date"} />
           <Property label="Priority" value={task.priority ?? "None"} />
           <Property label="Effort" value={task.effort ?? "None"} />
@@ -242,30 +176,37 @@ function TaskReadView({
             label="Rotation"
             value={task.rotationPool.length ? `${task.rotationPool.length} people` : "None"}
           />
-        </View>
-        {task.tags.length ? <Section label="Tags" value={task.tags.join(" · ")} /> : null}
-        <View style={styles.section}>
-          <Text style={styles.label}>Relations</Text>
+          {task.tags.length ? <Property label="Tags" value={task.tags.join(" · ")} /> : null}
+          {task.overdueActionRule ? (
+            <Property
+              label="When overdue"
+              value={`${task.overdueActionRule.action.replaceAll("_", " ")}${task.overdueActionRule.after === null ? " immediately" : ` after ${task.overdueActionRule.after} days`}`}
+            />
+          ) : null}
+          <Property label="Task ID" value={task.id} />
+        </FormSection>
+        <FormSection title="Relations">
           {task.relations.map((relation) => (
-            <View key={`${relation.kind}/${relation.relatedTaskId}`} style={styles.relationRow}>
-              <Text style={styles.relationText}>
-                {relation.kind.replaceAll("_", " ")} · {relation.relatedTaskId}
-              </Text>
-              <Pressable
-                accessibilityLabel={`Remove relation to ${relation.relatedTaskId}`}
-                accessibilityRole="button"
-                onPress={() =>
-                  removeRelation.mutate({
-                    kind: relation.kind,
-                    relatedTaskId: relation.relatedTaskId,
-                  })
-                }
-              >
-                <Text style={styles.removeText}>Remove</Text>
-              </Pressable>
-            </View>
+            <ListItem
+              key={`${relation.kind}/${relation.relatedTaskId}`}
+              supportingText={relation.kind.replaceAll("_", " ")}
+              trailing={
+                <Button
+                  label="Remove"
+                  onPress={() =>
+                    removeRelation.mutate({
+                      kind: relation.kind,
+                      relatedTaskId: relation.relatedTaskId,
+                    })
+                  }
+                  variant="text"
+                />
+              }
+            >
+              <Text>{relation.relatedTaskId}</Text>
+            </ListItem>
           ))}
-          <ChoiceChips
+          <FormPicker
             label="Relation type"
             onChange={setRelationKind}
             options={RELATION_KINDS}
@@ -277,64 +218,41 @@ function TaskReadView({
             placeholder="Search across spaces"
             value={relationSearch}
           />
-          {searchResults.map((result) => (
-            <Pressable
-              accessibilityRole="button"
+          {(search.data ?? []).map((result) => (
+            <ListItem
               key={`${result.spaceSlug}/${result.id}`}
               onPress={() => addRelation.mutate(result.id)}
-              style={styles.searchResult}
+              supportingText={result.spaceSlug}
             >
-              <Text style={styles.searchResultTitle}>{result.title}</Text>
-              <Text style={styles.searchResultMeta}>{result.spaceSlug}</Text>
-            </Pressable>
+              <Text>{result.title}</Text>
+            </ListItem>
           ))}
-          {addRelation.error ? <Text style={styles.error}>{addRelation.error.message}</Text> : null}
-        </View>
-        {task.overdueActionRule ? (
-          <Section
-            label="When overdue"
-            value={`${task.overdueActionRule.action.replaceAll("_", " ")}${task.overdueActionRule.after === null ? " immediately" : ` after ${task.overdueActionRule.after} days`}`}
-          />
-        ) : null}
-        <Text selectable style={styles.identifier}>
-          Task ID · {task.id}
-        </Text>
-        <View style={styles.section}>
-          <Text style={styles.label}>Activity</Text>
-          {activity.length ? (
-            activity.map((entry) => (
-              <View key={entry.id} style={styles.activityRow}>
-                <Text style={styles.sectionValue}>
-                  {entry.action} {entry.entityType}
-                </Text>
-                <Text style={styles.activityTime}>{new Date(entry.createdAt).toLocaleString()}</Text>
-              </View>
+          {addRelation.error ? <Text>{addRelation.error.message}</Text> : null}
+        </FormSection>
+        <FormSection title="Activity">
+          {activityEntries.length ? (
+            activityEntries.map((entry) => (
+              <ListItem
+                key={entry.id}
+                supportingText={new Date(entry.createdAt).toLocaleString()}
+              >
+                <Text>{`${entry.action} ${entry.entityType}`}</Text>
+              </ListItem>
             ))
           ) : (
-            <Text style={styles.sectionValue}>No activity yet.</Text>
+            <Text>No activity yet.</Text>
           )}
-        </View>
-        {notice ? <Text style={styles.notice}>{notice}</Text> : null}
-      </ScrollView>
-    </SafeAreaView>
+        </FormSection>
+        {notice ? <Text>{notice}</Text> : null}
+    </NativeFormScreen>
   );
 }
 
 function Property({ label, value }: { label: string; value: string }) {
   return (
-    <View style={styles.property}>
-      <Text style={styles.label}>{label}</Text>
-      <Text style={styles.value}>{value}</Text>
-    </View>
-  );
-}
-
-function Section({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.section}>
-      <Text style={styles.label}>{label}</Text>
-      <Text style={styles.sectionValue}>{value}</Text>
-    </View>
+    <ListItem supportingText={value}>
+      <Text>{label}</Text>
+    </ListItem>
   );
 }
 
@@ -353,82 +271,3 @@ const RELATION_KINDS = [
   { value: "triggers", label: "Triggers" },
   { value: "spawns", label: "Spawns" },
 ] as const;
-
-const styles = StyleSheet.create({
-  safeArea: { backgroundColor: colors.canvas, flex: 1 },
-  scroll: { alignSelf: "center", maxWidth: 760, padding: 20, paddingBottom: 48, width: "100%" },
-  hero: { marginBottom: 22 },
-  space: { color: colors.accent, fontSize: 12, fontWeight: "800", letterSpacing: 1.3 },
-  title: {
-    color: colors.ink,
-    fontSize: 32,
-    fontWeight: "700",
-    letterSpacing: -0.7,
-    lineHeight: 38,
-    marginTop: 7,
-  },
-  status: {
-    alignSelf: "flex-start",
-    backgroundColor: colors.accentSoft,
-    borderRadius: 999,
-    color: colors.accent,
-    fontSize: 13,
-    fontWeight: "700",
-    marginTop: 13,
-    overflow: "hidden",
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-  },
-  actions: { flexDirection: "row", gap: 9, marginTop: 15 },
-  secondaryButton: {
-    backgroundColor: colors.accent,
-    borderRadius: 12,
-    paddingHorizontal: 17,
-    paddingVertical: 10,
-  },
-  secondaryButtonText: { color: colors.surface, fontSize: 14, fontWeight: "700" },
-  linkButton: { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10 },
-  linkButtonText: { color: colors.accent, fontSize: 14, fontWeight: "700" },
-  deleteButton: { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10 },
-  deleteButtonText: { color: colors.danger, fontSize: 14, fontWeight: "700" },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 10 },
-  property: {
-    backgroundColor: colors.surface,
-    borderRadius: 15,
-    minWidth: 145,
-    padding: 15,
-    width: "48%",
-  },
-  label: {
-    color: colors.muted,
-    fontSize: 12,
-    fontWeight: "700",
-    letterSpacing: 0.7,
-    textTransform: "uppercase",
-  },
-  value: {
-    color: colors.ink,
-    fontSize: 16,
-    fontWeight: "600",
-    marginTop: 6,
-    textTransform: "capitalize",
-  },
-  section: { backgroundColor: colors.surface, borderRadius: 15, marginBottom: 10, padding: 17 },
-  sectionValue: { color: colors.ink, fontSize: 16, lineHeight: 24, marginTop: 8 },
-  relationRow: { alignItems: "center", flexDirection: "row", gap: 10, paddingVertical: 8 },
-  relationText: { color: colors.ink, flex: 1, fontSize: 14 },
-  removeText: { color: colors.danger, fontSize: 13, fontWeight: "700" },
-  searchResult: {
-    backgroundColor: colors.canvas,
-    borderRadius: 11,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  searchResultTitle: { color: colors.ink, fontSize: 15, fontWeight: "600" },
-  searchResultMeta: { color: colors.muted, fontSize: 12, marginTop: 2 },
-  activityRow: { borderBottomColor: colors.outline, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 6 },
-  activityTime: { color: colors.muted, fontSize: 12, marginTop: 2 },
-  error: { color: colors.danger, fontSize: 13, fontWeight: "600" },
-  notice: { color: colors.accent, fontSize: 13, fontWeight: "600" },
-  identifier: { color: colors.muted, fontSize: 12, marginTop: 18 },
-});

@@ -10,18 +10,6 @@ export interface CredentialKey {
   accountId: string;
 }
 
-export interface CredentialStore {
-  get(key: CredentialKey): Promise<OAuthCredentials | null>;
-  set(key: CredentialKey, credentials: OAuthCredentials): Promise<void>;
-  delete(key: CredentialKey): Promise<void>;
-}
-
-export interface ServerProfileStore<TProfile> {
-  getActive(): Promise<TProfile | null>;
-  setActive(profile: TProfile): Promise<void>;
-  clearActive(): Promise<void>;
-}
-
 export interface RefreshCoordinatorOptions {
   now?: () => number;
   skewMs?: number;

@@ -2,7 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Command } from "cmdk";
 import { Check, UserPlus, Users, X } from "lucide-react";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import type { components } from "../../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 import { useSettingsCommands } from "../../lib/mutations.ts";
 import { usersQueryOptions } from "../../lib/queries.ts";
 import { ErrorAlert } from "./ErrorAlert.tsx";

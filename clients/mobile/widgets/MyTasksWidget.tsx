@@ -1,10 +1,11 @@
 import { Text, VStack } from "@expo/ui/swift-ui";
-import { font, foregroundStyle, widgetURL } from "@expo/ui/swift-ui/modifiers";
+import { font, widgetURL } from "@expo/ui/swift-ui/modifiers";
 import { createWidget, type WidgetEnvironment } from "expo-widgets";
 
 export interface MyTasksWidgetProps {
   count: number;
   generatedAt: string;
+  hasMore: boolean;
   nextTaskId: string;
   nextTaskTitle: string;
   secondTaskTitle: string;
@@ -23,13 +24,13 @@ const MyTasksWidget = (props: MyTasksWidgetProps, environment: WidgetEnvironment
   return (
     <VStack spacing={6} modifiers={[widgetURL(destination)]}>
       <Text modifiers={[font({ weight: "bold", size: 17 })]}>My Tasks</Text>
-      <Text modifiers={[font({ weight: "bold", size: 32 }), foregroundStyle("#2F6D4B")]}>
-        {props.count}
+      <Text modifiers={[font({ weight: "bold", size: 32 })]}>
+        {`${props.count}${props.hasMore ? "+" : ""}`}
       </Text>
       <Text>{props.nextTaskTitle}</Text>
       {!isSmall && props.secondTaskTitle ? <Text>{props.secondTaskTitle}</Text> : null}
       {!isSmall && props.thirdTaskTitle ? <Text>{props.thirdTaskTitle}</Text> : null}
-      <Text modifiers={[font({ size: 11 }), foregroundStyle("#66736B")]}>
+      <Text modifiers={[font({ size: 11 })]}>
         {props.signedIn ? `Saved ${props.generatedAt}` : "Open Horologia to sign in"}
       </Text>
     </VStack>

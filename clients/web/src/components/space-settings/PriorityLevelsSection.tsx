@@ -1,5 +1,5 @@
 import { SignalHigh } from "lucide-react";
-import type { components } from "../../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 import { PRIORITY_SUGGESTED_ICONS } from "../../lib/level-icons.ts";
 import { useSettingsCommands } from "../../lib/mutations.ts";
 import { spacePriorityLevelsQueryOptions } from "../../lib/queries.ts";

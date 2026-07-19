@@ -1,7 +1,7 @@
 import { createLink } from "@tanstack/react-router";
 import { ChevronDown, UserRound } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
-import type { components } from "../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 import { Card } from "../ui/Card.tsx";
 
 type ActivityLogEntry = components["schemas"]["ActivityLogEntry"];

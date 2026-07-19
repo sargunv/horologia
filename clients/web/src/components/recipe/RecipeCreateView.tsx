@@ -1,29 +1,18 @@
-import { createLibraryCommands } from "@horologia/client-core/commands/library";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { type FormEvent, useState } from "react";
-import { apiClient } from "../../api/client.ts";
 import { AnchorLink } from "../../lib/links.ts";
+import { useLibraryCommands } from "../../lib/mutations.ts";
 import { spaceQueryOptions } from "../../lib/queries.ts";
-import { notifyStaleData } from "../../lib/toaster.ts";
 import { DetailPaneHeader, DETAIL_PANE_TITLE_CLASS } from "../DetailPaneHeader.tsx";
 import { ErrorAlert } from "../space-settings/ErrorAlert.tsx";
 
 export function RecipeCreateView({ spaceSlug, scoped }: { spaceSlug: string; scoped: boolean }) {
   const { data: space } = useSuspenseQuery(spaceQueryOptions(spaceSlug));
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [name, setName] = useState("");
-  const commands = createLibraryCommands({
-    serverId: window.location.origin,
-    apiClient,
-    queryClient,
-    onCacheError(error) {
-      console.error("Cache invalidation failed after mutation:", error);
-      notifyStaleData();
-    },
-  });
+  const commands = useLibraryCommands();
   const createMutation = useMutation({
     mutationFn: (recipeName: string) => commands.createRecipe(spaceSlug, { name: recipeName }),
     onSuccess: async (recipe) => {

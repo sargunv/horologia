@@ -1,7 +1,7 @@
 import { Outlet, createFileRoute, useMatchRoute } from "@tanstack/react-router";
 import { ListChecks } from "lucide-react";
 import { Suspense } from "react";
-import type { components } from "../../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 import { ListDetailLayout } from "../../components/ListDetailLayout.tsx";
 import { MyTaskListPane } from "../../components/task/MyTaskListPane.tsx";
 import {

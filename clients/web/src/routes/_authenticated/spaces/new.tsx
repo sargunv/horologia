@@ -1,11 +1,9 @@
-import { createLibraryCommands } from "@horologia/client-core/commands/library";
 import { slugifySpaceName } from "@horologia/client-core/domain/space-slug";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, createLink, useNavigate } from "@tanstack/react-router";
 import { CircleAlert } from "lucide-react";
 import { type FormEvent, useState } from "react";
-import { apiClient } from "../../../api/client.ts";
-import { notifyStaleData } from "../../../lib/toaster.ts";
+import { useLibraryCommands } from "../../../lib/mutations.ts";
 import { Card } from "../../../ui/Card.tsx";
 
 export const Route = createFileRoute("/_authenticated/spaces/new")({
@@ -16,21 +14,12 @@ const CancelLink = createLink("a");
 
 function NewSpacePage() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugEdited, setSlugEdited] = useState(false);
   const [description, setDescription] = useState("");
-  const commands = createLibraryCommands({
-    serverId: window.location.origin,
-    apiClient,
-    queryClient,
-    onCacheError(error) {
-      console.error("Cache invalidation failed after mutation:", error);
-      notifyStaleData();
-    },
-  });
+  const commands = useLibraryCommands();
 
   const createMutation = useMutation({
     mutationFn: (body: { name: string; slug: string; description?: string }) =>

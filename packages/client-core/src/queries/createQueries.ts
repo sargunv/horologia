@@ -1,6 +1,7 @@
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
-import type { HorologiaClient } from "../api/client.ts";
+import type { HorologiaClient } from "../api/client";
 import type { components } from "../api/schema.d.ts";
+import { createQueryKeys } from "./queryKeys";
 
 export type AuthConfig = components["schemas"]["AuthConfig"];
 export type LinkPendingInfo = components["schemas"]["AuthLinkPendingResponse"];
@@ -8,12 +9,17 @@ export type LinkPendingInfo = components["schemas"]["AuthLinkPendingResponse"];
 export interface QueryContext {
   serverId: string;
   apiClient: HorologiaClient;
+}
+
+export interface AppQueryContext {
+  serverId: string;
   appClient: HorologiaClient;
 }
 
-export function createQueries({ serverId, apiClient, appClient }: QueryContext) {
+export function createAppQueries({ serverId, appClient }: AppQueryContext) {
+  const keys = createQueryKeys(serverId);
   const authConfigQueryOptions = queryOptions({
-    queryKey: [serverId, "authConfig"],
+    queryKey: keys.authConfig,
     queryFn: async (): Promise<AuthConfig> => {
       const { data, error } = await appClient.GET("/app/auth/config");
       if (error) throw error;
@@ -23,7 +29,7 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
   });
 
   const linkPendingQueryOptions = queryOptions({
-    queryKey: [serverId, "linkPending"],
+    queryKey: keys.linkPending,
     queryFn: async (): Promise<LinkPendingInfo | null> => {
       const { data, error, response } = await appClient.GET("/app/auth/link/pending");
       if (response.status === 404) return null;
@@ -34,8 +40,14 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
     staleTime: Infinity,
   });
 
+  return { authConfigQueryOptions, linkPendingQueryOptions };
+}
+
+export function createQueries({ serverId, apiClient }: QueryContext) {
+  const keys = createQueryKeys(serverId);
+
   const currentUserQueryOptions = queryOptions({
-    queryKey: [serverId, "currentUser"],
+    queryKey: keys.currentUser,
     queryFn: async () => {
       const { data, error } = await apiClient.GET("/users/me");
       if (error) throw error;
@@ -44,7 +56,7 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
   });
 
   const serverInfoQueryOptions = queryOptions({
-    queryKey: [serverId, "serverInfo"],
+    queryKey: keys.serverInfo,
     queryFn: async () => {
       const { data, error } = await apiClient.GET("/server-info");
       if (error) throw error;
@@ -54,7 +66,7 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
   });
 
   const usersQueryOptions = queryOptions({
-    queryKey: [serverId, "users"],
+    queryKey: keys.users,
     queryFn: async () => {
       const { data, error } = await apiClient.GET("/users");
       if (error) throw error;
@@ -64,7 +76,7 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
 
   const userQueryOptions = (userId: string) =>
     queryOptions({
-      queryKey: [serverId, "users", userId],
+      queryKey: keys.user(userId),
       queryFn: async () => {
         const { data, error } = await apiClient.GET("/users/{userId}", {
           params: { path: { userId } },
@@ -75,7 +87,7 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
     });
 
   const spacesQueryOptions = queryOptions({
-    queryKey: [serverId, "spaces"],
+    queryKey: keys.spaces,
     queryFn: async () => {
       const { data, error } = await apiClient.GET("/spaces");
       if (error) throw error;
@@ -85,7 +97,7 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
 
   const spaceQueryOptions = (spaceSlug: string) =>
     queryOptions({
-      queryKey: [serverId, "spaces", spaceSlug],
+      queryKey: keys.space(spaceSlug),
       queryFn: async () => {
         const { data, error } = await apiClient.GET("/spaces/{spaceSlug}", {
           params: { path: { spaceSlug } },
@@ -97,7 +109,7 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
 
   const spaceMembersQueryOptions = (spaceSlug: string) =>
     queryOptions({
-      queryKey: [serverId, "spaces", spaceSlug, "members"],
+      queryKey: keys.spaceMembers(spaceSlug),
       queryFn: async () => {
         const { data, error } = await apiClient.GET("/spaces/{spaceSlug}/members", {
           params: { path: { spaceSlug } },
@@ -109,7 +121,7 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
 
   const spaceTaskStatusesQueryOptions = (spaceSlug: string) =>
     queryOptions({
-      queryKey: [serverId, "spaces", spaceSlug, "taskStatuses"],
+      queryKey: keys.spaceTaskStatuses(spaceSlug),
       queryFn: async () => {
         const { data, error } = await apiClient.GET("/spaces/{spaceSlug}/task-statuses", {
           params: { path: { spaceSlug } },
@@ -121,7 +133,7 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
 
   const spaceEffortLevelsQueryOptions = (spaceSlug: string) =>
     queryOptions({
-      queryKey: [serverId, "spaces", spaceSlug, "effortLevels"],
+      queryKey: keys.spaceEffortLevels(spaceSlug),
       queryFn: async () => {
         const { data, error } = await apiClient.GET("/spaces/{spaceSlug}/task-effort-levels", {
           params: { path: { spaceSlug } },
@@ -133,7 +145,7 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
 
   const spacePriorityLevelsQueryOptions = (spaceSlug: string) =>
     queryOptions({
-      queryKey: [serverId, "spaces", spaceSlug, "priorityLevels"],
+      queryKey: keys.spacePriorityLevels(spaceSlug),
       queryFn: async () => {
         const { data, error } = await apiClient.GET("/spaces/{spaceSlug}/task-priority-levels", {
           params: { path: { spaceSlug } },
@@ -145,7 +157,7 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
 
   const spaceTagsQueryOptions = (spaceSlug: string) =>
     queryOptions({
-      queryKey: [serverId, "spaces", spaceSlug, "tags"],
+      queryKey: keys.spaceTags(spaceSlug),
       queryFn: async () => {
         const { data, error } = await apiClient.GET("/spaces/{spaceSlug}/tags", {
           params: { path: { spaceSlug } },
@@ -158,7 +170,7 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
   const spaceTasksInfiniteQueryOptions = (spaceSlug: string) => {
     const initialPageParam: string | null = null;
     return infiniteQueryOptions({
-      queryKey: [serverId, "spaces", spaceSlug, "tasks", "list"],
+      queryKey: keys.spaceTasks(spaceSlug),
       queryFn: async ({ pageParam }: { pageParam: string | null }) => {
         const { data, error } = await apiClient.GET("/spaces/{spaceSlug}/tasks", {
           params: {
@@ -175,7 +187,7 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
   };
 
   const authTokensQueryOptions = queryOptions({
-    queryKey: [serverId, "authTokens"],
+    queryKey: keys.authTokens,
     queryFn: async () => {
       const { data, error } = await apiClient.GET("/auth/tokens");
       if (error) throw error;
@@ -185,7 +197,7 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
 
   const spaceTaskQueryOptions = (spaceSlug: string, taskId: string) =>
     queryOptions({
-      queryKey: [serverId, "spaces", spaceSlug, "tasks", taskId],
+      queryKey: keys.spaceTask(spaceSlug, taskId),
       queryFn: async () => {
         const { data, error } = await apiClient.GET("/spaces/{spaceSlug}/tasks/{taskId}", {
           params: { path: { spaceSlug, taskId } },
@@ -198,7 +210,7 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
   const recipesInfiniteQueryOptions = (spaceSlug?: string) => {
     const initialPageParam: string | null = null;
     return infiniteQueryOptions({
-      queryKey: [serverId, "recipes", "list", spaceSlug ?? "all"],
+      queryKey: keys.recipeList(spaceSlug),
       queryFn: async ({ pageParam }: { pageParam: string | null }) => {
         const { data, error } = await apiClient.GET("/recipes", {
           params: {
@@ -219,7 +231,7 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
 
   const recipeQueryOptions = (spaceSlug: string, recipeId: string) =>
     queryOptions({
-      queryKey: [serverId, "spaces", spaceSlug, "recipes", recipeId],
+      queryKey: keys.recipe(spaceSlug, recipeId),
       queryFn: async () => {
         const { data, error } = await apiClient.GET("/spaces/{spaceSlug}/recipes/{recipeId}", {
           params: { path: { spaceSlug, recipeId } },
@@ -232,7 +244,7 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
   const recipeActivityInfiniteQueryOptions = (spaceSlug: string, recipeId: string) => {
     const initialPageParam: string | null = null;
     return infiniteQueryOptions({
-      queryKey: [serverId, "spaces", spaceSlug, "recipes", recipeId, "activity"],
+      queryKey: keys.recipeActivity(spaceSlug, recipeId),
       queryFn: async ({ pageParam }: { pageParam: string | null }) => {
         const { data, error } = await apiClient.GET(
           "/spaces/{spaceSlug}/recipes/{recipeId}/activity",
@@ -261,7 +273,7 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
     limit?: number;
   }) =>
     queryOptions({
-      queryKey: [serverId, "recipes", "search", query, spaceSlug ?? null, limit],
+      queryKey: keys.recipeSearch(query, spaceSlug, limit),
       queryFn: async () => {
         const { data, error } = await apiClient.GET("/recipes/search", {
           params: {
@@ -277,7 +289,7 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
   const userTasksInfiniteQueryOptions = (userId: string) => {
     const initialPageParam: string | null = null;
     return infiniteQueryOptions({
-      queryKey: [serverId, "users", userId, "tasks", "list"],
+      queryKey: keys.userTasks(userId),
       queryFn: async ({ pageParam }: { pageParam: string | null }) => {
         const { data, error } = await apiClient.GET("/users/{userId}/tasks", {
           params: {
@@ -296,7 +308,7 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
   const taskActivityInfiniteQueryOptions = (spaceSlug: string, taskId: string) => {
     const initialPageParam: string | null = null;
     return infiniteQueryOptions({
-      queryKey: [serverId, "spaces", spaceSlug, "tasks", taskId, "activity"],
+      queryKey: keys.taskActivity(spaceSlug, taskId),
       queryFn: async ({ pageParam }: { pageParam: string | null }) => {
         const { data, error } = await apiClient.GET("/spaces/{spaceSlug}/tasks/{taskId}/activity", {
           params: {
@@ -324,15 +336,7 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
     limit?: number;
   }) =>
     queryOptions({
-      queryKey: [
-        serverId,
-        "tasks",
-        "search",
-        query,
-        spaceSlug ?? null,
-        excludeTaskId ?? null,
-        limit,
-      ],
+      queryKey: keys.taskSearch(query, spaceSlug, excludeTaskId, limit),
       queryFn: async () => {
         const { data, error } = await apiClient.GET("/tasks/search", {
           params: {
@@ -353,7 +357,7 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
   const spaceActivityInfiniteQueryOptions = (spaceSlug: string) => {
     const initialPageParam: string | null = null;
     return infiniteQueryOptions({
-      queryKey: [serverId, "spaces", spaceSlug, "activity"],
+      queryKey: keys.spaceActivity(spaceSlug),
       queryFn: async ({ pageParam }: { pageParam: string | null }) => {
         const { data, error } = await apiClient.GET("/spaces/{spaceSlug}/activity", {
           params: {
@@ -372,7 +376,7 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
   const userActivityInfiniteQueryOptions = (userId: string) => {
     const initialPageParam: string | null = null;
     return infiniteQueryOptions({
-      queryKey: [serverId, "users", userId, "activity"],
+      queryKey: keys.userActivity(userId),
       queryFn: async ({ pageParam }: { pageParam: string | null }) => {
         const { data, error } = await apiClient.GET("/users/{userId}/activity", {
           params: {
@@ -389,8 +393,6 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
   };
 
   return {
-    authConfigQueryOptions,
-    linkPendingQueryOptions,
     currentUserQueryOptions,
     serverInfoQueryOptions,
     usersQueryOptions,
@@ -416,5 +418,3 @@ export function createQueries({ serverId, apiClient, appClient }: QueryContext) 
     userActivityInfiniteQueryOptions,
   };
 }
-
-export type Queries = ReturnType<typeof createQueries>;

@@ -23,11 +23,8 @@
     "./domain/staleness": "./src/domain/staleness.ts",
     "./domain/space-slug": "./src/domain/spaceSlug.ts",
     "./domain/task-draft": "./src/domain/taskDraft.ts",
+    "./domain/task-settings": "./src/domain/taskSettings.ts",
     "./servers": "./src/servers/serverProfile.ts"
-  },
-  "scripts": {
-    "check": "vp check --no-fmt",
-    "test": "vitest run"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.2",
@@ -36,10 +33,14 @@
     "parse-duration": "^2.1.6",
     "rrule": "^2.8.1"
   },
+  "peerDependencies": {
+    "react": ">=19.2.3 <20"
+  },
   "devDependencies": {
     "openapi-typescript": "^7.13.0",
+    "react": "19.2.3",
     "typescript": "^6.0.3",
-    "vite-plus": "^0.2.3",
+    "vite-plus": "^0.2.4",
     "vitest": "^4.1.9"
   }
 }

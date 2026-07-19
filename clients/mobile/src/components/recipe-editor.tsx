@@ -10,13 +10,12 @@ import {
 } from "@horologia/client-core";
 import type { components } from "@horologia/client-core/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Button, Text } from "@expo/ui";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
-import { ActionButton, ChoiceChips, FormField, FormSection } from "@/components/forms";
-import { colors } from "@/design/tokens";
+import { FormField, FormPicker, FormSection } from "@/components/forms";
+import { NativeFormScreen } from "@/components/native-screen";
 
 type Recipe = components["schemas"]["Recipe"];
 
@@ -34,7 +33,7 @@ export function RecipeEditor({
   const router = useRouter();
   const queryClient = useQueryClient();
   const queries = useMemo(
-    () => createQueries({ serverId: profile.id, apiClient: client, appClient: client }),
+    () => createQueries({ serverId: profile.id, apiClient: client }),
     [client, profile.id],
   );
   const spaces = useQuery(queries.spacesQueryOptions);
@@ -76,125 +75,93 @@ export function RecipeEditor({
   }
 
   return (
-    <SafeAreaView edges={["left", "right", "bottom"]} style={styles.safeArea}>
-      <ScrollView
-        automaticallyAdjustKeyboardInsets
-        contentContainerStyle={styles.scroll}
-        keyboardDismissMode="on-drag"
-        keyboardShouldPersistTaps="handled"
-      >
-        <Text accessibilityRole="header" style={styles.heading}>
-          {recipe ? "Edit recipe" : "New recipe"}
-        </Text>
-        <Text style={styles.detail}>
-          Simple fields, Markdown where it helps, and line order as the section order.
-        </Text>
-        {!recipe && spaces.data ? (
-          <FormSection title="Space">
-            <ChoiceChips
-              label="Space"
-              onChange={setSpaceSlug}
-              options={spaces.data.map((space) => ({ value: space.slug, label: space.name }))}
-              value={activeSpace}
-            />
-          </FormSection>
-        ) : null}
-        <FormSection title="Recipe">
-          <FormField
-            label="Name"
-            maxLength={500}
-            onChangeText={(value) => set("name", value)}
-            testID="recipe-name-input"
-            value={draft.name}
-          />
-          <FormField
-            label="Description (Markdown)"
-            maxLength={10_000}
-            multiline
-            onChangeText={(value) => set("description", value)}
-            placeholder="A **favorite** weeknight dinner."
-            testID="recipe-description-input"
-            value={draft.description}
-          />
-          <FormField
-            label="Yield"
-            onChangeText={(value) => set("yield", value)}
-            placeholder="4 servings"
-            value={draft.yield}
-          />
-          <FormField
-            label="Prep time"
-            onChangeText={(value) => set("prepTime", value)}
-            placeholder="20 min"
-            value={draft.prepTime}
-          />
-          <FormField
-            label="Cook time"
-            onChangeText={(value) => set("cookTime", value)}
-            placeholder="1h 15m"
-            value={draft.cookTime}
-          />
-          <FormField
-            label="Tags (comma separated)"
-            onChangeText={(value) => set("tags", value)}
-            value={draft.tags}
+    <NativeFormScreen>
+      <FormSection title={recipe ? "Edit recipe" : "New recipe"}>
+        <Text>Simple fields, Markdown where it helps, and line order as the section order.</Text>
+      </FormSection>
+      {!recipe && spaces.data ? (
+        <FormSection title="Space">
+          <FormPicker
+            label="Space"
+            onChange={setSpaceSlug}
+            options={spaces.data.map((space) => ({ value: space.slug, label: space.name }))}
+            value={activeSpace}
           />
         </FormSection>
-        <FormSection title="Ingredients">
-          <Text style={styles.hint}>
-            Use `## Section` headings and `quantity | ingredient` lines. Reorder lines to reorder
-            sections and ingredients.
-          </Text>
-          <FormField
-            label="Ingredient sections"
-            multiline
-            onChangeText={(value) => set("ingredients", value)}
-            placeholder={"## Dough\n2 cups | flour\n1 tsp | salt"}
-            value={draft.ingredients}
-          />
-        </FormSection>
-        <FormSection title="Instructions">
-          <Text style={styles.hint}>
-            Use `## Section` headings and one `- step` per line. Markdown is preserved in
-            descriptions and step bodies.
-          </Text>
-          <FormField
-            label="Instruction sections"
-            multiline
-            onChangeText={(value) => set("instructions", value)}
-            placeholder={"## Make\n- Mix everything\n- Bake until golden"}
-            value={draft.instructions}
-          />
-        </FormSection>
-        {mutation.error ? (
-          <Text accessibilityRole="alert" style={styles.error}>
-            {mutation.error.message}
-          </Text>
-        ) : null}
-        {cacheWarning ? <Text style={styles.warning}>{cacheWarning}</Text> : null}
-        <ActionButton
-          disabled={!draft.name.trim() || !activeSpace || mutation.isPending}
-          label={mutation.isPending ? "Saving…" : recipe ? "Save recipe" : "Create recipe"}
-          onPress={() => mutation.mutate()}
+      ) : null}
+      <FormSection title="Recipe">
+        <FormField
+          label="Name"
+          maxLength={500}
+          onChangeText={(value) => set("name", value)}
+          value={draft.name}
         />
-      </ScrollView>
-    </SafeAreaView>
+        <FormField
+          label="Description (Markdown)"
+          maxLength={10_000}
+          multiline
+          onChangeText={(value) => set("description", value)}
+          placeholder="A **favorite** weeknight dinner."
+          value={draft.description}
+        />
+        <FormField
+          label="Yield"
+          onChangeText={(value) => set("yield", value)}
+          placeholder="4 servings"
+          value={draft.yield}
+        />
+        <FormField
+          label="Prep time"
+          onChangeText={(value) => set("prepTime", value)}
+          placeholder="20 min"
+          value={draft.prepTime}
+        />
+        <FormField
+          label="Cook time"
+          onChangeText={(value) => set("cookTime", value)}
+          placeholder="1h 15m"
+          value={draft.cookTime}
+        />
+        <FormField
+          label="Tags (comma separated)"
+          onChangeText={(value) => set("tags", value)}
+          value={draft.tags}
+        />
+      </FormSection>
+      <FormSection title="Ingredients">
+        <Text>
+          Use `## Section` headings and `quantity | ingredient` lines. Reorder lines to reorder
+          sections and ingredients.
+        </Text>
+        <FormField
+          label="Ingredient sections"
+          multiline
+          onChangeText={(value) => set("ingredients", value)}
+          placeholder={"## Dough\n2 cups | flour\n1 tsp | salt"}
+          value={draft.ingredients}
+        />
+      </FormSection>
+      <FormSection title="Instructions">
+        <Text>
+          Use `## Section` headings and one `- step` per line. Markdown is preserved in descriptions
+          and step bodies.
+        </Text>
+        <FormField
+          label="Instruction sections"
+          multiline
+          onChangeText={(value) => set("instructions", value)}
+          placeholder={"## Make\n- Mix everything\n- Bake until golden"}
+          value={draft.instructions}
+        />
+      </FormSection>
+      {mutation.error ? <Text>{mutation.error.message}</Text> : null}
+      {cacheWarning ? <Text>{cacheWarning}</Text> : null}
+      <Button
+        disabled={!draft.name.trim() || !activeSpace || mutation.isPending}
+        label={mutation.isPending ? "Saving…" : recipe ? "Save recipe" : "Create recipe"}
+        onPress={() => mutation.mutate()}
+        variant="filled"
+      />
+    </NativeFormScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: { backgroundColor: colors.canvas, flex: 1 },
-  scroll: {
-    alignSelf: "center",
-    gap: 14,
-    maxWidth: 760,
-    padding: 18,
-    paddingBottom: 48,
-    width: "100%",
-  },
-  heading: { color: colors.ink, fontSize: 30, fontWeight: "700" },
-  detail: { color: colors.muted, fontSize: 14, lineHeight: 20 },
-  hint: { color: colors.muted, fontSize: 13, lineHeight: 19 },
-  error: { color: colors.danger, fontSize: 14, fontWeight: "600", lineHeight: 20 },
-  warning: { color: colors.accent, fontSize: 14, fontWeight: "600" },
-});

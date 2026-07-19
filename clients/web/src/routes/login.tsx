@@ -2,7 +2,9 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { CircleAlert } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
-import { appClient, getApiErrorMessage } from "../api/client.ts";
+import { getApiErrorMessage } from "@horologia/client-core/api";
+
+import { appClient } from "../api/client.ts";
 import { authConfigQueryOptions } from "../lib/queries.ts";
 import { navigateToTarget } from "../lib/navigation.ts";
 import { Card } from "../ui/Card.tsx";

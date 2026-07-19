@@ -1,6 +1,9 @@
-import type { components } from "../../../api/schema.d.ts";
-import { moveKeyedCollectionItem } from "../../../lib/keyedCollections.ts";
-import { formatIngredientQuantity, parseIngredientQuantity } from "../../../lib/recipeInputs.ts";
+import { moveKeyedCollectionItem } from "@horologia/client-core/domain/keyed-collections";
+import {
+  formatIngredientQuantity,
+  parseIngredientQuantity,
+} from "@horologia/client-core/domain/recipe-inputs";
+import type { components } from "@horologia/client-core/schema";
 
 export type Recipe = components["schemas"]["Recipe"];
 export type IngredientInput = components["schemas"]["RecipeIngredientInput"];

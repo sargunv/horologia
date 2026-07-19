@@ -11,37 +11,60 @@ export interface ActiveAccount {
   accountId: string | null;
 }
 
-let databasePromise: ReturnType<typeof SQLite.openDatabaseAsync> | null = null;
+let databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
-async function database() {
-  databasePromise ??= SQLite.openDatabaseAsync("horologia.db");
-  const db = await databasePromise;
-  await db.execAsync(`
-    PRAGMA journal_mode = WAL;
-    CREATE TABLE IF NOT EXISTS server_profiles (
-      id TEXT PRIMARY KEY NOT NULL,
-      base_url TEXT NOT NULL,
-      display_name TEXT NOT NULL,
-      last_used_at TEXT NOT NULL,
-      account_id TEXT,
-      active INTEGER NOT NULL DEFAULT 0 CHECK (active IN (0, 1))
+function database(): Promise<SQLite.SQLiteDatabase> {
+  databasePromise ??= initializeDatabase();
+  return databasePromise;
+}
+
+async function initializeDatabase(): Promise<SQLite.SQLiteDatabase> {
+  const db = await SQLite.openDatabaseAsync("horologia.db");
+  await db.execAsync("PRAGMA journal_mode = WAL");
+  const row = await db.getFirstAsync<{ user_version: number }>("PRAGMA user_version");
+  const version = row?.user_version ?? 0;
+  if (version > 2) throw new Error(`Unsupported Horologia database version ${version}`);
+
+  if (version < 1) {
+    await db.withTransactionAsync(() =>
+      db.execAsync(`
+        CREATE TABLE IF NOT EXISTS server_profiles (
+          id TEXT PRIMARY KEY NOT NULL,
+          base_url TEXT NOT NULL,
+          display_name TEXT NOT NULL,
+          last_used_at TEXT NOT NULL,
+          account_id TEXT,
+          active INTEGER NOT NULL DEFAULT 0 CHECK (active IN (0, 1))
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS one_active_server
+          ON server_profiles(active) WHERE active = 1;
+        CREATE TABLE IF NOT EXISTS my_tasks_cache (
+          server_id TEXT NOT NULL,
+          account_id TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          tasks_json TEXT NOT NULL,
+          PRIMARY KEY(server_id, account_id)
+        );
+        PRAGMA user_version = 1;
+      `),
     );
-    CREATE UNIQUE INDEX IF NOT EXISTS one_active_server
-      ON server_profiles(active) WHERE active = 1;
-    CREATE TABLE IF NOT EXISTS my_tasks_cache (
-      server_id TEXT NOT NULL,
-      account_id TEXT NOT NULL,
-      updated_at TEXT NOT NULL,
-      tasks_json TEXT NOT NULL,
-      PRIMARY KEY(server_id, account_id)
+  }
+  if (version < 2) {
+    await db.withTransactionAsync(() =>
+      db.execAsync(`
+        ALTER TABLE my_tasks_cache
+          ADD COLUMN has_more INTEGER NOT NULL DEFAULT 0 CHECK (has_more IN (0, 1));
+        PRAGMA user_version = 2;
+      `),
     );
-  `);
+  }
   return db;
 }
 
 export interface CachedMyTasks {
   tasks: Task[];
   updatedAt: string;
+  hasMore: boolean;
 }
 
 export async function loadCachedMyTasks(
@@ -49,8 +72,12 @@ export async function loadCachedMyTasks(
   accountId: string,
 ): Promise<CachedMyTasks | null> {
   const db = await database();
-  const row = await db.getFirstAsync<{ tasks_json: string; updated_at: string }>(
-    "SELECT tasks_json, updated_at FROM my_tasks_cache WHERE server_id = ? AND account_id = ?",
+  const row = await db.getFirstAsync<{
+    tasks_json: string;
+    updated_at: string;
+    has_more: number;
+  }>(
+    "SELECT tasks_json, updated_at, has_more FROM my_tasks_cache WHERE server_id = ? AND account_id = ?",
     serverId,
     accountId,
   );
@@ -58,7 +85,11 @@ export async function loadCachedMyTasks(
   try {
     const tasks: unknown = JSON.parse(row.tasks_json);
     if (!Array.isArray(tasks)) return null;
-    return { tasks: tasks.filter(isCachedTask), updatedAt: row.updated_at };
+    return {
+      tasks: tasks.filter(isCachedTask),
+      updatedAt: row.updated_at,
+      hasMore: row.has_more === 1,
+    };
   } catch {
     return null;
   }
@@ -69,18 +100,21 @@ export async function saveCachedMyTasks(
   accountId: string,
   tasks: Task[],
   updatedAt: string,
+  hasMore: boolean,
 ): Promise<void> {
   const db = await database();
   await db.runAsync(
-    `INSERT INTO my_tasks_cache(server_id, account_id, updated_at, tasks_json)
-     VALUES (?, ?, ?, ?)
+    `INSERT INTO my_tasks_cache(server_id, account_id, updated_at, tasks_json, has_more)
+     VALUES (?, ?, ?, ?, ?)
      ON CONFLICT(server_id, account_id) DO UPDATE SET
        updated_at = excluded.updated_at,
-       tasks_json = excluded.tasks_json`,
+       tasks_json = excluded.tasks_json,
+       has_more = excluded.has_more`,
     serverId,
     accountId,
     updatedAt,
     JSON.stringify(tasks),
+    hasMore ? 1 : 0,
   );
 }
 

@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Clock3, CookingPot } from "lucide-react";
-import type { components } from "../../api/schema.d.ts";
-import { formatDuration } from "../../lib/recipeInputs.ts";
+import { formatDuration } from "@horologia/client-core/domain/recipe-inputs";
+import type { components } from "@horologia/client-core/schema";
 
 type RecipeSummary = components["schemas"]["RecipeSummary"];
 

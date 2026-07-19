@@ -15,9 +15,13 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <SessionProvider>
         <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-          <Stack>
+          <Stack
+            screenOptions={{
+              headerBackButtonDisplayMode: "minimal",
+            }}
+          >
             <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false, title: "Back" }} />
             <Stack.Screen name="task/[spaceSlug]/[taskId]" options={{ title: "Task" }} />
             <Stack.Screen name="task/[spaceSlug]/[taskId]/edit" options={{ title: "Edit task" }} />
             <Stack.Screen name="task/new" options={{ title: "New task" }} />
@@ -30,7 +34,6 @@ export default function RootLayout() {
             <Stack.Screen name="space/[spaceSlug]" options={{ title: "Space" }} />
             <Stack.Screen name="space/[spaceSlug]/settings" options={{ title: "Space settings" }} />
             <Stack.Screen name="space/new" options={{ title: "New space" }} />
-            <Stack.Screen name="oauth/callback" options={{ title: "Sign in" }} />
           </Stack>
           <StatusBar style="auto" />
         </ThemeProvider>

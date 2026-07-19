@@ -1,43 +1,26 @@
-import type { QueryClient } from "@tanstack/react-query";
-
-import { getApiErrorMessage, type HorologiaClient } from "../api/client";
+import { getApiErrorMessage } from "../api/client";
 import type { components } from "../api/schema.d.ts";
+import { createQueryKeys } from "../queries/queryKeys";
+import { type CommandContext, synchronizeCache } from "./context";
 
 export type TaskCreate = components["schemas"]["TaskCreate"];
 export type TaskUpdate = components["schemas"]["TaskUpdate"];
 export type TaskRelationCreate = components["schemas"]["TaskRelationCreate"];
 export type TaskRelationKind = components["schemas"]["TaskRelationKind"];
 
-export interface TaskCommandContext {
-  serverId: string;
-  apiClient: HorologiaClient;
-  queryClient: QueryClient;
-  onCacheError?(error: unknown): void;
-}
-
-export function createTaskCommands(context: TaskCommandContext) {
-  async function synchronize(operation: () => Promise<void>) {
-    try {
-      await operation();
-    } catch (error) {
-      context.onCacheError?.(error);
-    }
-  }
+export function createTaskCommands(context: CommandContext) {
+  const keys = createQueryKeys(context.serverId);
 
   async function invalidateTaskLists(spaceSlug: string) {
     await Promise.all([
       context.queryClient.invalidateQueries({
-        queryKey: [context.serverId, "spaces", spaceSlug, "tasks", "list"],
+        queryKey: keys.spaceTasks(spaceSlug),
       }),
       context.queryClient.invalidateQueries({
-        predicate: (query) =>
-          query.queryKey[0] === context.serverId &&
-          query.queryKey[1] === "users" &&
-          query.queryKey[3] === "tasks" &&
-          query.queryKey[4] === "list",
+        predicate: (query) => keys.isUserTaskList(query.queryKey),
       }),
       context.queryClient.invalidateQueries({
-        queryKey: [context.serverId, "tasks", "search"],
+        queryKey: keys.taskSearches,
       }),
     ]);
   }
@@ -45,7 +28,7 @@ export function createTaskCommands(context: TaskCommandContext) {
   async function invalidateTask(spaceSlug: string, taskId: string) {
     await Promise.all([
       context.queryClient.invalidateQueries({
-        queryKey: [context.serverId, "spaces", spaceSlug, "tasks", taskId],
+        queryKey: keys.spaceTask(spaceSlug, taskId),
       }),
       invalidateTaskLists(spaceSlug),
     ]);
@@ -58,7 +41,7 @@ export function createTaskCommands(context: TaskCommandContext) {
         body,
       });
       if (error) throw new Error(getApiErrorMessage(error, "Failed to create task"));
-      await synchronize(() => invalidateTaskLists(spaceSlug));
+      await synchronizeCache(context, () => invalidateTaskLists(spaceSlug));
       return data;
     },
 
@@ -68,7 +51,7 @@ export function createTaskCommands(context: TaskCommandContext) {
         body,
       });
       if (error) throw new Error(getApiErrorMessage(error, "Failed to update task"));
-      await synchronize(() => invalidateTask(spaceSlug, taskId));
+      await synchronizeCache(context, () => invalidateTask(spaceSlug, taskId));
       return data;
     },
 
@@ -78,9 +61,9 @@ export function createTaskCommands(context: TaskCommandContext) {
       });
       if (error) throw new Error(getApiErrorMessage(error, "Failed to delete task"));
       context.queryClient.removeQueries({
-        queryKey: [context.serverId, "spaces", spaceSlug, "tasks", taskId],
+        queryKey: keys.spaceTask(spaceSlug, taskId),
       });
-      await synchronize(() => invalidateTaskLists(spaceSlug));
+      await synchronizeCache(context, () => invalidateTaskLists(spaceSlug));
     },
 
     async addRelation(spaceSlug: string, taskId: string, body: TaskRelationCreate) {
@@ -89,7 +72,7 @@ export function createTaskCommands(context: TaskCommandContext) {
         { params: { path: { spaceSlug, taskId } }, body },
       );
       if (error) throw new Error(getApiErrorMessage(error, "Failed to add relation"));
-      await synchronize(() => invalidateTask(spaceSlug, taskId));
+      await synchronizeCache(context, () => invalidateTask(spaceSlug, taskId));
       return data;
     },
 
@@ -104,9 +87,7 @@ export function createTaskCommands(context: TaskCommandContext) {
         { params: { path: { spaceSlug, taskId, kind, relatedTaskId } } },
       );
       if (error) throw new Error(getApiErrorMessage(error, "Failed to remove relation"));
-      await synchronize(() => invalidateTask(spaceSlug, taskId));
+      await synchronizeCache(context, () => invalidateTask(spaceSlug, taskId));
     },
   };
 }
-
-export type TaskCommands = ReturnType<typeof createTaskCommands>;

@@ -11,13 +11,9 @@ export interface WidgetSnapshotV1 {
   serverId: string;
   accountId: string;
   generatedAt: string;
+  taskCount: number;
+  hasMore: boolean;
   tasks: WidgetTaskV1[];
-}
-
-export function createWidgetSnapshotV1(
-  snapshot: Omit<WidgetSnapshotV1, "version">,
-): WidgetSnapshotV1 {
-  return { version: 1, ...snapshot };
 }
 
 export function projectMyTasksWidgetSnapshot(input: {
@@ -31,12 +27,16 @@ export function projectMyTasksWidgetSnapshot(input: {
     due: { at: string } | null;
     status: string;
   }>;
+  hasMore?: boolean;
   limit?: number;
 }): WidgetSnapshotV1 {
-  return createWidgetSnapshotV1({
+  return {
+    version: 1,
     serverId: input.serverId,
     accountId: input.accountId,
     generatedAt: input.generatedAt,
+    taskCount: input.tasks.length,
+    hasMore: input.hasMore ?? false,
     tasks: input.tasks.slice(0, input.limit ?? 12).map((task) => ({
       id: task.id,
       spaceSlug: task.spaceSlug,
@@ -44,5 +44,5 @@ export function projectMyTasksWidgetSnapshot(input: {
       due: task.due?.at ?? null,
       status: task.status,
     })),
-  });
+  };
 }

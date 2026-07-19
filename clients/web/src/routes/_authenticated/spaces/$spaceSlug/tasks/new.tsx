@@ -1,16 +1,14 @@
-import { createTaskCommands } from "@horologia/client-core/commands/tasks";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, createLink, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { type FormEvent, useState } from "react";
-import { apiClient } from "../../../../../api/client.ts";
 import {
   DetailPaneHeader,
   DETAIL_PANE_TITLE_CLASS,
 } from "../../../../../components/DetailPaneHeader.tsx";
 import { ErrorAlert } from "../../../../../components/space-settings/ErrorAlert.tsx";
 import { spaceQueryOptions } from "../../../../../lib/queries.ts";
-import { notifyStaleData } from "../../../../../lib/toaster.ts";
+import { useTaskCommands } from "../../../../../lib/mutations.ts";
 
 export const Route = createFileRoute("/_authenticated/spaces/$spaceSlug/tasks/new")({
   component: CreateTaskPage,
@@ -23,17 +21,8 @@ function CreateTaskPage() {
   const { spaceSlug } = Route.useParams();
   const { data: space } = useSuspenseQuery(spaceQueryOptions(spaceSlug));
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
-  const commands = createTaskCommands({
-    serverId: window.location.origin,
-    apiClient,
-    queryClient,
-    onCacheError(error) {
-      console.error("Cache invalidation failed after mutation:", error);
-      notifyStaleData();
-    },
-  });
+  const commands = useTaskCommands();
 
   const createMutation = useMutation({
     mutationFn: (body: { title: string }) => commands.create(spaceSlug, body),

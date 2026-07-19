@@ -1,7 +1,7 @@
 import { createLink, useRouterState } from "@tanstack/react-router";
 import { CircleUser, CookingPot, Layers, LayoutGrid, ListChecks, Plus, Search } from "lucide-react";
 import type { ReactNode } from "react";
-import type { components } from "../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 import { Toaster } from "../ui/Toaster.tsx";
 import { TooltipProvider } from "../ui/Tooltip.tsx";
 import { GlobalSearchCombobox } from "./GlobalSearchCombobox.tsx";

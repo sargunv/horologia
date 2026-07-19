@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useRef } from "react";
-import { QueuedAutosave } from "../lib/queuedAutosave.ts";
+import { QueuedAutosave } from "@horologia/client-core/domain/queued-autosave";
 import { MarkdownEditor } from "./MarkdownEditor.tsx";
 import { ErrorAlert } from "./space-settings/ErrorAlert.tsx";
 

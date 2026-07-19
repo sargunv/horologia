@@ -1,4 +1,4 @@
-import { createHorologiaClient, getApiErrorMessage } from "@horologia/client-core/api";
+import { createHorologiaClient } from "@horologia/client-core/api";
 
 export const apiClient = createHorologiaClient({
   baseUrl: "/api",
@@ -15,5 +15,3 @@ export const appClient = createHorologiaClient({
     window.dispatchEvent(new CustomEvent("horologia:unauthorized"));
   },
 });
-
-export { getApiErrorMessage };

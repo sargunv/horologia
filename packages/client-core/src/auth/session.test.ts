@@ -31,14 +31,4 @@ describe("createRefreshCoordinator", () => {
     expect(refresh).toHaveBeenCalledOnce();
     expect(persist).toHaveBeenCalledWith(next);
   });
-
-  it("keeps credentials scoped by caller-provided server and account keys", async () => {
-    const values = new Map<string, OAuthCredentials>();
-    const set = (serverId: string, accountId: string, value: OAuthCredentials) =>
-      values.set(`${serverId}:${accountId}`, value);
-    set("server-a", "account", expired);
-    set("server-b", "account", { ...expired, accessToken: "other" });
-    expect(values.get("server-a:account")?.accessToken).toBe("old-access");
-    expect(values.get("server-b:account")?.accessToken).toBe("other");
-  });
 });

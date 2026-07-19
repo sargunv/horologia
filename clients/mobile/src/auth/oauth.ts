@@ -77,7 +77,7 @@ export async function authorizeMobile(serverBaseUrl: string): Promise<TokenRespo
   return completeMobileAuthorization(code, result.params["state"]);
 }
 
-export async function completeMobileAuthorization(
+async function completeMobileAuthorization(
   code: string,
   returnedState: string | undefined,
 ): Promise<TokenResponse> {
@@ -85,6 +85,7 @@ export async function completeMobileAuthorization(
   if (!serialized) {
     throw new Error("The authorization request is no longer available");
   }
+  await SecureStore.deleteItemAsync(pendingAuthorizationKey);
   const pending: unknown = JSON.parse(serialized);
   if (!isPendingAuthorization(pending)) {
     throw new Error("The pending authorization request is invalid");
@@ -105,7 +106,6 @@ export async function completeMobileAuthorization(
     },
     discovery,
   );
-  await SecureStore.deleteItemAsync(pendingAuthorizationKey);
   return response;
 }
 

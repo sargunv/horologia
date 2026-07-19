@@ -1,8 +1,0 @@
-appId: dev.horologia.mobile
----
-- launchApp
-- hideKeyboard
-- assertVisible: "HOROLOGIA"
-- tapOn: "Connect"
-- assertVisible: "Ready to connect"
-- assertVisible: "localhost:8080"

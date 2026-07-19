@@ -13,6 +13,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -27,28 +28,62 @@ import {
 import { deleteCredentials, getCredentials, setCredentials } from "@/persistence/credentials";
 import { clearWidgetSnapshot } from "@/widgets/publishWidgetSnapshot";
 
-type SessionStatus = "restoring" | "signed-out" | "authorizing" | "signed-in" | "error";
+type SessionSnapshot =
+  | {
+      status: "signed-in";
+      detail: null;
+      profile: ServerProfile;
+      accountId: string;
+      client: HorologiaClient;
+    }
+  | {
+      status: "restoring" | "signed-out" | "authorizing" | "error";
+      detail: string | null;
+      profile: ServerProfile | null;
+      accountId: null;
+      client: null;
+    };
 
-interface SessionValue {
-  status: SessionStatus;
-  detail: string | null;
-  profile: ServerProfile | null;
-  accountId: string | null;
-  client: HorologiaClient | null;
+interface SessionActions {
   connect(serverUrl: string): Promise<void>;
   signIn(): Promise<void>;
   signOut(): Promise<void>;
   recover(): Promise<void>;
 }
 
+type SessionValue = SessionSnapshot & SessionActions;
+
 const SessionContext = createContext<SessionValue | null>(null);
 
 export function SessionProvider({ children }: PropsWithChildren) {
-  const [status, setStatus] = useState<SessionStatus>("restoring");
-  const [detail, setDetail] = useState<string | null>(null);
-  const [profile, setProfile] = useState<ServerProfile | null>(null);
-  const [accountId, setAccountId] = useState<string | null>(null);
-  const [client, setClient] = useState<HorologiaClient | null>(null);
+  const [snapshot, setSnapshot] = useState<SessionSnapshot>({
+    status: "restoring",
+    detail: null,
+    profile: null,
+    accountId: null,
+    client: null,
+  });
+  const sessionGeneration = useRef(0);
+
+  async function expireSession(
+    key: { serverId: string; accountId: string },
+    generation: number,
+    profile: ServerProfile,
+    detail: string,
+  ) {
+    if (sessionGeneration.current !== generation) return;
+    sessionGeneration.current += 1;
+    setSnapshot(signedOut(profile, detail));
+    try {
+      await deleteCredentials(key);
+    } catch {
+      setSnapshot((current) =>
+        current.status === "signed-out" && current.profile?.id === profile.id
+          ? signedOut(profile, `${detail} Secure credential cleanup also failed.`)
+          : current,
+      );
+    }
+  }
 
   async function installSession(
     nextProfile: ServerProfile,
@@ -56,29 +91,59 @@ export function SessionProvider({ children }: PropsWithChildren) {
     initial: OAuthCredentials,
   ) {
     const key = { serverId: nextProfile.id, accountId: nextAccountId };
+    const generation = sessionGeneration.current + 1;
+    sessionGeneration.current = generation;
     const coordinator = createRefreshCoordinator(initial, {
-      refresh: (current) => refreshCredentials(nextProfile.baseUrl, current.refreshToken),
+      async refresh(current) {
+        try {
+          return await refreshCredentials(nextProfile.baseUrl, current.refreshToken);
+        } catch (error) {
+          await expireSession(
+            key,
+            generation,
+            nextProfile,
+            message(error, "Your session expired. Sign in again."),
+          );
+          throw error;
+        }
+      },
       persist: (next) => setCredentials(key, next),
     });
+    try {
+      await coordinator.getAccessToken();
+    } catch {
+      return;
+    }
     const nextClient = createHorologiaClient({
       baseUrl: apiBaseUrl(nextProfile.baseUrl),
       getAccessToken: () => coordinator.getAccessToken(),
-      onUnauthorized: () => setStatus("error"),
+      onUnauthorized: () => {
+        void expireSession(key, generation, nextProfile, "Your session expired. Sign in again.");
+      },
     });
-    setProfile(nextProfile);
-    setAccountId(nextAccountId);
-    setClient(nextClient);
-    setStatus("signed-in");
-    setDetail(null);
+    setSnapshot({
+      status: "signed-in",
+      detail: null,
+      profile: nextProfile,
+      accountId: nextAccountId,
+      client: nextClient,
+    });
   }
 
   async function restore() {
-    setStatus("restoring");
+    let restoringProfile: ServerProfile | null = null;
+    setSnapshot({
+      status: "restoring",
+      detail: null,
+      profile: null,
+      accountId: null,
+      client: null,
+    });
     try {
       const active = await loadActiveAccount();
+      restoringProfile = active?.profile ?? null;
       if (!active?.accountId) {
-        setProfile(active?.profile ?? null);
-        setStatus("signed-out");
+        setSnapshot(signedOut(restoringProfile));
         return;
       }
       const credentials = await getCredentials({
@@ -86,15 +151,20 @@ export function SessionProvider({ children }: PropsWithChildren) {
         accountId: active.accountId,
       });
       if (!credentials) {
-        setProfile(active.profile);
-        setStatus("signed-out");
-        setDetail("Your secure session is no longer available. Sign in again.");
+        setSnapshot(
+          signedOut(active.profile, "Your secure session is no longer available. Sign in again."),
+        );
         return;
       }
       await installSession(active.profile, active.accountId, credentials);
     } catch (error) {
-      setStatus("error");
-      setDetail(message(error, "Could not restore the session"));
+      setSnapshot({
+        status: "error",
+        detail: message(error, "Could not restore the session"),
+        profile: restoringProfile,
+        accountId: null,
+        client: null,
+      });
     }
   }
 
@@ -104,32 +174,41 @@ export function SessionProvider({ children }: PropsWithChildren) {
 
   const value = useMemo<SessionValue>(
     () => ({
-      status,
-      detail,
-      profile,
-      accountId,
-      client,
+      ...snapshot,
       async connect(serverUrl) {
-        setStatus("authorizing");
-        setDetail("Checking server compatibility…");
+        setSnapshot({
+          status: "authorizing",
+          detail: "Checking server compatibility…",
+          profile: snapshot.profile,
+          accountId: null,
+          client: null,
+        });
         try {
           const candidate = await saveActiveServer(serverUrl);
           const publicClient = createHorologiaClient({ baseUrl: apiBaseUrl(candidate.baseUrl) });
           await fetchCompatibleServerInfo(publicClient);
-          setProfile(candidate);
-          setStatus("signed-out");
-          setDetail(null);
+          setSnapshot(signedOut(candidate));
         } catch (error) {
           await clearActiveAccount();
-          setProfile(null);
-          setStatus("error");
-          setDetail(message(error, "Could not connect to that server"));
+          setSnapshot({
+            status: "error",
+            detail: message(error, "Could not connect to that server"),
+            profile: null,
+            accountId: null,
+            client: null,
+          });
         }
       },
       async signIn() {
+        const profile = snapshot.profile;
         if (!profile) return;
-        setStatus("authorizing");
-        setDetail("Complete sign-in in the secure browser…");
+        setSnapshot({
+          status: "authorizing",
+          detail: "Complete sign-in in the secure browser…",
+          profile,
+          accountId: null,
+          client: null,
+        });
         try {
           const response = await authorizeMobile(profile.baseUrl);
           const initial = credentialsFromTokenResponse(response);
@@ -144,38 +223,61 @@ export function SessionProvider({ children }: PropsWithChildren) {
           await attachActiveAccount(profile.id, data.id);
           await installSession(profile, data.id, initial);
         } catch (error) {
-          setStatus("error");
-          setDetail(message(error, "Sign-in failed"));
+          setSnapshot({
+            status: "error",
+            detail: message(error, "Sign-in failed"),
+            profile,
+            accountId: null,
+            client: null,
+          });
         }
       },
       async signOut() {
-        const currentProfile = profile;
-        const currentAccountId = accountId;
+        const generation = sessionGeneration.current + 1;
+        sessionGeneration.current = generation;
+        const currentProfile = snapshot.profile;
+        const currentAccountId = snapshot.accountId;
+        setSnapshot(signedOut(null));
+        const localCleanup: Promise<unknown>[] = [clearActiveAccount(), clearWidgetSnapshot()];
+        let credentialReadFailed = false;
         if (currentProfile && currentAccountId) {
           const key = { serverId: currentProfile.id, accountId: currentAccountId };
-          const credentials = await getCredentials(key);
+          let credentials: OAuthCredentials | null = null;
+          try {
+            credentials = await getCredentials(key);
+          } catch {
+            credentialReadFailed = true;
+          }
           if (credentials) {
-            await Promise.allSettled([
+            void Promise.allSettled([
               revokeMobileToken(currentProfile.baseUrl, credentials.accessToken, "access_token"),
               revokeMobileToken(currentProfile.baseUrl, credentials.refreshToken, "refresh_token"),
             ]);
           }
-          await deleteCredentials(key);
-          await clearCachedMyTasks(currentProfile.id, currentAccountId);
+          localCleanup.push(
+            deleteCredentials(key),
+            clearCachedMyTasks(currentProfile.id, currentAccountId),
+          );
         }
-        await Promise.all([clearActiveAccount(), clearWidgetSnapshot()]);
-        setClient(null);
-        setAccountId(null);
-        setProfile(null);
-        setStatus("signed-out");
-        setDetail(null);
+        const results = await Promise.allSettled(localCleanup);
+        if (credentialReadFailed || results.some((result) => result.status === "rejected")) {
+          setSnapshot((current) =>
+            sessionGeneration.current === generation && current.status === "signed-out"
+              ? signedOut(null, "Signed out, but some local data could not be cleared.")
+              : current,
+          );
+        }
       },
       recover: restore,
     }),
-    [status, detail, profile, accountId, client],
+    [snapshot],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
+}
+
+function signedOut(profile: ServerProfile | null, detail: string | null = null): SessionSnapshot {
+  return { status: "signed-out", detail, profile, accountId: null, client: null };
 }
 
 export function useSession(): SessionValue {

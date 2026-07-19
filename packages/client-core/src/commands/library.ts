@@ -1,31 +1,18 @@
-import type { QueryClient } from "@tanstack/react-query";
-
-import { getApiErrorMessage, type HorologiaClient } from "../api/client";
+import { getApiErrorMessage } from "../api/client";
 import type { components } from "../api/schema.d.ts";
+import { createQueryKeys } from "../queries/queryKeys";
+import { type CommandContext, synchronizeCache } from "./context";
 
-export interface LibraryCommandContext {
-  serverId: string;
-  apiClient: HorologiaClient;
-  queryClient: QueryClient;
-  onCacheError?(error: unknown): void;
-}
-
-export function createLibraryCommands(context: LibraryCommandContext) {
-  async function synchronize(operation: () => Promise<void>) {
-    try {
-      await operation();
-    } catch (error) {
-      context.onCacheError?.(error);
-    }
-  }
+export function createLibraryCommands(context: CommandContext) {
+  const keys = createQueryKeys(context.serverId);
 
   async function invalidateSpaces(spaceSlug?: string) {
     await Promise.all([
-      context.queryClient.invalidateQueries({ queryKey: [context.serverId, "spaces"] }),
+      context.queryClient.invalidateQueries({ queryKey: keys.spaces }),
       ...(spaceSlug
         ? [
             context.queryClient.invalidateQueries({
-              queryKey: [context.serverId, "spaces", spaceSlug],
+              queryKey: keys.space(spaceSlug),
             }),
           ]
         : []),
@@ -34,12 +21,12 @@ export function createLibraryCommands(context: LibraryCommandContext) {
 
   async function invalidateRecipes(spaceSlug: string, recipeId?: string) {
     await Promise.all([
-      context.queryClient.invalidateQueries({ queryKey: [context.serverId, "recipes", "list"] }),
-      context.queryClient.invalidateQueries({ queryKey: [context.serverId, "recipes", "search"] }),
+      context.queryClient.invalidateQueries({ queryKey: keys.recipeLists }),
+      context.queryClient.invalidateQueries({ queryKey: keys.recipeSearches }),
       ...(recipeId
         ? [
             context.queryClient.invalidateQueries({
-              queryKey: [context.serverId, "spaces", spaceSlug, "recipes", recipeId],
+              queryKey: keys.recipe(spaceSlug, recipeId),
             }),
           ]
         : []),
@@ -50,7 +37,7 @@ export function createLibraryCommands(context: LibraryCommandContext) {
     async createSpace(body: components["schemas"]["SpaceCreate"]) {
       const { data, error } = await context.apiClient.POST("/spaces", { body });
       if (error) throw new Error(getApiErrorMessage(error, "Failed to create space"));
-      await synchronize(() => invalidateSpaces(data.slug));
+      await synchronizeCache(context, () => invalidateSpaces(data.slug));
       return data;
     },
 
@@ -60,7 +47,7 @@ export function createLibraryCommands(context: LibraryCommandContext) {
         body,
       });
       if (error) throw new Error(getApiErrorMessage(error, "Failed to update space"));
-      await synchronize(() => invalidateSpaces(spaceSlug));
+      await synchronizeCache(context, () => invalidateSpaces(spaceSlug));
       return data;
     },
 
@@ -70,9 +57,9 @@ export function createLibraryCommands(context: LibraryCommandContext) {
       });
       if (error) throw new Error(getApiErrorMessage(error, "Failed to delete space"));
       context.queryClient.removeQueries({
-        queryKey: [context.serverId, "spaces", spaceSlug],
+        queryKey: keys.space(spaceSlug),
       });
-      await synchronize(() => invalidateSpaces());
+      await synchronizeCache(context, () => invalidateSpaces());
     },
 
     async createRecipe(spaceSlug: string, body: components["schemas"]["RecipeCreate"]) {
@@ -81,7 +68,7 @@ export function createLibraryCommands(context: LibraryCommandContext) {
         body,
       });
       if (error) throw new Error(getApiErrorMessage(error, "Failed to create recipe"));
-      await synchronize(() => invalidateRecipes(spaceSlug, data.id));
+      await synchronizeCache(context, () => invalidateRecipes(spaceSlug, data.id));
       return data;
     },
 
@@ -95,7 +82,7 @@ export function createLibraryCommands(context: LibraryCommandContext) {
         { params: { path: { spaceSlug, recipeId } }, body },
       );
       if (error) throw new Error(getApiErrorMessage(error, "Failed to update recipe"));
-      await synchronize(() => invalidateRecipes(spaceSlug, recipeId));
+      await synchronizeCache(context, () => invalidateRecipes(spaceSlug, recipeId));
       return data;
     },
 
@@ -105,11 +92,9 @@ export function createLibraryCommands(context: LibraryCommandContext) {
       });
       if (error) throw new Error(getApiErrorMessage(error, "Failed to delete recipe"));
       context.queryClient.removeQueries({
-        queryKey: [context.serverId, "spaces", spaceSlug, "recipes", recipeId],
+        queryKey: keys.recipe(spaceSlug, recipeId),
       });
-      await synchronize(() => invalidateRecipes(spaceSlug));
+      await synchronizeCache(context, () => invalidateRecipes(spaceSlug));
     },
   };
 }
-
-export type LibraryCommands = ReturnType<typeof createLibraryCommands>;

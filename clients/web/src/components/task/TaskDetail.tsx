@@ -1,10 +1,4 @@
-import { createTaskCommands } from "@horologia/client-core/commands/tasks";
-import {
-  useMutation,
-  useQueryClient,
-  useSuspenseInfiniteQuery,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useMutation, useSuspenseInfiniteQuery, useSuspenseQuery } from "@tanstack/react-query";
 import {
   Activity,
   Check,
@@ -19,11 +13,10 @@ import {
   X,
 } from "lucide-react";
 import { type ReactNode, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { apiClient } from "../../api/client.ts";
-import type { components } from "../../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 import { useSpaceMemberMap } from "../../lib/hooks.ts";
 import { getIcon } from "../../lib/level-icons.ts";
-import { useTaskPatch } from "../../lib/mutations.ts";
+import { useTaskCommands, useTaskPatch } from "../../lib/mutations.ts";
 import {
   spaceEffortLevelsQueryOptions,
   spaceMembersQueryOptions,
@@ -32,7 +25,6 @@ import {
   spaceTaskStatusesQueryOptions,
   taskActivityInfiniteQueryOptions,
 } from "../../lib/queries.ts";
-import { notifyStaleData } from "../../lib/toaster.ts";
 import { useMenuSearch } from "../../lib/useMenuSearch.ts";
 import { toast } from "sonner";
 import {
@@ -78,17 +70,8 @@ function TaskActions({
   taskId: string;
   onDeleteSuccess: () => void;
 }) {
-  const queryClient = useQueryClient();
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const commands = createTaskCommands({
-    serverId: window.location.origin,
-    apiClient,
-    queryClient,
-    onCacheError(error) {
-      console.error("Cache invalidation failed after mutation:", error);
-      notifyStaleData();
-    },
-  });
+  const commands = useTaskCommands();
 
   const deleteMutation = useMutation({
     mutationFn: () => commands.delete(spaceSlug, taskId),

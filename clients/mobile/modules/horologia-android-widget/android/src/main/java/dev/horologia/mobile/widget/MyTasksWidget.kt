@@ -12,17 +12,15 @@ import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.action.actionStartActivity
-import androidx.glance.appwidget.cornerRadius
+import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
-import androidx.glance.color.ColorProvider
 import androidx.glance.layout.Column
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.padding
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.Instant
@@ -38,11 +36,11 @@ class MyTasksWidget : GlanceAppWidget() {
 
   override suspend fun provideGlance(context: Context, id: GlanceId) {
     val snapshot = readSnapshot(context)
-    provideContent { GlanceTheme { MyTasksContent(snapshot) } }
+    provideContent { GlanceTheme { MyTasksContent(snapshot, context.packageName) } }
   }
 
   @Composable
-  private fun MyTasksContent(snapshot: WidgetSnapshot) {
+  private fun MyTasksContent(snapshot: WidgetSnapshot, packageName: String) {
     val size = LocalSize.current
     val nextTask = snapshot.tasks.firstOrNull()
     val deepLink =
@@ -52,13 +50,13 @@ class MyTasksWidget : GlanceAppWidget() {
             nextTask?.let { "horologia://task/${it.spaceSlug}/${it.id}" } ?: "horologia://"
           ),
         )
-        .setPackage("dev.horologia.mobile")
+        .setPackage(packageName)
 
     Column(
       modifier =
         GlanceModifier.fillMaxSize()
-          .background(ColorProvider(Color(0xFFF4F8F5), Color(0xFF18211B)))
-          .cornerRadius(24.dp)
+          .background(GlanceTheme.colors.widgetBackground)
+          .appWidgetBackground()
           .padding(16.dp)
           .clickable(actionStartActivity(deepLink))
     ) {
@@ -66,16 +64,18 @@ class MyTasksWidget : GlanceAppWidget() {
         text = "My Tasks",
         style =
           TextStyle(
-            color = ColorProvider(Color(0xFF152019), Color(0xFFE8F0EA)),
+            color = GlanceTheme.colors.onSurface,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
           ),
       )
       Text(
-        text = if (snapshot.signedIn) snapshot.tasks.size.toString() else "—",
+        text =
+          if (snapshot.signedIn) "${snapshot.taskCount}${if (snapshot.hasMore) "+" else ""}"
+          else "—",
         style =
           TextStyle(
-            color = ColorProvider(Color(0xFF2F6D4B), Color(0xFF79D39D)),
+            color = GlanceTheme.colors.primary,
             fontSize = 36.sp,
             fontWeight = FontWeight.Bold,
           ),
@@ -84,13 +84,13 @@ class MyTasksWidget : GlanceAppWidget() {
         text =
           if (!snapshot.signedIn) "Sign in to see your tasks"
           else nextTask?.title ?: "You're all caught up",
-        style = TextStyle(color = ColorProvider(Color(0xFF26322A), Color(0xFFD6DED8))),
+        style = TextStyle(color = GlanceTheme.colors.onSurface),
       )
       if (size.width >= 250.dp) {
         snapshot.tasks.drop(1).take(if (size.height >= 220.dp) 5 else 2).forEach { task ->
           Text(
             text = task.title,
-            style = TextStyle(color = ColorProvider(Color(0xFF455149), Color(0xFFB7C2BA))),
+            style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant),
           )
         }
       }
@@ -101,7 +101,7 @@ class MyTasksWidget : GlanceAppWidget() {
             else "Open Horologia to sign in",
           style =
             TextStyle(
-              color = ColorProvider(Color(0xFF66736B), Color(0xFF9BA89F)),
+              color = GlanceTheme.colors.onSurfaceVariant,
               fontSize = 11.sp,
             ),
         )
@@ -122,6 +122,8 @@ class MyTasksWidget : GlanceAppWidget() {
         WidgetSnapshot(
           signedIn = true,
           generatedAt = root.getString("generatedAt"),
+          taskCount = root.getInt("taskCount"),
+          hasMore = root.optBoolean("hasMore"),
           tasks = List(tasks.length()) { index ->
             val task = tasks.getJSONObject(index)
             WidgetTask(
@@ -158,10 +160,19 @@ private fun snapshotFreshness(value: String): String =
 private data class WidgetSnapshot(
   val signedIn: Boolean,
   val generatedAt: String,
+  val taskCount: Int,
+  val hasMore: Boolean,
   val tasks: List<WidgetTask>,
 ) {
   companion object {
-    val signedOut = WidgetSnapshot(signedIn = false, generatedAt = "", tasks = emptyList())
+    val signedOut =
+      WidgetSnapshot(
+        signedIn = false,
+        generatedAt = "",
+        taskCount = 0,
+        hasMore = false,
+        tasks = emptyList(),
+      )
   }
 }
 

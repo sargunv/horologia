@@ -1,13 +1,7 @@
-import {
-  createQueries,
-  projectMyTasksWidgetSnapshot,
-  type HorologiaClient,
-  type ServerProfile,
-} from "@horologia/client-core";
+import { createQueries, type HorologiaClient, type ServerProfile } from "@horologia/client-core";
 import type { QueryClient } from "@tanstack/react-query";
 
-import { saveCachedMyTasks } from "@/persistence/database";
-import { publishWidgetSnapshot } from "@/widgets/publishWidgetSnapshot";
+import { saveMyTasksSnapshot } from "@/widgets/saveMyTasksSnapshot";
 
 export async function refreshMyTasksWidget({
   profile,
@@ -20,21 +14,15 @@ export async function refreshMyTasksWidget({
   client: HorologiaClient;
   queryClient: QueryClient;
 }) {
-  const queries = createQueries({ serverId: profile.id, apiClient: client, appClient: client });
+  const queries = createQueries({ serverId: profile.id, apiClient: client });
   const data = await queryClient.fetchInfiniteQuery(
     queries.userTasksInfiniteQueryOptions(accountId),
   );
   const tasks = data.pages.flatMap((page) => page.items);
-  const generatedAt = new Date().toISOString();
-  await Promise.all([
-    saveCachedMyTasks(profile.id, accountId, tasks, generatedAt),
-    publishWidgetSnapshot(
-      projectMyTasksWidgetSnapshot({
-        serverId: profile.id,
-        accountId,
-        generatedAt,
-        tasks,
-      }),
-    ),
-  ]);
+  await saveMyTasksSnapshot({
+    profile,
+    accountId,
+    tasks,
+    hasMore: data.pages.at(-1)?.nextCursor !== null,
+  });
 }

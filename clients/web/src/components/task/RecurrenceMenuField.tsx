@@ -12,8 +12,13 @@ import {
   RECURRENCE_ORDINAL_LABELS as ORDINAL_LABELS,
   type WeekdayCode,
 } from "@horologia/client-core/domain/recurrence";
-import type { components } from "../../api/schema.d.ts";
-import { addDays, formatDateDisplay, parseDateInput, toISODate } from "../../lib/dates.ts";
+import {
+  addDays,
+  formatDateDisplay,
+  parseDateInput,
+  toISODate,
+} from "@horologia/client-core/domain/dates";
+import type { components } from "@horologia/client-core/schema";
 import { useTaskPatch } from "../../lib/mutations.ts";
 import { useMenuSearch } from "../../lib/useMenuSearch.ts";
 import {

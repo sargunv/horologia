@@ -1,8 +1,13 @@
-import { createQueries } from "@horologia/client-core/queries";
+import { createAppQueries, createQueries } from "@horologia/client-core/queries";
 
 import { apiClient, appClient } from "../api/client.ts";
 
 export type { AuthConfig, LinkPendingInfo } from "@horologia/client-core/queries";
+
+const queries = {
+  ...createAppQueries({ serverId: window.location.origin, appClient }),
+  ...createQueries({ serverId: window.location.origin, apiClient }),
+};
 
 export const {
   authConfigQueryOptions,
@@ -29,8 +34,4 @@ export const {
   taskSearchQueryOptions,
   spaceActivityInfiniteQueryOptions,
   userActivityInfiniteQueryOptions,
-} = createQueries({
-  serverId: window.location.origin,
-  apiClient,
-  appClient,
-});
+} = queries;

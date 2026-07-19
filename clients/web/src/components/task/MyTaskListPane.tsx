@@ -2,7 +2,7 @@ import { useQueries, useSuspenseInfiniteQuery, useSuspenseQuery } from "@tanstac
 import { createLink } from "@tanstack/react-router";
 import { Activity, ChevronDown, ListChecks } from "lucide-react";
 import { useMemo } from "react";
-import type { components } from "../../api/schema.d.ts";
+import type { components } from "@horologia/client-core/schema";
 import {
   currentUserQueryOptions,
   spaceEffortLevelsQueryOptions,
