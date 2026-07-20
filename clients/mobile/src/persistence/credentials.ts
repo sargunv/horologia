@@ -29,6 +29,18 @@ export async function deleteCredentials(key: CredentialKey): Promise<void> {
   await SecureStore.deleteItemAsync(storageKey(key));
 }
 
+export async function setCredentialsWhileCurrent(
+  key: CredentialKey,
+  credentials: OAuthCredentials,
+  isCurrent: () => boolean,
+): Promise<boolean> {
+  if (!isCurrent()) return false;
+  await setCredentials(key, credentials);
+  if (isCurrent()) return true;
+  await deleteCredentials(key);
+  return false;
+}
+
 function isCredentials(value: unknown): value is OAuthCredentials {
   return (
     typeof value === "object" &&

@@ -1,4 +1,8 @@
-import { createServerProfile, type ServerProfile } from "@horologia/client-core";
+import {
+  createServerProfile,
+  normalizeServerUrl,
+  type ServerProfile,
+} from "@horologia/client-core";
 import * as Crypto from "expo-crypto";
 import * as SQLite from "expo-sqlite";
 
@@ -101,21 +105,23 @@ export async function saveCachedMyTasks(
   tasks: Task[],
   updatedAt: string,
   hasMore: boolean,
-): Promise<void> {
+): Promise<boolean> {
   const db = await database();
-  await db.runAsync(
+  const result = await db.runAsync(
     `INSERT INTO my_tasks_cache(server_id, account_id, updated_at, tasks_json, has_more)
      VALUES (?, ?, ?, ?, ?)
      ON CONFLICT(server_id, account_id) DO UPDATE SET
        updated_at = excluded.updated_at,
        tasks_json = excluded.tasks_json,
-       has_more = excluded.has_more`,
+       has_more = excluded.has_more
+     WHERE excluded.updated_at > my_tasks_cache.updated_at`,
     serverId,
     accountId,
     updatedAt,
     JSON.stringify(tasks),
     hasMore ? 1 : 0,
   );
+  return result.changes === 1;
 }
 
 export async function clearCachedMyTasks(serverId: string, accountId: string): Promise<void> {
@@ -124,6 +130,20 @@ export async function clearCachedMyTasks(serverId: string, accountId: string): P
     "DELETE FROM my_tasks_cache WHERE server_id = ? AND account_id = ?",
     serverId,
     accountId,
+  );
+}
+
+export async function clearCachedMyTasksVersion(
+  serverId: string,
+  accountId: string,
+  updatedAt: string,
+): Promise<void> {
+  const db = await database();
+  await db.runAsync(
+    "DELETE FROM my_tasks_cache WHERE server_id = ? AND account_id = ? AND updated_at = ?",
+    serverId,
+    accountId,
+    updatedAt,
   );
 }
 
@@ -165,13 +185,14 @@ export async function loadActiveAccount(): Promise<ActiveAccount | null> {
 
 export async function saveActiveServer(baseUrl: string): Promise<ServerProfile> {
   const db = await database();
+  const normalizedBaseUrl = normalizeServerUrl(baseUrl);
   const existing = await db.getFirstAsync<{ id: string }>(
     "SELECT id FROM server_profiles WHERE base_url = ? LIMIT 1",
-    baseUrl,
+    normalizedBaseUrl,
   );
   const profile = createServerProfile({
     id: existing?.id ?? Crypto.randomUUID(),
-    baseUrl,
+    baseUrl: normalizedBaseUrl,
     now: new Date().toISOString(),
   });
   await db.withTransactionAsync(async () => {
@@ -195,10 +216,19 @@ export async function saveActiveServer(baseUrl: string): Promise<ServerProfile> 
 
 export async function attachActiveAccount(profileId: string, accountId: string): Promise<void> {
   const db = await database();
-  await db.runAsync("UPDATE server_profiles SET account_id = ? WHERE id = ?", accountId, profileId);
+  const result = await db.runAsync(
+    "UPDATE server_profiles SET account_id = ? WHERE id = ? AND active = 1",
+    accountId,
+    profileId,
+  );
+  if (result.changes !== 1) throw new Error("The selected server is no longer active");
 }
 
-export async function clearActiveAccount(): Promise<void> {
+export async function detachActiveAccount(profileId: string, accountId: string): Promise<void> {
   const db = await database();
-  await db.runAsync("UPDATE server_profiles SET account_id = NULL, active = 0 WHERE active = 1");
+  await db.runAsync(
+    "UPDATE server_profiles SET account_id = NULL WHERE id = ? AND account_id = ?",
+    profileId,
+    accountId,
+  );
 }

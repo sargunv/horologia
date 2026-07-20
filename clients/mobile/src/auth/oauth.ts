@@ -1,3 +1,4 @@
+import type { ServerProfile } from "@horologia/client-core/servers";
 import {
   AuthRequest,
   exchangeCodeAsync,
@@ -10,62 +11,70 @@ import * as WebBrowser from "expo-web-browser";
 WebBrowser.maybeCompleteAuthSession();
 
 export const MOBILE_OAUTH_SCOPES = [
-  "activity:read",
   "profile:read",
   "recipes:read",
-  "recipes:write",
   "spaces:read",
-  "spaces:write",
-  "tags:read",
-  "tags:write",
   "tasks:read",
-  "tasks:write",
-  "users:read",
-  "users:write",
 ] as const;
 
 const redirectUri = makeRedirectUri({
   scheme: "horologia",
   path: "oauth/callback",
 });
-const pendingAuthorizationKey = "oauth.pending";
+const pendingAuthorizationKeyPrefix = "oauth.pending";
+
+type OAuthServerProfile = Pick<ServerProfile, "id" | "baseUrl">;
 
 type PendingAuthorization = {
   codeVerifier: string;
+  serverId: string;
   serverBaseUrl: string;
   state: string;
 };
+
+function pendingAuthorizationKey(serverId: string): string {
+  return `${pendingAuthorizationKeyPrefix}.${serverId}`;
+}
 
 function resolveServerUrl(serverBaseUrl: string, path: string): string {
   return new URL(path, `${serverBaseUrl.replace(/\/+$/, "")}/`).toString();
 }
 
-export async function authorizeMobile(serverBaseUrl: string): Promise<TokenResponse> {
-  const discovery = createDiscovery(serverBaseUrl);
+export async function authorizeMobile(profile: OAuthServerProfile): Promise<TokenResponse> {
+  const discovery = createDiscovery(profile.baseUrl);
   const request = new AuthRequest({
     clientId: "horologia-mobile",
     redirectUri,
     scopes: [...MOBILE_OAUTH_SCOPES],
     usePKCE: true,
     extraParams: {
-      resource: resolveServerUrl(serverBaseUrl, "api"),
+      resource: resolveServerUrl(profile.baseUrl, "api"),
     },
   });
   const authorizationUrl = await request.makeAuthUrlAsync(discovery);
   if (!request.codeVerifier) {
     throw new Error("Authorization request did not create a PKCE verifier");
   }
+  const storageKey = pendingAuthorizationKey(profile.id);
   await SecureStore.setItemAsync(
-    pendingAuthorizationKey,
+    storageKey,
     JSON.stringify({
       codeVerifier: request.codeVerifier,
-      serverBaseUrl,
+      serverId: profile.id,
+      serverBaseUrl: profile.baseUrl,
       state: request.state,
     } satisfies PendingAuthorization),
   );
 
-  const result = await request.promptAsync(discovery, { url: authorizationUrl });
+  let result: Awaited<ReturnType<AuthRequest["promptAsync"]>>;
+  try {
+    result = await request.promptAsync(discovery, { url: authorizationUrl });
+  } catch (error) {
+    await SecureStore.deleteItemAsync(storageKey);
+    throw error;
+  }
   if (result.type !== "success") {
+    await SecureStore.deleteItemAsync(storageKey);
     throw new Error(
       result.type === "dismiss"
         ? "Sign-in was cancelled before it finished."
@@ -75,24 +84,30 @@ export async function authorizeMobile(serverBaseUrl: string): Promise<TokenRespo
 
   const code = result.params["code"];
   if (!code) {
+    await SecureStore.deleteItemAsync(storageKey);
     throw new Error("Authorization response did not include a usable code");
   }
 
-  return completeMobileAuthorization(code, result.params["state"]);
+  return completeMobileAuthorization(profile.id, code, result.params["state"]);
 }
 
-async function completeMobileAuthorization(
+export async function completeMobileAuthorization(
+  serverId: string,
   code: string,
   returnedState: string | undefined,
 ): Promise<TokenResponse> {
-  const serialized = await SecureStore.getItemAsync(pendingAuthorizationKey);
+  const storageKey = pendingAuthorizationKey(serverId);
+  const serialized = await SecureStore.getItemAsync(storageKey);
   if (!serialized) {
-    throw new Error("The authorization request is no longer available");
+    throw new Error("The authorization request is no longer available for this server");
   }
-  await SecureStore.deleteItemAsync(pendingAuthorizationKey);
+  await SecureStore.deleteItemAsync(storageKey);
   const pending: unknown = JSON.parse(serialized);
   if (!isPendingAuthorization(pending)) {
     throw new Error("The pending authorization request is invalid");
+  }
+  if (pending.serverId !== serverId) {
+    throw new Error("The authorization request does not belong to the selected server");
   }
   if (!returnedState || returnedState !== pending.state) {
     throw new Error("Authorization state did not match the pending request");
@@ -111,6 +126,15 @@ async function completeMobileAuthorization(
     discovery,
   );
   return response;
+}
+
+export async function cancelMobileAuthorization(serverId: string): Promise<void> {
+  try {
+    WebBrowser.dismissAuthSession();
+  } catch {
+    // Android custom tabs cannot always be dismissed programmatically.
+  }
+  await SecureStore.deleteItemAsync(pendingAuthorizationKey(serverId));
 }
 
 export async function revokeMobileToken(
@@ -145,6 +169,8 @@ function isPendingAuthorization(value: unknown): value is PendingAuthorization {
   return (
     "codeVerifier" in value &&
     typeof value.codeVerifier === "string" &&
+    "serverId" in value &&
+    typeof value.serverId === "string" &&
     "serverBaseUrl" in value &&
     typeof value.serverBaseUrl === "string" &&
     "state" in value &&

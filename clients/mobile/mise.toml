@@ -24,7 +24,7 @@ run = "pnpm exec vp check --no-fmt"
 
 [tasks.test]
 description = "Run mobile unit tests"
-run = "pnpm exec vitest run --passWithNoTests"
+run = "pnpm exec vitest run"
 
 [tasks.build]
 description = "Type-check the mobile app"
