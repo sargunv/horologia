@@ -10,11 +10,17 @@ import dev.horologia.mobile.domain.MobileRecipeUpdate
 import dev.horologia.mobile.domain.MobileSearchResult
 import dev.horologia.mobile.domain.MobileSpace
 import dev.horologia.mobile.domain.MobileTask
+import dev.horologia.mobile.domain.MobileTaskEffortDefinition
+import dev.horologia.mobile.domain.MobileTaskPriorityDefinition
+import dev.horologia.mobile.domain.MobileTaskStatusDefinition
+import dev.horologia.mobile.domain.MobileTaskVisualMetadata
 import dev.horologia.mobile.domain.MobileTaskUpdate
 import dev.horologia.mobile.domain.MobileUser
 import dev.horologia.mobile.domain.Page
 import dev.horologia.mobile.domain.ServerScope
 import dev.horologia.mobile.domain.SessionScope
+import dev.horologia.mobile.domain.TaskListIndicatorKind
+import dev.horologia.mobile.domain.TaskStatusCategory
 import dev.horologia.mobile.persistence.CachedRecipe
 import dev.horologia.mobile.persistence.CachedSearchResult
 import dev.horologia.mobile.persistence.CachedSnapshot
@@ -255,6 +261,143 @@ class MobileAppCoreTest {
         fixture.close()
     }
 
+    @Test
+    fun taskListItemMapsConfiguredVisualsInPriorityThenEffortOrder() {
+        val state = MobileAppState(
+            taskVisualMetadataBySpace = mapOf(
+                "home" to MobileTaskVisualMetadata(
+                    statuses = listOf(
+                        MobileTaskStatusDefinition("Doing", TaskStatusCategory.INTERMEDIATE, "loader"),
+                    ),
+                    effortLevels = listOf(MobileTaskEffortDefinition("Large", "flame")),
+                    priorityLevels = listOf(MobileTaskPriorityDefinition("High", "signal-high")),
+                ),
+            ),
+        )
+        val item = state.taskListItem(
+            task("configured", "Write tests").copy(
+                status = "Doing",
+                priority = "High",
+                effort = "Large",
+                dueText = "2026-07-21",
+            ),
+        )
+
+        assertEquals("Write tests", item.title)
+        assertEquals("2026-07-21", item.dueText)
+        assertEquals("Doing", item.statusLabel)
+        assertEquals(TaskStatusCategory.INTERMEDIATE, item.statusCategory)
+        assertEquals("loader", item.statusIconToken)
+        assertEquals(listOf(TaskListIndicatorKind.PRIORITY, TaskListIndicatorKind.EFFORT), item.trailingIndicators.map { it.kind })
+        assertEquals(listOf("signal-high", "flame"), item.trailingIndicators.map { it.iconToken })
+        assertEquals(
+            "Write tests. Status: Doing. Due: 2026-07-21. Priority: High. Effort: Large",
+            item.accessibilityLabel,
+        )
+    }
+
+    @Test
+    fun taskListItemUsesNeutralFallbacksForMissingConfiguration() {
+        val item = MobileAppState().taskListItem(
+            task("fallback", "Unconfigured").copy(
+                status = "",
+                priority = "Urgent",
+                effort = "Unknown",
+                dueText = "",
+            ),
+        )
+
+        assertEquals("Unknown status", item.statusLabel)
+        assertEquals(TaskStatusCategory.NEUTRAL, item.statusCategory)
+        assertEquals("circle", item.statusIconToken)
+        assertNull(item.dueText)
+        assertEquals(listOf("flag", "gauge"), item.trailingIndicators.map { it.iconToken })
+        assertEquals("Unconfigured. Status: Unknown status. Priority: Urgent. Effort: Unknown", item.accessibilityLabel)
+    }
+
+    @Test
+    fun signedInBootstrapLoadsEverySpacesMetadataAndIsolatesFailures() = runBlocking {
+        val fixture = Fixture(credentials = credentials("account-a")).apply {
+            repository.spacesResult = listOf(MobileSpace("home", "Home"), MobileSpace("work", "Work"))
+            repository.statuses["home"] = Result.success(
+                listOf(MobileTaskStatusDefinition("Open", TaskStatusCategory.INITIAL, "circle-dot")),
+            )
+            repository.efforts["work"] = Result.success(listOf(MobileTaskEffortDefinition("Small", "gauge")))
+            repository.priorities["home"] = Result.failure(IllegalStateException("metadata unavailable"))
+        }
+
+        fixture.core.start()
+
+        val state = fixture.core.state.value
+        assertEquals(listOf("home", "work"), state.spaces.map { it.slug })
+        assertEquals(setOf("home", "work"), state.taskVisualMetadataBySpace.keys)
+        assertEquals("circle-dot", state.taskVisualMetadataBySpace.getValue("home").statuses.single().iconToken)
+        assertTrue(state.taskVisualMetadataBySpace.getValue("home").priorityLevels.isEmpty())
+        assertEquals("gauge", state.taskVisualMetadataBySpace.getValue("work").effortLevels.single().iconToken)
+        assertEquals(listOf("home", "work"), fixture.repository.statusRequests)
+        assertEquals(listOf("home", "work"), fixture.repository.effortRequests)
+        assertEquals(listOf("home", "work"), fixture.repository.priorityRequests)
+        assertNull(state.error)
+        assertEquals(MobileSessionPhase.SIGNED_IN, state.phase)
+        fixture.close()
+    }
+
+    @Test
+    fun metadataEndpointsForAllSpacesStartConcurrently() = runBlocking {
+        val gate = CompletableDeferred<Unit>()
+        val entered = Channel<String>(Channel.UNLIMITED)
+        val fixture = Fixture(credentials = credentials("account-a")).apply {
+            repository.spacesResult = listOf(MobileSpace("home", "Home"), MobileSpace("work", "Work"))
+            repository.metadataHandler = { kind, slug ->
+                entered.send("$slug:$kind")
+                gate.await()
+            }
+        }
+
+        val start = launch { fixture.core.start() }
+        val requests = withTimeout(2_000) { List(6) { entered.receive() }.toSet() }
+
+        assertEquals(
+            setOf(
+                "home:status", "home:effort", "home:priority",
+                "work:status", "work:effort", "work:priority",
+            ),
+            requests,
+        )
+        gate.complete(Unit)
+        start.join()
+        fixture.close()
+    }
+
+    @Test
+    fun taskAndSelectedSpaceRefreshesReloadVisualMetadata() = runBlocking {
+        val fixture = Fixture(credentials = credentials("account-a")).apply {
+            repository.firstTasks = Page(listOf(task("one", "Task")), null)
+            repository.spacesResult = listOf(MobileSpace("home", "Home"))
+            repository.statuses["home"] = Result.success(
+                listOf(MobileTaskStatusDefinition("Open", TaskStatusCategory.INITIAL, "circle")),
+            )
+        }
+        fixture.core.start()
+        assertEquals("circle", fixture.core.state.value.taskVisualMetadataBySpace.getValue("home").statuses.single().iconToken)
+
+        fixture.repository.statuses["home"] = Result.success(
+            listOf(MobileTaskStatusDefinition("Open", TaskStatusCategory.INTERMEDIATE, "loader")),
+        )
+        fixture.core.refreshMyTasks()
+        assertEquals("loader", fixture.core.state.value.taskVisualMetadataBySpace.getValue("home").statuses.single().iconToken)
+
+        fixture.repository.statuses["home"] = Result.success(
+            listOf(MobileTaskStatusDefinition("Open", TaskStatusCategory.COMPLETION, "circle-check")),
+        )
+        fixture.core.selectSpace("home")
+        assertEquals(
+            "circle-check",
+            fixture.core.state.value.taskVisualMetadataBySpace.getValue("home").statuses.single().iconToken,
+        )
+        fixture.close()
+    }
+
     private suspend fun signedInFixture(initial: MobileTask): Fixture =
         Fixture(credentials = credentials("account-a")).also {
             it.repository.firstTasks = Page(listOf(initial), null)
@@ -341,6 +484,14 @@ private class FakeRepository : MobileRepository {
     var updateTaskResult: Result<MobileTask> = Result.success(selectedTask)
     var myTasksHandler: (suspend (SessionScope, String?) -> Page<MobileTask>)? = null
     var authConfigFailure: Throwable? = null
+    var spacesResult = emptyList<MobileSpace>()
+    val statuses = mutableMapOf<String, Result<List<MobileTaskStatusDefinition>>>()
+    val efforts = mutableMapOf<String, Result<List<MobileTaskEffortDefinition>>>()
+    val priorities = mutableMapOf<String, Result<List<MobileTaskPriorityDefinition>>>()
+    val statusRequests = mutableListOf<String>()
+    val effortRequests = mutableListOf<String>()
+    val priorityRequests = mutableListOf<String>()
+    var metadataHandler: suspend (kind: String, spaceSlug: String) -> Unit = { _, _ -> }
 
     override suspend fun authConfig(scope: ServerScope): MobileAuthConfig {
         authConfigScopes += scope
@@ -377,7 +528,34 @@ private class FakeRepository : MobileRepository {
 
     override suspend fun spaces(scope: SessionScope): List<MobileSpace> {
         sessionScopes += scope
-        return emptyList()
+        return spacesResult
+    }
+
+    override suspend fun taskStatuses(
+        scope: SessionScope,
+        spaceSlug: String,
+    ): List<MobileTaskStatusDefinition> {
+        statusRequests += spaceSlug
+        metadataHandler("status", spaceSlug)
+        return statuses[spaceSlug]?.getOrThrow().orEmpty()
+    }
+
+    override suspend fun taskEffortLevels(
+        scope: SessionScope,
+        spaceSlug: String,
+    ): List<MobileTaskEffortDefinition> {
+        effortRequests += spaceSlug
+        metadataHandler("effort", spaceSlug)
+        return efforts[spaceSlug]?.getOrThrow().orEmpty()
+    }
+
+    override suspend fun taskPriorityLevels(
+        scope: SessionScope,
+        spaceSlug: String,
+    ): List<MobileTaskPriorityDefinition> {
+        priorityRequests += spaceSlug
+        metadataHandler("priority", spaceSlug)
+        return priorities[spaceSlug]?.getOrThrow().orEmpty()
     }
 
     override suspend fun spaceTasks(scope: SessionScope, spaceSlug: String, cursor: String?, limit: Int?) =

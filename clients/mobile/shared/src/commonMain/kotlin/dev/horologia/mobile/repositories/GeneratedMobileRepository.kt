@@ -3,6 +3,9 @@ package dev.horologia.mobile.repositories
 import dev.horologia.mobile.api.apis.AuthApi
 import dev.horologia.mobile.api.apis.RecipesApi
 import dev.horologia.mobile.api.apis.SpacesApi
+import dev.horologia.mobile.api.apis.TaskEffortLevelsApi
+import dev.horologia.mobile.api.apis.TaskPriorityLevelsApi
+import dev.horologia.mobile.api.apis.TaskStatusesApi
 import dev.horologia.mobile.api.apis.TasksApi
 import dev.horologia.mobile.api.apis.UsersApi
 import dev.horologia.mobile.api.infrastructure.HttpResponse
@@ -17,6 +20,9 @@ import dev.horologia.mobile.api.models.RecipeSummary
 import dev.horologia.mobile.api.models.RecipeUpdateWire
 import dev.horologia.mobile.api.models.RecipeYield
 import dev.horologia.mobile.api.models.Space as WireSpace
+import dev.horologia.mobile.api.models.TaskEffortLevel
+import dev.horologia.mobile.api.models.TaskPriorityLevel
+import dev.horologia.mobile.api.models.TaskStatus
 import dev.horologia.mobile.api.models.Task as WireTask
 import dev.horologia.mobile.api.models.TaskDue
 import dev.horologia.mobile.api.models.TaskOverdueAction
@@ -33,6 +39,9 @@ import dev.horologia.mobile.domain.MobileRecipeUpdate
 import dev.horologia.mobile.domain.MobileSearchResult
 import dev.horologia.mobile.domain.MobileSpace
 import dev.horologia.mobile.domain.MobileTask
+import dev.horologia.mobile.domain.MobileTaskEffortDefinition
+import dev.horologia.mobile.domain.MobileTaskPriorityDefinition
+import dev.horologia.mobile.domain.MobileTaskStatusDefinition
 import dev.horologia.mobile.domain.MobileTaskDue
 import dev.horologia.mobile.domain.MobileTaskUpdate
 import dev.horologia.mobile.domain.MobileUser
@@ -41,6 +50,7 @@ import dev.horologia.mobile.domain.PatchField
 import dev.horologia.mobile.domain.RepositoryException
 import dev.horologia.mobile.domain.ServerScope
 import dev.horologia.mobile.domain.SessionScope
+import dev.horologia.mobile.domain.TaskStatusCategory
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.statement.bodyAsText
@@ -93,6 +103,27 @@ class GeneratedMobileRepository : MobileRepository {
     ): Page<MobileTask> = withApis(scope) {
         val page = it.tasks.spaceTasksList(spaceSlug, cursor, limit).checked()
         Page(page.items.map(WireTask::toDomain), page.nextCursor)
+    }
+
+    override suspend fun taskStatuses(
+        scope: SessionScope,
+        spaceSlug: String,
+    ): List<MobileTaskStatusDefinition> = withApis(scope) {
+        it.taskStatuses.spaceTaskStatusesList(spaceSlug).checked().items.map(TaskStatus::toDomain)
+    }
+
+    override suspend fun taskEffortLevels(
+        scope: SessionScope,
+        spaceSlug: String,
+    ): List<MobileTaskEffortDefinition> = withApis(scope) {
+        it.taskEffortLevels.spaceTaskEffortLevelsList(spaceSlug).checked().items.map(TaskEffortLevel::toDomain)
+    }
+
+    override suspend fun taskPriorityLevels(
+        scope: SessionScope,
+        spaceSlug: String,
+    ): List<MobileTaskPriorityDefinition> = withApis(scope) {
+        it.taskPriorityLevels.spaceTaskPriorityLevelsList(spaceSlug).checked().items.map(TaskPriorityLevel::toDomain)
     }
 
     override suspend fun spaceRecipes(
@@ -150,6 +181,9 @@ class GeneratedMobileRepository : MobileRepository {
                 tasks = TasksApi(baseUrl, client),
                 spaces = SpacesApi(baseUrl, client),
                 recipes = RecipesApi(baseUrl, client),
+                taskStatuses = TaskStatusesApi(baseUrl, client),
+                taskEffortLevels = TaskEffortLevelsApi(baseUrl, client),
+                taskPriorityLevels = TaskPriorityLevelsApi(baseUrl, client),
             )
             apis.setBearerToken(scope.accessToken)
             block(apis)
@@ -197,12 +231,18 @@ private data class ScopedApis(
     val tasks: TasksApi,
     val spaces: SpacesApi,
     val recipes: RecipesApi,
+    val taskStatuses: TaskStatusesApi,
+    val taskEffortLevels: TaskEffortLevelsApi,
+    val taskPriorityLevels: TaskPriorityLevelsApi,
 ) {
     fun setBearerToken(token: String) {
         users.setBearerToken(token)
         tasks.setBearerToken(token)
         spaces.setBearerToken(token)
         recipes.setBearerToken(token)
+        taskStatuses.setBearerToken(token)
+        taskEffortLevels.setBearerToken(token)
+        taskPriorityLevels.setBearerToken(token)
     }
 }
 
@@ -250,6 +290,21 @@ private fun WireTask.toDomain() = MobileTask(
 )
 
 private fun WireSpace.toDomain() = MobileSpace(slug, name)
+
+private fun TaskStatus.toDomain() = MobileTaskStatusDefinition(
+    label = name,
+    category = when (category.value) {
+        "initial" -> TaskStatusCategory.INITIAL
+        "intermediate" -> TaskStatusCategory.INTERMEDIATE
+        "completion" -> TaskStatusCategory.COMPLETION
+        else -> TaskStatusCategory.NEUTRAL
+    },
+    iconToken = icon,
+)
+
+private fun TaskEffortLevel.toDomain() = MobileTaskEffortDefinition(name, icon)
+
+private fun TaskPriorityLevel.toDomain() = MobileTaskPriorityDefinition(name, icon)
 
 private fun RecipeSummary.toDomain() = MobileRecipe(
     id = id,

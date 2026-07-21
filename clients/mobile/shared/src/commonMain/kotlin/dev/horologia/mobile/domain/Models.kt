@@ -31,6 +31,56 @@ data class MobileTask(
     val tags: List<String>,
 )
 
+enum class TaskStatusCategory {
+    INITIAL,
+    INTERMEDIATE,
+    COMPLETION,
+    NEUTRAL,
+}
+
+data class MobileTaskStatusDefinition(
+    val label: String,
+    val category: TaskStatusCategory,
+    val iconToken: String,
+)
+
+data class MobileTaskEffortDefinition(
+    val label: String,
+    val iconToken: String,
+)
+
+data class MobileTaskPriorityDefinition(
+    val label: String,
+    val iconToken: String,
+)
+
+data class MobileTaskVisualMetadata(
+    val statuses: List<MobileTaskStatusDefinition> = emptyList(),
+    val effortLevels: List<MobileTaskEffortDefinition> = emptyList(),
+    val priorityLevels: List<MobileTaskPriorityDefinition> = emptyList(),
+)
+
+enum class TaskListIndicatorKind {
+    PRIORITY,
+    EFFORT,
+}
+
+data class TaskListIndicator(
+    val kind: TaskListIndicatorKind,
+    val label: String,
+    val iconToken: String,
+)
+
+data class TaskListItemModel(
+    val title: String,
+    val dueText: String?,
+    val statusLabel: String,
+    val statusCategory: TaskStatusCategory,
+    val statusIconToken: String,
+    val trailingIndicators: List<TaskListIndicator>,
+    val accessibilityLabel: String,
+)
+
 data class MobileRecipe(
     val id: String,
     val spaceSlug: String,

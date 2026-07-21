@@ -1779,38 +1779,123 @@ private struct RecipeEditView: View {
     }
 }
 
+// MARK: - Task list item primitives
+
+/// Maps Lucide kebab-case icon tokens — as configured in task status, effort,
+/// and priority settings — to semantic SF Symbols. Tokens with no native
+/// equivalent resolve to a neutral question mark rather than failing silently.
+enum NativeSymbolMap {
+    /// Neutral symbol for empty or unrecognized tokens.
+    static let fallback = "questionmark.circle"
+
+    /// SF Symbol name for a Lucide kebab-case token, or `fallback`.
+    static func systemName(forToken token: String) -> String {
+        symbols[token] ?? fallback
+    }
+
+    /// Covers the web-canonical suggested status, effort, and priority icon
+    /// sets, which include every server-seeded default.
+    private static let symbols: [String: String] = [
+        // Status
+        "circle": "circle",
+        "circle-dot": "circle.inset.filled",
+        "loader": "arrow.triangle.2.circlepath",
+        "circle-check": "checkmark.circle.fill",
+        "circle-x": "xmark.circle",
+        "ban": "nosign",
+        // Effort
+        "feather": "leaf",
+        "leaf": "leaf",
+        "gauge": "gauge.medium",
+        "mountain": "mountain.2",
+        "flame": "flame",
+        "rocket": "bolt",
+        // Priority
+        "signal-low": "exclamationmark",
+        "signal-medium": "exclamationmark.2",
+        "signal-high": "exclamationmark.3",
+        "flag": "flag.fill",
+        "alert-triangle": "exclamationmark.triangle.fill",
+        "siren": "alarm.fill",
+    ]
+}
+
+/// Compact strip of trailing task indicators (priority first, then effort, in
+/// the order provided by the shared presenter). Purely informational — the
+/// symbols are never interactive; the row's combined VoiceOver label already
+/// names each indicator.
+struct TaskIndicatorStrip: View {
+    let indicators: [TaskListIndicator]
+
+    var body: some View {
+        if !indicators.isEmpty {
+            HStack(spacing: 8) {
+                ForEach(indicators.indices, id: \.self) { index in
+                    Image(systemName: NativeSymbolMap.systemName(forToken: indicators[index].iconToken))
+                        .font(.subheadline)
+                }
+            }
+            .foregroundStyle(.secondary)
+            .accessibilityHidden(true)
+        }
+    }
+}
+
+/// Platform-idiomatic one/two-line task row: a fixed leading status symbol,
+/// the task title, an optional secondary due line, and compact trailing
+/// priority/effort symbols. Renders the shared `TaskListItemModel` so every
+/// platform presents the same information hierarchy.
+struct TaskListItemView: View {
+    let item: TaskListItemModel
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: NativeSymbolMap.systemName(forToken: item.statusIconToken))
+                .font(.title3)
+                .frame(width: 26)
+                .foregroundStyle(statusColor)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.title)
+                    .font(.body)
+                    .lineLimit(1)
+                if let due = item.dueText {
+                    Text(due)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            Spacer(minLength: 8)
+            TaskIndicatorStrip(indicators: item.trailingIndicators)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(item.accessibilityLabel)
+    }
+
+    /// Semantic foreground per status category — never hardcoded colors.
+    private var statusColor: Color {
+        let category = item.statusCategory
+        if category == TaskStatusCategory.completion {
+            return .accentColor
+        } else if category == TaskStatusCategory.intermediate {
+            return .primary
+        } else {
+            // INITIAL and NEUTRAL keep a quiet, not-yet-started presence.
+            return .secondary
+        }
+    }
+}
+
 // MARK: - Rows & shared components
 
 private struct TaskRow: View {
+    @EnvironmentObject private var adapter: MobileCoreAdapter
     let task: MobileTask
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(task.title)
-                .font(.headline)
-            HStack(spacing: 8) {
-                StatusBadge(status: task.status)
-                if let due = task.dueText {
-                    Label(due, systemImage: "calendar")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                if let priority = task.priority {
-                    Label(priority.capitalized, systemImage: "flag")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            if !task.tags.isEmpty {
-                Text(task.tags.joined(separator: " · "))
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-                    .lineLimit(1)
-            }
-        }
-        .padding(.vertical, 2)
-        .accessibilityElement(children: .combine)
-        .accessibilityHint("Opens task details")
+        TaskListItemView(item: adapter.state!.taskListItem(task: task))
+            .accessibilityHint("Opens task details")
     }
 }
 

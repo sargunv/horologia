@@ -13,8 +13,13 @@ import dev.horologia.mobile.domain.MobileRecipeUpdate
 import dev.horologia.mobile.domain.MobileSearchResult
 import dev.horologia.mobile.domain.MobileSpace
 import dev.horologia.mobile.domain.MobileTask
+import dev.horologia.mobile.domain.MobileTaskVisualMetadata
 import dev.horologia.mobile.domain.MobileTaskUpdate
 import dev.horologia.mobile.domain.MobileUser
+import dev.horologia.mobile.domain.TaskListIndicator
+import dev.horologia.mobile.domain.TaskListIndicatorKind
+import dev.horologia.mobile.domain.TaskListItemModel
+import dev.horologia.mobile.domain.TaskStatusCategory
 import dev.horologia.mobile.domain.RepositoryException
 import dev.horologia.mobile.domain.ServerScope
 import dev.horologia.mobile.domain.SessionScope
@@ -29,6 +34,8 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -105,9 +112,53 @@ data class MobileAppState(
     val searchResults: List<MobileSearchResult> = emptyList(),
     val searchGeneratedAtEpochSeconds: Long? = null,
     val searchFromCache: Boolean = false,
+    val taskVisualMetadataBySpace: Map<String, MobileTaskVisualMetadata> = emptyMap(),
     val loading: MobileLoadingState = MobileLoadingState(),
     val error: MobileAppError? = null,
-)
+) {
+    fun taskListItem(task: MobileTask): TaskListItemModel {
+        val metadata = taskVisualMetadataBySpace[task.spaceSlug]
+        val configuredStatus = metadata?.statuses?.firstOrNull { it.label == task.status }
+        val statusLabel = configuredStatus?.label ?: task.status.ifBlank { "Unknown status" }
+        val priority = task.priority?.takeIf(String::isNotBlank)?.let { value ->
+            val configured = metadata?.priorityLevels?.firstOrNull { it.label == value }
+            TaskListIndicator(
+                kind = TaskListIndicatorKind.PRIORITY,
+                label = configured?.label ?: value,
+                iconToken = configured?.iconToken?.takeIf(String::isNotBlank) ?: NEUTRAL_PRIORITY_ICON,
+            )
+        }
+        val effort = task.effort?.takeIf(String::isNotBlank)?.let { value ->
+            val configured = metadata?.effortLevels?.firstOrNull { it.label == value }
+            TaskListIndicator(
+                kind = TaskListIndicatorKind.EFFORT,
+                label = configured?.label ?: value,
+                iconToken = configured?.iconToken?.takeIf(String::isNotBlank) ?: NEUTRAL_EFFORT_ICON,
+            )
+        }
+        val indicators = listOfNotNull(priority, effort)
+        val accessibilityParts = buildList {
+            add(task.title)
+            add("Status: $statusLabel")
+            task.dueText?.takeIf(String::isNotBlank)?.let { add("Due: $it") }
+            priority?.let { add("Priority: ${it.label}") }
+            effort?.let { add("Effort: ${it.label}") }
+        }
+        return TaskListItemModel(
+            title = task.title,
+            dueText = task.dueText?.takeIf(String::isNotBlank),
+            statusLabel = statusLabel,
+            statusCategory = configuredStatus?.category ?: TaskStatusCategory.NEUTRAL,
+            statusIconToken = configuredStatus?.iconToken?.takeIf(String::isNotBlank) ?: NEUTRAL_STATUS_ICON,
+            trailingIndicators = indicators,
+            accessibilityLabel = accessibilityParts.joinToString(". "),
+        )
+    }
+}
+
+private const val NEUTRAL_STATUS_ICON = "circle"
+private const val NEUTRAL_PRIORITY_ICON = "flag"
+private const val NEUTRAL_EFFORT_ICON = "gauge"
 
 internal interface RuntimeAuthClient {
     suspend fun authorize(
@@ -226,7 +277,7 @@ class MobileAppCore private constructor(
                 )
             }
             publishCachedAccount(authorized.accountId)
-            refreshMyTasksInternal(readCache = false)
+            refreshMyTasksInternal(readCache = false, refreshMetadata = false)
             loadSpacesInternal(readCache = false)
         } catch (cancelled: CancellationException) {
             mutableState.update { it.copy(phase = MobileSessionPhase.SIGNED_OUT) }
@@ -343,16 +394,22 @@ class MobileAppCore private constructor(
             )
         }
         loading({ copy(space = true) }) {
-            val session = authenticatedScope()
-            val tasks = repository.spaceTasks(session, spaceSlug)
-            val recipes = repository.spaceRecipes(session, spaceSlug)
-            mutableState.update {
-                it.copy(
-                    spaceTasks = tasks.items.distinctBy(MobileTask::id),
-                    spaceTasksCursor = tasks.nextCursor,
-                    spaceRecipes = recipes.items.distinctBy(MobileRecipe::id),
-                    spaceRecipesCursor = recipes.nextCursor,
-                )
+            coroutineScope {
+                val session = authenticatedScope()
+                val tasks = async { repository.spaceTasks(session, spaceSlug) }
+                val recipes = async { repository.spaceRecipes(session, spaceSlug) }
+                val metadata = async { loadTaskVisualMetadata(session, listOf(spaceSlug)) }
+                val taskPage = tasks.await()
+                val recipePage = recipes.await()
+                metadata.await()
+                mutableState.update {
+                    it.copy(
+                        spaceTasks = taskPage.items.distinctBy(MobileTask::id),
+                        spaceTasksCursor = taskPage.nextCursor,
+                        spaceRecipes = recipePage.items.distinctBy(MobileRecipe::id),
+                        spaceRecipesCursor = recipePage.nextCursor,
+                    )
+                }
             }
         }
     }
@@ -494,7 +551,7 @@ class MobileAppCore private constructor(
             mutableState.update {
                 it.copy(phase = MobileSessionPhase.SIGNED_IN, accountId = stored.accountId, user = user)
             }
-            refreshMyTasksInternal(readCache = false)
+            refreshMyTasksInternal(readCache = false, refreshMetadata = false)
             loadSpacesInternal(readCache = false)
             mutableState.update { it.copy(loading = it.loading.copy(bootstrap = false)) }
         } catch (cancelled: CancellationException) {
@@ -511,12 +568,13 @@ class MobileAppCore private constructor(
         }
     }
 
-    private suspend fun refreshMyTasksInternal(readCache: Boolean) {
+    private suspend fun refreshMyTasksInternal(readCache: Boolean, refreshMetadata: Boolean = true) {
         val accountId = requireAccountId()
         val serverId = mutableState.value.server.serverId
         if (readCache) publishCachedTasks(serverId, accountId)
         loading({ copy(myTasks = true) }) {
-            val page = repository.myTasks(authenticatedScope())
+            val session = authenticatedScope()
+            val page = repository.myTasks(session)
             val items = page.items.distinctBy(MobileTask::id)
             val generatedAt = clock()
             cache.replaceTasks(serverId, accountId, items.map(MobileTask::toCached), generatedAt, page.nextCursor, page.nextCursor != null)
@@ -528,6 +586,9 @@ class MobileAppCore private constructor(
                     myTasksFromCache = false,
                 )
             }
+            if (refreshMetadata) {
+                loadTaskVisualMetadata(session, items.map(MobileTask::spaceSlug))
+            }
         }
     }
 
@@ -536,14 +597,52 @@ class MobileAppCore private constructor(
         val serverId = mutableState.value.server.serverId
         if (readCache) publishCachedSpaces(serverId, accountId)
         loading({ copy(spaces = true) }) {
-            val spaces = repository.spaces(authenticatedScope()).distinctBy(MobileSpace::slug)
+            val session = authenticatedScope()
+            val spaces = repository.spaces(session).distinctBy(MobileSpace::slug)
             val generatedAt = clock()
             cache.replaceSpaces(serverId, accountId, spaces.map(MobileSpace::toCached), generatedAt, null, false)
             mutableState.update {
                 it.copy(spaces = spaces, spacesGeneratedAtEpochSeconds = generatedAt, spacesFromCache = false)
             }
+            loadTaskVisualMetadata(session, spaces.map(MobileSpace::slug))
         }
     }
+
+    private suspend fun loadTaskVisualMetadata(session: SessionScope, spaceSlugs: List<String>) = coroutineScope {
+        val previous = mutableState.value.taskVisualMetadataBySpace
+        val metadataJobs = spaceSlugs.distinct().associateWith { spaceSlug ->
+            async {
+                val current = previous[spaceSlug] ?: MobileTaskVisualMetadata()
+                val statuses = async {
+                    metadataValue(current.statuses) { repository.taskStatuses(session, spaceSlug) }
+                }
+                val effortLevels = async {
+                    metadataValue(current.effortLevels) { repository.taskEffortLevels(session, spaceSlug) }
+                }
+                val priorityLevels = async {
+                    metadataValue(current.priorityLevels) { repository.taskPriorityLevels(session, spaceSlug) }
+                }
+                MobileTaskVisualMetadata(
+                    statuses = statuses.await(),
+                    effortLevels = effortLevels.await(),
+                    priorityLevels = priorityLevels.await(),
+                )
+            }
+        }
+        val refreshed = metadataJobs.mapValues { it.value.await() }
+        mutableState.update {
+            it.copy(taskVisualMetadataBySpace = previous + refreshed)
+        }
+    }
+
+    private suspend fun <T> metadataValue(fallback: T, request: suspend () -> T): T =
+        try {
+            request()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Throwable) {
+            fallback
+        }
 
     private fun publishCachedAccount(accountId: String) {
         val serverId = mutableState.value.server.serverId

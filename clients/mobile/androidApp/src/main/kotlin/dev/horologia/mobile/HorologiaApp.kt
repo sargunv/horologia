@@ -110,6 +110,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import androidx.window.core.layout.WindowSizeClass
 import dev.horologia.mobile.background.AndroidBackgroundScheduler
+import dev.horologia.mobile.designsystem.TaskListItem
 import dev.horologia.mobile.domain.MobileRecipe
 import dev.horologia.mobile.domain.MobileRecipeUpdate
 import dev.horologia.mobile.domain.MobileRecipeYield
@@ -934,9 +935,8 @@ private fun MyTaskList(
                         )
                     }
                     items(state.myTasks, key = { it.id }) { task ->
-                        TaskRow(
-                            task = task,
-                            spaceName = state.spaces.firstOrNull { it.slug == task.spaceSlug }?.name,
+                        TaskListItem(
+                            item = state.taskListItem(task),
                             selected = showSelection && task.id == selectedTaskId,
                             onClick = { onTaskClick(task) },
                         )
@@ -952,48 +952,6 @@ private fun MyTaskList(
                 }
         }
     }
-}
-
-@Composable
-private fun TaskRow(
-    task: MobileTask,
-    spaceName: String?,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    val meta =
-        listOfNotNull(
-            task.status.ifBlank { null },
-            task.dueText?.take(10),
-            task.priority,
-            task.effort,
-        ).joinToString(" · ")
-    ListItem(
-        headlineContent = {
-            Text(task.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        },
-        supportingContent = {
-            if (meta.isNotEmpty()) {
-                Text(meta, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-        },
-        overlineContent = {
-            if (!spaceName.isNullOrBlank()) {
-                Text(spaceName, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-        },
-        colors =
-            if (selected) {
-                ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-            } else {
-                ListItemDefaults.colors()
-            },
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick)
-                .semantics { this.selected = selected },
-    )
 }
 
 // ---------------------------------------------------------------------------
@@ -2067,9 +2025,8 @@ private fun SpaceDetailBody(
 
             else -> {
                 state.spaceTasks.forEach { task ->
-                    SubListRow(
-                        title = task.title,
-                        subtitle = task.status,
+                    TaskListItem(
+                        item = state.taskListItem(task),
                         onClick = {
                             viewModel.selectTask(task.spaceSlug, task.id)
                             onOpenTask(task.spaceSlug, task.id)

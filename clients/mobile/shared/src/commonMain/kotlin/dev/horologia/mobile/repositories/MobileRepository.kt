@@ -7,6 +7,9 @@ import dev.horologia.mobile.domain.MobileRecipeUpdate
 import dev.horologia.mobile.domain.MobileSearchResult
 import dev.horologia.mobile.domain.MobileSpace
 import dev.horologia.mobile.domain.MobileTask
+import dev.horologia.mobile.domain.MobileTaskEffortDefinition
+import dev.horologia.mobile.domain.MobileTaskPriorityDefinition
+import dev.horologia.mobile.domain.MobileTaskStatusDefinition
 import dev.horologia.mobile.domain.MobileTaskUpdate
 import dev.horologia.mobile.domain.MobileUser
 import dev.horologia.mobile.domain.Page
@@ -37,6 +40,12 @@ interface MobileRepository {
         cursor: String? = null,
         limit: Int? = null,
     ): Page<MobileTask>
+
+    suspend fun taskStatuses(scope: SessionScope, spaceSlug: String): List<MobileTaskStatusDefinition>
+
+    suspend fun taskEffortLevels(scope: SessionScope, spaceSlug: String): List<MobileTaskEffortDefinition>
+
+    suspend fun taskPriorityLevels(scope: SessionScope, spaceSlug: String): List<MobileTaskPriorityDefinition>
 
     suspend fun spaceRecipes(
         scope: SessionScope,
