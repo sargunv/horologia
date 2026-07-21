@@ -15,7 +15,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -72,6 +74,17 @@ fun SpacesDestination(
     Scaffold(
         topBar = { TopAppBar(title = { Text(stringResource(R.string.nav_spaces)) }) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = {
+            FloatingActionButton(
+                // TODO: wire to create flow
+                onClick = {},
+            ) {
+                Icon(
+                    Icons.Filled.Add,
+                    contentDescription = stringResource(R.string.action_new_space),
+                )
+            }
+        },
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding).consumeWindowInsets(innerPadding)) {
             SpaceList(
@@ -121,7 +134,7 @@ private fun SpaceList(
             else ->
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 24.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp),
                 ) {
                     items(state.spaces, key = { it.slug }) { space ->
                         SpaceRow(
@@ -234,7 +247,7 @@ fun SpaceDetailBody(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 16.dp),
+                .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (showHeading) {

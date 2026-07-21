@@ -12,6 +12,9 @@
   <string name="action_cancel">Cancel</string>
   <string name="action_clear_text">Clear text</string>
   <string name="action_edit">Edit</string>
+  <string name="action_new_task">New task</string>
+  <string name="action_new_recipe">New recipe</string>
+  <string name="action_new_space">New space</string>
   <string name="action_load_more">Load more</string>
   <string name="error_generic_title">Something went wrong</string>
   <string name="list_updated_footer">Updated %1$s</string>

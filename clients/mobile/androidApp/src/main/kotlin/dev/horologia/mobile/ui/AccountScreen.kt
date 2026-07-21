@@ -71,7 +71,7 @@ fun AccountDestination(
                     .padding(innerPadding)
                     .consumeWindowInsets(innerPadding)
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             SectionHeader(text = stringResource(R.string.account_profile_section))

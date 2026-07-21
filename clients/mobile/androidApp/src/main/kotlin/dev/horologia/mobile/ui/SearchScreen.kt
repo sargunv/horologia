@@ -158,7 +158,7 @@ private fun SearchResults(
         else ->
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 24.dp),
+                contentPadding = PaddingValues(bottom = 16.dp),
             ) {
                 val grouped = state.searchResults.groupBy { it.kind }
                 grouped.forEach { (kind, results) ->
