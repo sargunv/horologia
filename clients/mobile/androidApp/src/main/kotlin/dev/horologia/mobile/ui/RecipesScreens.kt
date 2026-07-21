@@ -25,7 +25,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -36,12 +36,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
-import androidx.compose.material3.adaptive.layout.AnimatedPane
-import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
-import androidx.compose.material3.adaptive.layout.PaneAdaptedValue
-import androidx.compose.material3.adaptive.navigation.NavigableListDetailPaneScaffold
-import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -71,7 +65,6 @@ import dev.horologia.mobile.designsystem.LoadMoreRow
 import dev.horologia.mobile.designsystem.LoadingPane
 import dev.horologia.mobile.designsystem.MetaRow
 import dev.horologia.mobile.designsystem.MinutesField
-import dev.horologia.mobile.designsystem.PanePlaceholder
 import dev.horologia.mobile.domain.MobileRecipe
 import dev.horologia.mobile.domain.MobileRecipeUpdate
 import dev.horologia.mobile.domain.MobileRecipeYield
@@ -85,7 +78,7 @@ import kotlinx.coroutines.launch
 fun RecipesDestination(
     state: MobileAppState,
     viewModel: HorologiaViewModel,
-    isExpandedWidth: Boolean,
+    selectedRecipeId: String?,
     onOpenRecipe: (String, String) -> Unit,
     onEditRecipe: (String, String) -> Unit,
 ) {
@@ -129,80 +122,20 @@ fun RecipesDestination(
                         selectedSlug = state.selectedSpace?.slug,
                         onSelect = { viewModel.selectSpace(it) },
                     )
-                    if (isExpandedWidth) {
-                        RecipesListDetail(
-                            state = state,
-                            viewModel = viewModel,
-                            onEditRecipe = onEditRecipe,
-                        )
-                    } else {
-                        SpaceRecipeList(
-                            state = state,
-                            viewModel = viewModel,
-                            selectedRecipeId = null,
-                            showSelection = false,
-                            onRecipeClick = { recipe ->
-                                viewModel.selectRecipe(recipe.spaceSlug, recipe.id)
-                                onOpenRecipe(recipe.spaceSlug, recipe.id)
-                            },
-                        )
-                    }
+                    SpaceRecipeList(
+                        state = state,
+                        viewModel = viewModel,
+                        selectedRecipeId = selectedRecipeId,
+                        showSelection = selectedRecipeId != null,
+                        onRecipeClick = { recipe ->
+                            viewModel.selectRecipe(recipe.spaceSlug, recipe.id)
+                            onOpenRecipe(recipe.spaceSlug, recipe.id)
+                        },
+                    )
                 }
             }
         }
     }
-}
-
-@OptIn(ExperimentalMaterial3AdaptiveApi::class)
-@Composable
-private fun RecipesListDetail(
-    state: MobileAppState,
-    viewModel: HorologiaViewModel,
-    onEditRecipe: (String, String) -> Unit,
-) {
-    val navigator = rememberListDetailPaneScaffoldNavigator<String>()
-    val scope = rememberCoroutineScope()
-    var selectedRecipeId by rememberSaveable { mutableStateOf<String?>(null) }
-    val scaffoldValue = navigator.scaffoldValue
-    val bothPanesVisible =
-        scaffoldValue[ListDetailPaneScaffoldRole.List] == PaneAdaptedValue.Expanded &&
-            scaffoldValue[ListDetailPaneScaffoldRole.Detail] == PaneAdaptedValue.Expanded
-
-    NavigableListDetailPaneScaffold(
-        navigator = navigator,
-        listPane = {
-            AnimatedPane {
-                SpaceRecipeList(
-                    state = state,
-                    viewModel = viewModel,
-                    selectedRecipeId = selectedRecipeId,
-                    showSelection = bothPanesVisible,
-                    onRecipeClick = { recipe ->
-                        selectedRecipeId = recipe.id
-                        viewModel.selectRecipe(recipe.spaceSlug, recipe.id)
-                        scope.launch {
-                            navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, recipe.id)
-                        }
-                    },
-                )
-            }
-        },
-        detailPane = {
-            AnimatedPane {
-                val detailId = navigator.currentDestination?.contentKey ?: selectedRecipeId
-                if (detailId == null) {
-                    PanePlaceholder(text = stringResource(R.string.recipe_select_prompt))
-                } else {
-                    RecipeDetailBody(
-                        state = state,
-                        viewModel = viewModel,
-                        recipeId = detailId,
-                        onEdit = onEditRecipe,
-                    )
-                }
-            }
-        },
-    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -531,7 +464,7 @@ fun RecipeEditScreen(
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding).consumeWindowInsets(innerPadding)) {
             if (saving) {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                LinearWavyProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
             Column(
                 modifier =

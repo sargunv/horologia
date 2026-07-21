@@ -12,7 +12,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarDuration
@@ -40,15 +41,15 @@ import dev.horologia.mobile.runtime.MobileAppError
 import java.text.DateFormat
 import java.util.Date
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun LoadingRow(text: String) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        CircularProgressIndicator(
+        LoadingIndicator(
             modifier = Modifier.size(24.dp).semantics { contentDescription = text },
-            strokeWidth = 2.dp,
         )
         Text(
             text = text,
@@ -58,10 +59,11 @@ fun LoadingRow(text: String) {
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun LoadingPane() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator()
+        LoadingIndicator()
     }
 }
 
@@ -178,6 +180,7 @@ fun UpdatedFooter(epochSeconds: Long?) {
     )
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun LoadMoreRow(loading: Boolean, onLoadMore: () -> Unit) {
     Box(
@@ -185,7 +188,7 @@ fun LoadMoreRow(loading: Boolean, onLoadMore: () -> Unit) {
         contentAlignment = Alignment.Center,
     ) {
         if (loading) {
-            CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+            LoadingIndicator(modifier = Modifier.size(24.dp))
         } else {
             TextButton(onClick = onLoadMore) {
                 Text(stringResource(R.string.action_load_more))

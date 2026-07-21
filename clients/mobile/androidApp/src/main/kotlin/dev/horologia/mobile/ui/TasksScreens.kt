@@ -22,7 +22,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -31,12 +31,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
-import androidx.compose.material3.adaptive.layout.AnimatedPane
-import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
-import androidx.compose.material3.adaptive.layout.PaneAdaptedValue
-import androidx.compose.material3.adaptive.navigation.NavigableListDetailPaneScaffold
-import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -66,7 +60,6 @@ import dev.horologia.mobile.designsystem.LoadMoreRow
 import dev.horologia.mobile.designsystem.LoadingPane
 import dev.horologia.mobile.designsystem.MetaRow
 import dev.horologia.mobile.designsystem.NullableTextField
-import dev.horologia.mobile.designsystem.PanePlaceholder
 import dev.horologia.mobile.designsystem.TaskListItem
 import dev.horologia.mobile.designsystem.UpdatedFooter
 import dev.horologia.mobile.domain.MobileTask
@@ -82,7 +75,7 @@ import kotlinx.coroutines.launch
 fun TasksDestination(
     state: MobileAppState,
     viewModel: HorologiaViewModel,
-    isExpandedWidth: Boolean,
+    selectedTaskId: String?,
     onOpenTask: (String, String) -> Unit,
     onEditTask: (String, String) -> Unit,
 ) {
@@ -98,79 +91,18 @@ fun TasksDestination(
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding).consumeWindowInsets(innerPadding)) {
-            if (isExpandedWidth) {
-                TasksListDetail(
-                    state = state,
-                    viewModel = viewModel,
-                    onEditTask = onEditTask,
-                )
-            } else {
-                MyTaskList(
-                    state = state,
-                    viewModel = viewModel,
-                    selectedTaskId = null,
-                    showSelection = false,
-                    onTaskClick = { task ->
-                        viewModel.selectTask(task.spaceSlug, task.id)
-                        onOpenTask(task.spaceSlug, task.id)
-                    },
-                )
-            }
+            MyTaskList(
+                state = state,
+                viewModel = viewModel,
+                selectedTaskId = selectedTaskId,
+                showSelection = selectedTaskId != null,
+                onTaskClick = { task ->
+                    viewModel.selectTask(task.spaceSlug, task.id)
+                    onOpenTask(task.spaceSlug, task.id)
+                },
+            )
         }
     }
-}
-
-@OptIn(ExperimentalMaterial3AdaptiveApi::class)
-@Composable
-private fun TasksListDetail(
-    state: MobileAppState,
-    viewModel: HorologiaViewModel,
-    onEditTask: (String, String) -> Unit,
-) {
-    val navigator = rememberListDetailPaneScaffoldNavigator<String>()
-    val scope = rememberCoroutineScope()
-    var selectedTaskId by rememberSaveable { mutableStateOf<String?>(null) }
-    val scaffoldValue = navigator.scaffoldValue
-    val bothPanesVisible =
-        scaffoldValue[ListDetailPaneScaffoldRole.List] == PaneAdaptedValue.Expanded &&
-            scaffoldValue[ListDetailPaneScaffoldRole.Detail] == PaneAdaptedValue.Expanded
-
-    NavigableListDetailPaneScaffold(
-        navigator = navigator,
-        listPane = {
-            AnimatedPane {
-                MyTaskList(
-                    state = state,
-                    viewModel = viewModel,
-                    selectedTaskId = selectedTaskId,
-                    showSelection = bothPanesVisible,
-                    onTaskClick = { task ->
-                        selectedTaskId = task.id
-                        viewModel.selectTask(task.spaceSlug, task.id)
-                        scope.launch {
-                            navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, task.id)
-                        }
-                    },
-                )
-            }
-        },
-        detailPane = {
-            AnimatedPane {
-                val detailId = navigator.currentDestination?.contentKey ?: selectedTaskId
-                if (detailId == null) {
-                    PanePlaceholder(text = stringResource(R.string.task_select_prompt))
-                } else {
-                    TaskDetailBody(
-                        state = state,
-                        viewModel = viewModel,
-                        spaceSlug = null,
-                        taskId = detailId,
-                        onEdit = onEditTask,
-                    )
-                }
-            }
-        },
-    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -449,7 +381,7 @@ fun TaskEditScreen(
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding).consumeWindowInsets(innerPadding)) {
             if (saving) {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                LinearWavyProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
             Column(
                 modifier =

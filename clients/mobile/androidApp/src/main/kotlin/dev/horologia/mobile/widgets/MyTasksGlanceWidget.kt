@@ -3,6 +3,7 @@ package dev.horologia.mobile.widgets
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -10,6 +11,7 @@ import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.provideContent
@@ -42,7 +44,66 @@ class MyTasksGlanceWidget : GlanceAppWidget() {
         val content = TaskWidgetStore.read(context)
         provideContent { TaskWidgetContent(context, content) }
     }
+
+    override suspend fun providePreview(context: Context, widgetCategory: Int) {
+        provideContent { TaskWidgetContent(context, previewWidgetContent()) }
+    }
 }
+
+/**
+ * Publishes the generated preview shown by the widget picker on API 35+.
+ * Older versions fall back to the static `previewImage` in the provider XML.
+ */
+internal suspend fun publishMyTasksWidgetPreview(context: Context) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) return
+    runCatching {
+        GlanceAppWidgetManager(context.applicationContext)
+            .setWidgetPreviews(MyTasksWidgetReceiver::class)
+    }
+}
+
+private fun previewWidgetContent(): WidgetContent =
+    WidgetContent(
+        scope =
+            WidgetScope(
+                serverId = "preview",
+                baseUrl = "https://horologia.example",
+                accountId = "preview",
+            ),
+        snapshot =
+            TaskWidgetSnapshotV1(
+                serverId = "preview",
+                accountId = "preview",
+                generatedAt = "",
+                taskCount = 3,
+                hasMore = true,
+                rows =
+                    listOf(
+                        TaskWidgetRowV1(
+                            id = "preview-1",
+                            spaceSlug = "home",
+                            title = "Water the plants",
+                            due = "Today",
+                            status = "todo",
+                        ),
+                        TaskWidgetRowV1(
+                            id = "preview-2",
+                            spaceSlug = "home",
+                            title = "Take out the recycling",
+                            due = "Tomorrow",
+                            status = "todo",
+                        ),
+                        TaskWidgetRowV1(
+                            id = "preview-3",
+                            spaceSlug = "family",
+                            title = "Book dentist appointment",
+                            due = "Friday",
+                            status = "todo",
+                        ),
+                    ),
+            ),
+        error = null,
+    )
 
 class MyTasksWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = MyTasksGlanceWidget()

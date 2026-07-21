@@ -20,7 +20,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.adaptive.navigation.BackNavigationBehavior
+import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
+import androidx.compose.material3.adaptive.navigation3.rememberListDetailSceneStrategy
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,7 +39,7 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
-import androidx.window.core.layout.WindowSizeClass
+import dev.horologia.mobile.designsystem.PanePlaceholder
 import dev.horologia.mobile.navigation.SemanticDestination
 import dev.horologia.mobile.runtime.MobileAppState
 import dev.horologia.mobile.runtime.MobileSessionPhase
@@ -196,17 +199,12 @@ private fun SignedInShell(state: MobileAppState, viewModel: HorologiaViewModel) 
         viewModel.consumeDeepLink(pendingDeepLink)
     }
 
-    val windowAdaptiveInfo = currentWindowAdaptiveInfo()
-    val isExpandedWidth =
-        windowAdaptiveInfo.windowSizeClass
-            .isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
-
     NotificationPermissionRequest()
 
     NavigationSuiteScaffold(
-        navigationSuiteItems = {
+        navigationItems = {
             topLevelDestinations.forEach { destination ->
-                item(
+                NavigationSuiteItem(
                     selected =
                         backStack.firstOrNull() == destination.route ||
                             (backStack.firstOrNull() is HorologiaRoute.Search &&
@@ -226,6 +224,17 @@ private fun SignedInShell(state: MobileAppState, viewModel: HorologiaViewModel) 
         NavDisplay(
             backStack = backStack,
             onBack = { backStack.removeLastOrNull() },
+            sceneStrategies =
+                listOf(
+                    // PopUntilCurrentDestinationChange: on wide screens the pane
+                    // count doesn't change when popping a detail (the detail pane
+                    // stays as a placeholder), so the default
+                    // PopUntilScaffoldValueChange would leave system back
+                    // unhandled and finish the activity.
+                    rememberListDetailSceneStrategy(
+                        backNavigationBehavior = BackNavigationBehavior.PopUntilCurrentDestinationChange,
+                    ),
+                ),
             // Drill-in: shared-axis-X style horizontal slide, timed with the
             // Material motion scheme (spatial spec for position, effects for
             // alpha) — the same specs Material components animate with.
@@ -249,12 +258,30 @@ private fun SignedInShell(state: MobileAppState, viewModel: HorologiaViewModel) 
             },
             entryProvider =
                 entryProvider {
-                    entry<HorologiaRoute.Tasks>(metadata = topLevelFadeTransitions) {
+                    entry<HorologiaRoute.Tasks>(
+                        metadata =
+                            topLevelFadeTransitions +
+                                ListDetailSceneStrategy.listPane(
+                                    sceneKey = "tasks",
+                                    detailPlaceholder = {
+                                        PanePlaceholder(text = stringResource(R.string.task_select_prompt))
+                                    },
+                                ),
+                    ) {
                         TasksDestination(
                             state = state,
                             viewModel = viewModel,
-                            isExpandedWidth = isExpandedWidth,
+                            selectedTaskId =
+                                backStack
+                                    .filterIsInstance<HorologiaRoute.TaskDetail>()
+                                    .lastOrNull()
+                                    ?.taskId,
                             onOpenTask = { spaceSlug, taskId ->
+                                // Switch the visible detail in place instead of
+                                // stacking detail entries.
+                                if (backStack.lastOrNull() is HorologiaRoute.TaskDetail) {
+                                    backStack.removeLastOrNull()
+                                }
                                 backStack.add(HorologiaRoute.TaskDetail(spaceSlug, taskId))
                             },
                             onEditTask = { spaceSlug, taskId ->
@@ -262,7 +289,9 @@ private fun SignedInShell(state: MobileAppState, viewModel: HorologiaViewModel) 
                             },
                         )
                     }
-                    entry<HorologiaRoute.TaskDetail> { key ->
+                    entry<HorologiaRoute.TaskDetail>(
+                        metadata = ListDetailSceneStrategy.detailPane(sceneKey = "tasks"),
+                    ) { key ->
                         TaskDetailScreen(
                             state = state,
                             viewModel = viewModel,
@@ -284,12 +313,28 @@ private fun SignedInShell(state: MobileAppState, viewModel: HorologiaViewModel) 
                             onDone = { backStack.removeLastOrNull() },
                         )
                     }
-                    entry<HorologiaRoute.Recipes>(metadata = topLevelFadeTransitions) {
+                    entry<HorologiaRoute.Recipes>(
+                        metadata =
+                            topLevelFadeTransitions +
+                                ListDetailSceneStrategy.listPane(
+                                    sceneKey = "recipes",
+                                    detailPlaceholder = {
+                                        PanePlaceholder(text = stringResource(R.string.recipe_select_prompt))
+                                    },
+                                ),
+                    ) {
                         RecipesDestination(
                             state = state,
                             viewModel = viewModel,
-                            isExpandedWidth = isExpandedWidth,
+                            selectedRecipeId =
+                                backStack
+                                    .filterIsInstance<HorologiaRoute.RecipeDetail>()
+                                    .lastOrNull()
+                                    ?.recipeId,
                             onOpenRecipe = { spaceSlug, recipeId ->
+                                if (backStack.lastOrNull() is HorologiaRoute.RecipeDetail) {
+                                    backStack.removeLastOrNull()
+                                }
                                 backStack.add(HorologiaRoute.RecipeDetail(spaceSlug, recipeId))
                             },
                             onEditRecipe = { spaceSlug, recipeId ->
@@ -297,7 +342,9 @@ private fun SignedInShell(state: MobileAppState, viewModel: HorologiaViewModel) 
                             },
                         )
                     }
-                    entry<HorologiaRoute.RecipeDetail> { key ->
+                    entry<HorologiaRoute.RecipeDetail>(
+                        metadata = ListDetailSceneStrategy.detailPane(sceneKey = "recipes"),
+                    ) { key ->
                         RecipeDetailScreen(
                             state = state,
                             viewModel = viewModel,
@@ -319,12 +366,28 @@ private fun SignedInShell(state: MobileAppState, viewModel: HorologiaViewModel) 
                             onDone = { backStack.removeLastOrNull() },
                         )
                     }
-                    entry<HorologiaRoute.Spaces>(metadata = topLevelFadeTransitions) {
+                    entry<HorologiaRoute.Spaces>(
+                        metadata =
+                            topLevelFadeTransitions +
+                                ListDetailSceneStrategy.listPane(
+                                    sceneKey = "spaces",
+                                    detailPlaceholder = {
+                                        PanePlaceholder(text = stringResource(R.string.space_select_prompt))
+                                    },
+                                ),
+                    ) {
                         SpacesDestination(
                             state = state,
                             viewModel = viewModel,
-                            isExpandedWidth = isExpandedWidth,
+                            selectedSlug =
+                                backStack
+                                    .filterIsInstance<HorologiaRoute.SpaceDetail>()
+                                    .lastOrNull()
+                                    ?.spaceSlug,
                             onOpenSpace = { spaceSlug ->
+                                if (backStack.lastOrNull() is HorologiaRoute.SpaceDetail) {
+                                    backStack.removeLastOrNull()
+                                }
                                 backStack.add(HorologiaRoute.SpaceDetail(spaceSlug))
                             },
                             onOpenTask = { spaceSlug, taskId ->
@@ -335,7 +398,9 @@ private fun SignedInShell(state: MobileAppState, viewModel: HorologiaViewModel) 
                             },
                         )
                     }
-                    entry<HorologiaRoute.SpaceDetail> { key ->
+                    entry<HorologiaRoute.SpaceDetail>(
+                        metadata = ListDetailSceneStrategy.detailPane(sceneKey = "spaces"),
+                    ) { key ->
                         SpaceDetailScreen(
                             state = state,
                             viewModel = viewModel,

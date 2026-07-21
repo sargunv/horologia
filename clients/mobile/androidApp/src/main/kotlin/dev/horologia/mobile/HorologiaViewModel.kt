@@ -12,6 +12,7 @@ import dev.horologia.mobile.navigation.SemanticDestination
 import dev.horologia.mobile.runtime.AndroidAppCoreFactory
 import dev.horologia.mobile.runtime.MobileAppCore
 import dev.horologia.mobile.runtime.MobileSessionPhase
+import dev.horologia.mobile.widgets.publishMyTasksWidgetPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -60,6 +61,7 @@ class HorologiaViewModel(application: Application) : AndroidViewModel(applicatio
             }
         }
         viewModelScope.launch { core.start() }
+        viewModelScope.launch { publishMyTasksWidgetPreview(getApplication()) }
     }
 
     fun handleDeepLink(link: String) {

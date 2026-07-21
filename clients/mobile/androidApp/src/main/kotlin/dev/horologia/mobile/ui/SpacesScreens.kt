@@ -27,20 +27,9 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
-import androidx.compose.material3.adaptive.layout.AnimatedPane
-import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
-import androidx.compose.material3.adaptive.layout.PaneAdaptedValue
-import androidx.compose.material3.adaptive.navigation.NavigableListDetailPaneScaffold
-import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -57,20 +46,18 @@ import dev.horologia.mobile.designsystem.ListErrorSnackbarEffect
 import dev.horologia.mobile.designsystem.LoadMoreRow
 import dev.horologia.mobile.designsystem.LoadingPane
 import dev.horologia.mobile.designsystem.LoadingRow
-import dev.horologia.mobile.designsystem.PanePlaceholder
 import dev.horologia.mobile.designsystem.SectionHeader
 import dev.horologia.mobile.designsystem.TaskListItem
 import dev.horologia.mobile.designsystem.UpdatedFooter
 import dev.horologia.mobile.domain.MobileSpace
 import dev.horologia.mobile.runtime.MobileAppState
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SpacesDestination(
     state: MobileAppState,
     viewModel: HorologiaViewModel,
-    isExpandedWidth: Boolean,
+    selectedSlug: String?,
     onOpenSpace: (String) -> Unit,
     onOpenTask: (String, String) -> Unit,
     onOpenRecipe: (String, String) -> Unit,
@@ -87,81 +74,18 @@ fun SpacesDestination(
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding).consumeWindowInsets(innerPadding)) {
-            if (isExpandedWidth) {
-                SpacesListDetail(
-                    state = state,
-                    viewModel = viewModel,
-                    onOpenTask = onOpenTask,
-                    onOpenRecipe = onOpenRecipe,
-                )
-            } else {
-                SpaceList(
-                    state = state,
-                    viewModel = viewModel,
-                    selectedSlug = null,
-                    showSelection = false,
-                    onSpaceClick = { space ->
-                        viewModel.selectSpace(space.slug)
-                        onOpenSpace(space.slug)
-                    },
-                )
-            }
+            SpaceList(
+                state = state,
+                viewModel = viewModel,
+                selectedSlug = selectedSlug,
+                showSelection = selectedSlug != null,
+                onSpaceClick = { space ->
+                    viewModel.selectSpace(space.slug)
+                    onOpenSpace(space.slug)
+                },
+            )
         }
     }
-}
-
-@OptIn(ExperimentalMaterial3AdaptiveApi::class)
-@Composable
-private fun SpacesListDetail(
-    state: MobileAppState,
-    viewModel: HorologiaViewModel,
-    onOpenTask: (String, String) -> Unit,
-    onOpenRecipe: (String, String) -> Unit,
-) {
-    val navigator = rememberListDetailPaneScaffoldNavigator<String>()
-    val scope = rememberCoroutineScope()
-    var selectedSlug by rememberSaveable { mutableStateOf<String?>(null) }
-    val scaffoldValue = navigator.scaffoldValue
-    val bothPanesVisible =
-        scaffoldValue[ListDetailPaneScaffoldRole.List] == PaneAdaptedValue.Expanded &&
-            scaffoldValue[ListDetailPaneScaffoldRole.Detail] == PaneAdaptedValue.Expanded
-
-    NavigableListDetailPaneScaffold(
-        navigator = navigator,
-        listPane = {
-            AnimatedPane {
-                SpaceList(
-                    state = state,
-                    viewModel = viewModel,
-                    selectedSlug = selectedSlug,
-                    showSelection = bothPanesVisible,
-                    onSpaceClick = { space ->
-                        selectedSlug = space.slug
-                        viewModel.selectSpace(space.slug)
-                        scope.launch {
-                            navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, space.slug)
-                        }
-                    },
-                )
-            }
-        },
-        detailPane = {
-            AnimatedPane {
-                val detailSlug = navigator.currentDestination?.contentKey ?: selectedSlug
-                if (detailSlug == null) {
-                    PanePlaceholder(text = stringResource(R.string.space_select_prompt))
-                } else {
-                    SpaceDetailBody(
-                        state = state,
-                        viewModel = viewModel,
-                        spaceSlug = detailSlug,
-                        onOpenTask = onOpenTask,
-                        onOpenRecipe = onOpenRecipe,
-                    )
-                }
-            }
-        },
-    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
