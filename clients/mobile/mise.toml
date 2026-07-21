@@ -53,6 +53,14 @@ if [ "$(adb -s "$serial" get-state 2>/dev/null || true)" != "device" ]; then
   exit 1
 fi
 
+server_port="${SERVER_PORT:-8080}"
+web_port="${WEB_PORT:-5173}"
+oidc_port="${OIDC_PORT:-5556}"
+for port in "$server_port" "$web_port" "$oidc_port"; do
+  adb -s "$serial" reverse "tcp:$port" "tcp:$port" >/dev/null
+done
+echo "Horologia dev server: http://localhost:$server_port"
+
 ANDROID_SERIAL="$serial" ./gradlew :androidApp:installDebug
 adb -s "$serial" shell am start -W -n dev.horologia.mobile/.MainActivity
 '''
