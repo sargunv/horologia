@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import dev.horologia.mobile.auth.AndroidAuthorizationHandoff
+import dev.horologia.mobile.designsystem.HorologiaTheme
 
 /** Single-activity host for the Compose shell. */
 class MainActivity : ComponentActivity() {

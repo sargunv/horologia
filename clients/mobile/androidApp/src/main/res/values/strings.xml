@@ -14,7 +14,7 @@
   <string name="action_edit">Edit</string>
   <string name="action_load_more">Load more</string>
   <string name="error_generic_title">Something went wrong</string>
-  <string name="cached_banner">Showing cached data · Updated %1$s</string>
+  <string name="list_updated_footer">Updated %1$s</string>
 
   <!-- Sign-in -->
   <string name="sign_in_subtitle">Sign in to your Horologia server</string>
