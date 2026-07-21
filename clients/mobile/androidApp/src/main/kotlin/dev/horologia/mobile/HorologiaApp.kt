@@ -4,13 +4,20 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Layers
-import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
@@ -21,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.IntOffset
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -92,11 +100,26 @@ private data class TopLevelDestination(
 private val topLevelDestinations =
     listOf(
         TopLevelDestination(HorologiaRoute.Tasks, R.string.nav_tasks, Icons.Filled.CheckCircle),
-        TopLevelDestination(HorologiaRoute.Recipes, R.string.nav_recipes, Icons.Filled.MenuBook),
+        TopLevelDestination(HorologiaRoute.Recipes, R.string.nav_recipes, Icons.AutoMirrored.Filled.MenuBook),
         TopLevelDestination(HorologiaRoute.Spaces, R.string.nav_spaces, Icons.Filled.Layers),
         TopLevelDestination(HorologiaRoute.Search(), R.string.nav_search, Icons.Filled.Search),
         TopLevelDestination(HorologiaRoute.Account, R.string.nav_account, Icons.Filled.AccountCircle),
     )
+
+/**
+ * Fade-through for switching between top-level destinations; drill-in
+ * entries carry no metadata and inherit the NavDisplay slide specs. Timing
+ * comes from the Material motion scheme (see [SignedInShell]).
+ */
+@Composable
+private fun topLevelFadeTransitions(): Map<String, Any> {
+    val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+    return NavDisplay.transitionSpec { fadeIn(effectsSpec) togetherWith fadeOut(effectsSpec) } +
+        NavDisplay.popTransitionSpec { fadeIn(effectsSpec) togetherWith fadeOut(effectsSpec) } +
+        NavDisplay.predictivePopTransitionSpec {
+            fadeIn(effectsSpec) togetherWith fadeOut(effectsSpec)
+        }
+}
 
 // ---------------------------------------------------------------------------
 // Root
@@ -132,11 +155,15 @@ fun HorologiaApp(viewModel: HorologiaViewModel = viewModel()) {
 // Signed-in shell: adaptive navigation suite + Navigation 3 back stack
 // ---------------------------------------------------------------------------
 
-@OptIn(ExperimentalMaterial3AdaptiveApi::class)
+@OptIn(ExperimentalMaterial3AdaptiveApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SignedInShell(state: MobileAppState, viewModel: HorologiaViewModel) {
     val backStack = rememberNavBackStack(HorologiaRoute.Tasks)
     val deepLinkDestination by viewModel.deepLinkDestination.collectAsStateWithLifecycle()
+    val motionScheme = MaterialTheme.motionScheme
+    val spatialSpec = motionScheme.defaultSpatialSpec<IntOffset>()
+    val effectsSpec = motionScheme.defaultEffectsSpec<Float>()
+    val topLevelFadeTransitions = topLevelFadeTransitions()
 
     LaunchedEffect(deepLinkDestination) {
         val pendingDeepLink = deepLinkDestination ?: return@LaunchedEffect
@@ -199,9 +226,30 @@ private fun SignedInShell(state: MobileAppState, viewModel: HorologiaViewModel) 
         NavDisplay(
             backStack = backStack,
             onBack = { backStack.removeLastOrNull() },
+            // Drill-in: shared-axis-X style horizontal slide, timed with the
+            // Material motion scheme (spatial spec for position, effects for
+            // alpha) — the same specs Material components animate with.
+            transitionSpec = {
+                slideInHorizontally(spatialSpec, initialOffsetX = { it }) +
+                    fadeIn(effectsSpec) togetherWith
+                    slideOutHorizontally(spatialSpec, targetOffsetX = { -it / 4 }) +
+                    fadeOut(effectsSpec)
+            },
+            popTransitionSpec = {
+                slideInHorizontally(spatialSpec, initialOffsetX = { -it / 4 }) +
+                    fadeIn(effectsSpec) togetherWith
+                    slideOutHorizontally(spatialSpec, targetOffsetX = { it }) +
+                    fadeOut(effectsSpec)
+            },
+            predictivePopTransitionSpec = {
+                slideInHorizontally(spatialSpec, initialOffsetX = { -it / 4 }) +
+                    fadeIn(effectsSpec) togetherWith
+                    slideOutHorizontally(spatialSpec, targetOffsetX = { it }) +
+                    fadeOut(effectsSpec)
+            },
             entryProvider =
                 entryProvider {
-                    entry<HorologiaRoute.Tasks> {
+                    entry<HorologiaRoute.Tasks>(metadata = topLevelFadeTransitions) {
                         TasksDestination(
                             state = state,
                             viewModel = viewModel,
@@ -236,7 +284,7 @@ private fun SignedInShell(state: MobileAppState, viewModel: HorologiaViewModel) 
                             onDone = { backStack.removeLastOrNull() },
                         )
                     }
-                    entry<HorologiaRoute.Recipes> {
+                    entry<HorologiaRoute.Recipes>(metadata = topLevelFadeTransitions) {
                         RecipesDestination(
                             state = state,
                             viewModel = viewModel,
@@ -271,7 +319,7 @@ private fun SignedInShell(state: MobileAppState, viewModel: HorologiaViewModel) 
                             onDone = { backStack.removeLastOrNull() },
                         )
                     }
-                    entry<HorologiaRoute.Spaces> {
+                    entry<HorologiaRoute.Spaces>(metadata = topLevelFadeTransitions) {
                         SpacesDestination(
                             state = state,
                             viewModel = viewModel,
@@ -302,7 +350,7 @@ private fun SignedInShell(state: MobileAppState, viewModel: HorologiaViewModel) 
                             },
                         )
                     }
-                    entry<HorologiaRoute.Search> { key ->
+                    entry<HorologiaRoute.Search>(metadata = topLevelFadeTransitions) { key ->
                         SearchDestination(
                             state = state,
                             viewModel = viewModel,
@@ -315,7 +363,7 @@ private fun SignedInShell(state: MobileAppState, viewModel: HorologiaViewModel) 
                             },
                         )
                     }
-                    entry<HorologiaRoute.Account> {
+                    entry<HorologiaRoute.Account>(metadata = topLevelFadeTransitions) {
                         AccountDestination(
                             state = state,
                             viewModel = viewModel,

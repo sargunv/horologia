@@ -290,9 +290,6 @@ private fun RecipeRow(
     onClick: () -> Unit,
 ) {
     ListItem(
-        headlineContent = {
-            Text(recipe.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        },
         supportingContent = {
             if (recipe.tags.isNotEmpty()) {
                 Text(
@@ -313,7 +310,9 @@ private fun RecipeRow(
                 .fillMaxWidth()
                 .clickable(onClick = onClick)
                 .semantics { this.selected = selected },
-    )
+    ) {
+        Text(recipe.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
 }
 
 @Composable

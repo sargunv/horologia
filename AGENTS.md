@@ -170,11 +170,13 @@ the same TypeSpec contract; do not maintain handwritten API response types.
 - `clients/mobile` uses Kotlin Multiplatform for shared native behavior, Jetpack Compose for Android
   presentation, and SwiftUI for Apple presentation. Prefer each platform's native idioms over a
   lowest-common-denominator UI abstraction.
-- Android UI follows Material 3 / Material You with no brand palette: the theme
-  (`androidApp/.../designsystem/Theme.kt`) uses dynamic color on Android 12+ and the baseline M3
-  schemes below. Shared composables live in `designsystem/Components.kt`, screens in
-  `androidApp/.../ui/`, and every screen is built on `Scaffold` + `TopAppBar` — don't hand-roll
-  headers or inset padding.
+- Android UI follows Material 3 Expressive / Material You with no brand palette: the theme
+  (`androidApp/.../designsystem/Theme.kt`) uses `MaterialExpressiveTheme` with dynamic color on
+  Android 12+ and the baseline M3 schemes below. Shared composables live in
+  `designsystem/Components.kt`, screens in `androidApp/.../ui/`, and every screen is built on
+  `Scaffold` + `TopAppBar` — don't hand-roll headers or inset padding. Animation timing should come
+  from `MaterialTheme.motionScheme` (material3 is pinned to 1.5.0-alpha for the expressive APIs;
+  `@OptIn(ExperimentalMaterial3ExpressiveApi::class)` where needed).
 - Keep the app adaptive across iPhone, iPad, Android phone/tablet/foldable, and resizable windows.
   Compact layouts use push navigation; expanded layouts use list/detail panes.
 - Native projects are tracked under `clients/mobile/androidApp` and `clients/mobile/iosApp`. Shared
@@ -184,7 +186,10 @@ the same TypeSpec contract; do not maintain handwritten API response types.
   presentation, credentials, authorization sessions, notifications, background scheduling, and
   widget registration.
 - Verify Android changes with Gradle and a device/emulator smoke flow. Verify Apple changes with an
-  Xcode simulator build and a Simulator smoke flow.
+  Xcode simulator build and a Simulator smoke flow. To install and launch on Android, use
+  `mise run //mobile:android` (set `ANDROID_SERIAL` if multiple devices) — it also sets up the
+  `adb reverse` port forwarding the app needs to reach the local dev server, so don't install with
+  bare `gradlew installDebug`.
 
 ## Automated Testing
 

@@ -195,13 +195,13 @@ fun LoadMoreRow(loading: Boolean, onLoadMore: () -> Unit) {
 }
 
 @Composable
-fun SectionHeader(text: String) {
+fun SectionHeader(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier =
-            Modifier
+            modifier
                 .padding(top = 8.dp)
                 .semantics { heading() },
     )

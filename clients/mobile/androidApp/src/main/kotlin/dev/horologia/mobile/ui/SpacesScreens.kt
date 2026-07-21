@@ -221,9 +221,6 @@ private fun SpaceRow(
     onClick: () -> Unit,
 ) {
     ListItem(
-        headlineContent = {
-            Text(space.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        },
         supportingContent = {
             if (space.name != space.slug) {
                 Text(space.slug, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -240,7 +237,9 @@ private fun SpaceRow(
                 .fillMaxWidth()
                 .clickable(onClick = onClick)
                 .semantics { this.selected = selected },
-    )
+    ) {
+        Text(space.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -408,14 +407,13 @@ private fun SubListRow(
     onClick: () -> Unit,
 ) {
     ListItem(
-        headlineContent = {
-            Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        },
         supportingContent = {
             if (!subtitle.isNullOrBlank()) {
                 Text(subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         },
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-    )
+    ) {
+        Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
 }

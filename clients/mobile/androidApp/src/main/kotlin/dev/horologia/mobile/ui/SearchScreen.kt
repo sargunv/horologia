@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.clearText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
@@ -23,13 +25,11 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -58,20 +58,23 @@ fun SearchDestination(
     onOpenTask: (String, String) -> Unit,
     onOpenRecipe: (String, String) -> Unit,
 ) {
-    var query by rememberSaveable(initialQuery) { mutableStateOf(initialQuery ?: state.searchQuery) }
-    var expanded by rememberSaveable { mutableStateOf(false) }
+    val textFieldState =
+        rememberSaveable(initialQuery, saver = TextFieldState.Saver) {
+            TextFieldState(initialQuery ?: state.searchQuery)
+        }
+    val searchBarState = rememberSearchBarState()
 
     LaunchedEffect(Unit) {
-        snapshotFlow { query }
+        snapshotFlow { textFieldState.text }
             .debounce(300)
-            .collectLatest { viewModel.submitSearch(it) }
+            .collectLatest { viewModel.submitSearch(it.toString()) }
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
     ListErrorSnackbarEffect(
         snackbarHostState = snackbarHostState,
         error = state.error.takeIf { state.searchResults.isNotEmpty() },
-        onRetry = { viewModel.submitSearch(query) },
+        onRetry = { viewModel.submitSearch(textFieldState.text.toString()) },
     )
     Scaffold(
         topBar = { TopAppBar(title = { Text(stringResource(R.string.nav_search)) }) },
@@ -79,23 +82,20 @@ fun SearchDestination(
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding).consumeWindowInsets(innerPadding)) {
             SearchBar(
+                state = searchBarState,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 inputField = {
                     SearchBarDefaults.InputField(
-                        query = query,
-                        onQueryChange = { query = it },
-                        onSearch = {
-                            viewModel.submitSearch(query)
-                            expanded = false
-                        },
-                        expanded = expanded,
-                        onExpandedChange = { expanded = it },
+                        textFieldState = textFieldState,
+                        searchBarState = searchBarState,
+                        onSearch = { viewModel.submitSearch(it) },
                         placeholder = { Text(stringResource(R.string.search_hint)) },
                         leadingIcon = {
                             Icon(Icons.Filled.Search, contentDescription = null)
                         },
                         trailingIcon = {
-                            if (query.isNotEmpty()) {
-                                IconButton(onClick = { query = "" }) {
+                            if (textFieldState.text.isNotEmpty()) {
+                                IconButton(onClick = { textFieldState.clearText() }) {
                                     Icon(
                                         Icons.Filled.Clear,
                                         contentDescription = stringResource(R.string.action_clear_text),
@@ -105,47 +105,24 @@ fun SearchDestination(
                         },
                     )
                 },
-                expanded = expanded,
-                onExpandedChange = { expanded = it },
-            ) {
-                SearchResults(
-                    state = state,
-                    onOpenResult = { result ->
-                        expanded = false
-                        when (result.kind) {
-                            "task" -> {
-                                viewModel.selectTask(result.spaceSlug, result.id)
-                                onOpenTask(result.spaceSlug, result.id)
-                            }
-
-                            else -> {
-                                viewModel.selectRecipe(result.spaceSlug, result.id)
-                                onOpenRecipe(result.spaceSlug, result.id)
-                            }
+            )
+            SearchResults(
+                state = state,
+                onOpenResult = { result ->
+                    when (result.kind) {
+                        "task" -> {
+                            viewModel.selectTask(result.spaceSlug, result.id)
+                            onOpenTask(result.spaceSlug, result.id)
                         }
-                    },
-                    onRetry = { viewModel.submitSearch(query) },
-                )
-            }
-            if (!expanded) {
-                SearchResults(
-                    state = state,
-                    onOpenResult = { result ->
-                        when (result.kind) {
-                            "task" -> {
-                                viewModel.selectTask(result.spaceSlug, result.id)
-                                onOpenTask(result.spaceSlug, result.id)
-                            }
 
-                            else -> {
-                                viewModel.selectRecipe(result.spaceSlug, result.id)
-                                onOpenRecipe(result.spaceSlug, result.id)
-                            }
+                        else -> {
+                            viewModel.selectRecipe(result.spaceSlug, result.id)
+                            onOpenRecipe(result.spaceSlug, result.id)
                         }
-                    },
-                    onRetry = { viewModel.submitSearch(query) },
-                )
-            }
+                    }
+                },
+                onRetry = { viewModel.submitSearch(textFieldState.text.toString()) },
+            )
         }
     }
 }
@@ -195,23 +172,23 @@ private fun SearchResults(
                                         else -> R.string.search_hint
                                     },
                                 ),
+                            modifier = Modifier.padding(horizontal = 16.dp),
                         )
                     }
                     items(results, key = { "$kind:${it.id}" }) { result ->
                         ListItem(
-                            headlineContent = {
-                                Text(result.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            overlineContent = {
+                                Text(result.spaceSlug, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             },
                             supportingContent = {
                                 if (result.detail.isNotBlank()) {
                                     Text(result.detail, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
                             },
-                            overlineContent = {
-                                Text(result.spaceSlug, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            },
                             modifier = Modifier.fillMaxWidth().clickable { onOpenResult(result) },
-                        )
+                        ) {
+                            Text(result.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
                     }
                 }
                 item {

@@ -84,9 +84,6 @@ fun TaskListItem(
     selected: Boolean = false,
 ) {
     ListItem(
-        headlineContent = {
-            Text(item.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        },
         supportingContent =
             item.dueText?.let { dueText ->
                 @Composable {
@@ -122,5 +119,7 @@ fun TaskListItem(
                     this.selected = selected
                 }
                 .clickable(onClick = onClick),
-    )
+    ) {
+        Text(item.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
 }

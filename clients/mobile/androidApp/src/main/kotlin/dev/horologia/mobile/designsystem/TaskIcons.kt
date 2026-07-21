@@ -15,7 +15,7 @@ import androidx.compose.material.icons.outlined.DoneAll
 import androidx.compose.material.icons.outlined.Eco
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Flag
-import androidx.compose.material.icons.outlined.HelpOutline
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.HourglassEmpty
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.KeyboardDoubleArrowUp
@@ -55,8 +55,8 @@ private val LucideToMaterial: Map<String, ImageVector> =
         "ban" to Icons.Outlined.Block,
         "circle-alert" to Icons.Outlined.ErrorOutline,
         "alert-circle" to Icons.Outlined.ErrorOutline,
-        "circle-help" to Icons.Outlined.HelpOutline,
-        "help-circle" to Icons.Outlined.HelpOutline,
+        "circle-help" to Icons.AutoMirrored.Outlined.HelpOutline,
+        "help-circle" to Icons.AutoMirrored.Outlined.HelpOutline,
         "check" to Icons.Outlined.Check,
         "check-check" to Icons.Outlined.DoneAll,
         "clock" to Icons.Outlined.Schedule,
@@ -85,7 +85,7 @@ private val LucideToMaterial: Map<String, ImageVector> =
     )
 
 /** Neutral fallback for tokens without a Material equivalent. */
-private val FallbackIcon: ImageVector = Icons.Outlined.HelpOutline
+private val FallbackIcon: ImageVector = Icons.AutoMirrored.Outlined.HelpOutline
 
 /** Map a Lucide kebab-case icon token to a Material [ImageVector]. */
 fun taskIcon(token: String): ImageVector = LucideToMaterial[token.trim().lowercase()] ?: FallbackIcon
