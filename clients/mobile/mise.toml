@@ -1,31 +1,108 @@
-[tasks.dev]
-description = "Start the Expo development server"
-run = "pnpm exec expo start --dev-client"
-
-[tasks.ios]
-description = "Build and run the iOS app"
-run = "pnpm exec expo run:ios --device"
-
-[tasks.android]
-description = "Build and run the Android app (boots the selected AVD if it's not running)"
-run = "pnpm exec expo run:android --device"
-
-[tasks.android-tunnel]
-description = "Forward emulator localhost to the dev server and OIDC provider (required for sign-in on the emulator; re-run after every emulator boot)"
-run = "adb reverse tcp:{{env.SERVER_PORT}} tcp:{{env.SERVER_PORT}} && adb reverse tcp:{{env.OIDC_PORT}} tcp:{{env.OIDC_PORT}}"
-
 [tasks.generate]
-description = "Generate native projects from repository-owned Expo configuration"
-run = "pnpm exec expo prebuild --clean --no-install"
+description = "Generate the TypeSpec KMP specification and Kotlin API client"
+depends = ["//api:generate"]
+run = "./gradlew :api-generated:syncOpenApiGeneratedSources"
 
 [tasks.check]
-description = "Type-check and lint the mobile app"
-run = "pnpm exec vp check --no-fmt"
+description = "Run Kotlin and Gradle verification"
+depends = ["generate"]
+run = "./gradlew check"
 
 [tasks.test]
-description = "Run mobile unit tests"
-run = "pnpm exec vitest run"
+description = "Run Android-hosted shared tests and Apple-native tests when available"
+depends = ["generate"]
+run = '''
+set -eu
+
+tasks=":shared:testAndroidHostTest"
+if [ "$(uname -s)" = "Darwin" ]; then
+  tasks="$tasks :shared:iosSimulatorArm64Test"
+fi
+./gradlew $tasks
+'''
 
 [tasks.build]
-description = "Type-check the mobile app"
-run = "pnpm exec tsc --noEmit"
+description = "Build the generated API, shared framework, and Android app"
+depends = ["generate"]
+run = "./gradlew build"
+
+[tasks.android]
+description = "Install and launch the debug app on a connected Android device"
+depends = ["generate"]
+run = '''
+set -eu
+
+serial="${ANDROID_SERIAL:-}"
+if [ -z "$serial" ]; then
+  devices="$(adb devices | awk 'NR > 1 && $2 == "device" { print $1 }')"
+  count="$(printf '%s\n' "$devices" | awk 'NF { count++ } END { print count + 0 }')"
+  if [ "$count" -eq 0 ]; then
+    echo "No connected Android device is ready." >&2
+    exit 1
+  fi
+  if [ "$count" -gt 1 ]; then
+    echo "Multiple Android devices are ready; set ANDROID_SERIAL to select one:" >&2
+    printf '%s\n' "$devices" >&2
+    exit 1
+  fi
+  serial="$devices"
+fi
+
+if [ "$(adb -s "$serial" get-state 2>/dev/null || true)" != "device" ]; then
+  echo "Android device '$serial' is not connected and ready." >&2
+  exit 1
+fi
+
+ANDROID_SERIAL="$serial" ./gradlew :androidApp:installDebug
+adb -s "$serial" shell am start -W -n dev.horologia.mobile/.MainActivity
+'''
+
+[tasks.ios]
+description = "Build and launch the app on an available iOS simulator"
+depends = ["generate"]
+run = '''
+set -eu
+
+simulator="${IOS_SIMULATOR_UDID:-}"
+if [ -z "$simulator" ]; then
+  simulator="$(
+    xcrun simctl list devices available |
+      sed -nE 's/^[[:space:]]+.*\(([0-9A-Fa-f-]{36})\) \(Booted\)$/\1/p' |
+      sed -n '1p'
+  )"
+fi
+if [ -z "$simulator" ]; then
+  simulator="$(
+    xcrun simctl list devices available |
+      sed -nE 's/^[[:space:]]+iPhone.*\(([0-9A-Fa-f-]{36})\) \((Booted|Shutdown)\)$/\1/p' |
+      sed -n '1p'
+  )"
+fi
+if [ -z "$simulator" ]; then
+  echo "No available iOS simulator was found." >&2
+  exit 1
+fi
+
+xcrun simctl boot "$simulator" 2>/dev/null || true
+open -a Simulator --args -CurrentDeviceUDID "$simulator"
+xcrun simctl bootstatus "$simulator" -b
+xcodebuild \
+  -project iosApp/Horologia.xcodeproj \
+  -scheme Horologia \
+  -configuration Debug \
+  -sdk iphonesimulator \
+  -destination "platform=iOS Simulator,id=$simulator" \
+  -derivedDataPath iosApp/build \
+  build
+xcrun simctl install \
+  "$simulator" \
+  iosApp/build/Build/Products/Debug-iphonesimulator/Horologia.app
+xcrun simctl launch "$simulator" dev.horologia.mobile
+'''
+
+[tasks.clean]
+description = "Remove Gradle and Xcode build outputs"
+run = '''
+./gradlew clean
+rm -rf iosApp/build
+'''

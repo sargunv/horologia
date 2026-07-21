@@ -19,7 +19,7 @@ SERVER_PORT = "{{env.SERVER_PORT | default(value='8080')}}"
 HOROLOGIA_SERVER = "http://localhost:{{env.SERVER_PORT | default(value='8080')}}"
 WEB_PORT = "{{env.WEB_PORT | default(value='5173')}}"
 TILT_PORT = "{{env.TILT_PORT | default(value='10350')}}"
-# Android SDK location for expo run:android (build + emulator discovery).
+# Android SDK location for native builds and emulator discovery.
 # Resolves per-OS; override by setting ANDROID_HOME in your shell or .env.local.
 _.path = [
   "{% if env.ANDROID_HOME is defined %}{{ env.ANDROID_HOME }}{% elif os() == \"macos\" %}{{ env.HOME }}/Library/Android/sdk{% elif os() == \"linux\" %}{{ env.HOME }}/Android/Sdk{% elif os() == \"windows\" %}{{ env.LOCALAPPDATA }}/Android/Sdk{% endif %}/emulator",
@@ -66,6 +66,7 @@ depends = [
   "//server:generate",
   "//packages/client-core:generate",
   "//clients/web:generate",
+  "//clients/mobile:generate",
 ]
 
 [tasks.build]
@@ -91,6 +92,7 @@ depends = [
 
 [tasks.check]
 description = "Run all checks"
+depends = ["//clients/mobile:check"]
 run = "hk check --all"
 
 [tasks.fix]

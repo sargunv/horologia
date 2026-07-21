@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Horologia</string>
+  <string name="my_tasks_widget_description">My Tasks from Horologia</string>
+  <string name="loading_indicator_description">Loading</string>
+  <string name="status_preparing">Preparing Horologia…</string>
+
+  <!-- Common -->
+  <string name="action_retry">Retry</string>
+  <string name="action_back">Back</string>
+  <string name="action_save">Save</string>
+  <string name="action_cancel">Cancel</string>
+  <string name="action_clear_text">Clear text</string>
+  <string name="action_edit">Edit</string>
+  <string name="action_load_more">Load more</string>
+  <string name="error_generic_title">Something went wrong</string>
+  <string name="cached_banner">Showing cached data · Updated %1$s</string>
+
+  <!-- Sign-in -->
+  <string name="sign_in_subtitle">Sign in to your Horologia server</string>
+  <string name="server_url_label">Server URL</string>
+  <string name="action_connect">Connect</string>
+  <string name="sign_in_connecting">Contacting server…</string>
+  <string name="sign_in_authorizing">Complete sign-in in your browser</string>
+  <string name="sign_in_error_title">Couldn\'t connect</string>
+  <string name="sign_in_method">Sign in with %1$s</string>
+
+  <!-- Navigation -->
+  <string name="nav_tasks">Tasks</string>
+  <string name="nav_recipes">Recipes</string>
+  <string name="nav_spaces">Spaces</string>
+  <string name="nav_search">Search</string>
+  <string name="nav_account">Account</string>
+
+  <!-- Tasks -->
+  <string name="tasks_empty_title">No tasks yet</string>
+  <string name="tasks_empty_body">Tasks assigned to you will appear here.</string>
+  <string name="tasks_error_title">Couldn\'t load tasks</string>
+  <string name="task_select_prompt">Select a task to see its details</string>
+  <string name="task_detail_error_title">Couldn\'t load this task</string>
+  <string name="task_edit_title">Edit task</string>
+  <string name="task_field_title">Title</string>
+  <string name="task_field_description">Description</string>
+  <string name="task_field_status">Status</string>
+  <string name="task_field_effort">Effort</string>
+  <string name="task_field_priority">Priority</string>
+  <string name="task_field_due_date">Due date</string>
+  <string name="task_field_due_date_hint">YYYY-MM-DD</string>
+  <string name="task_field_due_date_invalid">Enter a date as YYYY-MM-DD</string>
+  <string name="task_field_tags">Tags</string>
+  <string name="field_tags_hint">Comma-separated</string>
+  <string name="field_clear_suffix">Clear %1$s</string>
+  <string name="task_save_error_title">Couldn\'t save the task</string>
+  <string name="detail_status_label">Status</string>
+  <string name="detail_effort_label">Effort</string>
+  <string name="detail_priority_label">Priority</string>
+  <string name="detail_due_label">Due</string>
+  <string name="detail_tags_label">Tags</string>
+  <string name="detail_space_label">Space</string>
+
+  <!-- Recipes -->
+  <string name="recipes_empty_title">No recipes yet</string>
+  <string name="recipes_empty_body">Recipes in this space will appear here.</string>
+  <string name="recipes_error_title">Couldn\'t load recipes</string>
+  <string name="recipes_select_space_prompt">Choose a space to see its recipes</string>
+  <string name="recipe_select_prompt">Select a recipe to see its details</string>
+  <string name="recipe_detail_error_title">Couldn\'t load this recipe</string>
+  <string name="recipe_edit_title">Edit recipe</string>
+  <string name="recipe_field_title">Title</string>
+  <string name="recipe_field_description">Description</string>
+  <string name="recipe_field_prep_minutes">Prep time (minutes)</string>
+  <string name="recipe_field_cook_minutes">Cook time (minutes)</string>
+  <string name="recipe_field_minutes_invalid">Enter a whole number of minutes</string>
+  <string name="recipe_field_yield_amount">Yield amount</string>
+  <string name="recipe_field_yield_unit">Yield unit</string>
+  <string name="recipe_field_yield_invalid">Enter a number for the yield amount</string>
+  <string name="recipe_optional_details">Optional details</string>
+  <string name="recipe_save_error_title">Couldn\'t save the recipe</string>
+
+  <!-- Spaces -->
+  <string name="spaces_empty_title">No spaces yet</string>
+  <string name="spaces_empty_body">Spaces you join will appear here.</string>
+  <string name="spaces_error_title">Couldn\'t load spaces</string>
+  <string name="space_select_prompt">Select a space to see its contents</string>
+  <string name="space_tasks_section">Tasks</string>
+  <string name="space_recipes_section">Recipes</string>
+  <string name="space_tasks_empty">No tasks in this space.</string>
+  <string name="space_recipes_empty">No recipes in this space.</string>
+
+  <!-- Search -->
+  <string name="search_hint">Search tasks and recipes</string>
+  <string name="search_prompt_title">Search your spaces</string>
+  <string name="search_prompt_body">Find tasks and recipes by name.</string>
+  <string name="search_no_results">No results for “%1$s”</string>
+  <string name="search_error_title">Search failed</string>
+  <string name="search_kind_task">Tasks</string>
+  <string name="search_kind_recipe">Recipes</string>
+
+  <!-- Account -->
+  <string name="account_profile_section">Profile</string>
+  <string name="account_name_label">Name</string>
+  <string name="account_email_label">Email</string>
+  <string name="account_save_error_title">Couldn\'t save your profile</string>
+  <string name="account_owner_badge">Owner</string>
+  <string name="account_server_section">Server</string>
+  <string name="account_server_url_label">Server URL</string>
+  <string name="account_id_label">Account ID</string>
+  <string name="account_sign_in_method_label">Sign-in method</string>
+  <string name="action_sign_out">Sign out</string>
+  <string name="sign_out_confirm_title">Sign out?</string>
+  <string name="sign_out_confirm_body">You\'ll need to sign in again to see your tasks and recipes.</string>
+  <string name="action_confirm_sign_out">Sign out</string>
+</resources>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!--
+        Launch window theme for the Compose shell. Compose draws all UI;
+        this theme only controls the pre-composition window. System bars
+        stay transparent because the app is edge-to-edge (enableEdgeToEdge).
+    -->
+  <style name="Theme.Horologia" parent="android:Theme.Material.Light.NoActionBar">
+    <item name="android:windowBackground">@android:color/white</item>
+    <item name="android:statusBarColor">@android:color/transparent</item>
+    <item name="android:navigationBarColor">@android:color/transparent</item>
+  </style>
+</resources>

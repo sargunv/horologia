@@ -1,14 +1,8 @@
 packages:
   - api
   - api/emitters/typespec-mcp-go
-  - clients/mobile
   - clients/web
   - packages/client-core
 onlyBuiltDependencies:
   - esbuild
 minimumReleaseAge: 4320
-minimumReleaseAgeExclude:
-  - "@expo/*"
-  - babel-preset-expo
-  - expo
-  - expo-*

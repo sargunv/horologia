@@ -1,0 +1,2851 @@
+openapi: 3.0.0
+info:
+  title: Horologia API
+  version: 0.0.0
+tags:
+  - name: Auth
+  - name: Server
+  - name: Users
+  - name: Spaces
+  - name: SpaceMembers
+  - name: Tags
+  - name: Tasks
+  - name: Recipes
+  - name: Task Statuses
+  - name: Task Effort Levels
+  - name: Task Priority Levels
+  - name: Activity
+paths:
+  /app/auth/config:
+    get:
+      operationId: WebAuth_config
+      description: Read public authentication configuration used by the web UI before login.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthConfig'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+      security:
+        - {}
+  /app/auth/link:
+    post:
+      operationId: WebAuth_link
+      description: |-
+        Confirm OIDC account linking using the existing account password.
+
+        This endpoint relies on the temporary `horologia_oidc_link` cookie issued
+        during the OIDC callback. On success it creates the normal
+        `horologia_session` cookie and clears the pending link cookie. This
+        endpoint is only available when OIDC link consent is enabled.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          headers:
+            Set-Cookie:
+              required: true
+              schema:
+                type: array
+                items:
+                  type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthLinkResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthLinkRequest'
+      security:
+        - {}
+  /app/auth/link/pending:
+    get:
+      operationId: WebAuth_linkPending
+      description: |-
+        Read the pending OIDC account-link request created during the OIDC callback.
+
+        This endpoint relies on the temporary `horologia_oidc_link` cookie and is
+        only available when OIDC link consent is enabled.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthLinkPendingResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+      security:
+        - {}
+  /app/auth/login:
+    post:
+      operationId: WebAuth_login
+      description: |-
+        Log in with email and password.
+
+        Returns the authenticated user and sets the `horologia_session` cookie on
+        success. This endpoint is only available when password auth is enabled.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          headers:
+            Set-Cookie:
+              required: true
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthLoginResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthLoginRequest'
+      security:
+        - {}
+  /app/auth/logout:
+    post:
+      operationId: WebAuth_logout
+      description: Clear the current browser session.
+      parameters: []
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+          headers:
+            Set-Cookie:
+              required: true
+              schema:
+                type: string
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+      security:
+        - {}
+  /auth/tokens:
+    get:
+      operationId: Auth_listTokens
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenList'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+    post:
+      operationId: Auth_createToken
+      parameters: []
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenCreateResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthTokenCreate'
+  /auth/tokens/{tokenId}:
+    delete:
+      operationId: Auth_deleteToken
+      parameters:
+        - name: tokenId
+          in: path
+          required: true
+          description: Token ID.
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+  /recipes:
+    get:
+      operationId: Recipes_list
+      parameters:
+        - $ref: '#/components/parameters/PageParams.cursor'
+        - $ref: '#/components/parameters/PageParams.limit'
+        - name: spaceSlug
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipePage'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Recipes
+  /recipes/search:
+    get:
+      operationId: Recipes_search
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+          explode: false
+        - name: spaceSlug
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeSearchResultList'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Recipes
+  /server-info:
+    get:
+      operationId: ServerInfo_get
+      description: Read the API compatibility version and optional client capabilities.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerInfoResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Server
+      security:
+        - {}
+  /spaces:
+    get:
+      operationId: Spaces_list
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpaceList'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Spaces
+    post:
+      operationId: Spaces_create
+      parameters: []
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Space'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Spaces
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpaceCreate'
+  /spaces/{spaceSlug}:
+    get:
+      operationId: Spaces_read
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          description: Slug of the space.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Space'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Spaces
+    patch:
+      operationId: Spaces_update
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          description: Slug of the space.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Space'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Spaces
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpaceUpdate'
+    delete:
+      operationId: Spaces_delete
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          description: Slug of the space.
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Spaces
+  /spaces/{spaceSlug}/activity:
+    get:
+      operationId: SpaceActivity_list
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          description: Slug of the space.
+          schema:
+            type: string
+        - $ref: '#/components/parameters/PageParams.cursor'
+        - $ref: '#/components/parameters/PageParams.limit'
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityLogPage'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Activity
+  /spaces/{spaceSlug}/members:
+    get:
+      operationId: SpaceMembers_list
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          description: Slug of the space.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpaceMemberList'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - SpaceMembers
+    post:
+      operationId: SpaceMembers_create
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          description: Slug of the space.
+          schema:
+            type: string
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpaceMember'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - SpaceMembers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpaceMemberCreate'
+  /spaces/{spaceSlug}/members/{userId}:
+    patch:
+      operationId: SpaceMembers_update
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          description: Slug of the space.
+          schema:
+            type: string
+        - name: userId
+          in: path
+          required: true
+          description: User ID of the member.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpaceMember'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - SpaceMembers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpaceMemberUpdate'
+    delete:
+      operationId: SpaceMembers_delete
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          description: Slug of the space.
+          schema:
+            type: string
+        - name: userId
+          in: path
+          required: true
+          description: User ID of the member.
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - SpaceMembers
+  /spaces/{spaceSlug}/recipes:
+    get:
+      operationId: SpaceRecipes_list
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/PageParams.cursor'
+        - $ref: '#/components/parameters/PageParams.limit'
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipePage'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Recipes
+    post:
+      operationId: SpaceRecipes_create
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Recipes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeCreate'
+  /spaces/{spaceSlug}/recipes/{recipeId}:
+    get:
+      operationId: SpaceRecipes_read
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: recipeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Recipes
+    patch:
+      operationId: SpaceRecipes_update
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: recipeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Recipes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeUpdate'
+    delete:
+      operationId: SpaceRecipes_delete
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: recipeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Recipes
+  /spaces/{spaceSlug}/recipes/{recipeId}/activity:
+    get:
+      operationId: SpaceRecipeActivity_list
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: recipeId
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/PageParams.cursor'
+        - $ref: '#/components/parameters/PageParams.limit'
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityLogPage'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Activity
+  /spaces/{spaceSlug}/tags:
+    get:
+      operationId: SpaceTags_list
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          description: Slug of the space.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagList'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Tags
+    post:
+      operationId: SpaceTags_create
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          description: Slug of the space.
+          schema:
+            type: string
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Tags
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagCreate'
+  /spaces/{spaceSlug}/tags/{tagName}:
+    patch:
+      operationId: SpaceTags_update
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          description: Slug of the space.
+          schema:
+            type: string
+        - name: tagName
+          in: path
+          required: true
+          description: Current tag name.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Tags
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagUpdate'
+    delete:
+      operationId: SpaceTags_delete
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          description: Slug of the space.
+          schema:
+            type: string
+        - name: tagName
+          in: path
+          required: true
+          description: Tag name to delete.
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Tags
+  /spaces/{spaceSlug}/task-effort-levels:
+    get:
+      operationId: SpaceTaskEffortLevels_list
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          description: Slug of the space.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskEffortLevelList'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Task Effort Levels
+    put:
+      operationId: SpaceTaskEffortLevels_replace
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          description: Slug of the space.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskEffortLevelList'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Task Effort Levels
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskEffortLevelReplace'
+  /spaces/{spaceSlug}/task-priority-levels:
+    get:
+      operationId: SpaceTaskPriorityLevels_list
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          description: Slug of the space.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskPriorityLevelList'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Task Priority Levels
+    put:
+      operationId: SpaceTaskPriorityLevels_replace
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          description: Slug of the space.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskPriorityLevelList'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Task Priority Levels
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskPriorityLevelReplace'
+  /spaces/{spaceSlug}/task-statuses:
+    get:
+      operationId: SpaceTaskStatuses_list
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          description: Slug of the space.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskStatusList'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Task Statuses
+    put:
+      operationId: SpaceTaskStatuses_replace
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          description: Slug of the space.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskStatusList'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Task Statuses
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskStatusReplace'
+  /spaces/{spaceSlug}/tasks:
+    get:
+      operationId: SpaceTasks_list
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          description: Slug of the space.
+          schema:
+            type: string
+        - $ref: '#/components/parameters/PageParams.cursor'
+        - $ref: '#/components/parameters/PageParams.limit'
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskPage'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Tasks
+    post:
+      operationId: SpaceTasks_create
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          description: Slug of the space.
+          schema:
+            type: string
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Tasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+  /spaces/{spaceSlug}/tasks/{taskId}:
+    get:
+      operationId: SpaceTasks_read
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          description: Slug of the space.
+          schema:
+            type: string
+        - name: taskId
+          in: path
+          required: true
+          description: Task ID.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Tasks
+    patch:
+      operationId: SpaceTasks_update
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          description: Slug of the space.
+          schema:
+            type: string
+        - name: taskId
+          in: path
+          required: true
+          description: Task ID.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Tasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdate'
+    delete:
+      operationId: SpaceTasks_delete
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          description: Slug of the space.
+          schema:
+            type: string
+        - name: taskId
+          in: path
+          required: true
+          description: Task ID.
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Tasks
+  /spaces/{spaceSlug}/tasks/{taskId}/activity:
+    get:
+      operationId: SpaceTaskActivity_list
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          description: Slug of the space.
+          schema:
+            type: string
+        - name: taskId
+          in: path
+          required: true
+          description: Task ID.
+          schema:
+            type: string
+        - $ref: '#/components/parameters/PageParams.cursor'
+        - $ref: '#/components/parameters/PageParams.limit'
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityLogPage'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Activity
+  /spaces/{spaceSlug}/tasks/{taskId}/relations:
+    post:
+      operationId: SpaceTaskRelations_create
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          description: Slug of the space.
+          schema:
+            type: string
+        - name: taskId
+          in: path
+          required: true
+          description: Task ID of the source task.
+          schema:
+            type: string
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskRelation'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Tasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskRelationCreate'
+  /spaces/{spaceSlug}/tasks/{taskId}/relations/{kind}/{relatedTaskId}:
+    delete:
+      operationId: SpaceTaskRelations_delete
+      parameters:
+        - name: spaceSlug
+          in: path
+          required: true
+          description: Slug of the space.
+          schema:
+            type: string
+        - name: taskId
+          in: path
+          required: true
+          description: Task ID of the source task.
+          schema:
+            type: string
+        - name: kind
+          in: path
+          required: true
+          description: Relation kind.
+          schema:
+            $ref: '#/components/schemas/TaskRelationKind'
+        - name: relatedTaskId
+          in: path
+          required: true
+          description: Task ID of the related task.
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Tasks
+  /tasks/search:
+    get:
+      operationId: Tasks_search
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Search query.
+          schema:
+            type: string
+            minLength: 1
+          explode: false
+        - name: spaceSlug
+          in: query
+          required: false
+          description: Optional space slug to restrict results to a single space.
+          schema:
+            type: string
+          explode: false
+        - name: excludeTaskId
+          in: query
+          required: false
+          description: Optional task ID to exclude from results.
+          schema:
+            type: string
+          explode: false
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of items to return (1–100).
+          schema:
+            type: integer
+            format: int32
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskSearchResultList'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Tasks
+  /users:
+    get:
+      operationId: Users_list
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserList'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Users
+    post:
+      operationId: Users_create
+      parameters: []
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+  /users/me:
+    get:
+      operationId: Users_me
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Users
+  /users/{userId}:
+    get:
+      operationId: Users_get
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: User ID.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Users
+    patch:
+      operationId: Users_update
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: User ID.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+    delete:
+      operationId: Users_delete
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: User ID.
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Users
+  /users/{userId}/activity:
+    get:
+      operationId: UserActivity_list
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: User ID.
+          schema:
+            type: string
+        - $ref: '#/components/parameters/PageParams.cursor'
+        - $ref: '#/components/parameters/PageParams.limit'
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityLogPage'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Activity
+  /users/{userId}/tasks:
+    get:
+      operationId: UserTasks_list
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: User ID.
+          schema:
+            type: string
+        - $ref: '#/components/parameters/PageParams.cursor'
+        - $ref: '#/components/parameters/PageParams.limit'
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskPage'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Users
+security:
+  - BearerAuth: []
+components:
+  parameters:
+    PageParams.cursor:
+      name: cursor
+      in: query
+      required: false
+      description: Pagination cursor from a previous response.
+      schema:
+        type: string
+      explode: false
+    PageParams.limit:
+      name: limit
+      in: query
+      required: false
+      description: Maximum number of items to return (1–100).
+      schema:
+        type: integer
+        format: int32
+      explode: false
+  schemas:
+    ActivityAction:
+      type: string
+      enum:
+        - created
+        - updated
+        - deleted
+    ActivityDetail:
+      type: object
+      required:
+        - field
+        - from
+        - to
+      properties:
+        field:
+          type: string
+        from:
+          type: string
+          nullable: true
+        to:
+          type: string
+          nullable: true
+    ActivityEntityType:
+      type: string
+      enum:
+        - task
+        - recipe
+        - space
+        - member
+        - tag
+        - status
+        - effort_level
+        - priority_level
+        - relation
+    ActivityLogEntry:
+      type: object
+      required:
+        - id
+        - spaceSlug
+        - actorId
+        - tokenId
+        - tokenName
+        - entityType
+        - entityId
+        - action
+        - details
+        - createdAt
+      properties:
+        id:
+          type: string
+        spaceSlug:
+          type: string
+        actorId:
+          type: string
+          nullable: true
+        tokenId:
+          type: string
+          nullable: true
+        tokenName:
+          type: string
+          nullable: true
+        entityType:
+          $ref: '#/components/schemas/ActivityEntityType'
+        entityId:
+          type: string
+        action:
+          $ref: '#/components/schemas/ActivityAction'
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActivityDetail'
+        createdAt:
+          type: string
+          format: date-time
+    ActivityLogPage:
+      type: object
+      required:
+        - items
+        - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActivityLogEntry'
+        nextCursor:
+          type: string
+          nullable: true
+    ApiError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+    AppearanceMode:
+      type: string
+      enum:
+        - system
+        - light
+        - dark
+    AuthConfig:
+      type: object
+      required:
+        - oidc
+        - password
+      properties:
+        oidc:
+          $ref: '#/components/schemas/AuthConfigOIDC'
+        password:
+          $ref: '#/components/schemas/AuthConfigPassword'
+    AuthConfigOIDC:
+      type: object
+      required:
+        - enabled
+        - label
+        - autoRedirect
+      properties:
+        enabled:
+          type: boolean
+        label:
+          type: string
+        autoRedirect:
+          type: boolean
+    AuthConfigPassword:
+      type: object
+      required:
+        - enabled
+      properties:
+        enabled:
+          type: boolean
+    AuthLinkPendingResponse:
+      type: object
+      required:
+        - email
+        - name
+      properties:
+        email:
+          type: string
+        name:
+          type: string
+    AuthLinkRequest:
+      type: object
+      required:
+        - password
+      properties:
+        password:
+          type: string
+          minLength: 1
+    AuthLinkResponse:
+      type: object
+      required:
+        - redirectTo
+      properties:
+        redirectTo:
+          type: string
+    AuthLoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          minLength: 1
+    AuthLoginResponse:
+      type: object
+      required:
+        - user
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+    AuthToken:
+      type: object
+      required:
+        - id
+        - name
+        - kind
+        - createdAt
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        kind:
+          $ref: '#/components/schemas/AuthTokenKind'
+        createdAt:
+          type: string
+          format: date-time
+    AuthTokenCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+    AuthTokenCreateResponse:
+      type: object
+      required:
+        - token
+        - authToken
+      properties:
+        token:
+          type: string
+        authToken:
+          $ref: '#/components/schemas/AuthToken'
+    AuthTokenKind:
+      type: string
+      enum:
+        - session
+        - api
+    AuthTokenList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthToken'
+    Recipe:
+      type: object
+      required:
+        - id
+        - spaceSlug
+        - name
+        - description
+        - yield
+        - prepMinutes
+        - cookMinutes
+        - tags
+        - ingredientSections
+        - instructionSections
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+        spaceSlug:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        yield:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/RecipeYield'
+          nullable: true
+        prepMinutes:
+          type: integer
+          format: int32
+          nullable: true
+        cookMinutes:
+          type: integer
+          format: int32
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        ingredientSections:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeIngredientSection'
+        instructionSections:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeInstructionSection'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    RecipeCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 500
+        description:
+          type: string
+          maxLength: 10000
+        yield:
+          $ref: '#/components/schemas/RecipeYield'
+        prepMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+        cookMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 100
+        ingredientSections:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeIngredientSectionInput'
+          maxItems: 20
+        instructionSections:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeInstructionSectionInput'
+          maxItems: 20
+    RecipeIngredient:
+      type: object
+      required:
+        - quantity
+        - quantityMax
+        - unit
+        - item
+      properties:
+        quantity:
+          type: number
+          format: double
+          nullable: true
+        quantityMax:
+          type: number
+          format: double
+          nullable: true
+        unit:
+          type: string
+        item:
+          type: string
+    RecipeIngredientInput:
+      type: object
+      required:
+        - item
+      properties:
+        quantity:
+          type: number
+          format: double
+          minimum: 0.0001
+        quantityMax:
+          type: number
+          format: double
+          minimum: 0.0001
+        unit:
+          type: string
+          maxLength: 100
+        item:
+          type: string
+          minLength: 1
+          maxLength: 500
+    RecipeIngredientSection:
+      type: object
+      required:
+        - title
+        - ingredients
+      properties:
+        title:
+          type: string
+        ingredients:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeIngredient'
+    RecipeIngredientSectionInput:
+      type: object
+      required:
+        - ingredients
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        ingredients:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeIngredientInput'
+          maxItems: 100
+    RecipeInstructionSection:
+      type: object
+      required:
+        - title
+        - steps
+      properties:
+        title:
+          type: string
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeStep'
+    RecipeInstructionSectionInput:
+      type: object
+      required:
+        - steps
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeStepInput'
+          maxItems: 100
+    RecipePage:
+      type: object
+      required:
+        - items
+        - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeSummary'
+        nextCursor:
+          type: string
+          nullable: true
+    RecipeSearchResultList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeSummary'
+    RecipeStep:
+      type: object
+      required:
+        - body
+      properties:
+        body:
+          type: string
+    RecipeStepInput:
+      type: object
+      required:
+        - body
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 10000
+    RecipeSummary:
+      type: object
+      required:
+        - id
+        - spaceSlug
+        - name
+        - yield
+        - prepMinutes
+        - cookMinutes
+        - tags
+        - updatedAt
+      properties:
+        id:
+          type: string
+        spaceSlug:
+          type: string
+        name:
+          type: string
+        yield:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/RecipeYield'
+          nullable: true
+        prepMinutes:
+          type: integer
+          format: int32
+          nullable: true
+        cookMinutes:
+          type: integer
+          format: int32
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        updatedAt:
+          type: string
+          format: date-time
+    RecipeUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 500
+        description:
+          type: string
+          maxLength: 10000
+        yield:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/RecipeYield'
+          nullable: true
+        prepMinutes:
+          type: integer
+          format: int32
+          nullable: true
+          minimum: 0
+        cookMinutes:
+          type: integer
+          format: int32
+          nullable: true
+          minimum: 0
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 100
+        ingredientSections:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeIngredientSectionInput'
+          maxItems: 20
+        instructionSections:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeInstructionSectionInput'
+          maxItems: 20
+    RecipeYield:
+      type: object
+      required:
+        - amount
+        - unit
+      properties:
+        amount:
+          type: number
+          format: double
+          minimum: 0.0001
+        unit:
+          type: string
+          minLength: 1
+          maxLength: 100
+    ServerCapability:
+      type: string
+      enum:
+        - oauth-2.1-pkce
+    ServerInfoResponse:
+      type: object
+      required:
+        - apiVersion
+        - capabilities
+      properties:
+        apiVersion:
+          type: number
+          enum:
+            - 1
+        capabilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServerCapability'
+    Space:
+      type: object
+      required:
+        - slug
+        - name
+        - description
+        - createdAt
+        - updatedAt
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    SpaceCreate:
+      type: object
+      required:
+        - slug
+        - name
+      properties:
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: ^[\p{L}0-9]+(?:-[\p{L}0-9]+)*$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 1000
+    SpaceList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Space'
+    SpaceMember:
+      type: object
+      required:
+        - userId
+        - userName
+        - userEmail
+        - role
+        - createdAt
+      properties:
+        userId:
+          type: string
+        userName:
+          type: string
+        userEmail:
+          type: string
+        role:
+          $ref: '#/components/schemas/SpaceRole'
+        createdAt:
+          type: string
+          format: date-time
+    SpaceMemberCreate:
+      type: object
+      required:
+        - userId
+        - role
+      properties:
+        userId:
+          type: string
+        role:
+          $ref: '#/components/schemas/SpaceRole'
+    SpaceMemberList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpaceMember'
+    SpaceMemberUpdate:
+      type: object
+      required:
+        - role
+      properties:
+        role:
+          $ref: '#/components/schemas/SpaceRole'
+    SpaceRole:
+      type: string
+      enum:
+        - admin
+        - member
+        - viewer
+    SpaceUpdate:
+      type: object
+      properties:
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: ^[\p{L}0-9]+(?:-[\p{L}0-9]+)*$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 1000
+    Tag:
+      type: object
+      required:
+        - name
+        - createdAt
+      properties:
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    TagCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+    TagList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+    TagUpdate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+    Task:
+      type: object
+      required:
+        - id
+        - spaceSlug
+        - title
+        - description
+        - status
+        - effort
+        - priority
+        - recurrenceType
+        - recurrenceRule
+        - lastCompletedAt
+        - assigneeIds
+        - rotationPool
+        - tags
+        - relations
+        - due
+        - overdueActionRule
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+        spaceSlug:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+        effort:
+          type: string
+          nullable: true
+        priority:
+          type: string
+          nullable: true
+        recurrenceType:
+          $ref: '#/components/schemas/TaskRecurrenceType'
+        recurrenceRule:
+          type: string
+          nullable: true
+        lastCompletedAt:
+          type: string
+          format: date-time
+          nullable: true
+        assigneeIds:
+          type: array
+          items:
+            type: string
+        rotationPool:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        relations:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskRelation'
+        due:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/TaskDue'
+          nullable: true
+        overdueActionRule:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/TaskOverdueActionRule'
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    TaskCreate:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Task title (1–500 chars).
+        description:
+          type: string
+          maxLength: 10000
+          description: Task description (max 10000 chars).
+        status:
+          type: string
+          description: Initial status name. Defaults to the space's first status.
+        effort:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Effort level name.
+        priority:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Priority level name.
+        recurrenceType:
+          allOf:
+            - $ref: '#/components/schemas/TaskRecurrenceType'
+          description: Recurrence type (e.g. one_off, completion_based, fixed_accumulating).
+        recurrenceRule:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Recurrence rule (RRULE string, max 500 chars).
+        assigneeIds:
+          type: array
+          items:
+            type: string
+          maxItems: 100
+        rotationPool:
+          type: array
+          items:
+            type: string
+          maxItems: 100
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 100
+        due:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/TaskDue'
+          nullable: true
+        overdueActionRule:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/TaskOverdueActionRule'
+          nullable: true
+    TaskDue:
+      type: object
+      required:
+        - at
+        - timezone
+      properties:
+        at:
+          type: string
+          format: date
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 100
+    TaskEffortLevel:
+      type: object
+      required:
+        - name
+        - position
+        - icon
+      properties:
+        name:
+          type: string
+        position:
+          type: integer
+          format: int64
+        icon:
+          type: string
+          description: Lucide icon name in kebab-case (e.g. "gauge", "flame"). Empty string if no icon is set.
+    TaskEffortLevelInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        icon:
+          type: string
+          maxLength: 50
+          description: Lucide icon name in kebab-case (e.g. "gauge", "flame"). Omit or set to empty string to clear.
+    TaskEffortLevelList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskEffortLevel'
+    TaskEffortLevelReplace:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskEffortLevelInput'
+    TaskOverdueAction:
+      type: string
+      enum:
+        - advance_recurrence
+        - set_status
+        - clear_due_date
+    TaskOverdueActionRule:
+      type: object
+      required:
+        - after
+        - action
+      properties:
+        after:
+          type: integer
+          format: int32
+          nullable: true
+          description: |-
+            Grace period in days after the due date before the action fires.
+                  null means act immediately when the task becomes overdue.
+        action:
+          $ref: '#/components/schemas/TaskOverdueAction'
+        status:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Required when action is set_status; the status name to transition to.
+    TaskPage:
+      type: object
+      required:
+        - items
+        - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        nextCursor:
+          type: string
+          nullable: true
+    TaskPriorityLevel:
+      type: object
+      required:
+        - name
+        - position
+        - icon
+      properties:
+        name:
+          type: string
+        position:
+          type: integer
+          format: int64
+        icon:
+          type: string
+          description: Lucide icon name in kebab-case (e.g. "signal-high", "flag"). Empty string if no icon is set.
+    TaskPriorityLevelInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        icon:
+          type: string
+          maxLength: 50
+          description: Lucide icon name in kebab-case (e.g. "signal-high", "flag"). Omit or set to empty string to clear.
+    TaskPriorityLevelList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskPriorityLevel'
+    TaskPriorityLevelReplace:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskPriorityLevelInput'
+    TaskRecurrenceType:
+      type: string
+      enum:
+        - one_off
+        - completion_based
+        - fixed_non_accumulating
+        - fixed_accumulating
+        - on_dependency
+    TaskRelation:
+      type: object
+      required:
+        - kind
+        - relatedTaskId
+        - createdAt
+      properties:
+        kind:
+          $ref: '#/components/schemas/TaskRelationKind'
+        relatedTaskId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    TaskRelationCreate:
+      type: object
+      required:
+        - kind
+        - relatedTaskId
+      properties:
+        kind:
+          allOf:
+            - $ref: '#/components/schemas/TaskRelationKind'
+          description: Relation kind (e.g. parent_of, child_of, blocks, blocked_by, relates_to, duplicates, triggers, triggered_by).
+        relatedTaskId:
+          type: string
+          description: Task ID of the related task.
+    TaskRelationKind:
+      type: string
+      enum:
+        - parent_of
+        - child_of
+        - blocks
+        - blocked_by
+        - relates_to
+        - duplicates
+        - triggers
+        - triggered_by
+        - spawns
+        - spawned_by
+    TaskSearchResult:
+      type: object
+      required:
+        - id
+        - spaceSlug
+        - title
+        - status
+      properties:
+        id:
+          type: string
+        spaceSlug:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+    TaskSearchResultList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskSearchResult'
+    TaskStatus:
+      type: object
+      required:
+        - name
+        - category
+        - position
+        - icon
+      properties:
+        name:
+          type: string
+        category:
+          $ref: '#/components/schemas/TaskStatusCategory'
+        position:
+          type: integer
+          format: int64
+        icon:
+          type: string
+          description: Lucide icon name in kebab-case (e.g. "circle-check", "loader"). Empty string if no icon is set.
+    TaskStatusCategory:
+      type: string
+      enum:
+        - initial
+        - intermediate
+        - completion
+    TaskStatusInput:
+      type: object
+      required:
+        - name
+        - category
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        category:
+          $ref: '#/components/schemas/TaskStatusCategory'
+        icon:
+          type: string
+          maxLength: 50
+          description: Lucide icon name in kebab-case (e.g. "circle-check", "loader"). Omit or set to empty string to clear.
+    TaskStatusList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskStatus'
+    TaskStatusReplace:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskStatusInput'
+    TaskUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: New title.
+        description:
+          type: string
+          maxLength: 10000
+          description: New description.
+        status:
+          type: string
+          description: New status name.
+        effort:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 100
+          description: New effort level name.
+        priority:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 100
+          description: New priority level name.
+        recurrenceType:
+          allOf:
+            - $ref: '#/components/schemas/TaskRecurrenceType'
+          description: New recurrence type.
+        recurrenceRule:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 500
+          description: New recurrence rule (RRULE string, max 500 chars).
+        assigneeIds:
+          type: array
+          items:
+            type: string
+          maxItems: 100
+        rotationPool:
+          type: array
+          items:
+            type: string
+          maxItems: 100
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 100
+        due:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/TaskDue'
+          nullable: true
+        overdueActionRule:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/TaskOverdueActionRule'
+          nullable: true
+    User:
+      type: object
+      required:
+        - id
+        - email
+        - name
+        - isOwner
+        - hasPassword
+        - appearanceMode
+        - appearanceLightTheme
+        - appearanceDarkTheme
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        isOwner:
+          type: boolean
+        hasPassword:
+          type: boolean
+        appearanceMode:
+          $ref: '#/components/schemas/AppearanceMode'
+        appearanceLightTheme:
+          type: string
+          minLength: 1
+          maxLength: 100
+        appearanceDarkTheme:
+          type: string
+          minLength: 1
+          maxLength: 100
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    UserCreate:
+      type: object
+      required:
+        - name
+        - email
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        email:
+          type: string
+          minLength: 1
+          maxLength: 200
+        isOwner:
+          type: boolean
+        password:
+          type: string
+          minLength: 8
+          maxLength: 72
+    UserList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+    UserUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        email:
+          type: string
+          minLength: 1
+          maxLength: 200
+        isOwner:
+          type: boolean
+        appearanceMode:
+          $ref: '#/components/schemas/AppearanceMode'
+        appearanceLightTheme:
+          type: string
+          minLength: 1
+          maxLength: 100
+        appearanceDarkTheme:
+          type: string
+          minLength: 1
+          maxLength: 100
+        setPassword:
+          type: string
+          minLength: 8
+          maxLength: 72
+        clearPassword:
+          type: boolean
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: Bearer
+servers:
+  - url: /api
+    description: Same-origin API
+    variables: {}

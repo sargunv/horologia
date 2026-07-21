@@ -1,24 +1,27 @@
 [tasks.generate]
-description = "Compile TypeSpec and generate the shared Go API package"
+description = "Compile TypeSpec and generate the shared Go and Kotlin API specifications"
 run = [
   "pnpm --filter @horologia/typespec-mcp-go run build",
   "pnpm exec tsp compile .",
+  "pnpm exec tsp compile . --config tspconfig.kmp.yaml",
   "go run github.com/ogen-go/ogen/cmd/ogen --target gen/go/ogen --package gen --clean gen/openapi.yaml",
 ]
-sources = ["main.tsp", "src/**/*.tsp", "tspconfig.yaml", "emitters/**/*.ts"]
-outputs = ["gen/openapi.yaml", "gen/go/ogen/*.go", "gen/go/mcp/*.go"]
+sources = ["main.tsp", "src/**/*.tsp", "tspconfig.yaml", "tspconfig.kmp.yaml", "emitters/**/*.ts"]
+outputs = ["gen/openapi.yaml", "gen/kmp/openapi.yaml", "gen/go/ogen/*.go", "gen/go/mcp/*.go"]
 
 [tasks.build]
-description = "Compile TypeSpec and generate the shared Go API package"
+description = "Compile TypeSpec and generate the shared API artifacts"
 depends = ["generate"]
 run = "true"
 sources = [
   "main.tsp",
   "src/**/*.tsp",
   "tspconfig.yaml",
+  "tspconfig.kmp.yaml",
   "emitters/**/*.ts",
   "gen/openapi.yaml",
+  "gen/kmp/openapi.yaml",
   "gen/go/ogen/*.go",
   "gen/go/mcp/*.go",
 ]
-outputs = ["gen/openapi.yaml", "gen/go/ogen/*.go", "gen/go/mcp/*.go"]
+outputs = ["gen/openapi.yaml", "gen/kmp/openapi.yaml", "gen/go/ogen/*.go", "gen/go/mcp/*.go"]

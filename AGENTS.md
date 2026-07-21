@@ -38,11 +38,11 @@ PostgreSQL is managed by mise and started automatically by Tilt. Data is stored 
 - ./server — Go backend service and API implementation.
 - ./clients/web — React SPA served by the backend. Built on Tailwind v4 + daisyUI 5, with primitives
   in `clients/web/src/ui/` that wrap Radix UI (umbrella), cmdk, Ark UI (TagsInput only), and sonner.
-- ./clients/mobile — Expo app for iPhone, iPad, and adaptive Android devices, with WidgetKit and
-  Glance widgets.
+- ./clients/mobile — Kotlin Multiplatform application with a shared native core, Jetpack Compose on
+  Android, SwiftUI on Apple platforms, and WidgetKit and Glance widgets.
 - ./clients/cli — Go CLI client (binary: `horo`).
-- ./packages/client-core — Portable TypeScript API, query, command, domain, and widget behavior
-  shared by web and mobile.
+- ./packages/client-core — Portable TypeScript API, query, command, domain, and widget behavior for
+  the web client.
 
 ## Go Conventions
 
@@ -57,13 +57,16 @@ PostgreSQL is managed by mise and started automatically by Tilt. Data is stored 
 
 Run `mise run generate` after changing TypeSpec or SQL queries. The pipeline is:
 
-1. **TypeSpec** (`api/src/*.tsp`) → `api/gen/openapi.yaml`
-2. **ogen** consumes OpenAPI → `api/gen/go/ogen/`
-3. **openapi-typescript** consumes OpenAPI → `packages/client-core/src/api/schema.d.ts`
-4. **sqlc** (`server/internal/database/queries/*.sql`) → `server/internal/database/gen/`
+1. **TypeSpec** (`api/src/*.tsp`) → `api/gen/openapi.yaml` and `api/gen/kmp/openapi.yaml`
+2. **ogen** consumes the standard OpenAPI document → `api/gen/go/ogen/`
+3. **openapi-typescript** consumes the standard OpenAPI document →
+   `packages/client-core/src/api/schema.d.ts`
+4. **OpenAPI Generator** consumes the KMP OpenAPI document →
+   `clients/mobile/api-generated/build/generated/`
+5. **sqlc** (`server/internal/database/queries/*.sql`) → `server/internal/database/gen/`
 
-The root task runs these in dependency order. Web and mobile must consume the client-core schema
-rather than maintaining separate handwritten or generated API response types.
+The root task runs these in dependency order. Web and mobile consume their generated clients from
+the same TypeSpec contract; do not maintain handwritten API response types.
 
 ## DB Migration Patterns
 
@@ -147,32 +150,36 @@ rather than maintaining separate handwritten or generated API response types.
   `notifyStaleData()` on failure — a thrown invalidation turns a successful mutation into a
   misleading error alert otherwise. See the hooks in `lib/mutations.ts` for the canonical shape.
 
-## Shared Client Architecture
+## Client Architecture
 
-- `packages/client-core` owns portable API behavior, query keys/options, commands, validation,
-  domain transformations, and widget projections shared by web and mobile.
-- When portable behavior is needed, implement or extract it in client-core and migrate web in the
-  same change. Do not create parallel mobile implementations or compatibility re-export shims.
-- Keep DOM, Expo, React Native, router, toast, and native-platform types out of client-core. Prefer
-  a narrow adapter at a real platform boundary over a leaky shared abstraction.
+- TypeSpec is the shared client/server contract. Web consumes the generated TypeScript schema;
+  mobile consumes the generated Kotlin Multiplatform client.
+- `packages/client-core` owns portable TypeScript API behavior, query keys/options, commands,
+  validation, domain transformations, and widget projections for the web client.
+- `clients/mobile/shared` owns platform-neutral native session, repository, cache, command,
+  deep-link, and widget projection behavior. Keep Android, Compose, Apple, and SwiftUI types at
+  platform boundaries.
 - Query, credential, persistence, deep-link, and widget state must remain scoped by `serverId` and,
   where relevant, `accountId`. Repository APIs take explicit server context; do not introduce a
   singleton server URL even while the UI exposes only one active server.
-- Writes go through client-core command boundaries and succeed only after server acceptance. Do not
-  add offline-write machinery yet, but preserve the boundary for a future outbox.
+- Writes go through command boundaries and succeed only after server acceptance. Do not add
+  offline-write machinery yet, but preserve the boundary for a future outbox.
 
 ## Mobile App Conventions
 
-- `clients/mobile` uses Expo Router and Expo UI. Build presentation from native SwiftUI/Compose
-  controls through `@expo/ui`; prefer platform-specific implementations when native idioms differ.
-  Avoid bespoke React Native visual skins and lowest-common-denominator abstractions.
-- Nonvisual React Native platform APIs are fine. A custom React Native, DOM, or native-module island
-  should represent a contained Expo UI capability gap, not a parallel design system.
+- `clients/mobile` uses Kotlin Multiplatform for shared native behavior, Jetpack Compose for Android
+  presentation, and SwiftUI for Apple presentation. Prefer each platform's native idioms over a
+  lowest-common-denominator UI abstraction.
 - Keep the app adaptive across iPhone, iPad, Android phone/tablet/foldable, and resizable windows.
-- Native projects use Continuous Native Generation. Keep `clients/mobile/ios` and
-  `clients/mobile/android` generated and untracked; native customization belongs in `app.config.ts`,
-  config plugins, widget sources, or local Expo modules. Verify relevant native changes from a clean
-  prebuild.
+  Compact layouts use push navigation; expanded layouts use list/detail panes.
+- Native projects are tracked under `clients/mobile/androidApp` and `clients/mobile/iosApp`. Shared
+  Kotlin lives under `clients/mobile/shared`; generated API code is built through
+  `clients/mobile/api-generated`.
+- Mobile API, cache, and command behavior belongs in the shared KMP module. Platform shells own
+  presentation, credentials, authorization sessions, notifications, background scheduling, and
+  widget registration.
+- Verify Android changes with Gradle and a device/emulator smoke flow. Verify Apple changes with an
+  Xcode simulator build and a Simulator smoke flow.
 
 ## Automated Testing
 

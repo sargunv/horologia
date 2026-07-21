@@ -1,0 +1,182 @@
+CREATE TABLE snapshot_metadata (
+  server_id TEXT NOT NULL,
+  account_id TEXT NOT NULL,
+  snapshot_kind TEXT NOT NULL,
+  generated_at INTEGER NOT NULL,
+  cursor TEXT,
+  has_more INTEGER NOT NULL,
+  PRIMARY KEY (server_id, account_id, snapshot_kind)
+);
+
+CREATE TABLE cached_task (
+  server_id TEXT NOT NULL,
+  account_id TEXT NOT NULL,
+  position INTEGER NOT NULL,
+  id TEXT NOT NULL,
+  space_slug TEXT NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  status TEXT NOT NULL,
+  effort TEXT,
+  priority TEXT,
+  due_text TEXT,
+  tags_json TEXT NOT NULL,
+  PRIMARY KEY (server_id, account_id, position)
+);
+
+CREATE TABLE cached_space (
+  server_id TEXT NOT NULL,
+  account_id TEXT NOT NULL,
+  position INTEGER NOT NULL,
+  slug TEXT NOT NULL,
+  name TEXT NOT NULL,
+  PRIMARY KEY (server_id, account_id, position)
+);
+
+CREATE TABLE cached_recipe (
+  server_id TEXT NOT NULL,
+  account_id TEXT NOT NULL,
+  position INTEGER NOT NULL,
+  id TEXT NOT NULL,
+  space_slug TEXT NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  tags_json TEXT NOT NULL,
+  PRIMARY KEY (server_id, account_id, position)
+);
+
+CREATE TABLE search_snapshot (
+  server_id TEXT NOT NULL,
+  account_id TEXT NOT NULL,
+  query TEXT NOT NULL,
+  generated_at INTEGER NOT NULL,
+  cursor TEXT,
+  has_more INTEGER NOT NULL,
+  PRIMARY KEY (server_id, account_id, query)
+);
+
+CREATE TABLE cached_search_result (
+  server_id TEXT NOT NULL,
+  account_id TEXT NOT NULL,
+  query TEXT NOT NULL,
+  position INTEGER NOT NULL,
+  id TEXT NOT NULL,
+  space_slug TEXT NOT NULL,
+  title TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  detail TEXT,
+  PRIMARY KEY (server_id, account_id, query, position)
+);
+
+selectMetadata:
+SELECT generated_at, cursor, has_more
+FROM snapshot_metadata
+WHERE server_id = ? AND account_id = ? AND snapshot_kind = ?;
+
+upsertMetadata:
+INSERT OR REPLACE INTO snapshot_metadata(
+  server_id, account_id, snapshot_kind, generated_at, cursor, has_more
+) VALUES (?, ?, ?, ?, ?, ?);
+
+deleteTasks:
+DELETE FROM cached_task WHERE server_id = ? AND account_id = ?;
+
+insertTask:
+INSERT INTO cached_task(
+  server_id, account_id, position, id, space_slug, title, description,
+  status, effort, priority, due_text, tags_json
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+selectTasks:
+SELECT id, space_slug, title, description, status, effort, priority, due_text, tags_json
+FROM cached_task
+WHERE server_id = ? AND account_id = ?
+ORDER BY position ASC;
+
+deleteSpaces:
+DELETE FROM cached_space WHERE server_id = ? AND account_id = ?;
+
+insertSpace:
+INSERT INTO cached_space(server_id, account_id, position, slug, name)
+VALUES (?, ?, ?, ?, ?);
+
+selectSpaces:
+SELECT slug, name
+FROM cached_space
+WHERE server_id = ? AND account_id = ?
+ORDER BY position ASC;
+
+deleteRecipes:
+DELETE FROM cached_recipe WHERE server_id = ? AND account_id = ?;
+
+insertRecipe:
+INSERT INTO cached_recipe(
+  server_id, account_id, position, id, space_slug, title, description, tags_json
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+selectRecipes:
+SELECT id, space_slug, title, description, tags_json
+FROM cached_recipe
+WHERE server_id = ? AND account_id = ?
+ORDER BY position ASC;
+
+selectSearchMetadata:
+SELECT generated_at, cursor, has_more
+FROM search_snapshot
+WHERE server_id = ? AND account_id = ? AND query = ?;
+
+upsertSearchMetadata:
+INSERT OR REPLACE INTO search_snapshot(
+  server_id, account_id, query, generated_at, cursor, has_more
+) VALUES (?, ?, ?, ?, ?, ?);
+
+deleteSearchResults:
+DELETE FROM cached_search_result
+WHERE server_id = ? AND account_id = ? AND query = ?;
+
+insertSearchResult:
+INSERT INTO cached_search_result(
+  server_id, account_id, query, position, id, space_slug, title, kind, detail
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+selectSearchResults:
+SELECT id, space_slug, title, kind, detail
+FROM cached_search_result
+WHERE server_id = ? AND account_id = ? AND query = ?
+ORDER BY position ASC;
+
+clearAccountMetadata:
+DELETE FROM snapshot_metadata WHERE server_id = ? AND account_id = ?;
+
+clearAccountTasks:
+DELETE FROM cached_task WHERE server_id = ? AND account_id = ?;
+
+clearAccountSpaces:
+DELETE FROM cached_space WHERE server_id = ? AND account_id = ?;
+
+clearAccountRecipes:
+DELETE FROM cached_recipe WHERE server_id = ? AND account_id = ?;
+
+clearAccountSearchMetadata:
+DELETE FROM search_snapshot WHERE server_id = ? AND account_id = ?;
+
+clearAccountSearchResults:
+DELETE FROM cached_search_result WHERE server_id = ? AND account_id = ?;
+
+clearServerMetadata:
+DELETE FROM snapshot_metadata WHERE server_id = ?;
+
+clearServerTasks:
+DELETE FROM cached_task WHERE server_id = ?;
+
+clearServerSpaces:
+DELETE FROM cached_space WHERE server_id = ?;
+
+clearServerRecipes:
+DELETE FROM cached_recipe WHERE server_id = ?;
+
+clearServerSearchMetadata:
+DELETE FROM search_snapshot WHERE server_id = ?;
+
+clearServerSearchResults:
+DELETE FROM cached_search_result WHERE server_id = ?;
