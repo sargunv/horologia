@@ -14,7 +14,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/sqlc-dev/sqlc v1.31.1
 	github.com/teambition/rrule-go v1.8.2
-	github.com/zitadel/oidc/v3 v3.47.7
+	github.com/zitadel/oidc/v3 v3.47.9
 	golang.org/x/crypto v0.54.0
 	golang.org/x/text v0.40.0
 )
