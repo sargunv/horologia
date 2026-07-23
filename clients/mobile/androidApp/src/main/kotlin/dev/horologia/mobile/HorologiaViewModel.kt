@@ -171,6 +171,12 @@ class HorologiaViewModel(application: Application) : AndroidViewModel(applicatio
         return core.state.value.error == null
     }
 
+    /** Returns true when the delete completed without an error. */
+    suspend fun deleteTask(spaceSlug: String, taskId: String): Boolean {
+        core.deleteTask(spaceSlug, taskId)
+        return core.state.value.error == null
+    }
+
     /** Returns true when the write completed without an error. */
     suspend fun updateRecipe(spaceSlug: String, recipeId: String, update: MobileRecipeUpdate): Boolean {
         core.updateRecipe(spaceSlug, recipeId, update)

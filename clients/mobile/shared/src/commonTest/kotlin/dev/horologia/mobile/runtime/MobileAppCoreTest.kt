@@ -202,6 +202,37 @@ class MobileAppCoreTest {
     }
 
     @Test
+    fun failedDeleteDoesNotPublishLocalChanges() = runBlocking {
+        val original = task("one", "Original")
+        val failure = IllegalStateException("delete failed")
+        val fixture = signedInFixture(original).apply { repository.deleteTaskResult = Result.failure(failure) }
+        fixture.core.selectTask(original.spaceSlug, original.id)
+        val beforeList = fixture.core.state.value.myTasks
+        val beforeDetail = fixture.core.state.value.selectedTask
+
+        fixture.core.deleteTask(original.spaceSlug, original.id)
+
+        assertEquals(beforeList, fixture.core.state.value.myTasks)
+        assertEquals(beforeDetail, fixture.core.state.value.selectedTask)
+        assertEquals("delete failed", fixture.core.state.value.error?.message)
+        fixture.close()
+    }
+
+    @Test
+    fun successfulDeleteRemovesListEntryAndClearsSelectedDetail() = runBlocking {
+        val original = task("one", "Original")
+        val fixture = signedInFixture(original)
+        fixture.core.selectTask(original.spaceSlug, original.id)
+
+        fixture.core.deleteTask(original.spaceSlug, original.id)
+
+        assertTrue(fixture.core.state.value.myTasks.isEmpty())
+        assertNull(fixture.core.state.value.selectedTask)
+        assertNull(fixture.core.state.value.error)
+        fixture.close()
+    }
+
+    @Test
     fun cancellationIsRethrownWithoutBecomingAppError() = runBlocking {
         val original = task("one", "Original")
         val fixture = signedInFixture(original).apply {
@@ -482,6 +513,7 @@ private class FakeRepository : MobileRepository {
     val moreTasks = mutableMapOf<String, Page<MobileTask>>()
     var selectedTask: MobileTask = task("selected", "Selected")
     var updateTaskResult: Result<MobileTask> = Result.success(selectedTask)
+    var deleteTaskResult: Result<Unit> = Result.success(Unit)
     var myTasksHandler: (suspend (SessionScope, String?) -> Page<MobileTask>)? = null
     var authConfigFailure: Throwable? = null
     var spacesResult = emptyList<MobileSpace>()
@@ -524,6 +556,11 @@ private class FakeRepository : MobileRepository {
     ): MobileTask {
         sessionScopes += scope
         return updateTaskResult.getOrThrow()
+    }
+
+    override suspend fun deleteTask(scope: SessionScope, spaceSlug: String, taskId: String) {
+        sessionScopes += scope
+        deleteTaskResult.getOrThrow()
     }
 
     override suspend fun spaces(scope: SessionScope): List<MobileSpace> {

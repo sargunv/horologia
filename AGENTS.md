@@ -97,15 +97,12 @@ the same TypeSpec contract; do not maintain handwritten API response types.
 
 ## UI Component Patterns
 
-- Editor components (RecurrenceRuleEditor, OverdueActionEditor) follow a save/cancel pattern:
-  - `editing` state + prop sync effect (sync only when `!editing`)
-  - `cancellingRef` trick: `onMouseDown` sets ref so `onBlur` doesn't also fire save
-  - `isDirty` comparison via serialized payload (JSON.stringify for nested objects)
-  - Save/Cancel action bar only shown when `isDirty`
-- Discriminated union for draft state prevents inconsistent field combinations (e.g. `set_status`
-  action always paired with `status` string in the draft type)
-- Conditional `PropertyRow` render guards keep the UI clean: wrap rows in
-  `{condition && <PropertyRow...>}`
+- Task fields edit inline on both clients; selection is the save — no draft/save/cancel editors.
+- Web: `FieldPill` trigger + `SearchableMenuContent` in a dropdown commits single-choice fields on
+  select; multi-select fields commit on menu close; the description editor autosaves.
+- Android: `PropertyRow` opens a `ChoiceSheet` bottom sheet (single-choice taps save immediately,
+  multi-choice commits on dismiss); `TagsField` patches on every chip add/remove; the title
+  (`EditableHeadline`) and description (`AutosaveDescriptionField`) commit on Done/blur.
 
 ## Web App Conventions
 

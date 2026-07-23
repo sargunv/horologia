@@ -248,31 +248,6 @@ fun InfoBadge(
 }
 
 @Composable
-fun NullableTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    clear: Boolean,
-    onClearChange: (Boolean) -> Unit,
-    enabled: Boolean,
-) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        modifier = Modifier.fillMaxWidth(),
-        label = { Text(label) },
-        singleLine = true,
-        enabled = enabled && !clear,
-    )
-    ClearCheckbox(
-        label = stringResource(R.string.field_clear_suffix, label),
-        checked = clear,
-        onCheckedChange = onClearChange,
-        enabled = enabled,
-    )
-}
-
-@Composable
 fun MinutesField(
     value: String,
     onValueChange: (String) -> Unit,

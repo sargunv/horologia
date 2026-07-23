@@ -92,6 +92,11 @@ class GeneratedMobileRepository : MobileRepository {
         it.tasks.spaceTasksUpdate(spaceSlug, taskId, update.toWire()).checked().toDomain()
     }
 
+    override suspend fun deleteTask(scope: SessionScope, spaceSlug: String, taskId: String) =
+        withApis(scope) {
+            it.tasks.spaceTasksDelete(spaceSlug, taskId).checked()
+        }
+
     override suspend fun spaces(scope: SessionScope): List<MobileSpace> =
         withApis(scope) { it.spaces.spacesList().checked().items.map(WireSpace::toDomain) }
 

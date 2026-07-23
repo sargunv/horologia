@@ -48,5 +48,6 @@ dependencies {
     implementation(libs.androidx.material3.adaptive.navigation3)
     implementation(libs.androidx.material3.adaptive.navigation.suite)
     implementation(libs.kotlinx.serialization.core)
+    implementation(libs.kotlinx.datetime)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

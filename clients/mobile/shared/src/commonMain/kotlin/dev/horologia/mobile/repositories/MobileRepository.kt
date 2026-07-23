@@ -32,6 +32,8 @@ interface MobileRepository {
         update: MobileTaskUpdate,
     ): MobileTask
 
+    suspend fun deleteTask(scope: SessionScope, spaceSlug: String, taskId: String)
+
     suspend fun spaces(scope: SessionScope): List<MobileSpace>
 
     suspend fun spaceTasks(

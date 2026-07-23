@@ -374,6 +374,19 @@ class MobileAppCore private constructor(
         }
     }
 
+    suspend fun deleteTask(spaceSlug: String, taskId: String) = commandMutex.withLock {
+        loading({ copy(taskUpdate = true) }) {
+            repository.deleteTask(authenticatedScope(), spaceSlug, taskId)
+            mutableState.update { current ->
+                current.copy(
+                    selectedTask = current.selectedTask?.takeUnless { it.id == taskId },
+                    myTasks = current.myTasks.filterNot { it.id == taskId },
+                    spaceTasks = current.spaceTasks.filterNot { it.id == taskId },
+                )
+            }
+        }
+    }
+
     suspend fun loadSpaces() = commandMutex.withLock {
         loadSpacesInternal(readCache = true)
     }

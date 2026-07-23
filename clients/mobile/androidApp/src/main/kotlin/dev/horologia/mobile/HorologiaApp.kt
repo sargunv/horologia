@@ -59,7 +59,6 @@ import dev.horologia.mobile.ui.SignInScreen
 import dev.horologia.mobile.ui.SpaceDetailScreen
 import dev.horologia.mobile.ui.SpacesDestination
 import dev.horologia.mobile.ui.TaskDetailScreen
-import dev.horologia.mobile.ui.TaskEditScreen
 import dev.horologia.mobile.ui.TasksDestination
 import kotlinx.serialization.Serializable
 
@@ -74,9 +73,6 @@ private sealed interface HorologiaRoute : NavKey {
 
     @Serializable
     data class TaskDetail(val spaceSlug: String, val taskId: String) : HorologiaRoute
-
-    @Serializable
-    data class TaskEdit(val spaceSlug: String, val taskId: String) : HorologiaRoute
 
     @Serializable
     data object Recipes : HorologiaRoute
@@ -298,9 +294,6 @@ private fun SignedInShell(state: MobileAppState, viewModel: HorologiaViewModel) 
                                 }
                                 backStack.add(HorologiaRoute.TaskDetail(spaceSlug, taskId))
                             },
-                            onEditTask = { spaceSlug, taskId ->
-                                backStack.add(HorologiaRoute.TaskEdit(spaceSlug, taskId))
-                            },
                         )
                     }
                     entry<HorologiaRoute.TaskDetail>(
@@ -313,18 +306,6 @@ private fun SignedInShell(state: MobileAppState, viewModel: HorologiaViewModel) 
                             taskId = key.taskId,
                             showBackButton = true,
                             onBack = { backStack.removeLastOrNull() },
-                            onEdit = { spaceSlug, taskId ->
-                                backStack.add(HorologiaRoute.TaskEdit(spaceSlug, taskId))
-                            },
-                        )
-                    }
-                    entry<HorologiaRoute.TaskEdit> { key ->
-                        TaskEditScreen(
-                            state = state,
-                            viewModel = viewModel,
-                            spaceSlug = key.spaceSlug,
-                            taskId = key.taskId,
-                            onDone = { backStack.removeLastOrNull() },
                         )
                     }
                     entry<HorologiaRoute.Recipes>(
