@@ -27,7 +27,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.LinearWavyProgressIndicator
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -35,6 +37,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,7 +50,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.horologia.mobile.HorologiaViewModel
 import dev.horologia.mobile.R
@@ -215,17 +220,39 @@ fun TaskDetailScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var menuOpen by remember { mutableStateOf(false) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     ListErrorSnackbarEffect(
         snackbarHostState = snackbarHostState,
         error = state.error.takeIf { task != null },
         onRetry = { viewModel.selectTask(spaceSlug, taskId) },
     )
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
-                // No title: the in-body EditableHeadline is the single,
-                // editable title (the pane-embedded body has no app bar).
-                title = {},
+            LargeTopAppBar(
+                // The app bar title is the single, tap-to-edit title; the
+                // pane-embedded body (no app bar) shows its own heading.
+                title = {
+                    if (task != null) {
+                        key(task.id) {
+                            EditableHeadline(
+                                title = task.title,
+                                onCommit = { newTitle ->
+                                    scope.launch {
+                                        viewModel.updateTask(
+                                            spaceSlug,
+                                            taskId,
+                                            MobileTaskUpdate(title = newTitle),
+                                        )
+                                    }
+                                },
+                                style = LocalTextStyle.current,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                },
                 navigationIcon = {
                     if (showBackButton) {
                         IconButton(onClick = onBack) {
@@ -258,6 +285,7 @@ fun TaskDetailScreen(
                         }
                     }
                 },
+                scrollBehavior = scrollBehavior,
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -272,7 +300,7 @@ fun TaskDetailScreen(
                     viewModel = viewModel,
                     spaceSlug = spaceSlug,
                     taskId = taskId,
-                    showHeading = true,
+                    showHeading = false,
                 )
             }
         }

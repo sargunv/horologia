@@ -28,8 +28,10 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.horologia.mobile.R
 import kotlinx.coroutines.delay
@@ -42,6 +44,9 @@ private const val DESCRIPTION_AUTOSAVE_DEBOUNCE_MILLIS = 1_500L
  * focus and IME shown; IME Done or focus loss commits a non-blank, changed
  * title through [onCommit], while system back reverts. An empty title is
  * never committed.
+ *
+ * [style] defaults to `headlineSmall`; pass `LocalTextStyle.current` inside a
+ * `TopAppBar` title slot to inherit the app bar's (animated collapse) style.
  */
 @Composable
 fun EditableHeadline(
@@ -49,12 +54,17 @@ fun EditableHeadline(
     onCommit: (String) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    style: TextStyle = MaterialTheme.typography.headlineSmall,
+    maxLines: Int = Int.MAX_VALUE,
+    overflow: TextOverflow = TextOverflow.Clip,
 ) {
     var editing by remember { mutableStateOf(false) }
     if (!editing) {
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineSmall,
+            style = style,
+            maxLines = maxLines,
+            overflow = overflow,
             modifier =
                 modifier
                     .fillMaxWidth()
@@ -93,10 +103,7 @@ fun EditableHeadline(
     BasicTextField(
         value = draft,
         onValueChange = { draft = it },
-        textStyle =
-            MaterialTheme.typography.headlineSmall.copy(
-                color = MaterialTheme.colorScheme.onSurface,
-            ),
+        textStyle = style.copy(color = MaterialTheme.colorScheme.onSurface),
         singleLine = true,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = { commit() }),
