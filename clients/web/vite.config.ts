@@ -8,13 +8,18 @@ import { defineConfig } from "vite-plus";
 const serverPort = env.SERVER_PORT ?? "8080";
 const webPort = env.WEB_PORT ?? "5173";
 
-const themeCatalog = Object.entries(daisyThemes).map(([name, theme]) => {
+/** Custom themes defined via `@plugin "daisyui/theme"` in main.css — not in daisyUI's built-in catalog. */
+const customThemes = [{ name: "frutiger-aero", scheme: "light" }] as const;
+
+const builtInThemes = Object.entries(daisyThemes).map(([name, theme]) => {
   const scheme = theme["color-scheme"];
   if (scheme !== "light" && scheme !== "dark") {
     throw new Error(`Unsupported color scheme "${scheme}" for daisyUI theme "${name}"`);
   }
   return { name, scheme };
 });
+
+const themeCatalog = [...customThemes, ...builtInThemes];
 
 export default defineConfig({
   define: {

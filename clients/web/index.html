@@ -7,8 +7,11 @@
     (() => {
   try {
     const preference = JSON.parse(localStorage.getItem("horologia.appearance") ?? "null");
-    if (!preference) return;
     const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+    if (!preference) {
+      document.documentElement.dataset.theme = dark ? "dark" : "frutiger-aero";
+      return;
+    }
     const scheme = preference.mode === "system" ? (dark ? "dark" : "light") : preference.mode;
     const theme = scheme === "dark" ? preference.darkTheme : preference.lightTheme;
     if (typeof theme === "string") document.documentElement.dataset.theme = theme;

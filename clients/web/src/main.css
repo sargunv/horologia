@@ -10,6 +10,54 @@
   logs: false;
 }
 
+/* Mid-2000s glossy eco-tech: sky blues, aqua glass, and grass greens. */
+@plugin "daisyui/theme" {
+  name: "frutiger-aero";
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+
+  --color-base-100: oklch(98% 0.012 220);
+  --color-base-200: oklch(94% 0.028 215);
+  --color-base-300: oklch(88% 0.042 210);
+  --color-base-content: oklch(28% 0.04 250);
+
+  --color-primary: oklch(58% 0.16 245);
+  --color-primary-content: oklch(98% 0.01 220);
+
+  --color-secondary: oklch(72% 0.12 195);
+  --color-secondary-content: oklch(25% 0.04 210);
+
+  --color-accent: oklch(70% 0.17 145);
+  --color-accent-content: oklch(22% 0.04 145);
+
+  --color-neutral: oklch(35% 0.05 250);
+  --color-neutral-content: oklch(95% 0.01 220);
+
+  --color-info: oklch(75% 0.12 220);
+  --color-info-content: oklch(28% 0.05 240);
+
+  --color-success: oklch(68% 0.15 155);
+  --color-success-content: oklch(22% 0.04 155);
+
+  --color-warning: oklch(82% 0.14 90);
+  --color-warning-content: oklch(30% 0.06 70);
+
+  --color-error: oklch(62% 0.2 25);
+  --color-error-content: oklch(98% 0.01 25);
+
+  --radius-selector: 1rem;
+  --radius-field: 0.75rem;
+  --radius-box: 1.25rem;
+
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
 @theme {
   --font-sans: "Geist Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;

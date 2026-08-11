@@ -22,7 +22,10 @@ const MODES: readonly { value: ThemeMode; label: string }[] = [
 ];
 
 function themeLabel(name: string) {
-  return name.charAt(0).toUpperCase() + name.slice(1);
+  return name
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }
 
 function ThemePreview({
