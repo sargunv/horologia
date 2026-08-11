@@ -25,7 +25,7 @@ export interface AppearancePreference {
 const STORAGE_KEY = "horologia.appearance";
 const DEFAULT_PREFERENCE: AppearancePreference = {
   mode: "system",
-  lightTheme: "light",
+  lightTheme: "florilegium",
   darkTheme: "dark",
 };
 

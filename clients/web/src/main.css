@@ -10,6 +10,52 @@
   logs: false;
 }
 
+/* Florilegium — 17th-century herbalist's cabinet: herbarium parchment,
+ * iron-gall ink, dried sage, madder, brass fittings, walnut wood. */
+@plugin "daisyui/theme" {
+  name: "florilegium";
+  default: true;
+  color-scheme: light;
+
+  --color-base-100: oklch(93.5% 0.018 108);
+  --color-base-200: oklch(88.8% 0.024 102);
+  --color-base-300: oklch(81.5% 0.03 96);
+  --color-base-content: oklch(26% 0.028 72);
+
+  --color-primary: oklch(42% 0.075 152);
+  --color-primary-content: oklch(95% 0.012 108);
+
+  --color-secondary: oklch(48% 0.11 28);
+  --color-secondary-content: oklch(96% 0.008 30);
+
+  --color-accent: oklch(66% 0.11 78);
+  --color-accent-content: oklch(28% 0.045 78);
+
+  --color-neutral: oklch(33% 0.038 58);
+  --color-neutral-content: oklch(91% 0.016 100);
+
+  --color-info: oklch(52% 0.075 252);
+  --color-info-content: oklch(95% 0.01 250);
+
+  --color-success: oklch(50% 0.085 148);
+  --color-success-content: oklch(95% 0.015 145);
+
+  --color-warning: oklch(74% 0.115 82);
+  --color-warning-content: oklch(30% 0.05 78);
+
+  --color-error: oklch(49% 0.145 27);
+  --color-error-content: oklch(96% 0.01 28);
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.25rem;
+  --radius-box: 0.375rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0.08;
+}
+
 @theme {
   --font-sans: "Geist Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
