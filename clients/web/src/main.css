@@ -17,38 +17,38 @@
   prefersdark: false;
   color-scheme: light;
 
-  --color-base-100: oklch(97% 0.02 215);
-  --color-base-200: oklch(92% 0.05 208);
-  --color-base-300: oklch(85% 0.07 202);
-  --color-base-content: oklch(30% 0.05 250);
+  --color-base-100: oklch(97% 0.025 215);
+  --color-base-200: oklch(91% 0.055 208);
+  --color-base-300: oklch(84% 0.075 200);
+  --color-base-content: oklch(28% 0.055 250);
 
-  --color-primary: oklch(55% 0.18 240);
-  --color-primary-content: oklch(98% 0.01 220);
+  --color-primary: oklch(54% 0.19 238);
+  --color-primary-content: oklch(99% 0.01 220);
 
-  --color-secondary: oklch(68% 0.14 195);
-  --color-secondary-content: oklch(98% 0.01 200);
+  --color-secondary: oklch(66% 0.145 192);
+  --color-secondary-content: oklch(99% 0.01 200);
 
-  --color-accent: oklch(68% 0.19 145);
-  --color-accent-content: oklch(98% 0.02 145);
+  --color-accent: oklch(66% 0.195 145);
+  --color-accent-content: oklch(99% 0.015 145);
 
-  --color-neutral: oklch(38% 0.06 250);
-  --color-neutral-content: oklch(96% 0.01 220);
+  --color-neutral: oklch(36% 0.065 248);
+  --color-neutral-content: oklch(97% 0.01 220);
 
-  --color-info: oklch(72% 0.13 220);
-  --color-info-content: oklch(25% 0.05 240);
+  --color-info: oklch(70% 0.14 220);
+  --color-info-content: oklch(22% 0.05 240);
 
-  --color-success: oklch(65% 0.16 155);
+  --color-success: oklch(64% 0.17 155);
   --color-success-content: oklch(98% 0.02 155);
 
-  --color-warning: oklch(80% 0.15 90);
+  --color-warning: oklch(80% 0.155 92);
   --color-warning-content: oklch(28% 0.06 70);
 
-  --color-error: oklch(60% 0.21 25);
+  --color-error: oklch(58% 0.22 25);
   --color-error-content: oklch(98% 0.01 25);
 
-  --radius-selector: 1rem;
-  --radius-field: 0.75rem;
-  --radius-box: 1.25rem;
+  --radius-selector: 1.25rem;
+  --radius-field: 0.9rem;
+  --radius-box: 1.35rem;
 
   --size-selector: 0.25rem;
   --size-field: 0.25rem;
@@ -56,6 +56,278 @@
   --border: 1px;
   --depth: 1;
   --noise: 0;
+}
+
+/*
+ * Frutiger Aero chrome — glass, gel gloss, sky atmosphere.
+ * Scoped so other daisyUI themes stay flat.
+ */
+@keyframes aero-aurora {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate3d(2%, -1.5%, 0) scale(1.06);
+    opacity: 1;
+  }
+}
+
+@keyframes aero-bokeh {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translate3d(-1.5%, 2%, 0);
+    opacity: 0.8;
+  }
+}
+
+@keyframes aero-sheen {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+html[data-theme="frutiger-aero"] {
+  background-color: oklch(78% 0.11 225);
+}
+
+html[data-theme="frutiger-aero"]::before,
+html[data-theme="frutiger-aero"]::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Sky → water → grass atmospheric plane */
+html[data-theme="frutiger-aero"]::before {
+  background:
+    radial-gradient(ellipse 55% 45% at 12% 18%, oklch(96% 0.07 215 / 0.95), transparent 60%),
+    radial-gradient(ellipse 45% 40% at 88% 12%, oklch(88% 0.14 145 / 0.7), transparent 55%),
+    radial-gradient(ellipse 50% 45% at 78% 78%, oklch(72% 0.16 235 / 0.55), transparent 60%),
+    radial-gradient(ellipse 40% 35% at 18% 88%, oklch(86% 0.12 160 / 0.55), transparent 55%),
+    linear-gradient(
+    155deg,
+    oklch(72% 0.14 235) 0%,
+    oklch(82% 0.1 215) 28%,
+    oklch(90% 0.07 200) 52%,
+    oklch(88% 0.1 150) 78%,
+    oklch(80% 0.12 210) 100%
+  );
+  animation: aero-aurora 18s ease-in-out infinite;
+}
+
+/* Soft bokeh / bubble orbs */
+html[data-theme="frutiger-aero"]::after {
+  background:
+    radial-gradient(circle at 22% 32%, oklch(100% 0 0 / 0.55) 0 2.5%, transparent 3%),
+    radial-gradient(circle at 68% 24%, oklch(100% 0 0 / 0.4) 0 1.6%, transparent 2.2%),
+    radial-gradient(circle at 84% 58%, oklch(92% 0.08 200 / 0.5) 0 3.2%, transparent 4%),
+    radial-gradient(circle at 40% 72%, oklch(100% 0 0 / 0.35) 0 2%, transparent 2.8%),
+    radial-gradient(circle at 58% 44%, oklch(90% 0.1 145 / 0.35) 0 4%, transparent 5%),
+    radial-gradient(circle at 10% 60%, oklch(95% 0.06 220 / 0.45) 0 3.5%, transparent 4.5%);
+  filter: blur(1.5px);
+  animation: aero-bokeh 22s ease-in-out infinite;
+}
+
+[data-theme="frutiger-aero"] body {
+  background-color: transparent;
+}
+
+/* Let the sky show through the app chrome */
+[data-theme="frutiger-aero"] .flex.h-svh.bg-base-100,
+[data-theme="frutiger-aero"] .flex.min-h-svh {
+  background-color: transparent !important;
+}
+
+/* Frosted Aero glass sidebar */
+[data-theme="frutiger-aero"] aside {
+  background: linear-gradient(180deg, oklch(98% 0.03 215 / 0.62), oklch(90% 0.07 205 / 0.48))
+    !important;
+  backdrop-filter: blur(28px) saturate(185%);
+  -webkit-backdrop-filter: blur(28px) saturate(185%);
+  border-right: 1px solid oklch(100% 0 0 / 0.55) !important;
+  box-shadow:
+    inset 1px 0 0 oklch(100% 0 0 / 0.45),
+    inset -1px 0 0 oklch(70% 0.08 210 / 0.12),
+    8px 0 32px oklch(40% 0.1 230 / 0.14);
+}
+
+/* Mobile glass dock */
+[data-theme="frutiger-aero"] nav.fixed.inset-x-0.bottom-0 {
+  background: oklch(96% 0.04 215 / 0.7) !important;
+  backdrop-filter: blur(22px) saturate(170%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  border-top-color: oklch(100% 0 0 / 0.5) !important;
+  box-shadow: inset 0 1px 0 oklch(100% 0 0 / 0.65), 0 -8px 28px oklch(40% 0.1 230 / 0.12);
+}
+
+/* Glass panels / cards / settings sections */
+[data-theme="frutiger-aero"] .rounded-box.border.border-base-300.bg-base-100 {
+  background: linear-gradient(165deg, oklch(100% 0.015 215 / 0.78), oklch(94% 0.05 205 / 0.55))
+    !important;
+  backdrop-filter: blur(22px) saturate(165%);
+  -webkit-backdrop-filter: blur(22px) saturate(165%);
+  border-color: oklch(100% 0 0 / 0.58) !important;
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / 0.85),
+    inset 0 -1px 0 oklch(65% 0.08 210 / 0.12),
+    0 10px 36px oklch(42% 0.11 230 / 0.16),
+    0 2px 6px oklch(40% 0.08 230 / 0.08);
+}
+
+/* Theme picker swatches get a wet glass face when previewing this theme */
+[data-theme="frutiger-aero"].rounded-box,
+button[data-theme="frutiger-aero"].rounded-box {
+  background: linear-gradient(160deg, oklch(100% 0.02 215 / 0.82), oklch(90% 0.08 200 / 0.6))
+    !important;
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / 0.9),
+    inset 0 -1px 0 oklch(60% 0.1 210 / 0.15),
+    0 6px 20px oklch(45% 0.12 230 / 0.18);
+}
+
+/* Gel / gloss buttons — specular cap + saturated body */
+[data-theme="frutiger-aero"]
+  .btn-primary:not(.btn-outline):not(.btn-ghost):not(.btn-link):not(.btn-soft) {
+  background-color: oklch(54% 0.19 238);
+  background-image:
+    linear-gradient(
+      105deg,
+      transparent 35%,
+      oklch(100% 0 0 / 0.35) 48%,
+      transparent 62%
+    ),
+    linear-gradient(to bottom, oklch(100% 0 0 / 0.5), oklch(100% 0 0 / 0) 42%),
+    linear-gradient(to bottom, oklch(72% 0.15 235), oklch(46% 0.19 240));
+  background-size: 220% 100%, 100% 100%, 100% 100%;
+  background-position: 100% 0, 0 0, 0 0;
+  border: 1px solid oklch(40% 0.15 240 / 0.7);
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / 0.7),
+    inset 0 -2px 5px oklch(32% 0.12 240 / 0.3),
+    0 2px 2px oklch(100% 0 0 / 0.35),
+    0 4px 14px oklch(48% 0.16 238 / 0.4);
+  text-shadow: 0 1px 1px oklch(25% 0.1 240 / 0.45);
+}
+
+[data-theme="frutiger-aero"]
+  .btn-primary:not(.btn-outline):not(.btn-ghost):not(.btn-link):not(.btn-soft):hover {
+  background-position: 0% 0, 0 0, 0 0;
+  animation: aero-sheen 0.85s ease-out;
+  filter: brightness(1.06);
+}
+
+[data-theme="frutiger-aero"]
+  .btn-secondary:not(.btn-outline):not(.btn-ghost):not(.btn-link):not(.btn-soft) {
+  background-color: oklch(66% 0.145 192);
+  background-image:
+    linear-gradient(to bottom, oklch(100% 0 0 / 0.48), oklch(100% 0 0 / 0) 42%),
+    linear-gradient(to bottom, oklch(80% 0.12 192), oklch(58% 0.15 195));
+  border: 1px solid oklch(48% 0.12 195 / 0.65);
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / 0.65),
+    inset 0 -2px 5px oklch(35% 0.1 195 / 0.28),
+    0 4px 14px oklch(55% 0.12 195 / 0.35);
+  text-shadow: 0 1px 1px oklch(30% 0.08 195 / 0.35);
+}
+
+[data-theme="frutiger-aero"]
+  .btn-accent:not(.btn-outline):not(.btn-ghost):not(.btn-link):not(.btn-soft) {
+  background-color: oklch(66% 0.195 145);
+  background-image:
+    linear-gradient(to bottom, oklch(100% 0 0 / 0.45), oklch(100% 0 0 / 0) 42%),
+    linear-gradient(to bottom, oklch(80% 0.16 145), oklch(56% 0.19 145));
+  border: 1px solid oklch(48% 0.15 145 / 0.65);
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / 0.65),
+    inset 0 -2px 5px oklch(35% 0.12 145 / 0.28),
+    0 4px 14px oklch(55% 0.15 145 / 0.35);
+  text-shadow: 0 1px 1px oklch(30% 0.08 145 / 0.35);
+}
+
+[data-theme="frutiger-aero"]
+  .btn-error:not(.btn-outline):not(.btn-ghost):not(.btn-link):not(.btn-soft) {
+  background-image:
+    linear-gradient(to bottom, oklch(100% 0 0 / 0.4), oklch(100% 0 0 / 0) 42%),
+    linear-gradient(to bottom, oklch(72% 0.18 25), oklch(52% 0.22 25));
+  box-shadow: inset 0 1px 0 oklch(100% 0 0 / 0.55), 0 4px 12px oklch(55% 0.18 25 / 0.35);
+}
+
+/* Soft glass inputs */
+[data-theme="frutiger-aero"] .input,
+[data-theme="frutiger-aero"] .textarea,
+[data-theme="frutiger-aero"] .select {
+  background: oklch(100% 0.01 215 / 0.62);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-color: oklch(100% 0 0 / 0.55);
+  box-shadow: inset 0 1px 2px oklch(40% 0.06 230 / 0.14), inset 0 0 0 1px oklch(100% 0 0 / 0.35);
+}
+
+/* Mode join / pills */
+[data-theme="frutiger-aero"] .join .btn-primary {
+  box-shadow: inset 0 1px 0 oklch(100% 0 0 / 0.65), 0 2px 8px oklch(48% 0.16 238 / 0.35);
+}
+
+[data-theme="frutiger-aero"] .join .btn-ghost {
+  background: oklch(100% 0 0 / 0.35);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-color: oklch(100% 0 0 / 0.45) !important;
+}
+
+/* Active sidebar item — glossy selected tile */
+[data-theme="frutiger-aero"] aside a.bg-base-100 {
+  background: linear-gradient(180deg, oklch(100% 0 0 / 0.75), oklch(94% 0.05 210 / 0.55))
+    !important;
+  box-shadow: inset 0 1px 0 oklch(100% 0 0 / 0.85), 0 2px 8px oklch(45% 0.1 230 / 0.12);
+}
+
+/* Dropdown / popover glass */
+[data-theme="frutiger-aero"] [data-radix-popper-content-wrapper] [role="menu"],
+[data-theme="frutiger-aero"] [data-slot="popover-content"],
+[data-theme="frutiger-aero"] .bg-base-100.shadow-lg,
+[data-theme="frutiger-aero"] .bg-base-100.shadow-md {
+  background: oklch(97% 0.03 215 / 0.82) !important;
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border-color: oklch(100% 0 0 / 0.55);
+  box-shadow: inset 0 1px 0 oklch(100% 0 0 / 0.7), 0 12px 40px oklch(40% 0.1 230 / 0.22);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme="frutiger-aero"]::before,
+  html[data-theme="frutiger-aero"]::after,
+  [data-theme="frutiger-aero"]
+    .btn-primary:not(.btn-outline):not(.btn-ghost):not(.btn-link):not(.btn-soft):hover {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  html[data-theme="frutiger-aero"]::before,
+  html[data-theme="frutiger-aero"]::after {
+    opacity: 0.35;
+  }
+
+  [data-theme="frutiger-aero"] aside,
+  [data-theme="frutiger-aero"] .rounded-box.border.border-base-300.bg-base-100,
+  [data-theme="frutiger-aero"] nav.fixed.inset-x-0.bottom-0 {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }
 
 @theme {
