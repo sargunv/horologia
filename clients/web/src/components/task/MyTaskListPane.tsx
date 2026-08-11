@@ -80,8 +80,13 @@ export function MyTaskListPane() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <h2 className="truncate text-lg font-semibold">My Tasks</h2>
+      <div className="flex items-center justify-between border-b border-base-300 pb-2">
+        <div>
+          <p className="catalog-label text-3xs font-semibold uppercase tracking-caps text-base-content/65">
+            Index
+          </p>
+          <h2 className="truncate text-lg font-semibold">My Tasks</h2>
+        </div>
         <TooltipRoot>
           <TooltipTrigger asChild>
             <ActivityLink
@@ -97,7 +102,7 @@ export function MyTaskListPane() {
       </div>
 
       {tasks.length > 0 ? (
-        <div className="overflow-hidden rounded-box border border-base-300 divide-y divide-base-300">
+        <div className="catalogue overflow-hidden rounded-box border border-base-300 divide-y divide-base-300">
           {tasks.map((task) => (
             <TaskRow
               key={`${task.spaceSlug}/${task.id}`}
@@ -111,7 +116,7 @@ export function MyTaskListPane() {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center gap-3 rounded-box border border-base-300 p-12 text-center">
+        <div className="specimen-sheet flex flex-col items-center gap-3 rounded-box border border-base-300 p-12 text-center">
           <ListChecks className="size-12 text-base-content/40" aria-hidden="true" />
           <div>
             <p className="font-medium">No tasks assigned to you</p>

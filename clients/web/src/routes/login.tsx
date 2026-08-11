@@ -8,6 +8,7 @@ import { appClient } from "../api/client.ts";
 import { authConfigQueryOptions } from "../lib/queries.ts";
 import { navigateToTarget } from "../lib/navigation.ts";
 import { Card } from "../ui/Card.tsx";
+import { CatalogLabel } from "../ui/CatalogLabel.tsx";
 
 interface LoginSearch {
   redirect?: string;
@@ -75,11 +76,12 @@ function LoginPage() {
     <div className="flex min-h-svh items-center justify-center p-4">
       <div className="flex w-full max-w-sm flex-col gap-5">
         <div className="flex flex-col items-center gap-1.5 text-center">
+          <CatalogLabel>Catalogue</CatalogLabel>
           <h1 className="text-4xl font-bold tracking-tight">Horologia</h1>
           <p className="text-base-content/70 text-sm">Sign in to your account</p>
         </div>
 
-        <Card className="flex flex-col gap-6 p-6">
+        <Card className="specimen-sheet flex flex-col gap-6 p-6">
           {isAuthConfigPending ? (
             <div className="flex items-center justify-center py-4">
               <span className="text-base-content/60 text-sm">Loading...</span>
@@ -92,29 +94,29 @@ function LoginPage() {
           ) : null}
 
           {authConfig?.password.enabled && (
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <label className="flex flex-col gap-1">
-                <span className="text-base-content/70 text-sm font-medium">Email</span>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+              <label className="flex flex-col gap-1.5">
+                <CatalogLabel>Email</CatalogLabel>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="input w-full"
+                  className="input input-ledger w-full"
                   placeholder="you@example.com"
                   autoComplete="email"
                   disabled={loginMutation.isPending}
                 />
               </label>
 
-              <label className="flex flex-col gap-1">
-                <span className="text-base-content/70 text-sm font-medium">Password</span>
+              <label className="flex flex-col gap-1.5">
+                <CatalogLabel>Password</CatalogLabel>
                 <input
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="input w-full"
+                  className="input input-ledger w-full"
                   placeholder="Enter your password"
                   autoComplete="current-password"
                   disabled={loginMutation.isPending}
@@ -141,7 +143,7 @@ function LoginPage() {
           {authConfig?.password.enabled && authConfig?.oidc.enabled && (
             <div className="flex items-center gap-3">
               <hr className="border-base-300 flex-1" />
-              <span className="text-base-content/60 text-xs uppercase tracking-wider">or</span>
+              <CatalogLabel>or</CatalogLabel>
               <hr className="border-base-300 flex-1" />
             </div>
           )}

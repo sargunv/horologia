@@ -120,7 +120,7 @@
   }
 }
 
-/* ── Florilegium (theme-scoped): type, index, specimen mounts, ink feel ──── */
+/* ── Florilegium: ethic of inscription (structural classes + tokens) ────── */
 
 html[data-theme="florilegium"] {
   --font-sans: var(--font-serif);
@@ -130,7 +130,6 @@ html[data-theme="florilegium"] {
 html[data-theme="florilegium"] body {
   font-family: var(--font-serif);
   font-feature-settings: "kern" 1, "liga" 1, "onum" 1;
-  /* Single desk-window wash — directional, not multi-layer foxing theater */
   background-color: var(--color-base-100);
   background-image: radial-gradient(
     ellipse 120% 80% at 12% -10%,
@@ -143,6 +142,7 @@ html[data-theme="florilegium"] body {
 html[data-theme="florilegium"] h1,
 html[data-theme="florilegium"] h2,
 html[data-theme="florilegium"] h3,
+html[data-theme="florilegium"] .specimen-title,
 html[data-theme="florilegium"] .font-display {
   font-family: var(--font-display);
   font-optical-sizing: auto;
@@ -151,46 +151,156 @@ html[data-theme="florilegium"] .font-display {
   font-weight: 600;
 }
 
-/* Index of drawers — flat tone + hairline, not wood grain */
-html[data-theme="florilegium"] aside.border-r {
-  background-color: var(--color-base-200);
-  background-image: none;
-  border-right: 1px solid var(--color-base-300);
-  box-shadow: inset -1px 0 0 color-mix(in oklab, var(--color-base-100) 70%, transparent);
-}
-
 html[data-theme="florilegium"] .app-shell {
   background-color: transparent;
 }
 
-html[data-theme="florilegium"] .app-shell > main {
-  background-image: none;
-}
-
-/* Mounted specimen sheet: flat board, hairline, tight warm contact shadow */
-html[data-theme="florilegium"] .surface-card {
-  background-color: var(--color-base-100);
-  background-image: none;
-  border: 1px solid var(--color-base-300);
-  box-shadow: 0 1px 2px oklch(30% 0.03 65 / 0.08), 0 6px 16px -12px oklch(30% 0.03 65 / 0.28);
-}
-
-html[data-theme="florilegium"] aside header a > span {
-  font-family: var(--font-display);
-  font-variation-settings: "SOFT" 35, "WONK" 0.35, "opsz" 48;
-  letter-spacing: -0.025em;
-  font-weight: 650;
-}
-
-/* Catalog hand — letterspaced small-caps eyebrows */
+/* Catalog hand */
+html[data-theme="florilegium"] .catalog-label,
 html[data-theme="florilegium"] .tracking-caps {
   letter-spacing: var(--tracking-caps);
   font-variant-caps: all-small-caps;
   font-weight: 600;
 }
 
-/* Wax-seal primary: one decisive ink block per view */
+/* Index of drawers */
+html[data-theme="florilegium"] .catalog-index {
+  background-color: var(--color-base-200);
+  border-right: 1px solid var(--color-base-300);
+  box-shadow: inset -1px 0 0 color-mix(in oklab, var(--color-base-100) 70%, transparent);
+}
+
+html[data-theme="florilegium"] .catalog-index header a > span {
+  font-family: var(--font-display);
+  font-variation-settings: "SOFT" 35, "WONK" 0.35, "opsz" 48;
+  letter-spacing: -0.025em;
+  font-weight: 650;
+}
+
+html[data-theme="florilegium"] .catalog-entry {
+  border-radius: 0;
+}
+
+html[data-theme="florilegium"] .catalog-entry:hover {
+  background-color: color-mix(in oklab, var(--color-primary) 8%, var(--color-base-100));
+}
+
+html[data-theme="florilegium"] .catalog-entry.border-l-primary,
+html[data-theme="florilegium"] .catalog-entry[class*="border-l-primary"] {
+  border-left-width: 3px;
+  box-shadow: none;
+  background-color: color-mix(in oklab, var(--color-base-100) 88%, white);
+}
+
+html[data-theme="florilegium"] .catalog-index-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "onum" 0, "tnum" 1;
+}
+
+/* Mounted specimen sheets */
+html[data-theme="florilegium"] .surface-card,
+html[data-theme="florilegium"] .specimen-sheet {
+  background-color: var(--color-base-100);
+  border: 1px solid var(--color-base-300);
+  border-radius: var(--radius-box);
+  box-shadow: 0 1px 2px oklch(30% 0.03 65 / 0.08), 0 6px 16px -12px oklch(30% 0.03 65 / 0.28);
+}
+
+html[data-theme="florilegium"] .specimen-sheet-header {
+  border-bottom-color: var(--color-base-300);
+}
+
+/* Catalogue / accession ledger */
+html[data-theme="florilegium"] .catalogue {
+  border-radius: var(--radius-box);
+  border-color: var(--color-base-300);
+  background: color-mix(in oklab, var(--color-base-100) 94%, white);
+  box-shadow: 0 1px 2px oklch(30% 0.03 65 / 0.06);
+}
+
+html[data-theme="florilegium"] .catalogue-row {
+  border-radius: 0;
+}
+
+html[data-theme="florilegium"] .catalogue-row:hover {
+  background-color: color-mix(in oklab, var(--color-primary) 6%, var(--color-base-100));
+}
+
+/* Annotation slips (FieldPill) — not modern pills */
+html[data-theme="florilegium"] .field-pill {
+  border-radius: var(--radius-field);
+  background: transparent;
+  border: 1px solid var(--color-base-300);
+  gap: 0.4rem;
+}
+
+html[data-theme="florilegium"] .field-pill:hover {
+  background: color-mix(in oklab, var(--color-primary) 7%, var(--color-base-100));
+  border-color: color-mix(in oklab, var(--color-primary) 35%, var(--color-base-300));
+}
+
+html[data-theme="florilegium"] .field-pill .catalog-label {
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+}
+
+/* Ledger lines — written-upon, not boxed */
+html[data-theme="florilegium"] .input,
+html[data-theme="florilegium"] .input-ledger,
+html[data-theme="florilegium"] .textarea,
+html[data-theme="florilegium"] .select {
+  border-width: 0 0 1px;
+  border-radius: 0;
+  border-color: color-mix(in oklab, var(--color-base-content) 22%, transparent);
+  background: transparent;
+  box-shadow: none;
+}
+
+html[data-theme="florilegium"] .input:focus,
+html[data-theme="florilegium"] .input-ledger:focus,
+html[data-theme="florilegium"] .textarea:focus,
+html[data-theme="florilegium"] .select:focus {
+  outline: none;
+  border-bottom-color: var(--color-primary);
+  box-shadow: 0 1px 0 0 var(--color-primary);
+}
+
+/* Search in the index stays a quiet boxed control */
+html[data-theme="florilegium"] .catalog-index .input {
+  border-width: 1px;
+  border-radius: var(--radius-field);
+  border-color: var(--color-base-300);
+  background: color-mix(in oklab, var(--color-base-100) 90%, white);
+  box-shadow: none;
+}
+
+html[data-theme="florilegium"] .catalog-index .input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--color-primary) 30%, transparent);
+}
+
+/* Taxonomy tags — outlined slips */
+html[data-theme="florilegium"] .badge {
+  letter-spacing: 0.04em;
+  font-variant-caps: all-small-caps;
+  border-radius: var(--radius-selector);
+  border: 1px solid color-mix(in oklab, currentColor 35%, var(--color-base-300));
+  background: transparent;
+}
+
+html[data-theme="florilegium"] .badge-soft {
+  background: color-mix(in oklab, var(--color-base-200) 80%, transparent);
+}
+
+/* Alerts as marginalia */
+html[data-theme="florilegium"] .alert {
+  border-radius: var(--radius-box);
+  border: 1px solid var(--color-base-300);
+  box-shadow: none;
+}
+
+/* Wax-seal primary + drawer click */
 html[data-theme="florilegium"] .btn {
+  border-radius: var(--radius-field);
   transition:
     background-color 140ms ease,
     color 140ms ease,
@@ -212,30 +322,9 @@ html[data-theme="florilegium"] .btn-primary:hover {
     0 0 0 3px color-mix(in oklab, var(--color-primary) 18%, transparent);
 }
 
-/* Ledger-like fields */
-html[data-theme="florilegium"] .input,
-html[data-theme="florilegium"] .textarea,
-html[data-theme="florilegium"] .select {
-  background-color: color-mix(in oklab, var(--color-base-100) 92%, white);
-  box-shadow: inset 0 -1px 0 color-mix(in oklab, var(--color-base-content) 12%, transparent);
-}
-
-/* Taxonomy tags — outlined, not pill-shiny */
-html[data-theme="florilegium"] .badge {
-  letter-spacing: 0.04em;
-  font-variant-caps: all-small-caps;
-  border-radius: var(--radius-selector);
-}
-
-/* Ink-warm hover on index links */
-html[data-theme="florilegium"] aside a:hover {
-  background-color: color-mix(in oklab, var(--color-primary) 8%, var(--color-base-100));
-}
-
-/* Specimen-pin selection already uses border-l-primary; deepen the pin */
-html[data-theme="florilegium"] aside a[class*="border-l-primary"] {
-  border-left-width: 3px;
-  box-shadow: none;
+html[data-theme="florilegium"] .btn-soft {
+  background: transparent;
+  border: 1px solid var(--color-base-300);
 }
 
 @keyframes florilegium-ink {

@@ -13,7 +13,7 @@ type Space = components["schemas"]["Space"];
 const NavAnchor = createLink("a");
 
 const SIDEBAR_LINK =
-  "group flex items-center gap-2.5 rounded-field px-2 py-1.5 text-sm " +
+  "catalog-entry group flex items-center gap-2.5 rounded-field px-2 py-1.5 text-sm " +
   "text-base-content/70 border-l-2 border-transparent " +
   "transition-colors duration-100 hover:bg-base-100 hover:text-base-content";
 
@@ -28,11 +28,11 @@ const MOBILE_LINK =
 const MOBILE_LINK_ACTIVE = "text-primary";
 
 const SECTION_LABEL =
-  "px-2 pb-1.5 pt-0.5 text-3xs font-semibold uppercase tracking-caps text-base-content/70";
+  "catalog-label px-2 pb-1.5 pt-0.5 text-3xs font-semibold uppercase tracking-caps text-base-content/70";
 
 function DesktopSidebar({ user, spaces }: { user: User; spaces: Space[] }) {
   return (
-    <aside className="hidden w-64 shrink-0 flex-col border-r border-base-300 bg-base-200 md:flex">
+    <aside className="catalog-index hidden w-64 shrink-0 flex-col border-r border-base-300 bg-base-200 md:flex">
       <header className="px-4 pt-4 pb-2">
         <NavAnchor to="/" className="flex items-center gap-2">
           <span className="text-lg font-bold tracking-tight">Horologia</span>
@@ -43,8 +43,8 @@ function DesktopSidebar({ user, spaces }: { user: User; spaces: Space[] }) {
         <GlobalSearchCombobox />
       </div>
 
-      <div className="flex-1 space-y-3 overflow-y-auto px-2 py-2">
-        <nav aria-label="Library" className="space-y-0.5">
+      <div className="flex-1 space-y-0 overflow-y-auto px-2 py-2">
+        <nav aria-label="Library" className="catalog-drawer space-y-0.5 pb-3">
           <div className={SECTION_LABEL}>Library</div>
           <NavAnchor
             to="/"
@@ -65,7 +65,9 @@ function DesktopSidebar({ user, spaces }: { user: User; spaces: Space[] }) {
           </NavAnchor>
         </nav>
 
-        <nav aria-label="Spaces" className="space-y-0.5">
+        <div className="catalog-rule mx-2 border-t border-base-300" role="presentation" />
+
+        <nav aria-label="Spaces" className="catalog-drawer space-y-0.5 pt-3">
           <div className="flex items-center justify-between">
             <NavAnchor to="/spaces" className={`${SECTION_LABEL} hover:text-base-content`}>
               Spaces
@@ -79,7 +81,7 @@ function DesktopSidebar({ user, spaces }: { user: User; spaces: Space[] }) {
             </NavAnchor>
           </div>
           <div className="space-y-0.5">
-            {spaces.map((space) => (
+            {spaces.map((space, index) => (
               <NavAnchor
                 key={space.slug}
                 to="/spaces/$spaceSlug"
@@ -91,6 +93,9 @@ function DesktopSidebar({ user, spaces }: { user: User; spaces: Space[] }) {
               >
                 <LayoutGrid className="size-4" aria-hidden="true" />
                 <span className="flex-1 truncate">{space.name}</span>
+                <span className="catalog-index-num text-3xs tabular-nums text-base-content/40">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
               </NavAnchor>
             ))}
             {spaces.length === 0 && (

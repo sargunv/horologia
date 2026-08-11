@@ -87,10 +87,12 @@ export function PropertyRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-start gap-4 border-b border-base-300 py-3 last:border-b-0">
-      <span className="text-base-content/70 flex w-28 shrink-0 items-center gap-2 pt-1 text-sm">
+    <div className="property-row flex items-start gap-4 border-b border-base-300 py-3 last:border-b-0">
+      <span className="text-base-content/70 flex w-28 shrink-0 items-center gap-2 pt-1">
         {icon}
-        {label}
+        <span className="catalog-label text-3xs font-semibold uppercase tracking-caps">
+          {label}
+        </span>
       </span>
       <div className="min-w-0 flex-1">{children}</div>
     </div>
