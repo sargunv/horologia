@@ -12,7 +12,7 @@ export function SettingsSection({
   children?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-4 rounded-box border border-base-300 bg-base-100 p-6">
+    <div className="surface-card flex flex-col gap-4 rounded-box border border-base-300 bg-base-100 p-6">
       <div className="flex items-center gap-3">
         <span className="text-base-content/70">{icon}</span>
         <div>

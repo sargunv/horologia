@@ -9,6 +9,9 @@ import { cx } from "./cx.ts";
 
 export function Card({ className, ...rest }: ComponentProps<"div">) {
   return (
-    <div className={cx("rounded-box border border-base-300 bg-base-100", className)} {...rest} />
+    <div
+      className={cx("surface-card rounded-box border border-base-300 bg-base-100", className)}
+      {...rest}
+    />
   );
 }

@@ -155,7 +155,7 @@ export function AppShell({
 }) {
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex h-svh bg-base-100 text-base-content">
+      <div className="app-shell flex h-svh bg-base-100 text-base-content">
         <DesktopSidebar user={user} spaces={spaces} />
         <main className="flex-1 overflow-y-auto pb-16 md:pb-0">{children}</main>
         <MobileBar />

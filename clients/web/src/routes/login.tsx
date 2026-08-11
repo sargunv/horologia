@@ -73,9 +73,9 @@ function LoginPage() {
 
   return (
     <div className="flex min-h-svh items-center justify-center p-4">
-      <div className="flex w-full max-w-sm flex-col gap-4">
-        <div className="flex flex-col items-center gap-1">
-          <h1 className="text-3xl font-bold tracking-tight">Horologia</h1>
+      <div className="flex w-full max-w-sm flex-col gap-5">
+        <div className="flex flex-col items-center gap-1.5 text-center">
+          <h1 className="text-4xl font-bold tracking-tight">Horologia</h1>
           <p className="text-base-content/70 text-sm">Sign in to your account</p>
         </div>
 
