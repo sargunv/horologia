@@ -16,6 +16,10 @@ const themeCatalog = Object.entries(daisyThemes).map(([name, theme]) => {
   return { name, scheme };
 });
 
+// Custom themes defined in src/main.css via `@plugin "daisyui/theme"` — daisyUI's
+// stock theme object doesn't know about them, so register them here by hand.
+themeCatalog.push({ name: "florilegium", scheme: "light" });
+
 export default defineConfig({
   define: {
     __DAISYUI_THEMES__: JSON.stringify(themeCatalog),

@@ -2,6 +2,8 @@
 @import "tw-animate-css";
 @import "@fontsource-variable/geist";
 @import "@fontsource-variable/jetbrains-mono";
+@import "@fontsource-variable/eb-garamond";
+@import "@fontsource-variable/eb-garamond/wght-italic.css";
 @import "highlight.js/styles/dark.css";
 
 @plugin "daisyui" {
@@ -9,6 +11,9 @@
   root: ":root";
   logs: false;
 }
+
+/* Custom themes. Each file owns a full skin, not just a palette. */
+@import "./themes/florilegium.css";
 
 @theme {
   --font-sans: "Geist Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
