@@ -1,6 +1,6 @@
 import { useQueries, useSuspenseInfiniteQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createLink } from "@tanstack/react-router";
-import { Activity, ChevronDown, ListChecks } from "lucide-react";
+import { Activity, ChevronDown } from "lucide-react";
 import { useMemo } from "react";
 import type { components } from "@horologia/client-core/schema";
 import {
@@ -11,6 +11,7 @@ import {
   spaceTaskStatusesQueryOptions,
   userTasksInfiniteQueryOptions,
 } from "../../lib/queries.ts";
+import { BotanicalPlate } from "../../ui/BotanicalPlate.tsx";
 import { TooltipContent, TooltipRoot, TooltipTrigger } from "../../ui/Tooltip.tsx";
 import { TaskRow } from "./TaskRow.tsx";
 
@@ -116,8 +117,8 @@ export function MyTaskListPane() {
           ))}
         </div>
       ) : (
-        <div className="specimen-sheet flex flex-col items-center gap-3 rounded-box border border-base-300 p-12 text-center">
-          <ListChecks className="size-12 text-base-content/40" aria-hidden="true" />
+        <div className="specimen-sheet flex flex-col items-center gap-4 rounded-box border border-base-300 p-12 text-center">
+          <BotanicalPlate className="w-28 text-base-content/45" />
           <div>
             <p className="font-medium">No tasks assigned to you</p>
             <p className="mt-1 text-sm text-base-content/70">
