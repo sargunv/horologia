@@ -1,0 +1,278 @@
+/* --------------------------------------------------------------------------
+ * florilegium — Horologia as a 17th century herbalist's cabinet.
+ *
+ * The main pane is a folio of laid paper (chain lines, fibre grain, an
+ * age-darkened deckle vignette); the sidebar is the oak cabinet it lives in,
+ * with paper drawer labels and a sap-green silk ribbon marking the open
+ * drawer; every card is a hand-tinted copperplate in a double-rule plate
+ * frame with engraved corner ornaments; the wordmark carries a wax seal.
+ * All colors are period pigments: sap green, madder rose, gamboge,
+ * verdigris, dragon's blood, iron-gall ink on vellum.
+ * ------------------------------------------------------------------------ */
+
+@plugin "daisyui/theme" {
+  name: "florilegium";
+  default: false;
+  prefersdark: false;
+  color-scheme: light;
+
+  /* vellum */
+  --color-base-100: #f3ecdc;
+  --color-base-200: #e9dfc8;
+  --color-base-300: #d6c9a6;
+  /* iron-gall ink */
+  --color-base-content: #2e2818;
+  /* sap green — the buckthorn wash on every leaf */
+  --color-primary: #43603a;
+  --color-primary-content: #f1ebdc;
+  /* madder rose — hand-tinted petals */
+  --color-secondary: #a14e42;
+  --color-secondary-content: #f5eee2;
+  /* gamboge — golden gum resin */
+  --color-accent: #b9862e;
+  --color-accent-content: #2e2410;
+  /* oak */
+  --color-neutral: #55452e;
+  --color-neutral-content: #ede5d4;
+  /* verdigris */
+  --color-info: #4f7a6b;
+  --color-info-content: #edf2ec;
+  --color-success: #5b7442;
+  --color-success-content: #f0f2e6;
+  --color-warning: #a5671b;
+  --color-warning-content: #f7eedd;
+  /* dragon's blood */
+  --color-error: #8e3326;
+  --color-error-content: #f6eae4;
+
+  /* Engraved plates are rectangles: near-square corners, hairline rules. */
+  --radius-selector: 0.125rem;
+  --radius-field: 0.25rem;
+  --radius-box: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+[data-theme="florilegium"] {
+  --font-sans: "EB Garamond Variable", "Iowan Old Style", Georgia, serif;
+  /* Garamond runs small on the body; the folio sets its type a touch larger. */
+  font-size: 105%;
+
+  --flori-ink: #2e2818;
+  --flori-vellum: #f3ecdc;
+  --flori-oak: #3e301e;
+  --flori-oak-edge: #241b0e;
+  --flori-oak-label: rgb(233 223 201 / 0.72);
+  --flori-brass: #cfa051;
+  --flori-madder: #a14e42;
+  --flori-rule: rgb(46 40 24 / 0.55);
+}
+
+/* --- The folio: laid paper with chain lines and a deckle vignette -------- */
+
+[data-theme="florilegium"] body,
+[data-theme="florilegium"] main {
+  background-color: var(--flori-vellum);
+  background-image:
+    radial-gradient(140% 110% at 50% 0%, transparent 55%, rgb(90 70 40 / 0.12)),
+    repeating-linear-gradient(90deg, rgb(46 40 24 / 0.04) 0 1px, transparent 1px 96px),
+    repeating-linear-gradient(0deg, rgb(46 40 24 / 0.016) 0 1px, transparent 1px 3px);
+}
+
+/* Paper fibre grain laid over everything, as if under a loupe. */
+[data-theme="florilegium"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* --- The cabinet: quarter-sawn oak with a shadowed edge ------------------- */
+
+[data-theme="florilegium"] aside {
+  background-color: var(--flori-oak);
+  background-image:
+    linear-gradient(
+      105deg,
+      rgb(0 0 0 / 0.3),
+      transparent 35%,
+      rgb(255 240 210 / 0.05) 70%,
+      rgb(0 0 0 / 0.24)
+    ),
+    repeating-linear-gradient(
+    91deg,
+    rgb(0 0 0 / 0.1) 0 1px,
+    transparent 1px 5px,
+    rgb(255 230 190 / 0.03) 5px 6px,
+    transparent 6px 13px
+  );
+  border-right-color: var(--flori-oak-edge);
+  box-shadow: inset -1px 0 0 rgb(255 240 210 / 0.06), 6px 0 16px rgb(46 40 24 / 0.18);
+  color: #e9dfc9;
+}
+
+[data-theme="florilegium"] aside .text-base-content\/70 {
+  color: var(--flori-oak-label);
+}
+[data-theme="florilegium"] aside .text-base-content\/60 {
+  color: rgb(233 223 201 / 0.6);
+}
+[data-theme="florilegium"] aside .text-base-content\/55 {
+  color: rgb(233 223 201 / 0.55);
+}
+
+/* Drawer labels: plain until hovered; the open drawer is a paper label
+ * held in place by a green silk ribbon. */
+[data-theme="florilegium"] aside a.hover\:bg-base-100:hover {
+  background-color: rgb(243 236 220 / 0.09);
+}
+[data-theme="florilegium"] aside a.hover\:text-base-content:hover {
+  color: var(--flori-vellum);
+}
+[data-theme="florilegium"] aside a.bg-base-100 {
+  background-color: var(--flori-vellum);
+  color: var(--flori-ink);
+  border-left-color: var(--color-primary);
+  box-shadow: inset 0 0 0 1px rgb(46 40 24 / 0.35), 0 1px 2px rgb(0 0 0 / 0.35);
+}
+[data-theme="florilegium"] aside a.bg-base-100:hover {
+  background-color: #f8f2e4;
+  color: var(--flori-ink);
+}
+
+/* The mobile bar is the cabinet's plinth drawer. */
+[data-theme="florilegium"] nav.fixed {
+  background-color: var(--flori-oak);
+  background-image: linear-gradient(rgb(0 0 0 / 0.18), rgb(0 0 0 / 0.32));
+  border-top-color: var(--flori-oak-edge);
+}
+[data-theme="florilegium"] nav.fixed .text-base-content\/70 {
+  color: var(--flori-oak-label);
+}
+[data-theme="florilegium"] nav.fixed .text-primary {
+  color: #d9b265;
+}
+
+/* --- Rubrication: brass small-caps drawer labels with a hedera ------------- */
+
+[data-theme="florilegium"] .tracking-caps {
+  color: var(--flori-brass);
+  font-weight: 600;
+}
+[data-theme="florilegium"] .tracking-caps::after {
+  content: "  ❦";
+  letter-spacing: 0;
+  color: var(--flori-madder);
+}
+
+/* --- The wax seal on the wordmark ------------------------------------------ */
+
+[data-theme="florilegium"] .tracking-tight::before {
+  content: "";
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  margin-right: 0.45em;
+  vertical-align: -0.12em;
+  border-radius: 47% 53% 52% 48% / 51% 46% 54% 49%;
+  background: radial-gradient(circle at 34% 28%, #c4725f, var(--flori-madder) 52%, #77352b 88%);
+  box-shadow:
+    inset 0 1px 1px rgb(255 230 210 / 0.5),
+    inset 0 -2px 3px rgb(50 16 10 / 0.55),
+    0 1px 2px rgb(20 12 4 / 0.5);
+}
+
+/* --- Copperplates: double-rule plate frames with corner ornaments ---------- */
+
+[data-theme="florilegium"] .rounded-box:not(.shadow-lg):not(.menu) {
+  border-color: var(--flori-rule);
+  box-shadow:
+    inset 0 0 0 1px var(--flori-vellum),
+    inset 0 0 0 2px rgb(46 40 24 / 0.4),
+    0 1px 3px rgb(46 40 24 / 0.18);
+  /* An engraved flourish where the plate number would sit. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 26 26' fill='none'%3E%3Cg stroke='%232e2818' stroke-width='1' stroke-linecap='round'%3E%3Cpath d='M22 24C22 12 14 4 2 4' stroke-opacity='.55'/%3E%3Cpath d='M18 24C18 15.5 10.5 8 2 8' stroke-opacity='.3'/%3E%3C/g%3E%3Ccircle cx='22' cy='24' r='1.3' fill='%232e2818' fill-opacity='.55'/%3E%3Ccircle cx='2' cy='4' r='1.3' fill='%232e2818' fill-opacity='.55'/%3E%3C/svg%3E");
+  background-position: right 6px top 6px;
+  background-repeat: no-repeat;
+}
+
+/* Overlay surfaces (menus, dialogs) keep a single engraved rule. */
+[data-theme="florilegium"] .rounded-box.shadow-lg {
+  border-color: var(--flori-rule);
+}
+
+/* --- Letterpress ---------------------------------------------------------- */
+
+[data-theme="florilegium"] h1,
+[data-theme="florilegium"] h2,
+[data-theme="florilegium"] h3 {
+  letter-spacing: 0.01em;
+}
+[data-theme="florilegium"] h1 {
+  font-variant-caps: small-caps;
+  letter-spacing: 0.035em;
+}
+
+[data-theme="florilegium"] .btn {
+  font-variant-caps: small-caps;
+  font-weight: 600;
+  letter-spacing: 0.045em;
+  box-shadow:
+    inset 0 -2px 0 rgb(20 12 4 / 0.14),
+    inset 0 1px 0 rgb(255 250 235 / 0.28),
+    0 1px 2px rgb(46 40 24 / 0.25);
+}
+[data-theme="florilegium"] .btn-primary {
+  border: 1px solid #2f4a28;
+  background-image: linear-gradient(rgb(255 255 255 / 0.07), rgb(0 0 0 / 0.1));
+}
+
+[data-theme="florilegium"] .badge {
+  font-variant-caps: small-caps;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  box-shadow: inset 0 0 0 1px rgb(20 12 4 / 0.22);
+}
+
+/* Field pills are specimen labels: vellum chips with an etched edge. */
+[data-theme="florilegium"] button.rounded-full {
+  box-shadow: inset 0 0 0 1px rgb(46 40 24 / 0.25);
+}
+
+/* --- Ledger rulings -------------------------------------------------------- */
+
+[data-theme="florilegium"] :is(.input, .select, .textarea) {
+  background-color: rgb(255 252 242 / 0.55);
+  border-color: rgb(46 40 24 / 0.4);
+  box-shadow: inset 0 1px 2px rgb(46 40 24 / 0.08);
+}
+
+[data-theme="florilegium"] hr {
+  border: 0;
+  border-top: 3px double rgb(46 40 24 / 0.45);
+}
+
+/* --- Printer's details ------------------------------------------------------ */
+
+[data-theme="florilegium"] ::selection {
+  background: rgb(185 134 46 / 0.35);
+}
+
+[data-theme="florilegium"] * {
+  scrollbar-width: thin;
+  scrollbar-color: #a8936c transparent;
+}
+[data-theme="florilegium"] ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+[data-theme="florilegium"] ::-webkit-scrollbar-thumb {
+  background: #b39c71;
+  border: 3px solid var(--flori-vellum);
+  border-radius: 6px;
+}
