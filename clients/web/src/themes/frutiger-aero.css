@@ -1,0 +1,252 @@
+/*
+ * Frutiger Aero — the first of Horologia's "showpiece" themes.
+ *
+ * Mid-2000s techno-optimism: Windows Vista / Wii / Web 2.0. Lush grass greens
+ * and lagoon blues, frosted Aero glass over an aurora sky, bokeh light
+ * drifting behind the UI, and glossy gel buttons with a specular top sheen.
+ *
+ * Structure:
+ *   1. daisyUI theme — palette (translucent base colors make every surface
+ *      glass) + generous radii.
+ *   2. Environment — fixed aurora + bokeh on <html>, behind everything.
+ *   3. Material — backdrop blur + edge highlights on cards/overlays/chrome.
+ *   4. Chrome — glossy buttons, badges, inset glass inputs, scrollbars.
+ */
+
+@plugin "daisyui/theme" {
+  name: "frutiger-aero";
+  default: false;
+  prefersdark: false;
+  color-scheme: light;
+
+  /* Base colors are translucent white so the aurora shows through every
+   * surface — the whole app reads as frosted glass floating over the sky. */
+  --color-base-100: oklch(99.2% 0.004 230 / 0.6);
+  --color-base-200: oklch(98.2% 0.008 225 / 0.48);
+  --color-base-300: oklch(96.5% 0.012 225 / 0.4);
+  --color-base-content: oklch(27% 0.05 240);
+
+  --color-primary: oklch(62% 0.13 218);
+  --color-primary-content: oklch(98% 0.01 220);
+  --color-secondary: oklch(70% 0.16 145);
+  --color-secondary-content: oklch(98% 0.02 135);
+  --color-accent: oklch(86% 0.11 190);
+  --color-accent-content: oklch(30% 0.06 215);
+  --color-neutral: oklch(42% 0.05 230);
+  --color-neutral-content: oklch(95% 0.02 220);
+
+  --color-info: oklch(72% 0.11 225);
+  --color-info-content: oklch(26% 0.05 240);
+  --color-success: oklch(72% 0.15 150);
+  --color-success-content: oklch(25% 0.05 150);
+  --color-warning: oklch(82% 0.14 85);
+  --color-warning-content: oklch(30% 0.06 70);
+  --color-error: oklch(60% 0.2 25);
+  --color-error-content: oklch(96% 0.02 20);
+
+  --radius-selector: 1rem;
+  --radius-field: 0.75rem;
+  --radius-box: 1.25rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+/* ---------------------------------------------------------------- */
+/* 1. Environment                                                    */
+/* ---------------------------------------------------------------- */
+
+:root[data-theme="frutiger-aero"] {
+  /* Era typeface: Segoe UI's humanist voice, via its closest libre match. */
+  --font-sans:
+    "Open Sans Variable",
+    "Segoe UI",
+    "Frutiger",
+    "Lucida Grande",
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+}
+
+html[data-theme="frutiger-aero"] {
+  background-color: #6fbde6;
+  background-image: /* sun bloom, high right */
+    radial-gradient(ellipse 55% 42% at 72% -8%, rgb(255 255 255 / 0.95), transparent 62%),
+     /* aurora ribbon — cyan */radial-gradient(
+    ellipse 75% 45% at 12% 4%,
+    rgb(165 235 255 / 0.55),
+    transparent 68%
+  ),
+     /* aurora ribbon — teal green */radial-gradient(
+    ellipse 60% 42% at 92% 30%,
+    rgb(150 240 200 / 0.38),
+    transparent 72%
+  ),
+     /* meadow glow rising from the bottom */radial-gradient(
+    ellipse 90% 38% at 50% 108%,
+    rgb(120 200 90 / 0.55),
+    transparent 72%
+  ),
+     /* sky */linear-gradient(
+    180deg,
+    #9fd6f2 0%,
+    #6fbde6 34%,
+    #5cb3de 56%,
+    #7fc9a8 80%,
+    #5fba6f 100%
+  );
+  background-attachment: fixed;
+}
+
+/* Bokeh light drifting behind the glass. One fixed layer, GPU-cheap
+ * transform animation, sits below <body>'s translucent veil. */
+html[data-theme="frutiger-aero"]::before {
+  content: "";
+  position: fixed;
+  inset: -12%;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 14% 20%, rgb(255 255 255 / 0.55) 0 2.2%, transparent 3.2%),
+    radial-gradient(circle at 30% 64%, rgb(220 250 255 / 0.5) 0 3.4%, transparent 4.6%),
+    radial-gradient(circle at 47% 30%, rgb(255 255 255 / 0.42) 0 1.6%, transparent 2.4%),
+    radial-gradient(circle at 62% 12%, rgb(210 245 255 / 0.5) 0 4.2%, transparent 5.4%),
+    radial-gradient(circle at 74% 58%, rgb(255 255 230 / 0.4) 0 2.6%, transparent 3.6%),
+    radial-gradient(circle at 88% 34%, rgb(255 255 255 / 0.48) 0 1.9%, transparent 2.8%),
+    radial-gradient(circle at 8% 78%, rgb(230 255 235 / 0.45) 0 3%, transparent 4.2%),
+    radial-gradient(circle at 92% 82%, rgb(255 255 255 / 0.42) 0 2.8%, transparent 3.9%),
+    radial-gradient(circle at 38% 88%, rgb(215 245 255 / 0.4) 0 2%, transparent 3%),
+    radial-gradient(circle at 56% 46%, rgb(255 255 255 / 0.3) 0 5.4%, transparent 6.6%);
+  animation: frutiger-aero-drift 110s ease-in-out infinite alternate;
+}
+
+@keyframes frutiger-aero-drift {
+  from {
+    transform: translate3d(-1.6%, -1%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(1.6%, 1.2%, 0) scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme="frutiger-aero"]::before {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------- */
+/* 2. Material — frosted glass surfaces                              */
+/* ---------------------------------------------------------------- */
+
+/* Only one veil between the UI and the sky: the app shell paints
+ * `bg-base-100` itself, so <body> stays out of the way. */
+[data-theme="frutiger-aero"] body {
+  background-color: transparent;
+}
+
+/* Cards, dialogs, dropdowns, search popovers — everything built on the
+ * shared `rounded-box bg-base-100` surface gets the full Aero treatment:
+ * a denser frost for readability, backdrop blur, a bright top edge, and a
+ * cool ambient shadow. */
+[data-theme="frutiger-aero"] :where(.rounded-box.bg-base-100) {
+  background-color: oklch(99.2% 0.004 230 / 0.88);
+  backdrop-filter: blur(18px) saturate(1.5);
+  border-color: rgb(255 255 255 / 0.6);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.75),
+    inset 0 0 0 1px rgb(255 255 255 / 0.18),
+    0 10px 30px -10px rgb(8 60 100 / 0.3);
+}
+
+/* Sidebar + mobile bar: the app's chrome is glass too. */
+[data-theme="frutiger-aero"] aside.bg-base-200 {
+  background-color: oklch(98.6% 0.006 228 / 0.72);
+  backdrop-filter: blur(20px) saturate(1.5);
+  border-color: rgb(255 255 255 / 0.5);
+}
+
+[data-theme="frutiger-aero"] nav.fixed.bg-base-100 {
+  background-color: oklch(99.2% 0.004 230 / 0.82);
+  backdrop-filter: blur(20px) saturate(1.5);
+  border-color: rgb(255 255 255 / 0.5);
+}
+
+/* ---------------------------------------------------------------- */
+/* 3. Chrome — glossy gel controls                                   */
+/* ---------------------------------------------------------------- */
+
+/* Web 2.0 gel button: specular sheen across the top half over whatever
+ * semantic color the button carries. */
+[data-theme="frutiger-aero"] .btn {
+  background-image: linear-gradient(
+    to bottom,
+    rgb(255 255 255 / 0.5) 0%,
+    rgb(255 255 255 / 0.18) 45%,
+    rgb(0 30 60 / 0.06) 55%,
+    rgb(255 255 255 / 0.08) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.7),
+    inset 0 -1px 0 rgb(0 50 80 / 0.18),
+    0 1px 2px rgb(8 60 100 / 0.2),
+    0 6px 16px -6px rgb(8 80 120 / 0.35);
+}
+
+[data-theme="frutiger-aero"] .btn:hover {
+  background-image: linear-gradient(
+    to bottom,
+    rgb(255 255 255 / 0.62) 0%,
+    rgb(255 255 255 / 0.26) 45%,
+    rgb(0 30 60 / 0.04) 55%,
+    rgb(255 255 255 / 0.14) 100%
+  );
+}
+
+[data-theme="frutiger-aero"] .btn:active {
+  background-image: linear-gradient(
+    to bottom,
+    rgb(0 30 60 / 0.08) 0%,
+    rgb(255 255 255 / 0.12) 60%,
+    rgb(255 255 255 / 0.2) 100%
+  );
+  box-shadow: inset 0 1px 3px rgb(0 40 70 / 0.25), 0 1px 2px rgb(8 60 100 / 0.15);
+}
+
+[data-theme="frutiger-aero"] .badge {
+  background-image: linear-gradient(
+    to bottom,
+    rgb(255 255 255 / 0.22),
+    rgb(255 255 255 / 0.05) 55%,
+    transparent
+  );
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.55);
+}
+
+/* Inset glass fields with an aqua glow on focus. */
+[data-theme="frutiger-aero"] :is(.input, .select, .textarea) {
+  background-color: rgb(255 255 255 / 0.6);
+  box-shadow: inset 0 1px 3px rgb(8 60 100 / 0.16), inset 0 -1px 0 rgb(255 255 255 / 0.5);
+}
+
+[data-theme="frutiger-aero"] :is(.input, .select, .textarea):focus {
+  background-color: rgb(255 255 255 / 0.78);
+  box-shadow:
+    inset 0 1px 3px rgb(8 60 100 / 0.14),
+    0 0 0 4px color-mix(in oklab, var(--color-primary) 28%, transparent),
+    0 0 18px -2px color-mix(in oklab, var(--color-primary) 45%, transparent);
+}
+
+/* ---------------------------------------------------------------- */
+/* 4. Finish                                                         */
+/* ---------------------------------------------------------------- */
+
+[data-theme="frutiger-aero"] ::selection {
+  background: color-mix(in oklab, var(--color-primary) 35%, white);
+}
+
+[data-theme="frutiger-aero"] * {
+  scrollbar-color: color-mix(in oklab, var(--color-primary) 45%, white) transparent;
+}

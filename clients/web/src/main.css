@@ -2,7 +2,9 @@
 @import "tw-animate-css";
 @import "@fontsource-variable/geist";
 @import "@fontsource-variable/jetbrains-mono";
+@import "@fontsource-variable/open-sans";
 @import "highlight.js/styles/dark.css";
+@import "./themes/frutiger-aero.css";
 
 @plugin "daisyui" {
   themes: all;
