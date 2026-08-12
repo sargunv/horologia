@@ -5,8 +5,8 @@ go 1.26.1
 require (
 	charm.land/fang/v2 v2.0.1
 	github.com/godbus/dbus/v5 v5.2.2
-	github.com/knadh/koanf/providers/env/v2 v2.0.0
-	github.com/knadh/koanf/v2 v2.3.5
+	github.com/knadh/koanf/providers/env/v2 v2.0.1
+	github.com/knadh/koanf/v2 v2.3.6
 	github.com/sargunv/horologia/api v0.0.0
 	github.com/spf13/cobra v1.10.2
 	github.com/zalando/go-keyring v0.2.8
