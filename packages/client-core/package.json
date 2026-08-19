@@ -27,10 +27,10 @@
     "./servers": "./src/servers/serverProfile.ts"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.101.2",
-    "chrono-node": "^2.9.1",
+    "@tanstack/react-query": "^5.101.4",
+    "chrono-node": "^2.10.1",
     "openapi-fetch": "^0.17.0",
-    "parse-duration": "^2.1.6",
+    "parse-duration": "^2.1.8",
     "rrule": "^2.8.1"
   },
   "peerDependencies": {
@@ -38,9 +38,9 @@
   },
   "devDependencies": {
     "openapi-typescript": "^7.13.0",
-    "react": "19.2.3",
-    "typescript": "^6.0.3",
-    "vite-plus": "^0.2.4",
+    "react": "19.2.8",
+    "typescript": "^7.0.2",
+    "vite-plus": "^0.2.9",
     "vitest": "^4.1.9"
   }
 }
