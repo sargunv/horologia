@@ -23,8 +23,8 @@ importers:
         specifier: ~1.13.0
         version: 1.13.0(@typespec/compiler@1.13.0(@types/node@26.1.1))(@typespec/http@1.13.0(@typespec/compiler@1.13.0(@types/node@26.1.1)))
       '@typespec/openapi3':
-        specifier: ~1.13.0
-        version: 1.13.0(@typespec/compiler@1.13.0(@types/node@26.1.1))(@typespec/http@1.13.0(@typespec/compiler@1.13.0(@types/node@26.1.1)))(@typespec/openapi@1.13.0(@typespec/compiler@1.13.0(@types/node@26.1.1))(@typespec/http@1.13.0(@typespec/compiler@1.13.0(@types/node@26.1.1))))
+        specifier: ~1.15.0
+        version: 1.15.0(@typespec/compiler@1.13.0(@types/node@26.1.1))(@typespec/http@1.13.0(@typespec/compiler@1.13.0(@types/node@26.1.1)))(@typespec/openapi@1.13.0(@typespec/compiler@1.13.0(@types/node@26.1.1))(@typespec/http@1.13.0(@typespec/compiler@1.13.0(@types/node@26.1.1))))
 
   api/emitters/typespec-mcp-go:
     devDependencies:
@@ -318,6 +318,10 @@ packages:
 
   '@babel/types@7.29.7':
     resolution: {integrity: sha512-4zBIxpPzowiZpusoFkyGVwakdRJUyuH5PxQ/PrqghfdFWWasvnCdPfQXHrenDai+gyLARulZjZowCOj6fjT4pA==}
+    engines: {node: '>=6.9.0'}
+
+  '@babel/types@7.29.8':
+    resolution: {integrity: sha512-Vj1jF3cPfxg7OAfoI7QnVKLoILlm2JF9pnVHrX8qx7AHMiYWT+NDAA7jChlNgRS4WTLc/fD1lXLmPixluj+3Gg==}
     engines: {node: '>=6.9.0'}
 
   '@blazediff/core@1.9.1':
@@ -1839,24 +1843,32 @@ packages:
   '@rolldown/pluginutils@1.0.1':
     resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
 
-  '@scalar/helpers@0.9.0':
-    resolution: {integrity: sha512-M34CLRCttqC1bXthI/QSzQj0s5C6nrU2PFWf/vOT3RpycbiGDGQbqR+5RfFzpOIQvRqbHfNdcRbeiZBw+vCbkQ==}
+  '@scalar/helpers@0.10.0':
+    resolution: {integrity: sha512-IAfnpIZnXY6ni+zyFMwWHBa5b/7yr4mCSvoTGR84oS9q4Quy2wjgafnr7CyfL65ney3iilBZHigZYLYqdqCu3Q==}
     engines: {node: '>=22'}
 
-  '@scalar/json-magic@0.12.17':
-    resolution: {integrity: sha512-Vw2nrUDIjhvMP6vxFtkiiFlabJ6SyTtfn1BsOxgnr1hIB+/rkngMguiDzl5em21VjyfFGIoADia+QWKM2hdcdA==}
+  '@scalar/helpers@0.11.1':
+    resolution: {integrity: sha512-Knwbe0IYqFk0PPDoOKLasqglBHfyf9/zwWWqFsSNi/AtdjM29wSZXN6p8DFid6iB5B9epYH9YiSgJ6tpD00TEw==}
     engines: {node: '>=22'}
 
-  '@scalar/openapi-parser@0.28.8':
-    resolution: {integrity: sha512-BO98D3TLfKNL80UnE1sIAmI6DQRmOaH0AHnlAooTn1sQjNbRDaeHyRO53EEjo7HjFEdHeQtiRzoXmMB4jvt8AA==}
+  '@scalar/json-magic@0.12.20':
+    resolution: {integrity: sha512-5JawJ1L3+ddDoKefkXsklKs6CmmTIcPDmkJPpAkbRi9QQiU9MUONQ4VSi2z3ij+8Ka4neNhsXBNG4itPjurBLg==}
     engines: {node: '>=22'}
 
-  '@scalar/openapi-types@0.9.1':
-    resolution: {integrity: sha512-gkGhSkxSzADaBiNg+ZAbJuwj+ZUmzP2Pg9CWZ7ZP+0fck2WjPeDDM7aAbouAm0aQQMF9xBjSPXSA9a/qTHYaTw==}
+  '@scalar/json-magic@0.13.2':
+    resolution: {integrity: sha512-T8rQw5u7+MSTDpUcd5ShX1taOUxpZMv2b/P6xsahdlv/u68VX/Bq/+uzuAf2xW8IIOy7BEP4MBggle/vMDgAXw==}
     engines: {node: '>=22'}
 
-  '@scalar/openapi-upgrader@0.2.9':
-    resolution: {integrity: sha512-D5b0rGLLZgmkO9mdW2j/ND1KBlH1u3RCpr87HPxv9P9ZSr6PtM5iLqFOJq0ACiaHjY2mikCrxgDmnUEhTzRpHQ==}
+  '@scalar/openapi-parser@0.28.16':
+    resolution: {integrity: sha512-zHEQExXo58Nk7/Tju4y4HLVJ+B5nnDmR7vPhhHLVinL0z99aGrd6S/8HREupVpfAsim326pfzIbSM+UOvEbnOw==}
+    engines: {node: '>=22'}
+
+  '@scalar/openapi-types@0.9.5':
+    resolution: {integrity: sha512-czrz/zkVm1oPzrpYo3hI/iymfiw1s4dgJiQtwNi2U77Sqf3EQOGKsif4VNRa5suWMYRuPaFx5EiFM1FNEV4Whg==}
+    engines: {node: '>=22'}
+
+  '@scalar/openapi-upgrader@0.2.15':
+    resolution: {integrity: sha512-yqROK9U96ElasEL4Wl/+PIjQZlqrQXVUUpXk9PA6xBnrp8KdEv7at8pR5gsZkvddJfYVwLILPlctyqUg4u4YZA==}
     engines: {node: '>=22'}
 
   '@standard-schema/spec@1.1.0':
@@ -2280,19 +2292,19 @@ packages:
       '@typespec/streams':
         optional: true
 
-  '@typespec/openapi3@1.13.0':
-    resolution: {integrity: sha512-G6ayl30kXYVhJvL2/zFwtTdWnCt6N6jZWxs8rAwYiFlZfaG8R/dzjRgcap9Dr0v+6AyWmRwooxRKM3TLi5R/mg==}
+  '@typespec/openapi3@1.15.0':
+    resolution: {integrity: sha512-Gc6OjBiAtPo3ohlkrDxQKt8+xdeR54tC+Cgu3YLlxUxrWHWYOfWQXzp4NX+sraiFjF6kX7t0G1A1kY7rgy73qw==}
     engines: {node: '>=22.0.0'}
     hasBin: true
     peerDependencies:
-      '@typespec/compiler': ^1.13.0
-      '@typespec/events': ^0.83.0
-      '@typespec/http': ^1.13.0
-      '@typespec/json-schema': ^1.13.0
-      '@typespec/openapi': ^1.13.0
-      '@typespec/sse': ^0.83.0
-      '@typespec/streams': ^0.83.0
-      '@typespec/versioning': ^0.83.0
+      '@typespec/compiler': ^1.15.0
+      '@typespec/events': ^0.85.0
+      '@typespec/http': ^1.15.0
+      '@typespec/json-schema': ^1.15.0
+      '@typespec/openapi': ^1.15.0
+      '@typespec/sse': ^0.85.0
+      '@typespec/streams': ^0.85.0
+      '@typespec/versioning': ^0.85.0
       '@typespec/xml': '*'
     peerDependenciesMeta:
       '@typespec/events':
@@ -2861,8 +2873,8 @@ packages:
   '@zag-js/utils@1.41.2':
     resolution: {integrity: sha512-Yj8FSrR7vGA6ahUhjrThfHAF+PM2Y1Yv2lkXkqZZd60mPBhixcot1+SHOfEMV63JimQcWrmQ8QbeYYMmF+ZpLQ==}
 
-  acorn@8.17.0:
-    resolution: {integrity: sha512-xRQbDb9BnwDafYNn6Vwl839DYVjqXYb1XVGtWAZ1kcDc6iwAL4hg3B1dZlRiuENFeO2H53gFG3in621AdERVAg==}
+  acorn@8.18.0:
+    resolution: {integrity: sha512-lGq+9yr1/GuAWaVYIHRjvvySG5/4VfKIvC8EWxStPdcDh/Ka7FG3twP6v4d5BkravUilhIAsG4Qj83t02LWUPQ==}
     engines: {node: '>=0.4.0'}
     hasBin: true
 
@@ -3191,8 +3203,8 @@ packages:
     resolution: {integrity: sha512-FJhYRoDaiatfEkUK8HKlicmu/3SGFD51q3itKDGoSTysQJBnfOcxU5GxnhE1E6soB76MbT0MBtnKJuXyAx+96Q==}
     engines: {node: '>=6'}
 
-  get-tsconfig@4.14.0:
-    resolution: {integrity: sha512-yTb+8DXzDREzgvYmh6s9vHsSVCHeC0G3PI5bEXNBHtmshPnO+S5O7qgLEOn0I5QvMy6kpZN8K1NKGyilLb93wA==}
+  get-tsconfig@4.14.3:
+    resolution: {integrity: sha512-++QEw4DIY7WGoukz+/+A/8dGYPT9l9yIadnmSgZ8Rjr3YVSVDipQSO9CdnJo9ePqFqUUqh+wk9uIaoiAwsiPkA==}
 
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
@@ -4623,6 +4635,12 @@ snapshots:
       '@babel/helper-string-parser': 7.29.7
       '@babel/helper-validator-identifier': 7.29.7
 
+  '@babel/types@7.29.8':
+    dependencies:
+      '@babel/helper-string-parser': 7.29.7
+      '@babel/helper-validator-identifier': 7.29.7
+    optional: true
+
   '@blazediff/core@1.9.1': {}
 
   '@bramus/specificity@2.4.2':
@@ -5921,20 +5939,28 @@ snapshots:
 
   '@rolldown/pluginutils@1.0.1': {}
 
-  '@scalar/helpers@0.9.0': {}
+  '@scalar/helpers@0.10.0': {}
 
-  '@scalar/json-magic@0.12.17':
+  '@scalar/helpers@0.11.1': {}
+
+  '@scalar/json-magic@0.12.20':
     dependencies:
-      '@scalar/helpers': 0.9.0
+      '@scalar/helpers': 0.10.0
       pathe: 2.0.3
       yaml: 2.9.0
 
-  '@scalar/openapi-parser@0.28.8':
+  '@scalar/json-magic@0.13.2':
     dependencies:
-      '@scalar/helpers': 0.9.0
-      '@scalar/json-magic': 0.12.17
-      '@scalar/openapi-types': 0.9.1
-      '@scalar/openapi-upgrader': 0.2.9
+      '@scalar/helpers': 0.11.1
+      pathe: 2.0.3
+      yaml: 2.9.0
+
+  '@scalar/openapi-parser@0.28.16':
+    dependencies:
+      '@scalar/helpers': 0.11.1
+      '@scalar/json-magic': 0.13.2
+      '@scalar/openapi-types': 0.9.5
+      '@scalar/openapi-upgrader': 0.2.15
       ajv: 8.20.0
       ajv-draft-04: 1.0.0(ajv@8.20.0)
       ajv-formats: 3.0.1(ajv@8.20.0)
@@ -5942,11 +5968,11 @@ snapshots:
       leven: 4.1.0
       yaml: 2.9.0
 
-  '@scalar/openapi-types@0.9.1': {}
+  '@scalar/openapi-types@0.9.5': {}
 
-  '@scalar/openapi-upgrader@0.2.9':
+  '@scalar/openapi-upgrader@0.2.15':
     dependencies:
-      '@scalar/openapi-types': 0.9.1
+      '@scalar/openapi-types': 0.9.5
 
   '@standard-schema/spec@1.1.0': {}
 
@@ -6402,11 +6428,11 @@ snapshots:
     dependencies:
       '@typespec/compiler': 1.13.0(@types/node@26.1.1)
 
-  '@typespec/openapi3@1.13.0(@typespec/compiler@1.13.0(@types/node@26.1.1))(@typespec/http@1.13.0(@typespec/compiler@1.13.0(@types/node@26.1.1)))(@typespec/openapi@1.13.0(@typespec/compiler@1.13.0(@types/node@26.1.1))(@typespec/http@1.13.0(@typespec/compiler@1.13.0(@types/node@26.1.1))))':
+  '@typespec/openapi3@1.15.0(@typespec/compiler@1.13.0(@types/node@26.1.1))(@typespec/http@1.13.0(@typespec/compiler@1.13.0(@types/node@26.1.1)))(@typespec/openapi@1.13.0(@typespec/compiler@1.13.0(@types/node@26.1.1))(@typespec/http@1.13.0(@typespec/compiler@1.13.0(@types/node@26.1.1))))':
     dependencies:
-      '@scalar/json-magic': 0.12.17
-      '@scalar/openapi-parser': 0.28.8
-      '@scalar/openapi-types': 0.9.1
+      '@scalar/json-magic': 0.12.20
+      '@scalar/openapi-parser': 0.28.16
+      '@scalar/openapi-types': 0.9.5
       '@typespec/asset-emitter': 0.79.1(@typespec/compiler@1.13.0(@types/node@26.1.1))
       '@typespec/compiler': 1.13.0(@types/node@26.1.1)
       '@typespec/http': 1.13.0(@typespec/compiler@1.13.0(@types/node@26.1.1))
@@ -7214,7 +7240,7 @@ snapshots:
 
   '@zag-js/utils@1.41.2': {}
 
-  acorn@8.17.0:
+  acorn@8.18.0:
     optional: true
 
   agent-base@7.1.4: {}
@@ -7273,7 +7299,7 @@ snapshots:
 
   babel-plugin-react-compiler@1.0.0:
     dependencies:
-      '@babel/types': 7.29.7
+      '@babel/types': 7.29.8
     optional: true
 
   bail@2.0.2: {}
@@ -7506,7 +7532,7 @@ snapshots:
 
   get-nonce@1.0.1: {}
 
-  get-tsconfig@4.14.0:
+  get-tsconfig@4.14.3:
     dependencies:
       resolve-pkg-maps: 1.0.0
     optional: true
@@ -8677,7 +8703,7 @@ snapshots:
   terser@5.49.0:
     dependencies:
       '@jridgewell/source-map': 0.3.11
-      acorn: 8.17.0
+      acorn: 8.18.0
       commander: 2.20.3
       source-map-support: 0.5.21
     optional: true
@@ -8720,7 +8746,7 @@ snapshots:
   tsx@4.21.0:
     dependencies:
       esbuild: 0.27.7
-      get-tsconfig: 4.14.0
+      get-tsconfig: 4.14.3
     optionalDependencies:
       fsevents: 2.3.3
     optional: true
